@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.dark {
+  color-scheme: dark;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  vertical-align: middle;
+}
+
+/* Frosted glass panels used in hero "live stats" cards */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.glass-panel-light {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(167, 205, 213, 0.3);
+}
+
+.process-line {
+  background: linear-gradient(90deg, #3d6268 0%, #a7cdd5 100%);
+}
+
+.timeline-line {
+  position: relative;
+}
+.timeline-line::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 100%;
+  background: repeating-linear-gradient(to bottom, transparent, transparent 4px, #3d6268 4px, #3d6268 8px);
+  opacity: 0.3;
+}
+
+@keyframes map-pulse {
+  0% { transform: scale(1); opacity: 1; }
+  70% { transform: scale(3); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
+}
+.map-pulse {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #a7cdd5;
+  border-radius: 50%;
+}
+.map-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #a7cdd5;
+  animation: map-pulse 2s infinite;
+}
+
+/* Scroll-reveal utility, toggled via the useScrollReveal hook */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #c4c6ce;
+  border-radius: 10px;
+}
+
+:focus-visible {
+  outline: 2px solid #3D6268;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible {
+  outline: 2px solid #3D6268;
+  outline-offset: 2px;
+}

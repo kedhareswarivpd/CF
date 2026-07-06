@@ -1,0 +1,104 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+    paths: ['backend/**', '.github/workflows/backend.yml']
+  pull_request:
+    branches: [main]
+    paths: ['backend/**']
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: corefusion_test
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_pass
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U test_user"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create minimal auth.users shim (CI only — Supabase provisions the real one)
+        env:
+          PGPASSWORD: test_pass
+        run: |
+          psql -h localhost -U test_user -d corefusion_test -c "CREATE SCHEMA IF NOT EXISTS auth;"
+          psql -h localhost -U test_user -d corefusion_test -c "CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY DEFAULT gen_random_uuid());"
+
+      - name: Run tests
+        env:
+          ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: corefusion_test
+          DB_USER: test_user
+          DB_PASS: test_pass
+          SUPABASE_URL: http://localhost:54321
+          SUPABASE_ANON_KEY: test_anon_key
+          SUPABASE_SERVICE_ROLE_KEY: test_service_role_key
+          SUPABASE_JWT_SECRET: test_jwt_secret
+        run: pytest -v
+
+  build-and-push:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v5
+        with:
+          context: backend
+          file: backend/docker/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/corefusion-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/corefusion-backend:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to server via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/corefusion-platform
+            docker compose pull backend
+            docker compose up -d backend
+            docker compose exec -T backend alembic upgrade head

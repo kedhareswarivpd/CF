@@ -1,0 +1,65 @@
+version: '3.8'
+
+# CoreFusion Technologies -- combined stack.
+#
+# Postgres is NOT included here: the backend connects directly to your
+# Supabase project (Supabase Auth + Supabase Postgres), configured via
+# backend/.env. See backend/README.md section 3 ("Supabase Integration")
+# for the one-time setup steps.
+#
+# Topology:
+#   frontend (nginx, :80) --serves React static build
+#       └── proxies /api/*     -> backend:8000
+#       └── proxies /uploads/* -> backend:8000
+#   backend (FastAPI + gunicorn/uvicorn, :8000) --talks to Supabase + redis
+#   redis (:6379) --optional caching
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: docker/Dockerfile
+    container_name: corefusion-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      REDIS_HOST: redis
+    depends_on:
+      - redis
+    volumes:
+      - ./backend/uploads:/usr/src/app/uploads
+      - ./backend/logs:/usr/src/app/logs
+    ports:
+      - '8000:8000' # direct access for API testing/Swagger docs; safe to remove in production if only the frontend proxy should be reachable
+    networks:
+      - corefusion-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: corefusion-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - corefusion-net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: docker/Dockerfile
+    container_name: corefusion-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - '80:80'
+    networks:
+      - corefusion-net
+
+networks:
+  corefusion-net:
+    driver: bridge
+
+volumes:
+  redis_data:

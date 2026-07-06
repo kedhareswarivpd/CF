@@ -1,0 +1,58 @@
+export const downloads = [
+  {
+    title: 'Corporate Brochure 2026',
+    description: 'Comprehensive overview of CoreFusion Technologies, our services, capabilities, and global presence.',
+    category: 'Corporate',
+    fileUrl: '#',
+    fileSize: '4.2 MB',
+    format: 'PDF',
+    downloadCount: 1240,
+  },
+  {
+    title: 'Case Study: Global Ledger Banking Platform',
+    description: 'In-depth technical case study on the migration of a Fortune 500 bank to a cloud-native core banking platform.',
+    category: 'Case Studies',
+    fileUrl: '#',
+    fileSize: '2.8 MB',
+    format: 'PDF',
+    downloadCount: 892,
+  },
+  {
+    title: 'AI/ML Capability Whitepaper',
+    description: 'Our approach to building and deploying production-grade machine learning systems at enterprise scale.',
+    category: 'Whitepapers',
+    fileUrl: '#',
+    fileSize: '3.1 MB',
+    format: 'PDF',
+    downloadCount: 2103,
+  },
+  {
+    title: 'Cybersecurity Services Overview',
+    description: 'Overview of our cybersecurity offerings including SOC, penetration testing, and compliance management.',
+    category: 'Corporate',
+    fileUrl: '#',
+    fileSize: '1.5 MB',
+    format: 'PDF',
+    downloadCount: 567,
+  },
+  {
+    title: 'Cloud Migration Playbook',
+    description: 'A step-by-step guide to planning and executing a successful cloud migration strategy.',
+    category: 'Whitepapers',
+    fileUrl: '#',
+    fileSize: '5.6 MB',
+    format: 'PDF',
+    downloadCount: 3456,
+  },
+  {
+    title: 'CoreShield Product Datasheet',
+    description: 'Technical specifications and feature overview of our zero-trust security suite.',
+    category: 'Product',
+    fileUrl: '#',
+    fileSize: '0.8 MB',
+    format: 'PDF',
+    downloadCount: 789,
+  },
+];
+
+export const downloadCategoryFilters = ['All', 'Corporate', 'Case Studies', 'Whitepapers', 'Product'];
