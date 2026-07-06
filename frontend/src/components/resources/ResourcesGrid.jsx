@@ -34,8 +34,8 @@ export default function ResourcesGrid({ resources, typeFilters }) {
           ))}
         </div>
         <div className="grid md:grid-cols-2 gap-gutter">
-          {filtered.map((r) => (
-            <Reveal key={r.slug}>
+          {filtered.map((r, i) => (
+            <Reveal key={r.slug} from="zoom" delay={i * 80}>
               <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-all hover:-translate-y-1 flex flex-col h-full">
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="w-10 h-10 rounded-lg bg-accent-cyan-pale flex items-center justify-center flex-shrink-0">

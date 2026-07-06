@@ -1,4 +1,5 @@
 import { leadership } from '../../data/about.js';
+import Reveal from '../ui/Reveal.jsx';
 
 function LinkedInIcon() {
   return (
@@ -12,7 +13,7 @@ export default function LeadershipGrid() {
   return (
     <section className="py-section-padding bg-white dark:bg-dark-surface">
       <div className="px-margin-mobile md:px-margin-desktop max-w-container mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+        <Reveal className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
           <div className="max-w-2xl">
             <span className="font-label-caps text-label-caps uppercase text-brand">Executive Leadership</span>
             <h2 className="font-display text-headline-md text-brand-dark dark:text-dark-brand mt-4">Visionaries Steering the Ship</h2>
@@ -23,10 +24,10 @@ export default function LeadershipGrid() {
               arrow_forward
             </span>
           </button>
-        </div>
+        </Reveal>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {leadership.map((leader) => (
-            <div key={leader.name} className="group">
+          {leadership.map((leader, i) => (
+            <Reveal key={leader.name} from="zoom" delay={i * 100} className="group">
               <div className="aspect-[4/5] bg-surface-container dark:bg-dark-surface-container rounded-lg overflow-hidden mb-6 relative">
                 <img
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -42,7 +43,7 @@ export default function LeadershipGrid() {
                   <LinkedInIcon />
                 </span>
               </div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>

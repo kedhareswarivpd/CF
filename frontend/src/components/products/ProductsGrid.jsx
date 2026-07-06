@@ -17,8 +17,8 @@ export default function ProductsGrid({ products }) {
     <section className="py-section-padding">
       <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-gutter">
-          {products.map((p) => (
-            <Reveal key={p.title}>
+          {products.map((p, i) => (
+            <Reveal key={p.title} from="zoom" delay={i * 80}>
               <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-all hover:-translate-y-1 flex flex-col h-full">
                 <div className="flex items-start justify-between mb-4">
                   <div className="w-12 h-12 rounded-lg bg-accent-cyan-pale flex items-center justify-center">

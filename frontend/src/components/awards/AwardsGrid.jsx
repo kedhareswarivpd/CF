@@ -33,8 +33,8 @@ export default function AwardsGrid({ awards, yearFilters }) {
           ))}
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-gutter">
-          {filtered.map((award) => (
-            <Reveal key={award.title}>
+          {filtered.map((award, i) => (
+            <Reveal key={award.title} from="zoom" delay={i * 80}>
               <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-all hover:-translate-y-1 flex flex-col h-full">
                 <div className="flex items-start justify-between mb-3">
                   <div className="w-12 h-12 rounded-lg bg-status-warning-bg flex items-center justify-center">

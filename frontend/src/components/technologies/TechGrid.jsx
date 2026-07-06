@@ -6,8 +6,8 @@ export default function TechGrid({ categories }) {
     <section className="py-section-padding">
       <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
         <div className="space-y-stack-lg">
-          {categories.map((cat) => (
-            <Reveal key={cat.name}>
+          {categories.map((cat, i) => (
+            <Reveal key={cat.name} from="left" delay={i * 80}>
               <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
                 <div className="bg-surface-container dark:bg-dark-surface-container px-stack-lg py-4 flex items-center gap-3 border-b border-outline-variant dark:border-dark-outline-variant">
                   <Icon name={cat.icon} className="text-brand text-xl" />

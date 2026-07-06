@@ -6,8 +6,8 @@ export default function IndustriesGrid({ industries }) {
     <section className="py-section-padding">
       <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-gutter">
-          {industries.map((ind) => (
-            <Reveal key={ind.title}>
+          {industries.map((ind, i) => (
+            <Reveal key={ind.title} from="zoom" delay={i * 80}>
               <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-all hover:-translate-y-1 flex flex-col h-full">
                 <div className="w-12 h-12 rounded-lg bg-accent-cyan-pale flex items-center justify-center mb-4">
                   <Icon name={ind.icon} className="text-brand text-2xl" />

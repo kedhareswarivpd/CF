@@ -88,7 +88,7 @@ export default function GalleryGrid({ albums }) {
             </Reveal>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-gutter">
               {album.images.map((img, i) => (
-                <Reveal key={i}>
+                <Reveal key={i} from="zoom" delay={i * 60}>
                   <button
                     onClick={() => setLightbox({ ...img, index: i })}
                     className="w-full aspect-video bg-surface-container dark:bg-dark-surface-container rounded-lg border border-outline-variant dark:border-dark-outline-variant flex items-center justify-center hover:border-brand transition-colors group relative overflow-hidden"

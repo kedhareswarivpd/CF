@@ -35,8 +35,8 @@ export default function EventsGrid({ events, typeFilters }) {
           ))}
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-gutter">
-          {filtered.map((event) => (
-            <Reveal key={event.slug}>
+          {filtered.map((event, i) => (
+            <Reveal key={event.slug} from="zoom" delay={i * 80}>
               <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-all hover:-translate-y-1 flex flex-col h-full">
                 <div className="flex items-start justify-between mb-3">
                   <StatusBadge variant={event.isVirtual ? 'info' : 'success'}>

@@ -34,8 +34,8 @@ export default function DownloadsGrid({ downloads, categoryFilters }) {
           ))}
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-gutter">
-          {filtered.map((d) => (
-            <Reveal key={d.title}>
+          {filtered.map((d, i) => (
+            <Reveal key={d.title} from="zoom" delay={i * 80}>
               <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-all hover:-translate-y-1 flex flex-col h-full">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-10 h-10 rounded-lg bg-status-error-bg flex items-center justify-center">

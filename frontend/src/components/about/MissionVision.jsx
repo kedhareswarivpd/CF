@@ -1,8 +1,10 @@
+import Reveal from '../ui/Reveal.jsx';
+
 export default function MissionVision() {
   return (
     <section className="py-section-padding px-margin-mobile md:px-margin-desktop max-w-container mx-auto">
       <div className="grid md:grid-cols-2 gap-20 items-center">
-        <div className="space-y-12">
+        <Reveal from="left" className="space-y-12">
           <div>
             <h2 className="font-display text-headline-md text-brand-dark mb-6">Our Mission</h2>
             <p className="font-body text-body-lg text-ink-muted leading-relaxed">
@@ -18,8 +20,8 @@ export default function MissionVision() {
               digital ecosystem that is secure, sustainable, and universally accessible.
             </p>
           </div>
-        </div>
-        <div className="relative">
+        </Reveal>
+        <Reveal from="right" className="relative">
           <div className="aspect-square rounded-xl overflow-hidden shadow-2xl relative">
             <img
               className="w-full h-full object-cover"
@@ -28,13 +30,13 @@ export default function MissionVision() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-brand/40 to-transparent" />
           </div>
-          <div className="absolute -bottom-10 -left-10 glass-panel-light p-6 rounded-lg hidden lg:block max-w-xs">
+          <div className="absolute -bottom-10 -left-10 glass-panel-light p-6 rounded-lg hidden lg:block max-w-xs animate-float">
             <p className="font-label-caps text-label-caps text-brand mb-2 italic">
               "Precision in every line of code."
             </p>
             <p className="text-xs text-ink-muted">— CoreFusion Engineering Standards</p>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

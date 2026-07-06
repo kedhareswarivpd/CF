@@ -12,7 +12,7 @@ export default function SolutionsGrid({ solutions }) {
       <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-gutter">
           {solutions.map((s, i) => (
-            <Reveal key={s.title}>
+            <Reveal key={s.title} from="zoom" delay={i * 80}>
               <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-all hover:-translate-y-1 flex flex-col h-full">
                 <div className="w-12 h-12 rounded-lg bg-accent-cyan-pale flex items-center justify-center mb-4">
                   <Icon name={s.icon} className="text-brand text-2xl" />

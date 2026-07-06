@@ -15,8 +15,8 @@ export default function CultureSection({ values, benefits }) {
             className="mb-stack-lg"
           />
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-gutter">
-            {values.map((v) => (
-              <Reveal key={v.title}>
+            {values.map((v, i) => (
+              <Reveal key={v.title} from="zoom" delay={i * 80}>
                 <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg text-center">
                   <div className="w-12 h-12 rounded-full bg-accent-cyan-pale flex items-center justify-center mx-auto mb-4">
                     <Icon name={v.icon} className="text-brand text-2xl" />
@@ -40,8 +40,8 @@ export default function CultureSection({ values, benefits }) {
             className="mb-stack-lg"
           />
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-gutter">
-            {benefits.map((b) => (
-              <Reveal key={b.title}>
+            {benefits.map((b, i) => (
+              <Reveal key={b.title} from="left" delay={i * 80}>
                 <div className="flex items-start gap-4 bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
                   <div className="w-10 h-10 rounded-lg bg-accent-cyan-pale flex items-center justify-center flex-shrink-0">
                     <Icon name={b.icon} className="text-brand text-xl" />

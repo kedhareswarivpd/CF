@@ -4,12 +4,11 @@ import { fetchProjects } from '../../api/projects.js';
 import { adaptProject } from '../../api/adapters.js';
 import useApiResource from '../../hooks/useApiResource.js';
 import ProjectCard from './ProjectCard.jsx';
+import Reveal from '../ui/Reveal.jsx';
 
 export default function ProjectGallery({ industry }) {
   const fetchFn = useCallback(() => fetchProjects({ industry }), [industry]);
 
-  // Client-side filter is only needed for the static fallback dataset --
-  // when the API is live, `industry` is already applied server-side.
   const fallback =
     industry && industry !== 'All'
       ? fallbackProjects.filter((p) => p.industry === industry)
@@ -31,15 +30,19 @@ export default function ProjectGallery({ industry }) {
           <p className="text-center text-ink-muted py-16">No projects match this filter yet — check back soon.</p>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {projects.map((project) => (
-              <ProjectCard key={project.slug || project.title} project={project} />
+            {projects.map((project, i) => (
+              <Reveal key={project.slug || project.title} from="zoom" delay={i * 80}>
+                <ProjectCard project={project} />
+              </Reveal>
             ))}
           </div>
         )}
         <div className="mt-12 text-center">
-          <button className="border-2 border-brand text-brand px-8 py-3 rounded-full font-label-caps text-label-caps uppercase hover:bg-brand hover:text-white transition-all active:scale-95">
-            View More Projects (427 Remaining)
-          </button>
+          <Reveal from="up">
+            <button className="border-2 border-brand text-brand px-8 py-3 rounded-full font-label-caps text-label-caps uppercase hover:bg-brand hover:text-white transition-all active:scale-95">
+              View More Projects (427 Remaining)
+            </button>
+          </Reveal>
         </div>
       </div>
     </section>

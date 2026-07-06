@@ -38,10 +38,10 @@ export default function FaqSection({ categories }) {
           ))}
         </div>
         <div className="max-w-3xl mx-auto space-y-stack-md">
-          {items.map((item) => {
+          {items.map((item, i) => {
             const isOpen = openItems.has(item.question);
             return (
-              <Reveal key={item.question}>
+              <Reveal key={item.question} from="left" delay={i * 60}>
                 <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
                   <button
                     id={`faq-section-btn-${item.question.replace(/\s+/g, '-')}`}

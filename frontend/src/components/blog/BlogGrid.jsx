@@ -32,8 +32,8 @@ export default function BlogGrid({ posts, categories }) {
           ))}
         </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-gutter">
-          {filtered.map((post) => (
-            <Reveal key={post.slug}>
+          {filtered.map((post, i) => (
+            <Reveal key={post.slug} from="zoom" delay={i * 80}>
               <BlogCard post={post} />
             </Reveal>
           ))}

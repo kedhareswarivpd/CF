@@ -15,7 +15,7 @@ export default function WhyChooseUs() {
       />
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
         {whyChooseUs.map((item, i) => (
-          <Reveal key={item.title} style={{ transitionDelay: `${i * 80}ms` }} className="bg-surface-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-shadow">
+          <Reveal key={item.title} from="zoom" delay={i * 80} className="bg-surface-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-shadow">
             <div className="w-12 h-12 rounded-md bg-accent-cyan-pale flex items-center justify-center mb-stack-md">
               <Icon name={item.icon} className="text-brand text-3xl leading-none" />
             </div>
