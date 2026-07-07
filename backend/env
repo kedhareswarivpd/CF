@@ -1,0 +1,58 @@
+# ==============================
+# APP
+# ==============================
+ENV=development
+APP_NAME=CoreFusion Technologies
+API_PREFIX=/api/v1
+CLIENT_URL=http://localhost:5173
+PORT=8000
+
+# ==============================
+# DATABASE
+# ==============================
+DB_HOST=db.kimfexrhqjinlrmwukik.supabase.co
+DB_PORT=5432
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASS=Kedhareswari123
+DB_USE_PGBOUNCER=false
+
+# ==============================
+# SUPABASE
+# ==============================
+SUPABASE_URL=https://kimfexrhqjinlrmwukik.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpbWZleHJocWppbmxybXd1a2lrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzMDU5NjksImV4cCI6MjA5ODg4MTk2OX0.yfbbbVttwKLW9ihd0TQM2nJaX-3fPlibV0VtV18U7WM
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtpbWZleHJocWppbmxybXd1a2lrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MzMwNTk2OSwiZXhwIjoyMDk4ODgxOTY5fQ.INLzh0L8t_kaP_zl1qG7ws-XmMzpgQLMb7TEobw4nLc
+SUPABASE_JWT_SECRET=https://kimfexrhqjinlrmwukik.supabase.co/auth/v1/.well-known/jwks.json
+
+# ==============================
+# REDIS
+# ==============================
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=
+
+# ==============================
+# JWT
+# ==============================
+JWT_ALGORITHM=HS256
+
+# ==============================
+# EMAIL (SMTP)
+# ==============================
+SMTP_HOST=smtp.mailtrap.io
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=CoreFusion Technologies <no-reply@corefusiontech.com>
+
+# ==============================
+# FILE UPLOADS
+# ==============================
+UPLOAD_DIR=uploads
+MAX_FILE_SIZE_MB=10
+
+# ==============================
+# RATE LIMITING
+# ==============================
+RATE_LIMIT=300/15minute
