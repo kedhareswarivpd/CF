@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import Icon from '../ui/Icon.jsx';
 import { useTheme } from '../../context/ThemeContext.jsx';
-import logoSrc from '/logo.jpeg';
+
 
 const NAV_LINKS = [
   { label: 'Solutions', to: '/solutions' },
@@ -101,7 +101,7 @@ export default function Navbar() {
         <div className="flex items-center gap-8 md:gap-12">
           <Link to="/" className="flex items-center">
             <img
-              src={logoSrc}
+              src="/logo.jpeg"
               alt="CoreFusion"
               className="h-12 md:h-16 w-auto object-contain"
               style={{ mixBlendMode: 'lighten' }}
