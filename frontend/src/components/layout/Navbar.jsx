@@ -99,13 +99,15 @@ export default function Navbar() {
     >
       <div className="max-w-container mx-auto h-full px-margin-mobile md:px-margin-desktop flex items-center justify-between">
         <div className="flex items-center gap-8 md:gap-12">
-          <Link to="/" className="flex items-center shrink-0">
+          <Link to="/" className="flex items-center shrink-0 gap-3">
             <img
               src="/logo.jpeg"
               alt="CoreFusion"
-              className="h-10 md:h-12 w-auto"
-              onError={(e) => { e.target.style.display = 'none'; }}
+              className="h-10 w-10 md:h-12 md:w-12 rounded-xl object-cover border border-white/10"
             />
+            <span className="font-display font-bold text-lg md:text-xl text-white tracking-tight">
+              Core<span className="text-accent-cyan">Fusion</span>
+            </span>
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map((link) => (
