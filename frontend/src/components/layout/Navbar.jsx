@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import Icon from '../ui/Icon.jsx';
+import { useTheme } from '../../context/ThemeContext.jsx';
 
 const NAV_LINKS = [
   { label: 'Solutions', to: '/solutions' },
@@ -60,6 +61,25 @@ function PortalsDropdown() {
   );
 }
 
+function ThemeToggle() {
+  const { dark, toggle } = useTheme();
+  return (
+    <button
+      onClick={toggle}
+      aria-label="Toggle theme"
+      className="relative w-14 h-7 rounded-full border border-outline-variant dark:border-dark-outline-variant bg-slate-100 dark:bg-dark-surface-low transition-colors duration-300 flex items-center px-1"
+    >
+      <span
+        className={`absolute left-1 w-5 h-5 rounded-full flex items-center justify-center text-xs transition-all duration-300 shadow ${
+          dark ? 'translate-x-7 bg-brand text-white' : 'translate-x-0 bg-white text-amber-500'
+        }`}
+      >
+        <Icon name={dark ? 'dark_mode' : 'light_mode'} className="text-sm leading-none" />
+      </span>
+    </button>
+  );
+}
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -105,6 +125,8 @@ export default function Navbar() {
           <button aria-label="Search" className="p-2 text-ink-muted dark:text-dark-ink-muted hover:text-brand dark:hover:text-dark-brand transition-colors">
             <Icon name="search" className="text-xl leading-none" />
           </button>
+
+          <ThemeToggle />
 
           <button
             className="md:hidden p-2 text-brand"
