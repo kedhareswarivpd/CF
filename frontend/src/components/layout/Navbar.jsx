@@ -94,7 +94,7 @@ export default function Navbar() {
   return (
     <header
       className={`fixed top-0 w-full z-50 border-b border-outline-variant transition-all duration-300 ${
-        scrolled ? 'bg-white/95 dark:bg-dark-surface/95 backdrop-blur-md shadow-sm h-16' : 'bg-surface-white dark:bg-dark-surface h-20'
+        scrolled ? 'bg-white shadow-sm h-16' : 'bg-white h-20'
       }`}
     >
       <div className="max-w-container mx-auto h-full px-margin-mobile md:px-margin-desktop flex items-center justify-between">
@@ -105,8 +105,8 @@ export default function Navbar() {
               alt="CoreFusion"
               className="h-10 w-10 md:h-12 md:w-12 rounded-xl object-cover border border-white/10"
             />
-            <span className="font-display font-bold text-lg md:text-xl text-white tracking-tight">
-              Core<span className="text-accent-cyan">Fusion</span>
+            <span className="font-display font-bold text-lg md:text-xl text-brand-dark tracking-tight">
+              Core<span className="text-brand">Fusion</span>
             </span>
           </Link>
           <nav className="hidden md:flex items-center gap-6">
