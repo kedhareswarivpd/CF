@@ -99,12 +99,17 @@ export default function Navbar() {
     >
       <div className="max-w-container mx-auto h-full px-margin-mobile md:px-margin-desktop flex items-center justify-between">
         <div className="flex items-center gap-8 md:gap-12">
-          <Link to="/" className="flex items-center shrink-0">
-            <img
-              src="/logo.jpeg"
-              alt="CoreFusion"
-              className="h-10 md:h-12 w-auto rounded-lg"
-            />
+          <Link to="/" className="flex items-center shrink-0 gap-2">
+            <div className="h-10 w-10 md:h-11 md:w-11 rounded-full overflow-hidden shrink-0 border-2 border-brand/20">
+              <img
+                src="/logo.jpeg"
+                alt="CoreFusion"
+                className="h-full w-full object-cover scale-110"
+              />
+            </div>
+            <span className="font-display font-bold text-xl text-brand-dark tracking-tight">
+              Core<span className="text-brand">Fusion</span>
+            </span>
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map((link) => (
