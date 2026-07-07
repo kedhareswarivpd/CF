@@ -102,8 +102,7 @@ export default function Navbar() {
             <img
               src="/logo.jpeg"
               alt="CoreFusion"
-              className="h-10 md:h-12 w-auto object-contain rounded"
-              style={{ background: '#fff', padding: '2px 6px' }}
+              className="h-12 md:h-14 w-auto object-contain"
             />
           </Link>
           <nav className="hidden md:flex items-center gap-6">
