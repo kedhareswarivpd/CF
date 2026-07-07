@@ -16,20 +16,19 @@ router = APIRouter(prefix="/stats", tags=["Stats"])
 
 @router.get("", response_model=dict)
 async def get_stats(db: AsyncSession = Depends(get_db)):
-    async def count(query):
-        return (await db.execute(query)).scalar_one()
+    async def count(query, default=0):
+        try:
+            return (await db.execute(query)).scalar_one()
+        except Exception:
+            return default
 
-    total_services = await count(select(func.count()).select_from(Service))
-    total_projects = await count(select(func.count()).select_from(Project).where(Project.status != "deleted"))
-    active_projects = await count(select(func.count()).select_from(Project).where(Project.status == "in_progress"))
-    total_employees = await count(select(func.count()).select_from(Employee).where(Employee.status == "active"))
-    total_clients = await count(select(func.count()).select_from(Client))
-    total_employee_users = await count(
-        select(func.count()).select_from(User).where(User.role == UserRole.employee)
-    )
-    total_client_users = await count(
-        select(func.count()).select_from(User).where(User.role == UserRole.client)
-    )
+    total_services    = await count(select(func.count()).select_from(Service))
+    total_projects    = await count(select(func.count()).select_from(Project).where(Project.deleted_at.is_(None)))
+    active_projects   = await count(select(func.count()).select_from(Project).where(Project.status == "in_progress"))
+    total_employees   = await count(select(func.count()).select_from(Employee).where(Employee.status == "active"))
+    total_clients     = await count(select(func.count()).select_from(Client))
+    total_employee_users = await count(select(func.count()).select_from(User).where(User.role == UserRole.employee))
+    total_client_users   = await count(select(func.count()).select_from(User).where(User.role == UserRole.client))
 
     return success_response(
         data={
