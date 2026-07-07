@@ -23,11 +23,11 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const register = async (name, email, password) => {
+  const register = async (name, email, password, role) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: { data: { name, role } },
     });
     if (error) throw new Error(error.message);
     if (data.user?.identities?.length === 0) throw new Error('An account with this email already exists.');

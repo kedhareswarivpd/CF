@@ -5,10 +5,8 @@ import Button from '../ui/Button.jsx';
 
 
 export default function Hero() {
-  const heroVideoSrc = `${import.meta.env.BASE_URL}hero-video.mp4`;
-
-  return (
-    <section className="relative min-h-[720px] flex items-center overflow-hidden py-section-padding px-margin-mobile md:px-margin-desktop">
+return (
+    <section className="relative min-h-[720px] flex items-center overflow-hidden py-section-padding px-margin-mobile md:px-margin-desktop bg-brand-dark">
       {/* Background video */}
       <video
         autoPlay
@@ -17,21 +15,17 @@ export default function Hero() {
         playsInline
         preload="metadata"
         className="absolute inset-0 w-full h-full object-cover"
-        src={heroVideoSrc}
+        src={`${import.meta.env.BASE_URL}hero-video.mp4`}
       />
 
-      {/* Dark gradient overlay so text stays readable */}
+      {/* Dark gradient overlay */}
       <div
         className="absolute inset-0"
-        style={{
-          background:
-            'linear-gradient(to right, rgba(25,28,30,0.92) 0%, rgba(61,98,104,0.75) 60%, rgba(25,28,30,0.4) 100%)',
-        }}
+        style={{ background: 'linear-gradient(to right, rgba(10,37,64,0.92) 0%, rgba(15,52,96,0.75) 60%, rgba(10,37,64,0.4) 100%)' }}
       />
-
       {/* Decorative floating orbs */}
-      <div className="absolute top-20 right-1/4 w-64 h-64 rounded-full bg-accent-cyan/5 blur-3xl animate-float-slow pointer-events-none" />
-      <div className="absolute bottom-10 left-1/3 w-48 h-48 rounded-full bg-white/5 blur-2xl animate-float pointer-events-none" />
+      <div className="absolute top-20 right-1/4 w-64 h-64 rounded-full blur-3xl animate-float-slow pointer-events-none" style={{ background: 'rgba(0,212,255,0.08)' }} />
+      <div className="absolute bottom-10 left-1/3 w-48 h-48 rounded-full blur-2xl animate-float pointer-events-none" style={{ background: 'rgba(37,99,235,0.10)' }} />
 
       <div className="max-w-container mx-auto relative z-10">
         <div className="flex flex-col gap-stack-lg max-w-2xl">

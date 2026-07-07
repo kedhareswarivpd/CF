@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import Icon from '../ui/Icon.jsx';
-import ThemeToggle from '../ui/ThemeToggle.jsx';
-import { useAuth } from '../../context/AuthContext.jsx';
 
 const NAV_LINKS = [
   { label: 'Solutions', to: '/solutions' },
@@ -15,10 +13,56 @@ const NAV_LINKS = [
   { label: 'Contact', to: '/contact' },
 ];
 
+const PORTALS = [
+  { label: 'Client Portal', to: '/client', icon: 'person' },
+  { label: 'Employee Portal', to: '/employee', icon: 'badge' },
+  { label: 'Partner Portal', to: '/partner', icon: 'handshake' },
+  { label: 'Admin Panel', to: '/admin', icon: 'admin_panel_settings' },
+];
+
+function PortalsDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1 font-label-caps text-label-caps uppercase pb-1 border-b-2 transition-colors duration-200 ${
+          open ? 'text-brand border-brand' : 'text-ink-muted dark:text-dark-ink-muted border-transparent hover:text-brand dark:hover:text-dark-brand'
+        }`}
+      >
+        Portals
+        <Icon name={open ? 'expand_less' : 'expand_more'} className="text-base leading-none" />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-3 w-52 bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg shadow-card-hover py-2 z-50">
+          {PORTALS.map((p) => (
+            <Link
+              key={p.to}
+              to={p.to}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-body-sm text-ink-muted dark:text-dark-ink-muted hover:bg-surface-low dark:hover:bg-dark-surface-low hover:text-brand dark:hover:text-dark-brand transition-colors"
+            >
+              <Icon name={p.icon} className="text-brand text-base" />
+              {p.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { isAuthenticated, user, logout } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -37,7 +81,7 @@ export default function Navbar() {
           <Link to="/" className="font-display text-2xl md:text-3xl font-bold text-brand">
             CoreFusion
           </Link>
-          <nav className="hidden md:flex items-center gap-8">
+          <nav className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map((link) => (
               <NavLink
                 key={link.to}
@@ -46,49 +90,21 @@ export default function Navbar() {
                   `font-label-caps text-label-caps uppercase pb-1 border-b-2 transition-colors duration-200 ${
                     isActive
                       ? 'text-brand dark:text-dark-brand border-brand dark:border-dark-brand'
-                      : 'text-ink-muted dark:text-dark-ink-muted border-transparent dark:border-transparent hover:text-brand dark:hover:text-dark-brand'
+                      : 'text-ink-muted dark:text-dark-ink-muted border-transparent hover:text-brand dark:hover:text-dark-brand'
                   }`
                 }
               >
                 {link.label}
               </NavLink>
             ))}
+            <PortalsDropdown />
           </nav>
         </div>
 
         <div className="flex items-center gap-4">
-          <ThemeToggle />
-          <div className="hidden lg:flex items-center bg-surface-container dark:bg-dark-surface-container px-4 py-2 rounded-full border border-outline-variant dark:border-dark-outline-variant">
-            <Icon name="search" className="text-outline mr-2 text-body-lg leading-none" />
-            <input
-              type="text"
-              placeholder="Search..."
-              className="bg-transparent border-none focus:ring-0 focus:outline-none text-body-sm w-28"
-            />
-          </div>
-
-          {isAuthenticated ? (
-            <div className="hidden sm:flex items-center gap-3">
-              <Link to="/employee" className="text-body-sm text-ink-muted dark:text-dark-ink-muted hover:text-brand dark:hover:text-dark-brand transition-colors font-label-caps text-label-caps uppercase">
-                Employee
-              </Link>
-              <Link to="/client" className="text-body-sm text-ink-muted dark:text-dark-ink-muted hover:text-brand dark:hover:text-dark-brand transition-colors font-label-caps text-label-caps uppercase">
-                Portal
-              </Link>
-              <Link to="/admin" className="text-body-sm text-ink-muted dark:text-dark-ink-muted hover:text-brand dark:hover:text-dark-brand transition-colors font-label-caps text-label-caps uppercase">
-                Admin
-              </Link>
-              <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
-                Hi, <span className="font-semibold text-ink dark:text-dark-ink">{(user.user_metadata?.name || user.email || 'User').split(' ')[0]}</span>
-              </span>
-              <button
-                onClick={logout}
-                className="border border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand dark:hover:border-dark-brand hover:text-brand dark:hover:text-dark-brand transition-all"
-              >
-                Sign Out
-              </button>
-            </div>
-          ) : null}
+          <button aria-label="Search" className="p-2 text-ink-muted dark:text-dark-ink-muted hover:text-brand dark:hover:text-dark-brand transition-colors">
+            <Icon name="search" className="text-xl leading-none" />
+          </button>
 
           <button
             className="md:hidden p-2 text-brand"
@@ -114,22 +130,13 @@ export default function Navbar() {
               {link.label}
             </NavLink>
           ))}
-          {isAuthenticated ? (
-            <>
-              <Link to="/employee" onClick={() => setMobileOpen(false)} className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
-                Employee Portal
-              </Link>
-              <Link to="/client" onClick={() => setMobileOpen(false)} className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
-                Client Portal
-              </Link>
-              <Link to="/admin" onClick={() => setMobileOpen(false)} className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
-                Admin Panel
-              </Link>
-              <button onClick={logout} className="border border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted px-6 py-2.5 rounded font-label-caps text-label-caps uppercase w-full">
-                Sign Out ({user.name.split(' ')[0]})
-              </button>
-            </>
-          ) : null}
+          <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted pt-2 border-t border-outline-variant">Portals</p>
+          {PORTALS.map((p) => (
+            <Link key={p.to} to={p.to} onClick={() => setMobileOpen(false)} className="flex items-center gap-2 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted hover:text-brand transition-colors">
+              <Icon name={p.icon} className="text-brand text-base" />
+              {p.label}
+            </Link>
+          ))}
         </nav>
       )}
 

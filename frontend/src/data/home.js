@@ -1,6 +1,6 @@
 export const homeStats = [
-  { label: 'Projects Delivered', value: 'Enterprise-Grade', subtitle: 'Trusted by leading organizations worldwide' },
-  { label: 'Enterprise Clients', value: 'Global Reach', subtitle: 'Serving businesses across multiple continents' },
+  { label: 'Projects Delivered', value: '430+', subtitle: 'Trusted by leading organizations worldwide' },
+  { label: 'Enterprise Clients', value: '120+', subtitle: 'Serving businesses across multiple continents' },
   { label: 'Countries Served', value: 'Worldwide', subtitle: 'Delivery hubs spanning the globe' },
   { label: 'Uptime SLA', value: 'High Availability', subtitle: 'Enterprise SLAs with 24×7 monitoring' },
 ];

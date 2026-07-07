@@ -11,6 +11,11 @@ export const employeePortalTabs = [
   { id: 'leaves', label: 'Leaves', icon: 'beach_access' },
   { id: 'timesheets', label: 'Timesheets', icon: 'assignment' },
   { id: 'payslips', label: 'Payslips', icon: 'payments' },
+  { id: 'tasks', label: 'Tasks', icon: 'task_alt' },
+  { id: 'projects', label: 'Projects', icon: 'folder_open' },
+  { id: 'performance', label: 'Performance', icon: 'trending_up' },
+  { id: 'training', label: 'Training', icon: 'school' },
+  { id: 'documents', label: 'Documents', icon: 'description' },
 ];
 
 export const adminPanelTabs = [
@@ -75,6 +80,39 @@ export const demoPayslips = [
   { month: 'June', year: 2026, grossPay: 85000, deductions: 12500, netPay: 72500, status: 'paid' },
   { month: 'May', year: 2026, grossPay: 85000, deductions: 12500, netPay: 72500, status: 'paid' },
   { month: 'April', year: 2026, grossPay: 82000, deductions: 11800, netPay: 70200, status: 'paid' },
+];
+
+export const demoTasks = [
+  { id: 'TSK-001', title: 'Implement OAuth2 login flow', project: 'Core Banking', priority: 'high', status: 'in_progress', due: '2026-07-10' },
+  { id: 'TSK-002', title: 'Write unit tests for payment module', project: 'Payment Gateway', priority: 'medium', status: 'todo', due: '2026-07-15' },
+  { id: 'TSK-003', title: 'Code review — data warehouse ETL', project: 'Data Warehouse', priority: 'low', status: 'done', due: '2026-07-03' },
+  { id: 'TSK-004', title: 'Fix API timeout bug', project: 'Core Banking', priority: 'urgent', status: 'in_progress', due: '2026-07-06' },
+];
+
+export const demoEmployeeProjects = [
+  { id: 'PRJ-001', title: 'Core Banking Modernization', role: 'Lead Developer', status: 'in_progress', progress: 65, deadline: '2026-12-31' },
+  { id: 'PRJ-002', title: 'Payment Gateway Integration', role: 'Developer', status: 'completed', progress: 100, deadline: '2026-06-30' },
+  { id: 'PRJ-003', title: 'Data Warehouse Migration', role: 'Contributor', status: 'in_progress', progress: 30, deadline: '2027-03-15' },
+];
+
+export const demoPerformance = [
+  { period: 'Q2 2026', rating: 4.5, goals: 8, achieved: 7, feedback: 'Excellent delivery on Core Banking sprint. Strong code quality.' },
+  { period: 'Q1 2026', rating: 4.2, goals: 6, achieved: 5, feedback: 'Good collaboration with cross-functional teams.' },
+  { period: 'Q4 2025', rating: 3.9, goals: 7, achieved: 6, feedback: 'Met most targets. Improve documentation practices.' },
+];
+
+export const demoTraining = [
+  { id: 'TRN-001', title: 'AWS Solutions Architect', category: 'Cloud', status: 'completed', completedOn: '2026-05-20', score: '92%' },
+  { id: 'TRN-002', title: 'React Advanced Patterns', category: 'Frontend', status: 'in_progress', completedOn: null, score: null },
+  { id: 'TRN-003', title: 'ISO 27001 Security Awareness', category: 'Compliance', status: 'pending', completedOn: null, score: null },
+  { id: 'TRN-004', title: 'Agile & Scrum Fundamentals', category: 'Process', status: 'completed', completedOn: '2026-03-10', score: '88%' },
+];
+
+export const demoDocuments = [
+  { id: 'DOC-001', name: 'Employment Contract', type: 'contract', uploadedOn: '2024-01-15', size: '245 KB' },
+  { id: 'DOC-002', name: 'Offer Letter', type: 'other', uploadedOn: '2024-01-10', size: '120 KB' },
+  { id: 'DOC-003', name: 'PAN Card', type: 'id_proof', uploadedOn: '2024-01-15', size: '80 KB' },
+  { id: 'DOC-004', name: 'AWS Certificate', type: 'certificate', uploadedOn: '2026-05-21', size: '310 KB' },
 ];
 
 export const demoDashboard = {

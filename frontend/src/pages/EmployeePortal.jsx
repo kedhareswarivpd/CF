@@ -6,7 +6,7 @@ import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { employeePortalTabs, demoEmployeeProfile, demoAttendance, demoLeaves, demoTimesheets, demoPayslips } from '../data/portal.js';
+import { employeePortalTabs, demoEmployeeProfile, demoAttendance, demoLeaves, demoTimesheets, demoPayslips, demoTasks, demoEmployeeProjects, demoPerformance, demoTraining, demoDocuments } from '../data/portal.js';
 import {
   fetchEmployeeProfile, fetchEmployeeAttendance, fetchEmployeeLeaves,
   fetchEmployeeTimesheets, fetchEmployeePayslips,
@@ -343,6 +343,133 @@ function Payslips({ payslips }) {
   );
 }
 
+function Tasks({ tasks }) {
+  const priorityColor = { urgent: 'error', high: 'warning', medium: 'info', low: 'neutral' };
+  const statusColor = { done: 'success', in_progress: 'info', todo: 'neutral', blocked: 'error' };
+  return (
+    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+      <table className="w-full text-left">
+        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+          <tr><th className="px-stack-lg py-4">Task</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Priority</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Due</th></tr>
+        </thead>
+        <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+          {tasks.map((t) => (
+            <tr key={t.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+              <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.title}</td>
+              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.project}</td>
+              <td className="px-stack-lg py-4"><StatusBadge variant={priorityColor[t.priority]}>{t.priority}</StatusBadge></td>
+              <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[t.status]}>{t.status.replace('_', ' ')}</StatusBadge></td>
+              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.due}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Projects({ projects }) {
+  const statusColor = { completed: 'success', in_progress: 'info', on_hold: 'warning', planning: 'neutral' };
+  return (
+    <div className="space-y-4">
+      {projects.map((p) => (
+        <div key={p.id} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
+          <div className="flex items-start justify-between gap-4 mb-3">
+            <div>
+              <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{p.title}</h3>
+              <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Role: {p.role} &middot; Deadline: {p.deadline}</p>
+            </div>
+            <StatusBadge variant={statusColor[p.status]}>{p.status.replace('_', ' ')}</StatusBadge>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-2 bg-surface-container dark:bg-dark-surface-container rounded-full overflow-hidden">
+              <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${p.progress}%` }} />
+            </div>
+            <span className="text-body-sm font-semibold text-brand-dark dark:text-dark-brand w-10 text-right">{p.progress}%</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Performance({ reviews }) {
+  return (
+    <div className="space-y-4">
+      {reviews.map((r) => (
+        <div key={r.period} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{r.period}</h3>
+            <div className="flex items-center gap-2">
+              <Icon name="star" className="text-yellow-400 text-xl" />
+              <span className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{r.rating}</span>
+              <span className="text-body-sm text-ink-muted">/5</span>
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4 mb-4">
+            <div className="bg-surface-container dark:bg-dark-surface-container rounded-lg p-4 text-center">
+              <p className="font-label-caps text-label-caps text-ink-muted mb-1">Goals Set</p>
+              <p className="font-stat text-2xl text-brand-dark dark:text-dark-brand">{r.goals}</p>
+            </div>
+            <div className="bg-surface-container dark:bg-dark-surface-container rounded-lg p-4 text-center">
+              <p className="font-label-caps text-label-caps text-ink-muted mb-1">Goals Achieved</p>
+              <p className="font-stat text-2xl text-brand-dark dark:text-dark-brand">{r.achieved}</p>
+            </div>
+          </div>
+          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted italic">"{r.feedback}"</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Training({ courses }) {
+  const statusColor = { completed: 'success', in_progress: 'info', pending: 'neutral' };
+  return (
+    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+      <table className="w-full text-left">
+        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+          <tr><th className="px-stack-lg py-4">Course</th><th className="px-stack-lg py-4">Category</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Completed On</th><th className="px-stack-lg py-4">Score</th></tr>
+        </thead>
+        <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+          {courses.map((c) => (
+            <tr key={c.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+              <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.title}</td>
+              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.category}</td>
+              <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[c.status]}>{c.status.replace('_', ' ')}</StatusBadge></td>
+              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.completedOn || '—'}</td>
+              <td className="px-stack-lg py-4 text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{c.score || '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Documents({ docs }) {
+  const typeIcon = { contract: 'gavel', id_proof: 'badge', certificate: 'workspace_premium', other: 'description', resume: 'person' };
+  return (
+    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-gutter">
+      {docs.map((d) => (
+        <div key={d.id} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg flex items-start gap-4">
+          <div className="w-10 h-10 rounded-md bg-accent-cyan-pale flex items-center justify-center shrink-0">
+            <Icon name={typeIcon[d.type] || 'description'} className="text-brand text-xl" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-display text-body-md font-semibold text-brand-dark dark:text-dark-brand truncate">{d.name}</p>
+            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted capitalize">{d.type.replace('_', ' ')} &middot; {d.size}</p>
+            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{d.uploadedOn}</p>
+          </div>
+          <button className="text-brand hover:text-brand-dark transition-colors shrink-0" aria-label="Download">
+            <Icon name="download" className="text-xl" />
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function EmployeePortal() {
   useDocumentTitle('Employee Portal | CoreFusion Technologies');
   const { user, initializing } = useAuth();
@@ -355,6 +482,11 @@ export default function EmployeePortal() {
   const [leaves, setLeaves] = useState(demoLeaves);
   const [timesheets, setTimesheets] = useState(demoTimesheets);
   const [payslips, setPayslips] = useState(demoPayslips);
+  const [tasks] = useState(demoTasks);
+  const [projects] = useState(demoEmployeeProjects);
+  const [performance] = useState(demoPerformance);
+  const [training] = useState(demoTraining);
+  const [documents] = useState(demoDocuments);
 
   useEffect(() => {
     if (!empAuthed || !user) { setLoading(false); return; }
@@ -416,6 +548,11 @@ export default function EmployeePortal() {
         {activeTab === 'leaves' && <Leaves leaves={leaves} employeeId={employeeId} />}
         {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} employeeId={employeeId} />}
         {activeTab === 'payslips' && <Payslips payslips={payslips} />}
+        {activeTab === 'tasks' && <Tasks tasks={tasks} />}
+        {activeTab === 'projects' && <Projects projects={projects} />}
+        {activeTab === 'performance' && <Performance reviews={performance} />}
+        {activeTab === 'training' && <Training courses={training} />}
+        {activeTab === 'documents' && <Documents docs={documents} />}
       </div>
     </div>
   );

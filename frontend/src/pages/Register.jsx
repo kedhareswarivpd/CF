@@ -4,12 +4,19 @@ import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Icon from '../components/ui/Icon.jsx';
 
+const ROLE_REDIRECT = {
+  Client: '/client',
+  Employee: '/employee',
+  Partner: '/partner',
+  Admin: '/admin',
+};
+
 export default function Register() {
   useDocumentTitle('Register | CoreFusion Technologies');
   const navigate = useNavigate();
   const { register } = useAuth();
 
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', role: '' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -21,10 +28,11 @@ export default function Register() {
     setError('');
     if (form.password !== form.confirm) { setError('Passwords do not match.'); return; }
     if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+    if (!form.role) { setError('Please select a role.'); return; }
     setSubmitting(true);
     try {
-      await register(form.name, form.email, form.password);
-      navigate('/client');
+      await register(form.name, form.email, form.password, form.role.toLowerCase());
+      navigate(ROLE_REDIRECT[form.role] ?? '/client');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -62,6 +70,23 @@ export default function Register() {
                 <Icon name={showPassword ? 'visibility_off' : 'visibility'} />
               </button>
             </div>
+          </label>
+
+          <label className="flex flex-col gap-1.5">
+            <span className="font-label-caps text-label-caps uppercase text-ink-muted">Role</span>
+            <select
+              name="role"
+              value={form.role}
+              onChange={handleChange}
+              required
+              className={inputClass}
+            >
+              <option value="" disabled>Select a role</option>
+              <option value="Client">Client</option>
+              <option value="Employee">Employee</option>
+              <option value="Partner">Partner</option>
+              <option value="Admin">Admin</option>
+            </select>
           </label>
 
           <label className="flex flex-col gap-1.5">

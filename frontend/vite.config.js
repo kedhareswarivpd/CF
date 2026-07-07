@@ -11,6 +11,9 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    watch: {
+      ignored: ['**/public/**'],
+    },
     proxy: {
       // Frontend code calls relative paths like `/api/v1/services`.
       // In dev, Vite forwards those to the FastAPI backend below, so no

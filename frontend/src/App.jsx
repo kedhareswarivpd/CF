@@ -28,6 +28,8 @@ import PartnerPortal from './pages/PartnerPortal.jsx';
 import AdminPanel from './pages/AdminPanel.jsx';
 import NotFound from './pages/NotFound.jsx';
 import Register from './pages/Register.jsx';
+import BrochurePage from './pages/BrochurePage.jsx';
+import DownloadDetail from './pages/DownloadDetail.jsx';
 
 export default function App() {
   return (
@@ -60,6 +62,8 @@ export default function App() {
           <Route path="partner" element={<PartnerPortal />} />
           <Route path="admin" element={<AdminPanel />} />
           <Route path="register" element={<Register />} />
+          <Route path="brochure" element={<BrochurePage />} />
+          <Route path="download/:slug" element={<DownloadDetail />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

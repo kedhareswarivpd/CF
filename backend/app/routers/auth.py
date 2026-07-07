@@ -35,7 +35,7 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
                 "email": payload.email,
                 "password": payload.password,
                 "email_confirm": True,
-                "user_metadata": {"name": payload.name},
+                "user_metadata": {"name": payload.name, "role": payload.role},
             },
         )
     except Exception as exc:  # noqa: BLE001 — surface Supabase's own error message

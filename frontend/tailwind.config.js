@@ -7,42 +7,42 @@ export default {
       colors: {
         // Brand — unified "engineering teal" identity used across all four source pages
         brand: {
-          DEFAULT: '#3D6268', // primary interactive color: CTAs, links, active states
-          dark: '#2C3E41',    // deep teal-navy: footers, dark hero sections, strong headings
-          light: '#5A7F86',   // lighter accent, used for secondary emphasis
-          tint: '#7BA1A8',    // muted tint for icon backgrounds / borders
+          DEFAULT: '#2563EB', // primary interactive color: CTAs, links, active states
+          dark: '#0A2540',    // deep navy: footers, dark hero sections, strong headings
+          light: '#3B82F6',   // lighter accent, used for secondary emphasis
+          tint: '#93C5FD',    // muted tint for icon backgrounds / borders
         },
         accent: {
-          cyan: '#A7CDD5',    // "cyber-cyan" highlight, used on dark backgrounds
-          'cyan-pale': '#E2F1F3', // pale cyan for chip/badge backgrounds on light surfaces
+          cyan: '#00D4FF',    // bright cyan highlight for dark backgrounds
+          'cyan-pale': '#E0F7FF', // pale cyan for chip/badge backgrounds on light surfaces
         },
         warning: '#FD5521',
 
         // Neutral surface scale (Material 3 tonal system from the Stitch exports)
         surface: {
-          DEFAULT: '#F7F9FB',
-          dim: '#D8DADC',
-          bright: '#F7F9FB',
-          low: '#F2F4F6',
-          container: '#ECEEF0',
-          high: '#E6E8EA',
-          highest: '#E0E3E5',
-          white: '#FFFFFF',
+          DEFAULT: '#0F3460',
+          dim: '#102C4F',
+          bright: '#143A62',
+          low: '#0A2540',
+          container: '#102C4F',
+          high: '#143A62',
+          highest: '#1A446E',
+          white: '#0A2540',
         },
         ink: {
-          DEFAULT: '#191C1E',   // on-surface (body text)
-          muted: '#43474D',      // on-surface-variant (secondary text)
-          inverse: '#EFF1F3',    // text on dark backgrounds
+          DEFAULT: '#0A2540',   // on-surface (body text)
+          muted: '#334155',     // on-surface-variant (secondary text)
+          inverse: '#EFF1F3',   // text on dark backgrounds
         },
         outline: {
-          DEFAULT: '#74777E',
-          variant: '#C4C6CE',
+          DEFAULT: '#93C5FD',
+          variant: '#BFDBFE',
         },
         dark: {
-          surface: { DEFAULT: '#1a1d21', dim: '#2a2d31', bright: '#1a1d21', low: '#222529', container: '#2a2d31', high: '#323539', highest: '#3a3d41', white: '#1a1d21' },
-          ink: { DEFAULT: '#e8eaed', muted: '#9aa0a6', inverse: '#191c1e' },
-          outline: { DEFAULT: '#5f6368', variant: '#3c4043' },
-          brand: { DEFAULT: '#5A7F86', dark: '#3D6268', light: '#7BA1A8', tint: '#9BBBC2' },
+          surface: { DEFAULT: '#0A2540', dim: '#102C4F', bright: '#0A2540', low: '#0F3460', container: '#102C4F', high: '#143A62', highest: '#1A446E', white: '#0A2540' },
+          ink: { DEFAULT: '#F8FAFC', muted: '#CBD5E1', inverse: '#0A2540' },
+          outline: { DEFAULT: '#2563EB', variant: '#0F3460' },
+          brand: { DEFAULT: '#2563EB', dark: '#0A2540', light: '#3B82F6', tint: '#93C5FD' },
         },
         status: {
           success: { bg: '#dcfce7', text: '#166534' },
