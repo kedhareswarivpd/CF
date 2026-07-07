@@ -5,6 +5,8 @@ import Button from '../ui/Button.jsx';
 
 
 export default function Hero() {
+  const heroVideoSrc = `${import.meta.env.BASE_URL}hero-video.mp4`;
+
   return (
     <section className="relative min-h-[720px] flex items-center overflow-hidden py-section-padding px-margin-mobile md:px-margin-desktop">
       {/* Background video */}
@@ -13,8 +15,9 @@ export default function Hero() {
         muted
         loop
         playsInline
+        preload="metadata"
         className="absolute inset-0 w-full h-full object-cover"
-        src="/hero-video.mp4"
+        src={heroVideoSrc}
       />
 
       {/* Dark gradient overlay so text stays readable */}
