@@ -99,7 +99,12 @@ export default function Navbar() {
       <div className="max-w-container mx-auto h-full px-margin-mobile md:px-margin-desktop flex items-center justify-between">
         <div className="flex items-center gap-8 md:gap-12">
           <Link to="/" className="flex items-center">
-            <img src="/logo.jpeg" alt="CoreFusion" className="h-10 md:h-12 w-auto object-contain" />
+            <img
+              src="/logo.jpeg"
+              alt="CoreFusion"
+              className="h-10 md:h-12 w-auto object-contain rounded"
+              style={{ background: '#fff', padding: '2px 6px' }}
+            />
           </Link>
           <nav className="hidden md:flex items-center gap-6">
             {NAV_LINKS.map((link) => (
