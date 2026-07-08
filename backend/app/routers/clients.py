@@ -144,7 +144,7 @@ async def create_client_report(client_id: uuid.UUID, payload: ClientReportCreate
 
 
 # ---------- Admin / Sales management ----------
-@router.get("", response_model=dict, dependencies=[Depends(require_roles("admin", "sales"))])
+@router.get("", response_model=dict, dependencies=[Depends(require_roles("admin", "sales", "project_manager", "finance"))])
 async def list_clients(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params)):
     filters = {}
     if industry := request.query_params.get("industry"):

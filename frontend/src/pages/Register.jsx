@@ -4,11 +4,13 @@ import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Icon from '../components/ui/Icon.jsx';
 
+// Public self-serve signup is Client-only by design — Employee and Admin accounts
+// carry internal RBAC permissions and must be provisioned by an authenticated
+// Admin/HR user via the "Add User" flow in the Admin Panel, not self-selected here.
+// (Partner is a separate external account type, unaffected by that restriction.)
 const ROLE_REDIRECT = {
   Client: '/client',
-  Employee: '/employee',
   Partner: '/partner',
-  Admin: '/admin',
 };
 
 export default function Register() {
@@ -16,7 +18,7 @@ export default function Register() {
   const navigate = useNavigate();
   const { register } = useAuth();
 
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', role: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', role: 'Client' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -73,7 +75,7 @@ export default function Register() {
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="font-label-caps text-label-caps uppercase text-ink-muted">Role</span>
+            <span className="font-label-caps text-label-caps uppercase text-ink-muted">Account Type</span>
             <select
               name="role"
               value={form.role}
@@ -81,12 +83,12 @@ export default function Register() {
               required
               className={inputClass}
             >
-              <option value="" disabled>Select a role</option>
               <option value="Client">Client</option>
-              <option value="Employee">Employee</option>
               <option value="Partner">Partner</option>
-              <option value="Admin">Admin</option>
             </select>
+            <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
+              Looking for an Employee or Admin account? Ask your Admin/HR team to create one for you.
+            </span>
           </label>
 
           <label className="flex flex-col gap-1.5">

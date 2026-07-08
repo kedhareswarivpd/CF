@@ -28,7 +28,7 @@ async def list_projects(
     page: PageParams = Depends(page_params),
     current_user: User | None = Depends(get_optional_user),
 ):
-    filters = {k: request.query_params.get(k) for k in ("status", "client_id", "industry") if request.query_params.get(k)}
+    filters = {k: request.query_params.get(k) for k in ("status", "client_id", "industry", "project_manager_id") if request.query_params.get(k)}
     if is_featured := request.query_params.get("is_featured"):
         filters["is_featured"] = is_featured.lower() == "true"
     if current_user is None:

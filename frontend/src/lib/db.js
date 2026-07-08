@@ -230,7 +230,7 @@ export async function fetchClientReports(userId) {
 export async function fetchEmployeeProfile(userId) {
   const { data, error } = await supabase
     .from('employees')
-    .select('*, user:users(name, email), department:departments(name)')
+    .select('*, user:users(name, email, role), department:departments(name)')
     .eq('user_id', userId)
     .single();
   if (error) throw error;
@@ -239,6 +239,7 @@ export async function fetchEmployeeProfile(userId) {
     employee_code: data.employee_code,
     name: data.user?.name,
     email: data.user?.email,
+    role: data.user?.role,
     designation: data.designation,
     department: data.department?.name,
     status: data.status,

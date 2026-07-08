@@ -19,10 +19,11 @@ class Settings(BaseSettings):
     db_port: int = 5432
     db_name: str = "postgres"
     db_user: str = "postgres"
-    db_pass: str = "change_me"
+    db_pass: str = ""
     db_use_pgbouncer: bool = False  # set True when pointing at Supabase's transaction pooler (port 6543)
 
     # Supabase
+    
     supabase_url: str = ""
     supabase_anon_key: str = ""
     supabase_service_role_key: str = ""

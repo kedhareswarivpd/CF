@@ -22,6 +22,46 @@ export const employeePortalTabs = [
   { id: 'documents', label: 'Documents', icon: 'description' },
 ];
 
+// Extra tabs spliced into employeePortalTabs (right after Overview) for roles
+// with a dedicated workspace beyond the generic HR/attendance set — see
+// docs/ROLE_WORKFLOW.md §2 for the full per-role navigation spec.
+export const rolePortalTabs = {
+  sales: [
+    { id: 'leads', label: 'Leads', icon: 'person_search' },
+    { id: 'proposals', label: 'Proposals', icon: 'request_quote' },
+    { id: 'contracts', label: 'Contracts', icon: 'gavel' },
+  ],
+  marketing: [
+    { id: 'marketing-leads', label: 'Leads Handoff', icon: 'campaign' },
+    { id: 'testimonials', label: 'Testimonials', icon: 'rate_review' },
+  ],
+  project_manager: [
+    { id: 'team-projects', label: 'Team Projects', icon: 'space_dashboard' },
+    { id: 'task-board', label: 'Task Board', icon: 'view_kanban' },
+    { id: 'approvals', label: 'Approvals', icon: 'fact_check' },
+  ],
+  qa: [
+    { id: 'test-queue', label: 'Test Queue', icon: 'bug_report' },
+  ],
+  support: [
+    { id: 'ticket-queue', label: 'Ticket Queue', icon: 'confirmation_number' },
+  ],
+  finance: [
+    { id: 'invoices', label: 'Invoices', icon: 'receipt_long' },
+  ],
+  hr: [
+    { id: 'leave-approvals', label: 'Leave Approvals', icon: 'event_available' },
+    { id: 'recruitment', label: 'Recruitment', icon: 'group_add' },
+  ],
+};
+
+export function employeeTabsForRole(role) {
+  const extra = rolePortalTabs[role] || [];
+  if (!extra.length) return employeePortalTabs;
+  const [overview, ...rest] = employeePortalTabs;
+  return [overview, ...extra, ...rest];
+}
+
 export const adminPanelTabs = [
   { id: 'overview',       label: 'Dashboard',    icon: 'dashboard' },
   { id: 'content',        label: 'Content',       icon: 'article' },
@@ -69,10 +109,23 @@ export const demoEmployeeProfile = {
   employee_code: 'EMP-001',
   name: 'Priya Sharma',
   email: 'priya@corefusiontech.com',
+  role: 'developer',
   designation: 'Senior Software Engineer',
   department: 'Engineering',
   status: 'active',
 };
+
+export const demoLeads = [
+  { id: 'l1', company: 'Acme Retail', contact_name: 'Jordan Lee', email: 'jordan@acmeretail.com', phone: '+1-555-0110', source: 'website', status: 'new', estimated_value: 45000, owner_id: null },
+  { id: 'l2', company: 'Northwind Logistics', contact_name: 'Casey Kim', email: 'casey@northwind.com', phone: '+1-555-0122', source: 'referral', status: 'contacted', estimated_value: 82000, owner_id: null },
+  { id: 'l3', company: 'BlueSky Health', contact_name: 'Alex Rivera', email: 'alex@blueskyhealth.com', phone: '+1-555-0134', source: 'campaign', status: 'requirement_gathering', estimated_value: 120000, owner_id: null },
+];
+
+export const demoProposals = [
+  { id: 'p1', lead_id: 'l3', scope_summary: 'Patient portal redesign + API integration', price: 65000, currency: 'USD', status: 'draft', sent_at: null },
+];
+
+export const demoContracts = [];
 
 export const demoAttendance = { date: '2026-07-04', checkIn: '09:02 AM', checkOut: '06:15 PM', status: 'present' };
 

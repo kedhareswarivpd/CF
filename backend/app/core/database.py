@@ -8,33 +8,6 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from app.core.config import settings
 
 
-_original_execute = AsyncSession.execute
-
-
-async def _compat_execute(self, statement, params=None, *, execution_options=None, bind_arguments=None, **kw):
-    if execution_options is None:
-        execution_options = {}
-    else:
-        execution_options = dict(execution_options)
-    execution_options.setdefault("stream_results", False)
-    try:
-        return await _original_execute(
-            self,
-            statement,
-            params,
-            execution_options=execution_options,
-            bind_arguments=bind_arguments,
-            **kw,
-        )
-    except Exception as exc:
-        from app.core.logger import logger
-
-        logger.warning("Database execute failed: %s", exc)
-        raise
-
-
-AsyncSession.execute = _compat_execute
-
 connect_args = {"statement_cache_size": 0} if settings.db_use_pgbouncer else {}
 
 engine = create_async_engine(

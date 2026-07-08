@@ -19,10 +19,9 @@ async def _resolve_user(claims: dict, db: AsyncSession) -> User | None:
     user = result.scalar_one_or_none()
 
     if user is None:
-        # The person authenticated successfully with Supabase (e.g. signed up
-        # directly via a Supabase client, or via a social/OAuth provider) but
-        # has no matching profile row yet. Auto-provision a minimal one so
-        # the rest of the app has somewhere to hang role/portal data.
+        # Auto-provision a minimal profile row for a Supabase-authenticated user
+        # who has no local profile yet (e.g. signed up via OAuth or directly
+        # through the Supabase dashboard).
         metadata = claims.get("user_metadata") or {}
         user = User(
             id=user_id,
@@ -30,7 +29,9 @@ async def _resolve_user(claims: dict, db: AsyncSession) -> User | None:
             name=metadata.get("name") or claims.get("email", "New User"),
             role="client",
             is_active=True,
-            is_email_verified=bool(claims.get("email_confirmed_at") or metadata.get("email_verified")),
+            is_email_verified=bool(
+                claims.get("email_confirmed_at") or metadata.get("email_verified")
+            ),
         )
         db.add(user)
         await db.commit()
@@ -47,7 +48,7 @@ async def get_current_user(
         raise ApiError.unauthorized("Authentication token missing")
 
     try:
-        claims = decode_supabase_token(credentials.credentials)
+        claims = await decode_supabase_token(credentials.credentials)
     except ValueError as exc:
         raise ApiError.unauthorized("Invalid or expired token") from exc
 
@@ -65,7 +66,7 @@ async def get_optional_user(
     if credentials is None:
         return None
     try:
-        claims = decode_supabase_token(credentials.credentials)
+        claims = await decode_supabase_token(credentials.credentials)
         user = await _resolve_user(claims, db)
         return user if (user and user.is_active) else None
     except Exception:
@@ -75,7 +76,8 @@ async def get_optional_user(
 def require_roles(*roles: str):
     """
     Usage: Depends(require_roles("admin", "hr"))
-    "super_admin" always bypasses the check.
+    Returns the authenticated user so endpoints can use it directly.
+    "super_admin" always bypasses the role check.
     """
 
     async def dependency(current_user: User = Depends(get_current_user)) -> User:
@@ -90,4 +92,6 @@ def require_roles(*roles: str):
 
 def get_client_ip(request: Request) -> str:
     forwarded = request.headers.get("x-forwarded-for")
-    return forwarded.split(",")[0] if forwarded else (request.client.host if request.client else "unknown")
+    return forwarded.split(",")[0] if forwarded else (
+        request.client.host if request.client else "unknown"
+    )

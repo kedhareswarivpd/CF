@@ -3,7 +3,7 @@ from datetime import date
 
 from pydantic import BaseModel
 
-from app.models.enums import EmployeeStatus, EmploymentType
+from app.models.enums import DocumentType, EmployeeStatus, EmploymentType, LeaveStatus, TimesheetStatus
 from app.schemas.common import TimestampedRead
 
 
@@ -64,6 +64,10 @@ class LeaveOut(TimestampedRead):
     status: str
 
 
+class LeaveStatusUpdate(BaseModel):
+    status: LeaveStatus
+
+
 class TimesheetCreate(BaseModel):
     project_id: uuid.UUID | None = None
     task_id: uuid.UUID | None = None
@@ -82,6 +86,10 @@ class TimesheetOut(TimestampedRead):
     status: str
 
 
+class TimesheetStatusUpdate(BaseModel):
+    status: TimesheetStatus
+
+
 class PayslipOut(TimestampedRead):
     employee_id: uuid.UUID
     month: int
@@ -98,3 +106,16 @@ class AttendanceOut(TimestampedRead):
     employee_id: uuid.UUID
     date: date
     status: str
+
+
+class EmployeeDocumentCreate(BaseModel):
+    title: str
+    type: DocumentType = DocumentType.other
+    file_url: str
+
+
+class EmployeeDocumentOut(TimestampedRead):
+    employee_id: uuid.UUID
+    title: str
+    type: DocumentType
+    file_url: str

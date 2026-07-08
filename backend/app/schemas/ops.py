@@ -78,6 +78,15 @@ class NotificationOut(TimestampedRead):
     is_read: bool
 
 
+class NotificationCreate(BaseModel):
+    title: str
+    message: str | None = None
+    type: NotificationType = NotificationType.info
+    link: str | None = None
+    user_id: uuid.UUID | None = None
+    roles: list[str] | None = None
+
+
 # ---------- Media ----------
 class MediaOut(TimestampedRead):
     file_name: str

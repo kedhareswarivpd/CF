@@ -23,6 +23,8 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 @router.post("/register", response_model=dict, status_code=201)
 async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db)):
+    """Public self-serve signup — always creates a Client account. Employee/Admin
+    accounts must be created by an authenticated Admin/HR user via POST /users."""
     existing = (await db.execute(select(User).where(User.email == payload.email))).scalar_one_or_none()
     if existing:
         raise ApiError.conflict("An account with this email already exists")
@@ -35,7 +37,7 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
                 "email": payload.email,
                 "password": payload.password,
                 "email_confirm": True,
-                "user_metadata": {"name": payload.name, "role": payload.role},
+                "user_metadata": {"name": payload.name, "role": "client"},
             },
         )
     except Exception as exc:  # noqa: BLE001 — surface Supabase's own error message
@@ -47,7 +49,7 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
         name=payload.name,
         email=payload.email,
         phone=payload.phone,
-        role=payload.role,
+        role="client",
         is_active=True,
         is_email_verified=True,
     )

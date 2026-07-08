@@ -10,6 +10,9 @@ import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { clientPortalTabs, demoClientProfile, demoClientProjects, demoClientInvoices, demoClientTickets, demoClientPayments, demoClientFiles, demoClientMeetings, demoClientReports } from '../data/portal.js';
 import { fetchClientProfile, fetchClientProjects, fetchClientInvoices, fetchClientTickets, createTicket, fetchClientPayments, fetchClientMeetings, fetchClientFiles, fetchClientReports } from '../lib/db.js';
+import { loginToPortal } from '../lib/portalAuth.js';
+
+const CLIENT_PORTAL_ROLES = ['client'];
 
 const STATUS_VARIANTS = {
   in_progress: 'info', completed: 'success', planning: 'warning', on_hold: 'neutral',
@@ -342,7 +345,7 @@ function LoginGate({ onSuccess }) {
     setSubmitting(true);
     setError('');
     try {
-      await login(email, password);
+      await loginToPortal(login, email, password, CLIENT_PORTAL_ROLES);
       onSuccess();
     } catch (err) {
       setError(err.message || 'Invalid email or password.');
@@ -394,7 +397,7 @@ function LoginGate({ onSuccess }) {
 
 export default function ClientPortal() {
   useDocumentTitle('Client Portal | CoreFusion Technologies');
-  const { user, accessToken, initializing } = useAuth();
+  const { user, accessToken, initializing, logout } = useAuth();
   const [clientAuthed, setClientAuthed] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
@@ -452,7 +455,7 @@ export default function ClientPortal() {
               <p className="text-body-sm text-ink-muted">{profile.company_name}</p>
             </div>
           </div>
-          <button onClick={() => setClientAuthed(false)} className="border border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all">
+          <button onClick={() => { logout(); setClientAuthed(false); }} className="border border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all">
             Sign Out
           </button>
         </div>

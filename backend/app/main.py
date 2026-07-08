@@ -13,7 +13,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.audit import log_audit
 from app.core.config import settings
-from app.core.csrf import CsrfMiddleware
 from app.core.errors import ApiError
 from app.core.logger import logger
 from app.core.security import decode_supabase_token
@@ -33,13 +32,17 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=list({settings.client_url, "http://localhost:5173", "http://localhost:4173"}),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Middleware is applied in reverse-registration order by Starlette:
+# AuditMiddleware → SecurityHeadersMiddleware → CORSMiddleware (outermost last)
+# CORS must be outermost so preflight OPTIONS responses are handled before any
+# other middleware inspects the request.
+
+_ALLOWED_ORIGINS = list({
+    settings.client_url,
+    settings.site_url,
+    "http://localhost:5173",
+    "http://localhost:4173",
+})
 
 
 # ---------- Security headers middleware ----------
@@ -53,7 +56,6 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
-app.add_middleware(CsrfMiddleware)
 app.add_middleware(SecurityHeadersMiddleware)
 
 
@@ -81,9 +83,9 @@ class AuditMiddleware(BaseHTTPMiddleware):
             if auth_header and auth_header.startswith("Bearer "):
                 token = auth_header[7:]
                 try:
-                    claims = decode_supabase_token(token)
+                    claims = await decode_supabase_token(token)
                     user_id = uuid.UUID(claims["sub"])
-                except ValueError:
+                except (ValueError, Exception):
                     pass
 
             entity_type = path.strip("/").split("/")[-2] if path.count("/") >= 2 else None
@@ -109,6 +111,18 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(AuditMiddleware)
+
+# CORSMiddleware is registered last so Starlette places it outermost —
+# it runs first on every request, including OPTIONS preflight.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
+    expose_headers=["X-Request-Id"],
+    max_age=600,
+)
 
 
 # ---------- Static file serving for uploaded assets ----------

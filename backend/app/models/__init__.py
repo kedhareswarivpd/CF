@@ -24,6 +24,11 @@ from app.models.task import Task  # noqa: F401
 from app.models.invoice import Invoice  # noqa: F401
 from app.models.payment import Payment  # noqa: F401
 
+# CRM / sales pipeline
+from app.models.lead import Lead  # noqa: F401
+from app.models.proposal import Proposal  # noqa: F401
+from app.models.contract import Contract  # noqa: F401
+
 # CMS / content
 from app.models.category import Category  # noqa: F401
 from app.models.blog import Blog  # noqa: F401
@@ -70,6 +75,7 @@ __all__ = [
     "User", "Role", "Permission",
     "Department", "Employee", "Attendance", "Leave", "Timesheet", "Payslip", "EmployeeDocument",
     "Client", "ClientFile", "ClientReport", "Project", "Task", "Invoice", "Payment",
+    "Lead", "Proposal", "Contract",
     "Category", "Blog", "Comment", "Service", "Industry", "Technology", "CaseStudy",
     "Portfolio", "Testimonial", "Partner", "Award", "Faq", "Gallery", "Download",
     "Career", "Application", "Event",

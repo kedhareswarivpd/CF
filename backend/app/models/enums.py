@@ -215,3 +215,37 @@ class ContactStatus(str, enum.Enum):
     in_progress = "in_progress"
     resolved = "resolved"
     spam = "spam"
+
+
+class LeadSource(str, enum.Enum):
+    website = "website"
+    contact_form = "contact_form"
+    referral = "referral"
+    campaign = "campaign"
+    cold_outreach = "cold_outreach"
+    event = "event"
+    other = "other"
+
+
+class LeadStatus(str, enum.Enum):
+    new = "new"
+    contacted = "contacted"
+    requirement_gathering = "requirement_gathering"
+    proposal_sent = "proposal_sent"
+    proposal_approved = "proposal_approved"
+    converted = "converted"
+    disqualified = "disqualified"
+
+
+class ProposalStatus(str, enum.Enum):
+    draft = "draft"
+    sent = "sent"
+    viewed = "viewed"
+    accepted = "accepted"
+    rejected = "rejected"
+
+
+class ContractStatus(str, enum.Enum):
+    pending = "pending"
+    signed = "signed"
+    void = "void"

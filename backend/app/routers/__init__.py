@@ -8,6 +8,10 @@ from app.routers import (
     # Phase 2
     analytics, newsletter, page_content, performance_review, product,
     resource, seo, solution, training,
+    # Phase 3 — Sales CRM
+    contracts, leads, proposals,
+    # Phase 4 — Super Admin
+    department,
 )
 
 api_router = APIRouter()
@@ -16,6 +20,7 @@ api_router.include_router(auth.router)
 api_router.include_router(users.router)
 api_router.include_router(users.self_router)
 api_router.include_router(gdpr.self_router)
+api_router.include_router(gdpr.router)
 api_router.include_router(stats.router)
 api_router.include_router(employees.router)
 api_router.include_router(clients.router)
@@ -58,3 +63,11 @@ api_router.include_router(seo.router)
 api_router.include_router(page_content.router)
 api_router.include_router(analytics.router)
 api_router.include_router(reports.router)
+
+# Phase 3 — Sales CRM
+api_router.include_router(leads.router)
+api_router.include_router(proposals.router)
+api_router.include_router(contracts.router)
+
+# Phase 4 — Super Admin
+api_router.include_router(department.router)

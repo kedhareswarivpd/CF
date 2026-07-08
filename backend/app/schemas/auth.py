@@ -7,10 +7,16 @@ from app.schemas.common import TimestampedRead
 
 
 class RegisterRequest(BaseModel):
+    """
+    Public self-serve signup is intentionally Client-only — there is no `role`
+    field here. Employee/Admin/HR accounts are provisioned by an authenticated
+    Admin/HR user via `POST /users` (see routers/users.py), never self-selected
+    by an anonymous caller. Do not add `role` back here without an auth gate.
+    """
+
     name: str = Field(min_length=1, max_length=150)
     email: EmailStr
     password: str = Field(min_length=8)
-    role: UserRole = UserRole.client
     phone: str | None = None
 
 

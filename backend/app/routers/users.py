@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from app.core.database import get_db
-from app.core.dependencies import require_roles
+from app.core.dependencies import get_current_user, require_roles
 from app.core.errors import ApiError
 from app.crud.base import CRUDBase
 from app.models.user import User
@@ -41,8 +41,16 @@ async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("", response_model=dict, status_code=201)
-async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db)):
-    """Creates both the Supabase auth account (via the admin API) and the local profile row."""
+async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Creates both the Supabase auth account (via the admin API) and the local profile row.
+
+    Only a Super Admin may grant `admin`/`super_admin` — an Admin or HR caller
+    (both allowed through this router by `require_roles`) can provision every
+    other role but cannot mint another admin account for themselves or anyone else.
+    """
+    if payload.role in ("admin", "super_admin") and current_user.role != "super_admin":
+        raise ApiError.forbidden("Only a Super Admin can create an Admin or Super Admin account")
+
     admin = get_admin_client()
     try:
         auth_response = await run_in_threadpool(

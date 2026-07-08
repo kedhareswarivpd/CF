@@ -6,22 +6,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, require_roles
+from app.core.errors import ApiError
 from app.models.user import User
 from app.utils.responses import success_response
 
-router = APIRouter(prefix="/users", tags=["GDPR"])
+router = APIRouter(prefix="/users", tags=["GDPR"], dependencies=[Depends(require_roles("super_admin"))])
 self_router = APIRouter(prefix="/users", tags=["GDPR"])
 
 
-@self_router.get("/me/export", response_model=dict)
-async def export_my_data(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
+async def _export_user_data(db: AsyncSession, user_id: uuid.UUID) -> dict:
     result = await db.execute(
         select(User)
-        .where(User.id == current_user.id)
+        .where(User.id == user_id)
         .options(
             selectinload(User.employee_profile),
             selectinload(User.client_profile).selectinload("projects"),
@@ -147,28 +144,23 @@ async def export_my_data(
             for a in user.audit_logs
         ]
 
-    return success_response(
-        data={
-            "profile": profile,
-            "employee_profile": employee,
-            "client_profile": client,
-            "projects": projects,
-            "invoices": invoices,
-            "tickets": tickets,
-            "testimonials": testimonials,
-            "notifications": notifications,
-            "audit_logs": audit_logs,
-        },
-        message="User data exported",
-    )
+    return {
+        "profile": profile,
+        "employee_profile": employee,
+        "client_profile": client,
+        "projects": projects,
+        "invoices": invoices,
+        "tickets": tickets,
+        "testimonials": testimonials,
+        "notifications": notifications,
+        "audit_logs": audit_logs,
+    }
 
 
-@self_router.delete("/me", response_model=dict)
-async def anonymize_my_data(
-    current_user: User = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    user = await db.get(User, current_user.id)
+async def _anonymize_user(db: AsyncSession, user_id: uuid.UUID) -> None:
+    user = await db.get(User, user_id)
+    if user is None:
+        raise ApiError.not_found("User not found")
     uuid_str = str(uuid.uuid4())
     user.name = "Deleted User"
     user.email = f"deleted-{uuid_str}@corefusiontech.com"
@@ -176,4 +168,28 @@ async def anonymize_my_data(
     user.avatar = None
     user.is_active = False
     await db.commit()
+
+
+@self_router.get("/me/export", response_model=dict)
+async def export_my_data(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    data = await _export_user_data(db, current_user.id)
+    return success_response(data=data, message="User data exported")
+
+
+@self_router.delete("/me", response_model=dict)
+async def anonymize_my_data(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    await _anonymize_user(db, current_user.id)
     return success_response(message="Your data has been anonymized")
+
+
+# ---------- Super Admin: act on behalf of another user (GDPR requests) ----------
+@router.get("/{user_id}/export", response_model=dict)
+async def export_user_data(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    data = await _export_user_data(db, user_id)
+    return success_response(data=data, message="User data exported")
+
+
+@router.post("/{user_id}/anonymize", response_model=dict)
+async def anonymize_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    await _anonymize_user(db, user_id)
+    return success_response(message="User data has been anonymized")

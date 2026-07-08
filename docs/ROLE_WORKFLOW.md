@@ -178,8 +178,8 @@ Sales Workspace
 ├── Dashboard
 ├── Leads              (from contact_submissions + manual entry)
 ├── Clients             (accounts I manage / account_manager_id = me)
-├── Proposals            [GAP → new module, see §4]
-├── Contracts             [GAP → new module]
+├── Proposals            (leads → proposal → contract pipeline, see §4)
+├── Contracts             (signing a contract auto-provisions the Client account)
 ├── Meetings/Demos
 ├── Reports (pipeline, conversion, forecast)
 └── Settings
@@ -819,9 +819,9 @@ flowchart TD
 
 ## 4. Project & Lead Lifecycle
 
-> **GAP called out:** the current schema has `ContactSubmission` (new/in_progress/resolved/spam) and `Project` (planning/in_progress/on_hold/completed/cancelled), but no dedicated **Lead → Proposal → Contract** pipeline. Recommended addition: a `leads` table (extending/replacing `contact_submissions` for sales-owned records) with its own status enum, plus `proposals` and `contracts` tables, both FK'd to `leads` and later to `clients` once won. Suggested minimal schema:
-> - `leads(id, contact_submission_id?, company, contact_name, email, phone, source, owner_id[sales], status, estimated_value, created_at)`
-> - `proposals(id, lead_id, version, scope_summary, price, currency, sent_at, viewed_at, status[draft/sent/viewed/accepted/rejected], file_url)`
+> **Built:** the CRM pipeline described below is implemented — `app/models/lead.py`, `proposal.py`, `contract.py`, routers `leads.py` / `proposals.py` / `contracts.py`, migration `c3d4e5f6a7b8_add_crm_leads_proposals_contracts.py`. `Lead` links optionally to `ContactSubmission`; `Proposal` FKs to `Lead`; `Contract` FKs to `Proposal`. Signing a contract (`POST /contracts/{id}/sign`) auto-provisions the client's Supabase account + `Client` row when both signatures are recorded, marks the lead `converted`, and notifies `project_manager`/`admin` to kick off the project. Schema actually shipped:
+> - `leads(id, contact_submission_id?, company, contact_name, email, phone, source, owner_id[sales], status, estimated_value, notes, converted_client_id, created_at)`
+> - `proposals(id, lead_id, version, scope_summary, price, currency, sent_at, viewed_at, status[draft/sent/viewed/accepted/rejected], file_url, created_by)`
 > - `contracts(id, proposal_id, signed_by_client_at, signed_by_company_at, document_url, status[pending/signed/void])`
 
 | # | Status | Responsible Role | Required Action | Exit Criteria | Next Status |
@@ -1109,7 +1109,7 @@ Grounded in the real router modules under `backend/app/routers/`. Each already-i
 | Users | `users.py` ✅ | `GET/POST /users` · `GET/PUT/DELETE /users/{id}` · `PUT /users/{id}/role` |
 | Roles/Permissions | `role.py` ✅ | `GET/POST /roles` · `PUT/DELETE /roles/{id}` · `POST /roles/{id}/permissions` |
 | Clients | `clients.py` ✅ | `GET/POST /clients` · `GET/PUT /clients/{id}` · `GET /clients/{id}/projects` |
-| Leads/Proposals/Contracts | 🆕 `leads.py`, `proposals.py`, `contracts.py` | `GET/POST /leads` · `PUT /leads/{id}/status` · `POST /leads/{id}/proposals` · `POST /proposals/{id}/send` · `POST /contracts/{id}/sign` |
+| Leads/Proposals/Contracts | `leads.py`, `proposals.py`, `contracts.py` ✅ | `GET/POST /leads` · `PUT /leads/{id}/status` · `POST /leads/{id}/proposals` · `POST /proposals/{id}/send` · `POST /contracts/{id}/sign` |
 | Projects | `projects.py` ✅ | `GET/POST /projects` · `GET/PUT/DELETE /projects/{id}` · `POST /projects/{id}/members` |
 | Tasks | `task.py` ✅ | `GET/POST /tasks` · `PUT /tasks/{id}` · `PUT /tasks/{id}/status` · `GET /projects/{id}/tasks` |
 | Employees | `employees.py` ✅ | `GET/POST /employees` · `GET/PUT/DELETE /employees/{id}` · `GET /employees/{id}/timesheets` |
@@ -1142,7 +1142,7 @@ Mapped against real frontend surfaces: **public site** (26 route pages), **`Clie
 |---|---|
 | Guest | Home · Services · Solutions · Products · Technologies · Industries · Portfolio · Case Studies · About · Careers · Blog · Events · Gallery · Awards · Downloads · Resources · FAQ · Contact · Login Modal · Register (invite-only) |
 | Client | Overview · Projects (list/detail) · Invoices & Payments · Files · Reports · Meetings · Support Tickets · Testimonials · Profile & Settings |
-| Sales | Dashboard · Leads 🆕 · Clients · Proposals 🆕 · Contracts 🆕 · Meetings/Demos · Reports · Settings |
+| Sales | Dashboard · Leads · Clients · Proposals · Contracts · Meetings/Demos · Reports · Settings |
 | Marketing | Dashboard · Content (Blog/Case Studies/Events/Gallery/Awards/Downloads/Resources) · Page Content & SEO · Newsletter · Leads Handoff · Reports |
 | Project Manager | Dashboard · Projects (list/detail: Tasks/Timeline/Files/Budget/Team) · Tasks Kanban · Team · Client Reports · Meetings · Change Requests 🆕 · Reports |
 | Developer | Dashboard · My Tasks (Kanban) · My Projects · Timesheets · Attendance · Leaves · Payslips · Training · Documents |
@@ -1155,8 +1155,9 @@ Mapped against real frontend surfaces: **public site** (26 route pages), **`Clie
 
 ### Implementation checklist for engineering handoff
 
-- [ ] Add role-conditional tab configs to `EmployeePortal.jsx` (currently one shared `employeePortalTabs`) for: Sales, Marketing, PM, Developer, QA, Support, Finance, HR
-- [ ] Build `leads`, `proposals`, `contracts` models + Alembic migration + `leads.py`/`proposals.py`/`contracts.py` routers + frontend `api/leads.js`
+- [x] Build `leads`, `proposals`, `contracts` models + Alembic migration + `leads.py`/`proposals.py`/`contracts.py` routers + frontend `api/crm.js` + Sales-only tabs in `EmployeePortal.jsx`
+- [x] Extend role-conditional tab configs to Marketing (Leads Handoff, Testimonial moderation), Project Manager (Team Projects, Task Board, Approvals), QA (Test Queue), Support (Ticket Queue), Finance (Invoices), HR (Leave Approvals, Recruitment) — see `rolePortalTabs` in `data/portal.js`. Developer keeps the generic shared tab set (it already matches the doc's Developer nav). All reuse existing routers except two new endpoints added for this: `GET/PATCH /employees/leaves` and `/employees/timesheets` (approval), since HR/PM previously had no way to review submitted leave/timesheets at all.
+- [ ] Still open: PM Change Requests, QA dedicated Test Cases/Runs model, Support Knowledge Base, Finance Expenses (all still GAP per §2, reusing `tasks`/nothing as a stand-in where noted)
 - [ ] Add `test_cases`/`test_runs` models for the QA module (currently QA reuses `tasks`)
 - [ ] Add a `Sprint`/`Milestone` model if formal sprint planning is required (currently flat `tasks` per `project`)
 - [ ] Extend `Permission.action` set to consistently cover `view/create/edit/delete/approve/export/assign/manage` per module, and wire `role_permissions` UI into `AdminPanel.jsx → Roles` tab

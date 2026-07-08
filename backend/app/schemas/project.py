@@ -37,6 +37,10 @@ class ProjectUpdate(BaseModel):
     technology_stack: list[str] | None = None
     status: ProjectStatus | None = None
     progress_percent: int | None = None
+    budget: float | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    project_manager_id: uuid.UUID | None = None
     cover_image: str | None = None
     video_url: str | None = None
     is_featured: bool | None = None
@@ -52,8 +56,12 @@ class ProjectOut(TimestampedRead):
     solution: str | None = None
     technology_stack: list[str] = []
     industry: str | None = None
+    start_date: date | None = None
+    end_date: date | None = None
+    budget: float | None = None
     status: ProjectStatus
     progress_percent: int
+    project_manager_id: uuid.UUID | None = None
     cover_image: str | None = None
     video_url: str | None = None
     is_featured: bool

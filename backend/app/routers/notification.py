@@ -3,10 +3,12 @@ from sqlalchemy import select, update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, require_roles
+from app.core.errors import ApiError
 from app.models.notification import Notification
 from app.models.user import User
-from app.schemas.ops import NotificationOut
+from app.schemas.ops import NotificationCreate, NotificationOut
+from app.services.notification_service import notify_roles, notify_user
 from app.utils.responses import success_response
 import uuid
 
@@ -39,3 +41,14 @@ async def mark_all_read(db: AsyncSession = Depends(get_db), current_user: User =
     )
     await db.commit()
     return success_response(message="All notifications marked as read")
+
+
+@router.post("", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr", "marketing"))])
+async def create_notification(payload: NotificationCreate, db: AsyncSession = Depends(get_db)):
+    if not payload.user_id and not payload.roles:
+        raise ApiError.bad_request("Provide either user_id or roles to target this notification")
+    if payload.user_id:
+        await notify_user(db, payload.user_id, payload.title, payload.message, payload.type, payload.link)
+    if payload.roles:
+        await notify_roles(db, payload.roles, payload.title, payload.message, payload.type, payload.link)
+    return success_response(message="Notification sent", status_code=201)
