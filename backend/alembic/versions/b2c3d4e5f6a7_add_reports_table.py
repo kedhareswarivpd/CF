@@ -15,7 +15,15 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def table_exists(bind, table_name: str) -> bool:
+    inspector = sa.inspect(bind)
+    return table_name in inspector.get_table_names()
+
+
 def upgrade() -> None:
+    if table_exists(op.get_bind(), 'reports'):
+        return
+
     op.create_table(
         'reports',
         sa.Column('title', sa.String(length=255), nullable=False),
@@ -35,4 +43,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.drop_table('reports')
+    if table_exists(op.get_bind(), 'reports'):
+        op.drop_table('reports')
