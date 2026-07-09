@@ -25,11 +25,30 @@ export function AuthProvider({ children }) {
   }, []);
 
   const register = async (name, email, password) => {
-    await registerApi(name, email, password);
-
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    // Sign up directly via Supabase Auth first — this always works even if
+    // the backend is temporarily unreachable.
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name, role: 'client' } },
+    });
     if (error) throw new Error(error.message);
-    if (!data.session) throw new Error('Registration succeeded but sign-in failed.');
+    if (!data.user) throw new Error('Registration failed. Please try again.');
+
+    // Best-effort: sync the new user row into the backend DB.
+    // If the backend is down we still let the user in — the row will be
+    // created lazily on their first login.
+    try {
+      await registerApi(name, email, password);
+    } catch {
+      // backend unreachable — non-fatal
+    }
+
+    // If email confirmation is required, session will be null here.
+    if (!data.session) {
+      throw new Error('Account created! Please check your email to confirm your address before signing in.');
+    }
+
     return data;
   };
 

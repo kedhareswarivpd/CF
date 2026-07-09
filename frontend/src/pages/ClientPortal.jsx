@@ -9,7 +9,8 @@ import EmptyState from '../components/ui/EmptyState.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { clientPortalTabs, demoClientProfile, demoClientProjects, demoClientInvoices, demoClientTickets, demoClientPayments, demoClientFiles, demoClientMeetings, demoClientReports } from '../data/portal.js';
-import { fetchClientProfile, fetchClientProjects, fetchClientInvoices, fetchClientTickets, createTicket, fetchClientPayments, fetchClientMeetings, fetchClientFiles, fetchClientReports } from '../lib/db.js';
+import { fetchClientProfile, fetchClientProjects, fetchClientInvoices, fetchClientTickets, fetchClientPayments, fetchClientMeetings, fetchClientFiles, fetchClientReports } from '../lib/db.js';
+import { apiRequest } from '../api/client.js';
 import { loginToPortal } from '../lib/portalAuth.js';
 
 const CLIENT_PORTAL_ROLES = ['client'];
@@ -241,6 +242,7 @@ function Files({ files }) {
                 <th className="px-stack-lg py-4">Size</th>
                 <th className="px-stack-lg py-4">Uploaded</th>
                 <th className="px-stack-lg py-4">By</th>
+                <th className="px-stack-lg py-4"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -256,6 +258,11 @@ function Files({ files }) {
                   <td className="px-stack-lg py-4 text-body-md text-ink-muted">{f.size}</td>
                   <td className="px-stack-lg py-4 text-body-md text-ink-muted">{f.uploadedOn}</td>
                   <td className="px-stack-lg py-4 text-body-md text-ink-muted">{f.uploadedBy}</td>
+                  <td className="px-stack-lg py-4">
+                    {f.file_url
+                      ? <a href={f.file_url} target="_blank" rel="noreferrer" className="text-brand hover:text-brand-dark"><Icon name="download" className="text-xl" /></a>
+                      : <span className="text-ink-muted/40"><Icon name="download" className="text-xl" /></span>}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -276,7 +283,15 @@ function Meetings({ meetings }) {
               <Icon name="video_call" className="text-brand text-2xl" />
               <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{m.title}</h3>
             </div>
-            <StatusBadge variant={STATUS_VARIANTS[m.status] || 'neutral'}>{m.status}</StatusBadge>
+            <div className="flex items-center gap-3">
+              <StatusBadge variant={STATUS_VARIANTS[m.status] || 'neutral'}>{m.status}</StatusBadge>
+              {m.status === 'upcoming' && m.meeting_link && (
+                <a href={m.meeting_link} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-1 bg-brand text-white px-3 py-1.5 rounded font-label-caps text-label-caps uppercase hover:bg-brand-dark transition-colors">
+                  <Icon name="videocam" className="text-base" /> Join
+                </a>
+              )}
+            </div>
           </div>
           <div className="grid sm:grid-cols-4 gap-4 text-body-sm text-ink-muted">
             <div><span className="font-label-caps text-label-caps block">Date</span>{m.date}</div>
@@ -308,6 +323,7 @@ function Reports({ reports }) {
                 <th className="px-stack-lg py-4">Period</th>
                 <th className="px-stack-lg py-4">Generated</th>
                 <th className="px-stack-lg py-4">Size</th>
+                <th className="px-stack-lg py-4"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -323,6 +339,11 @@ function Reports({ reports }) {
                   <td className="px-stack-lg py-4 text-body-md text-ink-muted">{r.period}</td>
                   <td className="px-stack-lg py-4 text-body-md text-ink-muted">{r.generatedOn}</td>
                   <td className="px-stack-lg py-4 text-body-md text-ink-muted">{r.size}</td>
+                  <td className="px-stack-lg py-4">
+                    {r.file_url
+                      ? <a href={r.file_url} target="_blank" rel="noreferrer" className="text-brand hover:text-brand-dark"><Icon name="download" className="text-xl" /></a>
+                      : <span className="text-ink-muted/40"><Icon name="download" className="text-xl" /></span>}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -436,8 +457,25 @@ export default function ClientPortal() {
 
   const handleNewTicket = async (subject, description) => {
     if (!user) return;
-    const ticket = await createTicket(user.id, subject, description);
-    setTickets((prev) => [ticket, ...prev]);
+    try {
+      if (accessToken) {
+        // Use backend API so support team sees it immediately
+        const res = await apiRequest('/tickets', {
+          method: 'POST',
+          token: accessToken,
+          body: { subject, description: description || subject, priority: 'medium' },
+        });
+        const d = res?.data;
+        setTickets((prev) => [{ id: d.ticket_number, subject: d.subject, status: d.status, priority: d.priority, createdAt: d.created_at?.slice(0, 10) }, ...prev]);
+      } else {
+        // Fallback: Supabase direct
+        const { createTicket: createTicketDirect } = await import('../lib/db.js');
+        const ticket = await createTicketDirect(user.id, subject, description);
+        setTickets((prev) => [ticket, ...prev]);
+      }
+    } catch (err) {
+      console.error('Failed to create ticket:', err);
+    }
   };
 
   if (initializing) return <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container"><LoadingSpinner /></div>;

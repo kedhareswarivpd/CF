@@ -10,8 +10,9 @@ import { employeeTabsForRole, demoEmployeeProfile, demoAttendance, demoLeaves, d
 import {
   fetchEmployeeProfile, fetchEmployeeAttendance, fetchEmployeeLeaves,
   fetchEmployeeTimesheets, fetchEmployeePayslips,
-  checkInEmployee, checkOutEmployee, applyLeave, logTimesheet,
+  checkInEmployee, checkOutEmployee,
 } from '../lib/db.js';
+import { applyLeave as applyLeaveApi, submitTimesheet } from '../api/employees.js';
 import {
   fetchLeads, createLead, updateLead,
   fetchProposals, createProposal, sendProposal, acceptProposal, rejectProposal,
@@ -136,26 +137,55 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
 }
 
 function Attendance({ attendance, employeeId }) {
-  const [checkedIn, setCheckedIn] = useState(Boolean(attendance.checkIn));
-  const [checkedOut, setCheckedOut] = useState(Boolean(attendance.checkOut));
-  const [current, setCurrent] = useState(attendance);
+  const today = new Date().toISOString().slice(0, 10);
+  const isToday = attendance.date === today;
+  const [checkedIn, setCheckedIn] = useState(isToday && Boolean(attendance.checkIn));
+  const [checkedOut, setCheckedOut] = useState(isToday && Boolean(attendance.checkOut));
+  const [current, setCurrent] = useState(
+    isToday ? attendance : { date: today, checkIn: null, checkOut: null, status: 'absent' }
+  );
+  const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState('');
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
+  };
 
   const handleCheckIn = async () => {
+    setLoading(true);
+    const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     try {
       const updated = employeeId ? await checkInEmployee(employeeId) : null;
-      const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      setCurrent((prev) => ({ ...prev, checkIn: updated?.checkIn || now, status: 'present' }));
+      const time = updated?.checkIn || now;
+      setCurrent((prev) => ({ ...prev, checkIn: time, status: 'present' }));
       setCheckedIn(true);
-    } catch { setCheckedIn(true); }
+      showToast(`Checked in at ${time}`);
+    } catch {
+      setCurrent((prev) => ({ ...prev, checkIn: now, status: 'present' }));
+      setCheckedIn(true);
+      showToast(`Checked in at ${now}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCheckOut = async () => {
+    setLoading(true);
+    const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     try {
       const updated = employeeId ? await checkOutEmployee(employeeId) : null;
-      const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      setCurrent((prev) => ({ ...prev, checkOut: updated?.checkOut || now }));
+      const time = updated?.checkOut || now;
+      setCurrent((prev) => ({ ...prev, checkOut: time }));
       setCheckedOut(true);
-    } catch { setCheckedOut(true); }
+      showToast(`Checked out at ${time}`);
+    } catch {
+      setCurrent((prev) => ({ ...prev, checkOut: now }));
+      setCheckedOut(true);
+      showToast(`Checked out at ${now}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -182,23 +212,31 @@ function Attendance({ attendance, employeeId }) {
           </div>
         </div>
         <div className="flex gap-3 justify-center">
-          <Button onClick={handleCheckIn} variant={checkedIn ? 'outline' : 'primary'} size="md" disabled={checkedIn} icon={<Icon name="login" />}>
-            {checkedIn ? 'Checked In' : 'Check In'}
+          <Button onClick={handleCheckIn} variant={checkedIn ? 'outline' : 'primary'} size="md" disabled={checkedIn || loading} icon={<Icon name="login" />}>
+            {loading && !checkedIn ? 'Checking in...' : checkedIn ? 'Checked In ✓' : 'Check In'}
           </Button>
-          <Button onClick={handleCheckOut} variant={checkedOut ? 'outline' : 'primary'} size="md" disabled={checkedOut || !checkedIn} icon={<Icon name="logout" />}>
-            {checkedOut ? 'Checked Out' : 'Check Out'}
+          <Button onClick={handleCheckOut} variant={checkedOut ? 'outline' : 'primary'} size="md" disabled={checkedOut || !checkedIn || loading} icon={<Icon name="logout" />}>
+            {loading && checkedIn && !checkedOut ? 'Checking out...' : checkedOut ? 'Checked Out ✓' : 'Check Out'}
           </Button>
         </div>
+        {toast && (
+          <p className="mt-4 text-center text-body-sm text-green-600 bg-green-50 border border-green-200 rounded-lg py-2 px-4">
+            ✓ {toast}
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-function Leaves({ leaves: initialLeaves, employeeId }) {
+function Leaves({ leaves: initialLeaves, employeeId, accessToken }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ type: 'Annual', from: '', to: '', reason: '' });
   const [allLeaves, setAllLeaves] = useState(initialLeaves);
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState('');
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -206,8 +244,16 @@ function Leaves({ leaves: initialLeaves, employeeId }) {
     setSubmitting(true);
     try {
       let newLeave;
-      if (employeeId) {
-        newLeave = await applyLeave(employeeId, form.type, form.from, form.to, form.reason);
+      if (accessToken) {
+        const res = await applyLeaveApi(accessToken, {
+          type: form.type.toLowerCase(),
+          start_date: form.from,
+          end_date: form.to,
+          reason: form.reason,
+        });
+        const d = res?.data;
+        const days = Math.ceil((new Date(d.end_date) - new Date(d.start_date)) / 86400000) + 1;
+        newLeave = { id: d.id, type: d.type, from: d.start_date, to: d.end_date, status: d.status, days };
       } else {
         const days = Math.ceil((new Date(form.to) - new Date(form.from)) / 86400000) + 1;
         newLeave = { id: `LV-${Date.now()}`, type: form.type, from: form.from, to: form.to, status: 'pending', days };
@@ -215,6 +261,9 @@ function Leaves({ leaves: initialLeaves, employeeId }) {
       setAllLeaves((prev) => [newLeave, ...prev]);
       setForm({ type: 'Annual', from: '', to: '', reason: '' });
       setShowForm(false);
+      showToast('Leave request submitted successfully.');
+    } catch (err) {
+      showToast(err?.message || 'Failed to submit leave request.');
     } finally {
       setSubmitting(false);
     }
@@ -245,6 +294,11 @@ function Leaves({ leaves: initialLeaves, employeeId }) {
           </div>
         </form>
       )}
+      {toast && (
+        <p className={`text-body-sm rounded-lg py-2 px-4 ${
+          toast.includes('success') ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'
+        }`}>{toast}</p>
+      )}
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
         <table className="w-full text-left">
           <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
@@ -267,12 +321,15 @@ function Leaves({ leaves: initialLeaves, employeeId }) {
   );
 }
 
-function Timesheets({ timesheets: initialTimesheets, employeeId }) {
+function Timesheets({ timesheets: initialTimesheets, employeeId, accessToken }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ date: '', project: '', hours: '', description: '' });
   const [allEntries, setAllEntries] = useState(initialTimesheets);
   const [submitting, setSubmitting] = useState(false);
+  const [toast, setToast] = useState('');
   const totalHours = allEntries.reduce((s, e) => s + e.hours, 0);
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -280,14 +337,23 @@ function Timesheets({ timesheets: initialTimesheets, employeeId }) {
     setSubmitting(true);
     try {
       let entry;
-      if (employeeId) {
-        entry = await logTimesheet(employeeId, form.date, form.project, parseFloat(form.hours), form.description);
+      if (accessToken) {
+        const res = await submitTimesheet(accessToken, {
+          date: form.date,
+          hours: parseFloat(form.hours),
+          description: form.description || null,
+        });
+        const d = res?.data;
+        entry = { id: d.id, date: d.date, project: form.project || 'General', hours: Number(d.hours), description: d.description };
       } else {
         entry = { id: `TS-${Date.now()}`, date: form.date, project: form.project || 'General', hours: parseFloat(form.hours), description: form.description };
       }
       setAllEntries((prev) => [entry, ...prev]);
       setForm({ date: '', project: '', hours: '', description: '' });
       setShowForm(false);
+      showToast('Hours logged successfully.');
+    } catch (err) {
+      showToast(err?.message || 'Failed to log hours.');
     } finally {
       setSubmitting(false);
     }
@@ -316,6 +382,11 @@ function Timesheets({ timesheets: initialTimesheets, employeeId }) {
             <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
           </div>
         </form>
+      )}
+      {toast && (
+        <p className={`text-body-sm rounded-lg py-2 px-4 ${
+          toast.includes('success') ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'
+        }`}>{toast}</p>
       )}
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
         <table className="w-full text-left">
@@ -479,7 +550,11 @@ function Documents({ docs }) {
             <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted capitalize">{d.type.replace('_', ' ')} &middot; {d.size}</p>
             <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{d.uploadedOn}</p>
           </div>
-          <button className="text-brand hover:text-brand-dark transition-colors shrink-0" aria-label="Download">
+          <button
+            onClick={() => d.file_url ? window.open(d.file_url, '_blank') : null}
+            disabled={!d.file_url}
+            className={`shrink-0 transition-colors ${d.file_url ? 'text-brand hover:text-brand-dark cursor-pointer' : 'text-ink-muted/30 cursor-not-allowed'}`}
+            aria-label="Download">
             <Icon name="download" className="text-xl" />
           </button>
         </div>
@@ -1335,6 +1410,9 @@ function LeaveApprovals({ accessToken }) {
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState(null);
   const [filter, setFilter] = useState('pending');
+  const [toast, setToast] = useState('');
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const load = () => {
     if (!accessToken) { setLoading(false); return; }
@@ -1346,9 +1424,24 @@ function LeaveApprovals({ accessToken }) {
 
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken, filter]);
 
+  // auto-refresh every 30s so new employee submissions appear
+  useEffect(() => {
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, filter]);
+
   const review = async (id, status) => {
     setActingId(id);
-    try { await reviewLeave(accessToken, id, status); load(); } finally { setActingId(null); }
+    try {
+      await reviewLeave(accessToken, id, status);
+      showToast(`Leave ${status} successfully.`);
+      load();
+    } catch (err) {
+      showToast(err?.message || 'Action failed.');
+    } finally {
+      setActingId(null);
+    }
   };
 
   const LEAVE_STATUS_COLOR = { pending: 'warning', approved: 'success', rejected: 'error', cancelled: 'neutral' };
@@ -1356,16 +1449,28 @@ function LeaveApprovals({ accessToken }) {
   if (loading) return <LoadingSpinner />;
   return (
     <div className="space-y-stack-md">
-      <div className="flex items-center gap-3">
-        <span className="font-label-caps text-label-caps uppercase text-ink-muted">Filter:</span>
-        {['pending', 'approved', 'rejected', 'all'].map((s) => (
-          <button key={s} onClick={() => setFilter(s)}
-            className={`px-3 py-1.5 rounded border font-label-caps text-label-caps uppercase transition-colors ${
-              filter === s ? 'bg-brand text-white border-brand' : 'border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted hover:border-brand hover:text-brand'
-            }`}>{s}
-          </button>
-        ))}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3">
+          <span className="font-label-caps text-label-caps uppercase text-ink-muted">Filter:</span>
+          {['pending', 'approved', 'rejected', 'all'].map((s) => (
+            <button key={s} onClick={() => setFilter(s)}
+              className={`px-3 py-1.5 rounded border font-label-caps text-label-caps uppercase transition-colors ${
+                filter === s ? 'bg-brand text-white border-brand' : 'border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted hover:border-brand hover:text-brand'
+              }`}>{s}
+            </button>
+          ))}
+        </div>
+        <button onClick={load} className="flex items-center gap-1 text-body-sm text-brand hover:text-brand-dark font-label-caps uppercase">
+          <Icon name="refresh" className="text-base" /> Refresh
+        </button>
       </div>
+      {toast && (
+        <p className={`text-body-sm rounded-lg py-2 px-4 ${
+          toast.includes('success') || toast.includes('approved') || toast.includes('rejected')
+            ? 'text-green-600 bg-green-50 border border-green-200'
+            : 'text-red-600 bg-red-50 border border-red-200'
+        }`}>{toast}</p>
+      )}
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
         <table className="w-full text-left">
           <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
@@ -1597,8 +1702,8 @@ export default function EmployeePortal() {
         {activeTab === 'leave-approvals' && <LeaveApprovals accessToken={accessToken} />}
         {activeTab === 'recruitment' && <Recruitment accessToken={accessToken} />}
         {activeTab === 'attendance' && <Attendance attendance={attendance} employeeId={employeeId} />}
-        {activeTab === 'leaves' && <Leaves leaves={leaves} employeeId={employeeId} />}
-        {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} employeeId={employeeId} />}
+        {activeTab === 'leaves' && <Leaves leaves={leaves} employeeId={employeeId} accessToken={accessToken} />}
+        {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} employeeId={employeeId} accessToken={accessToken} />}
         {activeTab === 'payslips' && <Payslips payslips={payslips} />}
         {activeTab === 'tasks' && <Tasks tasks={tasks} />}
         {activeTab === 'projects' && <Projects projects={projects} />}

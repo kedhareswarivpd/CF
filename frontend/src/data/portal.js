@@ -126,7 +126,7 @@ export const demoProposals = [
 
 export const demoContracts = [];
 
-export const demoAttendance = { date: '2026-07-04', checkIn: '09:02 AM', checkOut: '06:15 PM', status: 'present' };
+export const demoAttendance = { date: new Date().toISOString().slice(0, 10), checkIn: null, checkOut: null, status: 'absent' };
 
 export const demoLeaves = [
   { id: 'LV-001', type: 'Annual', from: '2026-08-10', to: '2026-08-14', status: 'approved', days: 5 },

@@ -15,6 +15,7 @@ export default function Register() {
 
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -30,7 +31,13 @@ export default function Register() {
       await register(form.name, form.email, form.password);
       navigate('/client');
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      const msg = err.message || 'Registration failed. Please try again.';
+      // Supabase email-confirmation flow — not an error, show success notice
+      if (msg.toLowerCase().includes('confirm your email') || msg.toLowerCase().includes('check your email')) {
+        setSuccess(msg);
+      } else {
+        setError(msg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -82,6 +89,11 @@ export default function Register() {
           {error && (
             <p className="text-status-error-text text-body-sm flex items-center gap-1">
               <Icon name="error" className="text-base" />{error}
+            </p>
+          )}
+          {success && (
+            <p className="text-green-600 text-body-sm flex items-center gap-1 bg-green-50 rounded p-3">
+              <Icon name="check_circle" className="text-base" />{success}
             </p>
           )}
 
