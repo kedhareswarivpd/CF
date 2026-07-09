@@ -11,7 +11,7 @@ export default function StatsBar({ stats }) {
       ]
     : homeStats;
   return (
-    <section className="bg-surface-white dark:bg-dark-surface border-b border-outline-variant dark:border-dark-outline-variant py-stack-lg px-margin-mobile md:px-margin-desktop">
+    <section className="bg-white border-b border-outline-variant py-stack-lg px-margin-mobile md:px-margin-desktop">
       <div className="max-w-container mx-auto grid grid-cols-2 md:grid-cols-4 gap-stack-lg text-center">
         {items.map((stat, i) => (
           <Reveal key={stat.label} from="zoom" delay={i * 80}>

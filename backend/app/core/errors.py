@@ -28,3 +28,7 @@ class ApiError(Exception):
     @classmethod
     def internal(cls, message: str = "Internal Server Error"):
         return cls(500, message)
+
+    @classmethod
+    def service_unavailable(cls, message: str = "Service Unavailable"):
+        return cls(503, message)

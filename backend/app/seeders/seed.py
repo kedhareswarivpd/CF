@@ -12,6 +12,9 @@ from app.services.supabase_client import get_admin_client
 SUPER_ADMIN_EMAIL = "admin@corefusiontech.com"
 SUPER_ADMIN_PASSWORD = "ChangeMe@123"
 
+EMPLOYEE_EMAIL = "john.doe@corefusiontech.com"
+EMPLOYEE_PASSWORD = "Employee@123"
+
 
 async def seed_super_admin(db):
     existing = (await db.execute(select(User).where(User.email == SUPER_ADMIN_EMAIL))).scalar_one_or_none()
@@ -41,9 +44,39 @@ async def seed_super_admin(db):
     print(f"Super admin created in Supabase + local profile: {SUPER_ADMIN_EMAIL} / {SUPER_ADMIN_PASSWORD}")
 
 
+async def seed_employee(db):
+    existing = (await db.execute(select(User).where(User.email == EMPLOYEE_EMAIL))).scalar_one_or_none()
+    if existing:
+        print("i  Employee already exists")
+        return
+
+    admin_client = get_admin_client()
+    auth_response = admin_client.auth.admin.create_user(
+        {
+            "email": EMPLOYEE_EMAIL,
+            "password": EMPLOYEE_PASSWORD,
+            "email_confirm": True,
+            "user_metadata": {"name": "John Doe"},
+        }
+    )
+
+    employee = User(
+        id=uuid.UUID(auth_response.user.id),
+        name="John Doe",
+        email=EMPLOYEE_EMAIL,
+        role="employee",
+        phone="+91-98765-43210",
+        is_active=True,
+        is_email_verified=True,
+    )
+    db.add(employee)
+    print(f"Employee created: {EMPLOYEE_EMAIL} / {EMPLOYEE_PASSWORD}")
+
+
 async def run():
     async with AsyncSessionLocal() as db:
         await seed_super_admin(db)
+        await seed_employee(db)
 
         departments = [
             "Engineering", "Design", "Sales", "Marketing", "Human Resources",

@@ -6,8 +6,8 @@ function TimelineCard({ entry }) {
   const isPresent = entry.side === 'present';
   return (
     <div
-      className={`p-8 rounded-lg shadow-sm hover:shadow-md transition-all ${
-        isPresent ? 'bg-brand shadow-lg' : 'bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant'
+    className={`p-8 rounded-lg shadow-sm hover:shadow-md transition-all ${
+        isPresent ? 'bg-brand shadow-lg' : 'bg-white'
       }`}
     >
       <span className={`font-stat text-stat-lg block mb-2 ${isPresent ? 'text-white' : 'text-brand'}`}>

@@ -91,11 +91,16 @@ class CRUDBase(Generic[ModelType]):
         return result.scalar_one_or_none()
 
     async def create(self, db: AsyncSession, data: dict[str, Any]) -> ModelType:
-        obj = self.model(**data)
-        db.add(obj)
-        await db.commit()
-        await db.refresh(obj)
-        return obj
+        try:
+            obj = self.model(**data)
+            db.add(obj)
+            await db.commit()
+            await db.refresh(obj)
+            return obj
+        except Exception as e:
+            await db.rollback()
+            logger.exception("Database create failed for %s: %s", self.model.__name__, e)
+            raise ApiError.internal(f"Failed to create {self.model.__name__}: {str(e)}")
 
     _UNSET = object()
 
@@ -109,6 +114,11 @@ class CRUDBase(Generic[ModelType]):
         return obj
 
     async def delete(self, db: AsyncSession, id: uuid.UUID) -> None:
-        obj = await self.get(db, id)
-        await db.delete(obj)
-        await db.commit()
+        try:
+            obj = await self.get(db, id)
+            await db.delete(obj)
+            await db.commit()
+        except Exception as e:
+            await db.rollback()
+            logger.exception("Database delete failed for %s: %s", self.model.__name__, e)
+            raise ApiError.internal(f"Failed to delete {self.model.__name__}: {str(e)}")

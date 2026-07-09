@@ -12,7 +12,6 @@ import { loginToPortal } from '../lib/portalAuth.js';
 import {
   fetchDepartments, createDepartment, deleteDepartment,
   fetchRoles, createRole, deleteRole, fetchPermissions, createPermission, deletePermission,
-  fetchSettings, upsertSetting,
   fetchUsers, exportUserData, anonymizeUser,
   fetchAuditLogs,
 } from '../api/admin.js';
@@ -23,7 +22,6 @@ const superAdminTabs = [
   { id: 'overview', label: 'Overview', icon: 'dashboard' },
   { id: 'departments', label: 'Departments', icon: 'apartment' },
   { id: 'roles', label: 'Roles & Permissions', icon: 'verified_user' },
-  { id: 'settings', label: 'System Settings', icon: 'settings' },
   { id: 'gdpr', label: 'Data Export / GDPR', icon: 'privacy_tip' },
   { id: 'audit', label: 'Audit Logs', icon: 'history' },
   { id: 'billing', label: 'Billing', icon: 'account_balance' },
@@ -143,7 +141,7 @@ function Overview() {
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
         <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
           This company-wide summary plus every screen in Admin Panel is available here. The tabs on the left are exclusive to Super Admin:
-          org structure, the global role/permission matrix, system settings, GDPR tooling, and the full audit trail.
+          org structure, the global role/permission matrix, GDPR tooling, and the full audit trail.
         </p>
       </div>
     </div>
@@ -313,65 +311,6 @@ function RolesPermissions({ accessToken }) {
   );
 }
 
-function SystemSettings({ accessToken }) {
-  const [settings, setSettings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ key: '', value: '', group: 'general' });
-  const [submitting, setSubmitting] = useState(false);
-
-  const load = () => {
-    if (!accessToken) { setLoading(false); return; }
-    setLoading(true);
-    fetchSettings(accessToken).then((r) => setSettings(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
-
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.key) return;
-    setSubmitting(true);
-    try {
-      await upsertSetting(accessToken, form.key, { value: form.value, group: form.group });
-      setForm({ key: '', value: '', group: 'general' });
-      load();
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (loading) return <LoadingSpinner />;
-  return (
-    <div className="space-y-stack-md">
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg space-y-4">
-        <div className="grid sm:grid-cols-3 gap-4">
-          <input required type="text" placeholder="Key (e.g. site.title)" value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} className={FORM_INPUT_CLASS} />
-          <input type="text" placeholder="Value" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} className={FORM_INPUT_CLASS} />
-          <input type="text" placeholder="Group (default: general)" value={form.group} onChange={(e) => setForm({ ...form, group: e.target.value })} className={FORM_INPUT_CLASS} />
-        </div>
-        <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Saving...' : 'Save Setting'}</Button>
-      </form>
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
-            <tr><th className="px-stack-lg py-4">Key</th><th className="px-stack-lg py-4">Value</th><th className="px-stack-lg py-4">Group</th></tr>
-          </thead>
-          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-            {settings.map((s) => (
-              <tr key={s.key} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{s.key}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted break-all">{typeof s.value === 'object' ? JSON.stringify(s.value) : String(s.value)}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.group}</td>
-              </tr>
-            ))}
-            {!settings.length && <tr><td colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No settings configured yet.</td></tr>}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
 function DataExportGdpr({ accessToken }) {
   const [search, setSearch] = useState('');
   const [results, setResults] = useState([]);
@@ -517,7 +456,6 @@ export default function SuperAdminPanel() {
         {activeTab === 'overview' && <Overview />}
         {activeTab === 'departments' && <Departments accessToken={accessToken} />}
         {activeTab === 'roles' && <RolesPermissions accessToken={accessToken} />}
-        {activeTab === 'settings' && <SystemSettings accessToken={accessToken} />}
         {activeTab === 'gdpr' && <DataExportGdpr accessToken={accessToken} />}
         {activeTab === 'audit' && <AuditLogs accessToken={accessToken} />}
         {activeTab === 'billing' && (

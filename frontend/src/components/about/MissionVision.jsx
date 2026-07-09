@@ -2,7 +2,7 @@ import Reveal from '../ui/Reveal.jsx';
 
 export default function MissionVision() {
   return (
-    <section className="py-section-padding px-margin-mobile md:px-margin-desktop max-w-container mx-auto">
+    <section className="py-section-padding px-margin-mobile md:px-margin-desktop max-w-container mx-auto bg-white dark:bg-dark-surface">
       <div className="grid md:grid-cols-2 gap-20 items-center">
         <Reveal from="left" className="space-y-12">
           <div>

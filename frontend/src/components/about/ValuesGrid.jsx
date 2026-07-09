@@ -4,7 +4,7 @@ import Reveal from '../ui/Reveal.jsx';
 
 export default function ValuesGrid() {
   return (
-    <section className="py-section-padding bg-surface-low dark:bg-dark-surface-low">
+    <section className="py-section-padding bg-white dark:bg-dark-surface">
       <div className="px-margin-mobile md:px-margin-desktop max-w-container mx-auto">
         <div className="text-center mb-16">
           <span className="font-label-caps text-label-caps uppercase text-brand tracking-widest">Principles</span>
@@ -19,7 +19,7 @@ export default function ValuesGrid() {
                 className={`${value.span} p-10 rounded-lg relative overflow-hidden group transition-all ${
                   isDark
                     ? 'bg-brand text-white hover:scale-[1.02]'
-                    : 'bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant hover:shadow-card-hover'
+                    : 'bg-white hover:shadow-card-hover'
                 } ${value.title === 'Global Collaboration' ? 'flex flex-col justify-between' : ''}`}
               >
                 <div className="relative z-10">

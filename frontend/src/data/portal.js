@@ -74,7 +74,6 @@ export const adminPanelTabs = [
   { id: 'media',          label: 'Media',         icon: 'perm_media' },
   { id: 'notifications',  label: 'Notifications', icon: 'notifications' },
   { id: 'reports',        label: 'Reports',       icon: 'assessment' },
-  { id: 'settings',       label: 'Settings',      icon: 'settings' },
   { id: 'logs',           label: 'Audit Logs',    icon: 'history' },
 ];
 

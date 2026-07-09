@@ -18,7 +18,6 @@ import {
   fetchMedia, deleteMedia, uploadMedia,
   fetchNotifications, markNotificationRead, markAllNotificationsRead, createNotification,
   fetchReports, generateReport, deleteReport,
-  fetchSettings, upsertSetting,
   fetchAuditLogs,
   fetchEmployees, fetchClients,
   servicesAdmin, solutionsAdmin, caseStudiesAdmin, blogsAdmin, eventsAdmin, downloadsAdmin,
@@ -58,15 +57,15 @@ function LoginGate({ onSuccess }) {
   return (
     <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container flex items-center justify-center px-margin-mobile">
       <div className="w-full max-w-sm bg-white dark:bg-dark-surface rounded-lg shadow-card-hover p-stack-lg">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center">
-            <Icon name="admin_panel_settings" className="text-white text-xl" />
-          </div>
-          <div>
-            <h1 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Admin Panel</h1>
-            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Sign in to access the admin dashboard</p>
-          </div>
-        </div>
+           <div className="flex items-center gap-3 mb-6">
+             <div className="w-10 h-10 rounded-full bg-brand shrink-0 flex items-center justify-center">
+               <Icon name="settings" className="text-white text-[18px] leading-none" />
+             </div>
+             <div>
+               <h1 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Admin Panel</h1>
+               <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Sign in to access the admin dashboard</p>
+             </div>
+           </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-stack-md">
           <label className="flex flex-col gap-1.5">
@@ -1153,132 +1152,6 @@ function ReportsManagement({ accessToken }) {
   );
 }
 
-const SETTING_GROUPS = ['general', 'public'];
-
-function AddSettingForm({ accessToken, onCreated, onCancel }) {
-  const [form, setForm] = useState({ key: '', value: '', group: 'general' });
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSubmitting(true);
-    try {
-      await upsertSetting(accessToken, form.key, { value: form.value, group: form.group });
-      onCreated();
-    } catch (err) {
-      setError(err.message || 'Could not save the setting.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid sm:grid-cols-3 gap-4">
-        <input required type="text" placeholder="Key (e.g. site.title)" value={form.key} onChange={(e) => setForm({ ...form, key: e.target.value })} className={inputClass} />
-        <input required type="text" placeholder="Value" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} className={inputClass} />
-        <select value={form.group} onChange={(e) => setForm({ ...form, group: e.target.value })} className={inputClass}>
-          {SETTING_GROUPS.map((g) => <option key={g} value={g}>{g}</option>)}
-        </select>
-      </div>
-      {error && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{error}</p>}
-      <div className="flex gap-2">
-        <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Saving...' : 'Save Setting'}</Button>
-        <Button type="button" variant="outline" size="md" onClick={onCancel}>Cancel</Button>
-      </div>
-    </form>
-  );
-}
-
-function SettingRow({ accessToken, setting, onSaved }) {
-  const [value, setValue] = useState(setting.value ?? '');
-  const [saving, setSaving] = useState(false);
-  const dirty = value !== (setting.value ?? '');
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      await upsertSetting(accessToken, setting.key, { value, group: setting.group });
-      onSaved();
-    } catch { /* input keeps the edited value on failure */ }
-    finally { setSaving(false); }
-  };
-
-  return (
-    <tr className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
-      <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{setting.key}</td>
-      <td className="px-stack-lg py-4">
-        <input
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="w-full border border-outline-variant dark:border-dark-outline-variant rounded px-3 py-2 text-body-sm dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand"
-        />
-      </td>
-      <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted capitalize">{setting.group}</td>
-      <td className="px-stack-lg py-4 text-right">
-        <button onClick={save} disabled={!dirty || saving} className="text-ink-muted hover:text-brand transition-colors disabled:opacity-40">
-          <Icon name="save" className="text-lg" />
-        </button>
-      </td>
-    </tr>
-  );
-}
-
-function SettingsManagement({ accessToken }) {
-  const [settings, setSettings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-
-  const load = () => {
-    if (!accessToken) { setLoading(false); return; }
-    setLoading(true);
-    fetchSettings(accessToken).then((res) => setSettings(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
-
-  return (
-    <div className="space-y-stack-lg">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-        <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant flex items-center justify-between gap-4">
-          <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Site Settings</h3>
-          <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>
-            {showForm ? 'Close' : 'New Setting'}
-          </Button>
-        </div>
-        {showForm && (
-          <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
-            <AddSettingForm accessToken={accessToken} onCreated={() => { setShowForm(false); load(); }} onCancel={() => setShowForm(false)} />
-          </div>
-        )}
-        {loading ? (
-          <div className="p-stack-lg"><LoadingSpinner /></div>
-        ) : (
-          <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
-              <tr><th className="px-stack-lg py-4">Key</th><th className="px-stack-lg py-4">Value</th><th className="px-stack-lg py-4">Group</th><th className="px-stack-lg py-4"></th></tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-              {settings.map((s) => (
-                <SettingRow key={s.key} accessToken={accessToken} setting={s} onSaved={load} />
-              ))}
-              {!settings.length && (
-                <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No settings configured yet.</td></tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function AuditLogsManagement({ accessToken }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1410,7 +1283,6 @@ export default function AdminPanel() {
         {activeTab === 'media' && <MediaManagement accessToken={accessToken} />}
         {activeTab === 'notifications' && <NotificationsManagement accessToken={accessToken} />}
         {activeTab === 'reports' && <ReportsManagement accessToken={accessToken} />}
-        {activeTab === 'settings' && <SettingsManagement accessToken={accessToken} />}
         {activeTab === 'logs' && <AuditLogsManagement accessToken={accessToken} />}
       </div>
     </div>

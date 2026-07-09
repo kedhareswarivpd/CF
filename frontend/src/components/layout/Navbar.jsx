@@ -18,8 +18,7 @@ const NAV_LINKS = [
 const PORTALS = [
   { label: 'Client Portal', to: '/client', icon: 'person' },
   { label: 'Employee Portal', to: '/employee', icon: 'badge' },
-  { label: 'Partner Portal', to: '/partner', icon: 'handshake' },
-  { label: 'Admin Panel', to: '/admin', icon: 'admin_panel_settings' },
+  { label: 'Admin Panel', to: '/admin', icon: 'settings' },
 ];
 
 function PortalsDropdown() {
@@ -45,7 +44,20 @@ function PortalsDropdown() {
       </button>
       {open && (
         <div className="absolute top-full left-0 mt-3 w-52 bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg shadow-card-hover py-2 z-50">
-          {PORTALS.map((p) => (
+          {PORTALS.filter((p) => p.to !== '/admin').map((p) => (
+            <Link
+              key={p.to}
+              to={p.to}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 px-4 py-2.5 text-body-sm text-ink-muted dark:text-dark-ink-muted hover:bg-surface-low dark:hover:bg-dark-surface-low hover:text-brand dark:hover:text-dark-brand transition-colors"
+            >
+              <Icon name={p.icon} className="text-brand text-base" />
+              {p.label}
+            </Link>
+          ))}
+          <div className="mx-3 my-1.5 border-t border-outline-variant dark:border-dark-outline-variant" />
+          <p className="px-4 pt-1 pb-0.5 text-xs font-semibold uppercase tracking-wider text-ink-disabled dark:text-dark-ink-disabled">Admin</p>
+          {PORTALS.filter((p) => p.to === '/admin').map((p) => (
             <Link
               key={p.to}
               to={p.to}
@@ -97,7 +109,7 @@ export default function Navbar() {
         scrolled ? 'bg-white shadow-sm h-16' : 'bg-white h-20'
       }`}
     >
-      <div className="max-w-container mx-auto h-full px-margin-mobile md:px-margin-desktop flex items-center justify-between">
+      <div className="w-full h-full px-margin-mobile md:px-margin-desktop flex items-center justify-between">
         <div className="flex items-center gap-8 md:gap-12">
           <Link to="/" className="flex items-center shrink-0 gap-2">
 <div className="h-10 w-10 md:h-11 md:w-11 rounded-full overflow-hidden shrink-0 border-2 border-brand/20">
@@ -162,7 +174,6 @@ export default function Navbar() {
               {link.label}
             </NavLink>
           ))}
-          <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted pt-2 border-t border-outline-variant">Portals</p>
           {PORTALS.map((p) => (
             <Link key={p.to} to={p.to} onClick={() => setMobileOpen(false)} className="flex items-center gap-2 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted hover:text-brand transition-colors">
               <Icon name={p.icon} className="text-brand text-base" />

@@ -40,7 +40,7 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
                 "user_metadata": {"name": payload.name, "role": "client"},
             },
         )
-    except Exception as exc:  # noqa: BLE001 — surface Supabase's own error message
+    except Exception as exc:  # noqa: BLE001
         raise ApiError.bad_request(f"Could not create account: {exc}") from exc
 
     supabase_user_id = uuid.UUID(auth_response.user.id)
@@ -74,12 +74,11 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     if session is None:
         raise ApiError.unauthorized("Invalid email or password")
 
-    claims = decode_supabase_token(session.access_token)
+    claims = await decode_supabase_token(session.access_token)
     user_id = uuid.UUID(claims["sub"])
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
 
     if user is None:
-        # First login for an account that exists in Supabase but has no profile row yet
         metadata = claims.get("user_metadata") or {}
         user = User(id=user_id, email=payload.email, name=metadata.get("name") or payload.email, role="client", is_active=True)
         db.add(user)
@@ -119,10 +118,10 @@ async def refresh_token_endpoint(payload: RefreshRequest):
 
 @router.post("/logout", response_model=dict)
 async def logout(payload: LogoutRequest):
-    admin = get_admin_client()
     try:
+        admin = get_admin_client()
         await run_in_threadpool(admin.auth.admin.sign_out, payload.access_token)
-    except Exception:  # noqa: BLE001 — logout is best-effort; an already-expired token shouldn't error the caller
+    except Exception:  # noqa: BLE001 — logout is best-effort
         pass
     return success_response(message="Logged out successfully")
 
@@ -138,7 +137,7 @@ async def forgot_password(payload: ForgotPasswordRequest):
     options = {"redirect_to": payload.redirect_to} if payload.redirect_to else {}
     try:
         await run_in_threadpool(anon.auth.reset_password_for_email, payload.email, options)
-    except Exception:  # noqa: BLE001 — don't reveal whether the email exists
+    except Exception:  # noqa: BLE001
         pass
     return success_response(message="If the email exists, a password reset link has been sent")
 
@@ -146,7 +145,7 @@ async def forgot_password(payload: ForgotPasswordRequest):
 @router.post("/reset-password", response_model=dict)
 async def reset_password(payload: ResetPasswordRequest):
     try:
-        claims = decode_supabase_token(payload.recovery_token)
+        claims = await decode_supabase_token(payload.recovery_token)
     except ValueError as exc:
         raise ApiError.bad_request("Password reset token is invalid or has expired") from exc
 

@@ -38,7 +38,7 @@ export const timeline = [
     year: '2020',
     title: 'Inception',
     description:
-      'CoreFusion Technologies was founded in Bangalore with a mission to bridge the gap between complex engineering and business value.',
+      'Engineered for scale, security, and velocity. We bridge the gap between complex enterprise needs and cutting-edge digital implementation.',
     side: 'left',
   },
   {

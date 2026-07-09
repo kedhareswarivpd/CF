@@ -24,7 +24,6 @@ import Cookies from './pages/Cookies.jsx';
 import ClientPortal from './pages/ClientPortal.jsx';
 import EmployeePortal from './pages/EmployeePortal.jsx';
 import CookieConsent from './components/ui/CookieConsent.jsx';
-import PartnerPortal from './pages/PartnerPortal.jsx';
 import AdminPanel from './pages/AdminPanel.jsx';
 import SuperAdminPanel from './pages/SuperAdminPanel.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -60,7 +59,6 @@ export default function App() {
           <Route path="cookies" element={<Cookies />} />
           <Route path="client" element={<ClientPortal />} />
           <Route path="employee" element={<EmployeePortal />} />
-          <Route path="partner" element={<PartnerPortal />} />
           <Route path="admin" element={<AdminPanel />} />
           <Route path="super-admin" element={<SuperAdminPanel />} />
           <Route path="register" element={<Register />} />

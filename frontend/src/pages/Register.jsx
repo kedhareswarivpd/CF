@@ -8,17 +8,12 @@ import Icon from '../components/ui/Icon.jsx';
 // carry internal RBAC permissions and must be provisioned by an authenticated
 // Admin/HR user via the "Add User" flow in the Admin Panel, not self-selected here.
 // (Partner is a separate external account type, unaffected by that restriction.)
-const ROLE_REDIRECT = {
-  Client: '/client',
-  Partner: '/partner',
-};
-
 export default function Register() {
   useDocumentTitle('Register | CoreFusion Technologies');
   const navigate = useNavigate();
   const { register } = useAuth();
 
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', role: 'Client' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' });
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -30,11 +25,10 @@ export default function Register() {
     setError('');
     if (form.password !== form.confirm) { setError('Passwords do not match.'); return; }
     if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
-    if (!form.role) { setError('Please select a role.'); return; }
     setSubmitting(true);
     try {
-      await register(form.name, form.email, form.password, form.role.toLowerCase());
-      navigate(ROLE_REDIRECT[form.role] ?? '/client');
+      await register(form.name, form.email, form.password);
+      navigate('/client');
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -74,22 +68,11 @@ export default function Register() {
             </div>
           </label>
 
-          <label className="flex flex-col gap-1.5">
-            <span className="font-label-caps text-label-caps uppercase text-ink-muted">Account Type</span>
-            <select
-              name="role"
-              value={form.role}
-              onChange={handleChange}
-              required
-              className={inputClass}
-            >
-              <option value="Client">Client</option>
-              <option value="Partner">Partner</option>
-            </select>
-            <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
-              Looking for an Employee or Admin account? Ask your Admin/HR team to create one for you.
-            </span>
-          </label>
+          <div className="rounded-lg bg-surface-container dark:bg-dark-surface-container p-stack-md">
+            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
+              Self-serve registration creates a Client account. Employee, Admin, and Partner accounts must be provisioned by your Admin/HR team.
+            </p>
+          </div>
 
           <label className="flex flex-col gap-1.5">
             <span className="font-label-caps text-label-caps uppercase text-ink-muted">Confirm Password</span>

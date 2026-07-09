@@ -28,6 +28,7 @@ async def async_client(test_app):
         yield client
 
 
+
 @pytest.fixture(scope="session")
 def event_loop():
     loop = asyncio.new_event_loop()

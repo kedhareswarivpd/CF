@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
+import { login as loginApi, register as registerApi, logout as logoutApi } from '../api/auth.js';
 
 const AuthContext = createContext(null);
 
@@ -20,27 +21,41 @@ export function AuthProvider({ children }) {
       setUser(s?.user ?? null);
     });
 
-    return () => subscription.unsubscribe();
+    return () => subscription?.unsubscribe();
   }, []);
 
-  const register = async (name, email, password, role) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name, role } },
-    });
+  const register = async (name, email, password) => {
+    await registerApi(name, email, password);
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error(error.message);
-    if (data.user?.identities?.length === 0) throw new Error('An account with this email already exists.');
+    if (!data.session) throw new Error('Registration succeeded but sign-in failed.');
     return data;
   };
 
   const login = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const response = await loginApi(email, password);
+    const tokenData = response?.data;
+    if (!tokenData?.access_token || !tokenData?.refresh_token) {
+      throw new Error('Login failed. Please try again.');
+    }
+
+    const { data: sessionData, error } = await supabase.auth.setSession({
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+    });
+
     if (error) throw new Error(error.message);
-    return data.user;
+    if (!sessionData.session) throw new Error('Login failed to initialize session.');
+
+    return tokenData.user;
   };
 
   const logout = async () => {
+    const accessToken = session?.access_token ?? null;
+    if (accessToken) {
+      await logoutApi(accessToken);
+    }
     await supabase.auth.signOut();
   };
 
