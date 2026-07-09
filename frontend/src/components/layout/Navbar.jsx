@@ -36,7 +36,7 @@ function PortalsDropdown() {
       <button
         onClick={() => setOpen((o) => !o)}
         className={`flex items-center gap-1 font-label-caps text-label-caps uppercase pb-1 border-b-2 transition-colors duration-200 ${
-          open ? 'text-brand border-brand' : 'text-ink-muted dark:text-dark-ink-muted border-transparent hover:text-brand dark:hover:text-dark-brand'
+          open ? 'text-brand border-brand' : 'text-ink-muted dark:text-white border-transparent hover:text-brand dark:hover:text-dark-brand'
         }`}
       >
         Portals
@@ -106,8 +106,8 @@ export default function Navbar() {
   return (
     <header
       className={`fixed top-0 w-full z-50 border-b border-outline-variant transition-all duration-300 ${
-        scrolled ? 'bg-white shadow-sm h-16' : 'bg-white h-20'
-      }`}
+        scrolled ? 'bg-white dark:bg-dark-surface shadow-sm h-16' : 'bg-white dark:bg-dark-surface h-20'
+      `}
     >
       <div className="w-full h-full px-margin-mobile md:px-margin-desktop flex items-center justify-between">
         <div className="flex items-center gap-8 md:gap-12">
@@ -132,7 +132,7 @@ export default function Navbar() {
                   `font-label-caps text-label-caps uppercase pb-1 border-b-2 transition-colors duration-200 ${
                     isActive
                       ? 'text-brand dark:text-dark-brand border-brand dark:border-dark-brand'
-                      : 'text-ink-muted dark:text-dark-ink-muted border-transparent hover:text-brand dark:hover:text-dark-brand'
+                      : 'text-ink-muted dark:text-white border-transparent hover:text-brand dark:hover:text-dark-brand'
                   }`
                 }
               >
@@ -168,14 +168,14 @@ export default function Navbar() {
               to={link.to}
               onClick={() => setMobileOpen(false)}
               className={({ isActive }) =>
-                `font-label-caps text-label-caps uppercase ${isActive ? 'text-brand dark:text-dark-brand' : 'text-ink-muted dark:text-dark-ink-muted'}`
+                `font-label-caps text-label-caps uppercase ${isActive ? 'text-brand dark:text-dark-brand' : 'text-ink-muted dark:text-white'}`
               }
             >
               {link.label}
             </NavLink>
           ))}
           {PORTALS.map((p) => (
-            <Link key={p.to} to={p.to} onClick={() => setMobileOpen(false)} className="flex items-center gap-2 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted hover:text-brand transition-colors">
+            <Link key={p.to} to={p.to} onClick={() => setMobileOpen(false)} className="flex items-center gap-2 font-label-caps text-label-caps uppercase text-ink-muted dark:text-white hover:text-brand transition-colors">
               <Icon name={p.icon} className="text-brand text-base" />
               {p.label}
             </Link>
