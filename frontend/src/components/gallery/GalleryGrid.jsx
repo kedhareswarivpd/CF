@@ -93,10 +93,19 @@ export default function GalleryGrid({ albums }) {
                     onClick={() => setLightbox({ ...img, index: i })}
                     className="w-full aspect-video bg-surface-container dark:bg-dark-surface-container rounded-lg border border-outline-variant dark:border-dark-outline-variant flex items-center justify-center hover:border-brand transition-colors group relative overflow-hidden"
                   >
-                    <div className="flex flex-col items-center gap-2 text-ink-muted dark:text-dark-ink-muted group-hover:text-brand dark:group-hover:text-dark-brand transition-colors">
-                      <Icon name="image" className="text-4xl" />
-                      <span className="text-body-sm px-2 text-center">{img.caption}</span>
-                    </div>
+                    {img.src ? (
+                      <>
+                        <img src={img.src} alt={img.alt} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-brand-dark/0 group-hover:bg-brand-dark/30 transition-all flex items-end">
+                          <span className="w-full text-white text-body-sm px-3 py-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity text-left">{img.caption}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-ink-muted dark:text-dark-ink-muted group-hover:text-brand dark:group-hover:text-dark-brand transition-colors">
+                        <Icon name="image" className="text-4xl" />
+                        <span className="text-body-sm px-2 text-center">{img.caption}</span>
+                      </div>
+                    )}
                   </button>
                 </Reveal>
               ))}
@@ -126,9 +135,11 @@ export default function GalleryGrid({ albums }) {
             </div>
             <div
               tabIndex={0}
-              className="aspect-video bg-surface-container dark:bg-dark-surface-container rounded-lg flex items-center justify-center"
+              className="aspect-video bg-surface-container dark:bg-dark-surface-container rounded-lg overflow-hidden flex items-center justify-center"
             >
-              <Icon name="image" className="text-6xl text-ink-muted/40" />
+              {lightbox.src
+                ? <img src={lightbox.src} alt={lightbox.alt} className="w-full h-full object-cover" />
+                : <Icon name="image" className="text-6xl text-ink-muted/40" />}
             </div>
             <div className="flex justify-between mt-4">
               <button

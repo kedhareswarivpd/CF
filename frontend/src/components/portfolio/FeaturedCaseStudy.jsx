@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { featuredCaseStudy } from '../../data/projects.js';
 import Icon from '../ui/Icon.jsx';
 
@@ -32,10 +33,13 @@ export default function FeaturedCaseStudy() {
                 </div>
               ))}
             </div>
-            <button className="flex items-center gap-2 font-label-caps text-label-caps uppercase text-brand hover:text-brand-dark transition-all group w-fit">
+            <Link
+              to={`/portfolio/success/${cs.slug}`}
+              className="flex items-center gap-2 font-label-caps text-label-caps uppercase text-brand hover:text-brand-dark transition-all group w-fit"
+            >
               Read Full Success Story
               <Icon name="arrow_forward" className="group-hover:translate-x-1 transition-transform" />
-            </button>
+            </Link>
           </div>
         </div>
       </div>

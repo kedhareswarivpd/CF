@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { projects as fallbackProjects } from '../../data/projects.js';
 import { fetchProjects } from '../../api/projects.js';
 import { adaptProject } from '../../api/adapters.js';
@@ -6,7 +6,11 @@ import useApiResource from '../../hooks/useApiResource.js';
 import ProjectCard from './ProjectCard.jsx';
 import Reveal from '../ui/Reveal.jsx';
 
+const PAGE_SIZE = 6;
+
 export default function ProjectGallery({ industry }) {
+  const [visible, setVisible] = useState(PAGE_SIZE);
+
   const fetchFn = useCallback(() => fetchProjects({ industry }), [industry]);
 
   const fallback =
@@ -15,6 +19,11 @@ export default function ProjectGallery({ industry }) {
       : fallbackProjects;
 
   const { items: projects, loading, isFallback } = useApiResource(fetchFn, adaptProject, fallback, [industry]);
+
+  useEffect(() => { setVisible(PAGE_SIZE); }, [industry]);
+
+  const visibleProjects = projects.slice(0, visible);
+  const remaining = projects.length - visible;
 
   return (
     <section className="pb-stack-xl px-margin-mobile md:px-margin-desktop">
@@ -30,20 +39,25 @@ export default function ProjectGallery({ industry }) {
           <p className="text-center text-ink-muted py-16">No projects match this filter yet — check back soon.</p>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {projects.map((project, i) => (
+            {visibleProjects.map((project, i) => (
               <Reveal key={project.slug || project.title} from="zoom" delay={i * 80}>
                 <ProjectCard project={project} />
               </Reveal>
             ))}
           </div>
         )}
-        <div className="mt-12 text-center">
-          <Reveal from="up">
-            <button className="border-2 border-brand text-brand px-8 py-3 rounded-full font-label-caps text-label-caps uppercase hover:bg-brand hover:text-white transition-all active:scale-95">
-              View More Projects (427 Remaining)
-            </button>
-          </Reveal>
-        </div>
+        {remaining > 0 && (
+          <div className="mt-12 text-center">
+            <Reveal from="up">
+              <button
+                onClick={() => setVisible((v) => v + PAGE_SIZE)}
+                className="border-2 border-brand text-brand px-8 py-3 rounded-full font-label-caps text-label-caps uppercase hover:bg-brand hover:text-white transition-all active:scale-95"
+              >
+                View More Projects ({remaining} Remaining)
+              </button>
+            </Reveal>
+          </div>
+        )}
       </div>
     </section>
   );
