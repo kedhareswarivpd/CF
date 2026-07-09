@@ -61,7 +61,7 @@ export default function ResourcesGrid({ resources, typeFilters }) {
                 </div>
                 <div className="flex flex-wrap gap-2 mt-4">
                   {r.topics.map((t) => (
-                    <StatusBadge key={t} variant="neutral">{t}</StatusBadge>
+                    <StatusBadge key={t} variant="neutral" className="dark:!text-black">{t}</StatusBadge>
                   ))}
                 </div>
               </div>

@@ -40,7 +40,7 @@ export default function GlobalPresence() {
   }
 
   return (
-    <section className="py-section-padding bg-brand text-white relative overflow-hidden">
+    <section id="global-offices" className="py-section-padding bg-brand text-white relative overflow-hidden">
       <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/5 blur-3xl animate-float-slow pointer-events-none" />
       <div className="relative z-10 px-margin-mobile md:px-margin-desktop max-w-container mx-auto">
         <div className="grid lg:grid-cols-2 gap-20 items-center">

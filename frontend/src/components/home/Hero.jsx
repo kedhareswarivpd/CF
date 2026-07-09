@@ -36,7 +36,7 @@ return (
             Transforming Businesses Through <span className="text-accent-cyan">Intelligent</span> Digital
             Solutions
           </h1>
-          <p className="font-body text-body-lg text-surface-dim max-w-xl animate-hero-3">
+          <p className="font-body text-body-lg text-white max-w-xl animate-hero-3">
             Empowering global enterprises with high-performance architectures, AI-driven automation, and
             secure-by-design digital infrastructure.
           </p>

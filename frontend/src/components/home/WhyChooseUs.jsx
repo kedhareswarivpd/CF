@@ -20,7 +20,7 @@ export default function WhyChooseUs() {
               <Icon name={item.icon} className="text-brand text-3xl leading-none" />
             </div>
             <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-2">{item.title}</h3>
-            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{item.description}</p>
+            <p className="text-body-sm text-black dark:text-black">{item.description}</p>
           </Reveal>
         ))}
       </div>

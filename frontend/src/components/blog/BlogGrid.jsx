@@ -24,7 +24,7 @@ export default function BlogGrid({ posts, categories }) {
               className={`px-4 py-2 rounded-full font-label-caps text-label-caps uppercase transition-all ${
                 activeCategory === cat
                   ? 'bg-brand text-white'
-                  : 'bg-surface-container dark:bg-dark-surface-container text-ink-muted dark:text-dark-ink-muted hover:bg-outline-variant dark:hover:bg-dark-outline-variant'
+                  : 'bg-brand-dark dark:bg-dark-surface-container text-white dark:text-white hover:bg-brand dark:hover:bg-dark-outline-variant'
               }`}
             >
               {cat}

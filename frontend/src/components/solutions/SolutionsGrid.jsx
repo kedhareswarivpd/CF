@@ -17,11 +17,11 @@ export default function SolutionsGrid({ solutions }) {
                 <div className="w-12 h-12 rounded-lg bg-accent-cyan-pale flex items-center justify-center mb-4">
                   <Icon name={s.icon} className="text-brand text-2xl" />
                 </div>
-                <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-3">{s.title}</h3>
-                <p className="text-body-md text-ink-muted dark:text-dark-ink-muted mb-4 flex-1">{s.description}</p>
+                <h3 className="font-display text-headline-sm text-black dark:text-white mb-3">{s.title}</h3>
+                <p className="text-body-md text-black dark:text-white mb-4 flex-1">{s.description}</p>
                 <ul className="space-y-2 mb-4">
                   {s.capabilities.slice(0, 4).map((cap) => (
-                    <li key={cap} className="flex items-start gap-2 text-body-sm text-ink-muted">
+                    <li key={cap} className="flex items-start gap-2 text-body-sm text-black dark:text-white">
                       <Icon name="check_circle" className="text-brand text-lg flex-shrink-0 mt-0.5" />
                       <span>{cap}</span>
                     </li>
@@ -29,7 +29,7 @@ export default function SolutionsGrid({ solutions }) {
                 </ul>
                 <div className="flex flex-wrap gap-2 pt-4 border-t border-outline-variant">
                   {s.industries.map((ind) => (
-                    <StatusBadge key={ind} variant="neutral">{ind}</StatusBadge>
+                    <StatusBadge key={ind} variant="neutral" className="!text-black">{ind}</StatusBadge>
                   ))}
                 </div>
               </div>

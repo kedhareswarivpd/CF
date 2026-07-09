@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import AboutHero from '../components/about/AboutHero.jsx';
 import MissionVision from '../components/about/MissionVision.jsx';
+import ImpactStats from '../components/about/ImpactStats.jsx';
 import ValuesGrid from '../components/about/ValuesGrid.jsx';
 import Timeline from '../components/about/Timeline.jsx';
 import LeadershipGrid from '../components/about/LeadershipGrid.jsx';
@@ -22,6 +23,7 @@ export default function About() {
   return (
     <>
       <AboutHero stats={stats} />
+      <ImpactStats />
       <MissionVision />
       <ValuesGrid />
       <Timeline />

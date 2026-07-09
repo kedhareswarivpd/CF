@@ -26,10 +26,16 @@ export default function AboutHero({ stats }) {
             transformation through precise technical excellence and strategic innovation.
           </p>
           <div className="flex gap-4 animate-hero-4">
-            <button className="bg-brand text-white h-11 px-8 rounded font-label-caps text-label-caps uppercase flex items-center hover:opacity-90 transition-colors">
+            <button
+              onClick={() => document.getElementById('our-impact')?.scrollIntoView({ behavior: 'smooth' })}
+              className="bg-brand text-white h-11 px-8 rounded font-label-caps text-label-caps uppercase flex items-center hover:opacity-90 transition-colors"
+            >
               Our Impact
             </button>
-            <button className="border border-brand text-brand h-11 px-8 rounded font-label-caps text-label-caps uppercase flex items-center hover:bg-brand hover:text-white transition-colors">
+            <button
+              onClick={() => document.getElementById('global-offices')?.scrollIntoView({ behavior: 'smooth' })}
+              className="border border-brand text-brand h-11 px-8 rounded font-label-caps text-label-caps uppercase flex items-center hover:bg-brand hover:text-white transition-colors"
+            >
               View Global Offices
             </button>
           </div>
