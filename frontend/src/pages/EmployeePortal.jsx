@@ -1334,45 +1334,84 @@ function LeaveApprovals({ accessToken }) {
   const [leaves, setLeaves] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState(null);
+  const [filter, setFilter] = useState('pending');
 
   const load = () => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
-    fetchLeaves(accessToken, { status: 'pending', limit: 100 }).then((r) => setLeaves(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
+    const params = { limit: 100 };
+    if (filter !== 'all') params.status = filter;
+    fetchLeaves(accessToken, params).then((r) => setLeaves(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken]);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken, filter]);
 
   const review = async (id, status) => {
     setActingId(id);
     try { await reviewLeave(accessToken, id, status); load(); } finally { setActingId(null); }
   };
 
+  const LEAVE_STATUS_COLOR = { pending: 'warning', approved: 'success', rejected: 'error', cancelled: 'neutral' };
+
   if (loading) return <LoadingSpinner />;
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
-      <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
-          <tr><th className="px-stack-lg py-4">Type</th><th className="px-stack-lg py-4">From</th><th className="px-stack-lg py-4">To</th><th className="px-stack-lg py-4">Reason</th><th className="px-stack-lg py-4">Actions</th></tr>
-        </thead>
-        <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-          {leaves.map((l) => (
-            <tr key={l.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
-              <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand capitalize">{l.type}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.start_date}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.end_date}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.reason || '—'}</td>
-              <td className="px-stack-lg py-4">
-                <div className="flex gap-2">
-                  <RowAction disabled={actingId === l.id} onClick={() => review(l.id, 'approved')}>Approve</RowAction>
-                  <RowAction variant="outline" disabled={actingId === l.id} onClick={() => review(l.id, 'rejected')}>Reject</RowAction>
-                </div>
-              </td>
+    <div className="space-y-stack-md">
+      <div className="flex items-center gap-3">
+        <span className="font-label-caps text-label-caps uppercase text-ink-muted">Filter:</span>
+        {['pending', 'approved', 'rejected', 'all'].map((s) => (
+          <button key={s} onClick={() => setFilter(s)}
+            className={`px-3 py-1.5 rounded border font-label-caps text-label-caps uppercase transition-colors ${
+              filter === s ? 'bg-brand text-white border-brand' : 'border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted hover:border-brand hover:text-brand'
+            }`}>{s}
+          </button>
+        ))}
+      </div>
+      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
+        <table className="w-full text-left">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+            <tr>
+              <th className="px-stack-lg py-4">Employee</th>
+              <th className="px-stack-lg py-4">Type</th>
+              <th className="px-stack-lg py-4">From</th>
+              <th className="px-stack-lg py-4">To</th>
+              <th className="px-stack-lg py-4">Days</th>
+              <th className="px-stack-lg py-4">Reason</th>
+              <th className="px-stack-lg py-4">Status</th>
+              <th className="px-stack-lg py-4">Actions</th>
             </tr>
-          ))}
-          {!leaves.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No leave requests pending approval.</td></tr>}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+            {leaves.map((l) => {
+              const days = l.start_date && l.end_date
+                ? Math.ceil((new Date(l.end_date) - new Date(l.start_date)) / 86400000) + 1
+                : '—';
+              return (
+                <tr key={l.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+                  <td className="px-stack-lg py-4">
+                    <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{l.employee_code || '—'}</p>
+                    {l.designation && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.designation}</p>}
+                  </td>
+                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand capitalize">{l.type}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.start_date}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.end_date}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{days}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.reason || '—'}</td>
+                  <td className="px-stack-lg py-4"><StatusBadge variant={LEAVE_STATUS_COLOR[l.status]}>{l.status}</StatusBadge></td>
+                  <td className="px-stack-lg py-4">
+                    {l.status === 'pending' && (
+                      <div className="flex gap-2">
+                        <RowAction disabled={actingId === l.id} onClick={() => review(l.id, 'approved')}>Approve</RowAction>
+                        <RowAction variant="outline" disabled={actingId === l.id} onClick={() => review(l.id, 'rejected')}>Reject</RowAction>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+            {!leaves.length && <tr><td colSpan={8} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No leave requests found.</td></tr>}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

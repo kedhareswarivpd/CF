@@ -124,51 +124,41 @@ async def my_performance_reviews(db: AsyncSession = Depends(get_db), current_use
     return success_response(data=[PerformanceReviewOut.model_validate(r) for r in result.scalars().all()])
 
 
-# ---------- HR / Admin management ----------
-@router.get("", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
-async def list_employees(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params)):
-    filters = {k: request.query_params.get(k) for k in ("department_id", "status", "employment_type") if request.query_params.get(k)}
-    items, total = await crud.list(db, page, filters)
-    meta = build_pagination_meta(total, page.page, page.limit)
-    return success_response(data=[EmployeeOut.model_validate(e) for e in items], message="Employees fetched", meta=meta)
-
-
-@router.get("/{employee_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
-async def get_employee(employee_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    employee = await crud.get(db, employee_id)
-    return success_response(data=EmployeeOut.model_validate(employee))
-
-
-@router.post("", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr"))])
-async def create_employee(payload: EmployeeCreate, db: AsyncSession = Depends(get_db)):
-    employee = await crud.create(db, payload.model_dump())
-    return success_response(data=EmployeeOut.model_validate(employee), message="Employee created successfully", status_code=201)
-
-
-@router.put("/{employee_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "hr"))])
-async def update_employee(employee_id: uuid.UUID, payload: EmployeeUpdate, db: AsyncSession = Depends(get_db)):
-    employee = await crud.update(db, employee_id, payload.model_dump(exclude_unset=True))
-    return success_response(data=EmployeeOut.model_validate(employee), message="Employee updated successfully")
-
-
-@router.delete("/{employee_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "hr"))])
-async def delete_employee(employee_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    await crud.delete(db, employee_id)
-    return success_response(message="Employee removed successfully")
-
-
 # ---------- Leave & timesheet approval (HR reviews all; PM reviews their team's) ----------
+# NOTE: These static routes MUST be registered before /{employee_id} to avoid
+# FastAPI matching the literal string "leaves"/"timesheets" as a UUID path param.
 @router.get("/leaves", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
 async def list_leaves(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params)):
-    filters = {k: request.query_params.get(k) for k in ("employee_id", "status") if request.query_params.get(k)}
-    items, total = await leave_crud.list(db, page, filters)
+    status_filter = request.query_params.get("status")
+    employee_id_filter = request.query_params.get("employee_id")
+    stmt = select(Leave).options(selectinload(Leave.employee))
+    if status_filter:
+        stmt = stmt.where(Leave.status == status_filter)
+    if employee_id_filter:
+        stmt = stmt.where(Leave.employee_id == employee_id_filter)
+    stmt = stmt.order_by(Leave.id.desc()).offset((page.page - 1) * page.limit).limit(page.limit)
+    result = await db.execute(stmt)
+    items = result.scalars().all()
+    count_stmt = select(Leave)
+    if status_filter:
+        count_stmt = count_stmt.where(Leave.status == status_filter)
+    if employee_id_filter:
+        count_stmt = count_stmt.where(Leave.employee_id == employee_id_filter)
+    total = len((await db.execute(count_stmt)).scalars().all())
     meta = build_pagination_meta(total, page.page, page.limit)
-    return success_response(data=[LeaveOut.model_validate(l) for l in items], message="Leave requests fetched", meta=meta)
+    data = []
+    for l in items:
+        out = LeaveOut.model_validate(l)
+        out_dict = out.model_dump()
+        out_dict["employee_code"] = l.employee.employee_code if l.employee else None
+        out_dict["designation"] = l.employee.designation if l.employee else None
+        data.append(out_dict)
+    return success_response(data=data, message="Leave requests fetched", meta=meta)
 
 
 @router.patch("/leaves/{leave_id}/approve", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
-async def review_leave(leave_id: uuid.UUID, payload: LeaveStatusUpdate, db: AsyncSession = Depends(get_db)):
-    leave = await leave_crud.update(db, leave_id, {"status": payload.status})
+async def review_leave(leave_id: uuid.UUID, payload: LeaveStatusUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    leave = await leave_crud.update(db, leave_id, {"status": payload.status, "approved_by": current_user.id})
     return success_response(data=LeaveOut.model_validate(leave), message="Leave request updated")
 
 
@@ -184,6 +174,39 @@ async def list_all_timesheets(request: Request, db: AsyncSession = Depends(get_d
 async def review_timesheet(timesheet_id: uuid.UUID, payload: TimesheetStatusUpdate, db: AsyncSession = Depends(get_db)):
     timesheet = await timesheet_crud.update(db, timesheet_id, {"status": payload.status})
     return success_response(data=TimesheetOut.model_validate(timesheet), message="Timesheet updated")
+
+
+# ---------- HR / Admin management ----------
+@router.get("", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
+async def list_employees(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params)):
+    filters = {k: request.query_params.get(k) for k in ("department_id", "status", "employment_type") if request.query_params.get(k)}
+    items, total = await crud.list(db, page, filters)
+    meta = build_pagination_meta(total, page.page, page.limit)
+    return success_response(data=[EmployeeOut.model_validate(e) for e in items], message="Employees fetched", meta=meta)
+
+
+@router.post("", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr"))])
+async def create_employee(payload: EmployeeCreate, db: AsyncSession = Depends(get_db)):
+    employee = await crud.create(db, payload.model_dump())
+    return success_response(data=EmployeeOut.model_validate(employee), message="Employee created successfully", status_code=201)
+
+
+@router.get("/{employee_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
+async def get_employee(employee_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    employee = await crud.get(db, employee_id)
+    return success_response(data=EmployeeOut.model_validate(employee))
+
+
+@router.put("/{employee_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "hr"))])
+async def update_employee(employee_id: uuid.UUID, payload: EmployeeUpdate, db: AsyncSession = Depends(get_db)):
+    employee = await crud.update(db, employee_id, payload.model_dump(exclude_unset=True))
+    return success_response(data=EmployeeOut.model_validate(employee), message="Employee updated successfully")
+
+
+@router.delete("/{employee_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "hr"))])
+async def delete_employee(employee_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    await crud.delete(db, employee_id)
+    return success_response(message="Employee removed successfully")
 
 
 # ---------- Documents (HR/Admin manage; employee reads their own via /me/documents) ----------
