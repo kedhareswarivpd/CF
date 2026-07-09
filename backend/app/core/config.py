@@ -63,6 +63,9 @@ class Settings(BaseSettings):
     # Rate limiting
     rate_limit: str = "300/15minute"
 
+    # Extra CORS origins (comma-separated, e.g. for Vercel preview URLs)
+    extra_cors_origins: str = ""
+
     def _get_async_database_url(self) -> str:
         """Get the async PostgreSQL URL."""
         if self.database_url:

@@ -42,6 +42,7 @@ _ALLOWED_ORIGINS = list({
     settings.site_url,
     "http://localhost:5173",
     "http://localhost:4173",
+    *[o.strip() for o in settings.extra_cors_origins.split(",") if o.strip()],
 })
 
 
