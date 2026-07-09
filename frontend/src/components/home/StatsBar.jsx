@@ -1,5 +1,16 @@
 import { homeStats } from '../../data/home.js';
 import Reveal from '../ui/Reveal.jsx';
+import useCountUp from '../../hooks/useCountUp.js';
+
+function AnimatedStat({ value, label }) {
+  const [ref, display] = useCountUp(value);
+  return (
+    <div ref={ref}>
+      <div className="font-stat text-stat-lg text-brand">{display}</div>
+      <div className="font-label-caps text-label-caps uppercase text-ink-muted mt-1">{label}</div>
+    </div>
+  );
+}
 
 export default function StatsBar({ stats }) {
   const items = stats
@@ -15,8 +26,7 @@ export default function StatsBar({ stats }) {
       <div className="max-w-container mx-auto grid grid-cols-2 md:grid-cols-4 gap-stack-lg text-center">
         {items.map((stat, i) => (
           <Reveal key={stat.label} from="zoom" delay={i * 80}>
-            <div className="font-stat text-stat-lg text-brand">{stat.value}</div>
-            <div className="font-label-caps text-label-caps uppercase text-ink-muted mt-1">{stat.label}</div>
+            <AnimatedStat value={stat.value} label={stat.label} />
           </Reveal>
         ))}
       </div>
