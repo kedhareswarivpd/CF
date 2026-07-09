@@ -107,7 +107,7 @@ export default function Navbar() {
     <header
       className={`fixed top-0 w-full z-50 border-b border-outline-variant transition-all duration-300 ${
         scrolled ? 'bg-white dark:bg-dark-surface shadow-sm h-16' : 'bg-white dark:bg-dark-surface h-20'
-      `}
+      }`}
     >
       <div className="w-full h-full px-margin-mobile md:px-margin-desktop flex items-center justify-between">
         <div className="flex items-center gap-8 md:gap-12">
@@ -119,7 +119,7 @@ export default function Navbar() {
     className="h-full w-full object-cover scale-110"
   />
 </div>
-            <span className="font-display font-bold text-xl text-brand-dark tracking-tight">
+            <span className="font-display font-bold text-xl text-brand-dark dark:text-white tracking-tight">
               Core<span className="text-brand">Fusion</span>
             </span>
           </Link>

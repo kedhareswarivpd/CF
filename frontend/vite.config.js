@@ -9,6 +9,21 @@ const BASE_PATH = process.env.VITE_BASE_PATH || '/';
 export default defineConfig({
   base: BASE_PATH,
   plugins: [react()],
+  build: {
+    target: 'esnext',
+    minify: 'esbuild',
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
+  },
   server: {
     port: 5173,
     watch: {
