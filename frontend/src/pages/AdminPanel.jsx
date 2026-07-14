@@ -314,6 +314,7 @@ function UserManagement({ accessToken, currentRole }) {
   const [users, setUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
 
   const loadUsers = () => {
     if (!accessToken) { setLoadingUsers(false); return; }
@@ -326,23 +327,74 @@ function UserManagement({ accessToken, currentRole }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
 
+  const handleEdit = (user) => {
+    setEditingUser(user);
+    setShowAddForm(false);
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setSubmittingUser(true);
+    try {
+      await updateUser(accessToken, editingUser.id, {
+        name: editingUser.name,
+        email: editingUser.email,
+        phone: editingUser.phone || null,
+        role: editingUser.role,
+        is_active: editingUser.is_active,
+      });
+      setEditingUser(null);
+      loadUsers();
+    } catch (err) {
+      setUserError(err.message || 'Could not update user.');
+    } finally {
+      setSubmittingUser(false);
+    }
+  };
+
+  const [submittingUser, setSubmittingUser] = useState(false);
+  const [userError, setUserError] = useState('');
+
   return (
     <div className="space-y-stack-lg">
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
         <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant flex items-center justify-between gap-4">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">All Users</h3>
-          <Button variant="primary" size="md" icon={<Icon name="person_add" />} onClick={() => setShowAddForm((v) => !v)}>
+          <Button variant="primary" size="md" icon={<Icon name="person_add" />} onClick={() => { setShowAddForm((v) => !v); setEditingUser(null); }}>
             {showAddForm ? 'Close' : 'Add User'}
           </Button>
         </div>
-        {showAddForm && (
+        {(showAddForm || editingUser) && (
           <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
-            <AddUserForm
-              accessToken={accessToken}
-              currentRole={currentRole}
-              onCreated={() => { setShowAddForm(false); loadUsers(); }}
-              onCancel={() => setShowAddForm(false)}
-            />
+            {editingUser ? (
+              <form onSubmit={handleUpdate} className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <input required type="text" placeholder="Full name" value={editingUser.name} onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })} className={FORM_INPUT_CLASS} />
+                  <input required type="email" placeholder="Email" value={editingUser.email} onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })} className={FORM_INPUT_CLASS} />
+                  <input type="text" placeholder="Phone (optional)" value={editingUser.phone || ''} onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })} className={FORM_INPUT_CLASS} />
+                  <select value={editingUser.role} onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })} className={FORM_INPUT_CLASS}>
+                    {PORTAL_ROLE_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                  </select>
+                </div>
+                <label className="flex items-center gap-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
+                  <input type="checkbox" checked={editingUser.is_active} onChange={(e) => setEditingUser({ ...editingUser, is_active: e.target.checked })} />
+                  Active
+                </label>
+                {userError && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{userError}</p>}
+                <div className="flex gap-2">
+                  <Button type="submit" variant="primary" size="md" disabled={submittingUser}>{submittingUser ? 'Updating...' : 'Update User'}</Button>
+                  <Button type="button" variant="outline" size="md" onClick={() => { setEditingUser(null); setUserError(''); }}>Cancel</Button>
+                </div>
+              </form>
+            ) : (
+              <AddUserForm
+                accessToken={accessToken}
+                currentRole={currentRole}
+                onCreated={() => { setShowAddForm(false); loadUsers(); }}
+                onCancel={() => setShowAddForm(false)}
+              />
+            )}
           </div>
         )}
         {loadingUsers ? (
@@ -350,7 +402,7 @@ function UserManagement({ accessToken, currentRole }) {
         ) : (
           <table className="w-full text-left">
             <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
-              <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Role</th><th className="px-stack-lg py-4">Status</th></tr>
+              <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Role</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Actions</th></tr>
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {users.map((u) => (
@@ -359,10 +411,20 @@ function UserManagement({ accessToken, currentRole }) {
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{u.email}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted capitalize">{u.role?.replace('_', ' ')}</td>
                   <td className="px-stack-lg py-4"><StatusBadge variant={u.is_active ? 'success' : 'neutral'}>{u.is_active ? 'active' : 'inactive'}</StatusBadge></td>
+                  <td className="px-stack-lg py-4">
+                    <div className="flex gap-2">
+                      <button onClick={() => handleEdit(u)} className="text-ink-muted hover:text-brand transition-colors" title="Edit">
+                        <Icon name="edit" className="text-lg" />
+                      </button>
+                      <button onClick={() => { if (window.confirm(`Deactivate user "${u.name}"?`)) { deactivateUser(accessToken, u.id).then(loadUsers); }}} className="text-ink-muted hover:text-status-warning-text transition-colors" title="Deactivate">
+                        <Icon name="block" className="text-lg" />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {!users.length && (
-                <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No users found.</td></tr>
+                <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No users found.</td></tr>
               )}
             </tbody>
           </table>
@@ -559,6 +621,7 @@ function ProjectsManagement({ accessToken }) {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
 
   const loadProjects = () => {
     if (!accessToken) { setLoading(false); return; }
@@ -570,6 +633,37 @@ function ProjectsManagement({ accessToken }) {
     loadProjects();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
+
+  const handleEdit = (project) => {
+    setEditingProject(project);
+    setShowAddForm(false);
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!editingProject) return;
+    setSubmittingProject(true);
+    try {
+      await updateProject(accessToken, editingProject.id, {
+        title: editingProject.title,
+        industry: editingProject.industry || null,
+        status: editingProject.status,
+        budget: editingProject.budget ? Number(editingProject.budget) : null,
+        is_published: editingProject.is_published,
+        is_featured: editingProject.is_featured,
+        progress_percent: editingProject.progress_percent,
+      });
+      setEditingProject(null);
+      loadProjects();
+    } catch (err) {
+      setProjectError(err.message || 'Could not update project.');
+    } finally {
+      setSubmittingProject(false);
+    }
+  };
+
+  const [submittingProject, setSubmittingProject] = useState(false);
+  const [projectError, setProjectError] = useState('');
 
   const togglePublish = async (project) => {
     try {
@@ -591,13 +685,40 @@ function ProjectsManagement({ accessToken }) {
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
         <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant flex items-center justify-between gap-4">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">All Projects</h3>
-          <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowAddForm((v) => !v)}>
+          <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => { setShowAddForm((v) => !v); setEditingProject(null); }}>
             {showAddForm ? 'Close' : 'New Project'}
           </Button>
         </div>
-        {showAddForm && (
+        {(showAddForm || editingProject) && (
           <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
-            <AddProjectForm accessToken={accessToken} onCreated={() => { setShowAddForm(false); loadProjects(); }} onCancel={() => setShowAddForm(false)} />
+            {editingProject ? (
+              <form onSubmit={handleUpdate} className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <input required type="text" placeholder="Project title" value={editingProject.title} onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })} className={FORM_INPUT_CLASS} />
+                  <input type="text" placeholder="Industry (optional)" value={editingProject.industry || ''} onChange={(e) => setEditingProject({ ...editingProject, industry: e.target.value })} className={FORM_INPUT_CLASS} />
+                  <select value={editingProject.status} onChange={(e) => setEditingProject({ ...editingProject, status: e.target.value })} className={FORM_INPUT_CLASS}>
+                    {PROJECT_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                  </select>
+                  <input type="number" min="0" max="100" placeholder="Progress %" value={editingProject.progress_percent ?? 0} onChange={(e) => setEditingProject({ ...editingProject, progress_percent: Number(e.target.value) })} className={FORM_INPUT_CLASS} />
+                  <input type="number" min="0" placeholder="Budget (optional)" value={editingProject.budget || ''} onChange={(e) => setEditingProject({ ...editingProject, budget: e.target.value })} className={FORM_INPUT_CLASS} />
+                </div>
+                <div className="flex items-center gap-6">
+                  <label className="flex items-center gap-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
+                    <input type="checkbox" checked={editingProject.is_published} onChange={(e) => setEditingProject({ ...editingProject, is_published: e.target.checked })} />Published
+                  </label>
+                  <label className="flex items-center gap-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
+                    <input type="checkbox" checked={editingProject.is_featured} onChange={(e) => setEditingProject({ ...editingProject, is_featured: e.target.checked })} />Featured
+                  </label>
+                </div>
+                {projectError && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{projectError}</p>}
+                <div className="flex gap-2">
+                  <Button type="submit" variant="primary" size="md" disabled={submittingProject}>{submittingProject ? 'Updating...' : 'Update Project'}</Button>
+                  <Button type="button" variant="outline" size="md" onClick={() => { setEditingProject(null); setProjectError(''); }}>Cancel</Button>
+                </div>
+              </form>
+            ) : (
+              <AddProjectForm accessToken={accessToken} onCreated={() => { setShowAddForm(false); loadProjects(); }} onCancel={() => setShowAddForm(false)} />
+            )}
           </div>
         )}
         {loading ? (
@@ -611,7 +732,7 @@ function ProjectsManagement({ accessToken }) {
                 <th className="px-stack-lg py-4">Status</th>
                 <th className="px-stack-lg py-4">Progress</th>
                 <th className="px-stack-lg py-4">Published</th>
-                <th className="px-stack-lg py-4"></th>
+                <th className="px-stack-lg py-4">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -627,9 +748,14 @@ function ProjectsManagement({ accessToken }) {
                     </button>
                   </td>
                   <td className="px-stack-lg py-4 text-right">
-                    <button onClick={() => remove(p)} className="text-ink-muted hover:text-status-error-text transition-colors">
-                      <Icon name="delete" className="text-lg" />
-                    </button>
+                    <div className="flex gap-2 justify-end">
+                      <button onClick={() => handleEdit(p)} className="text-ink-muted hover:text-brand transition-colors" title="Edit">
+                        <Icon name="edit" className="text-lg" />
+                      </button>
+                      <button onClick={() => remove(p)} className="text-ink-muted hover:text-status-error-text transition-colors" title="Delete">
+                        <Icon name="delete" className="text-lg" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

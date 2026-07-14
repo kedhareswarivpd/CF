@@ -15,6 +15,9 @@ SUPER_ADMIN_PASSWORD = "ChangeMe@123"
 EMPLOYEE_EMAIL = "john.doe@corefusiontech.com"
 EMPLOYEE_PASSWORD = "Employee@123"
 
+SALES_EMAIL = "sales@corefusiontech.com"
+SALES_PASSWORD = "Sales@123"
+
 
 async def seed_super_admin(db):
     existing = (await db.execute(select(User).where(User.email == SUPER_ADMIN_EMAIL))).scalar_one_or_none()
@@ -73,10 +76,40 @@ async def seed_employee(db):
     print(f"Employee created: {EMPLOYEE_EMAIL} / {EMPLOYEE_PASSWORD}")
 
 
+async def seed_sales(db):
+    existing = (await db.execute(select(User).where(User.email == SALES_EMAIL))).scalar_one_or_none()
+    if existing:
+        print("i  Sales user already exists")
+        return
+
+    admin_client = get_admin_client()
+    auth_response = admin_client.auth.admin.create_user(
+        {
+            "email": SALES_EMAIL,
+            "password": SALES_PASSWORD,
+            "email_confirm": True,
+            "user_metadata": {"name": "Sales Representative"},
+        }
+    )
+
+    sales = User(
+        id=uuid.UUID(auth_response.user.id),
+        name="Sales Representative",
+        email=SALES_EMAIL,
+        role="sales",
+        phone="+91-98765-43211",
+        is_active=True,
+        is_email_verified=True,
+    )
+    db.add(sales)
+    print(f"Sales user created: {SALES_EMAIL} / {SALES_PASSWORD}")
+
+
 async def run():
     async with AsyncSessionLocal() as db:
         await seed_super_admin(db)
         await seed_employee(db)
+        await seed_sales(db)
 
         departments = [
             "Engineering", "Design", "Sales", "Marketing", "Human Resources",
