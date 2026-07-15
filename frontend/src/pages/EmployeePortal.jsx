@@ -587,7 +587,10 @@ function Leads({ leads, accessToken, onRefresh }) {
   const [form, setForm] = useState({ company: '', contact_name: '', email: '', phone: '', source: 'website', estimated_value: '' });
   const [submitting, setSubmitting] = useState(false);
   const [savingId, setSavingId] = useState(null);
+  const [toast, setToast] = useState('');
   const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -598,6 +601,9 @@ function Leads({ leads, accessToken, onRefresh }) {
       setForm({ company: '', contact_name: '', email: '', phone: '', source: 'website', estimated_value: '' });
       setShowForm(false);
       onRefresh();
+      showToast('Lead saved successfully.');
+    } catch (err) {
+      showToast(err?.message || 'Failed to save lead.');
     } finally {
       setSubmitting(false);
     }
@@ -635,6 +641,11 @@ function Leads({ leads, accessToken, onRefresh }) {
             <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
           </div>
         </form>
+      )}
+      {toast && (
+        <p className={`text-body-sm rounded-lg py-2 px-4 ${
+          toast.includes('successfully') ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'
+        }`}>{toast}</p>
       )}
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
         <table className="w-full text-left">
@@ -1612,6 +1623,11 @@ export default function EmployeePortal() {
     setLoading(true);
     fetchEmployeeProfile(user.id)
       .then((p) => {
+        if (!p) {
+          // No employee record found — keep demo data, but log a warning
+          console.warn('No employee profile found for user', user.id, '— using demo data');
+          return;
+        }
         setProfile(p);
         setEmployeeId(p._employeeId);
         return Promise.allSettled([
@@ -1621,7 +1637,9 @@ export default function EmployeePortal() {
           fetchEmployeePayslips(p._employeeId),
         ]);
       })
-      .then(([att, lv, ts, ps]) => {
+      .then((results) => {
+        if (!results) return;
+        const [att, lv, ts, ps] = results;
         if (att.status === 'fulfilled') setAttendance(att.value);
         if (lv.status === 'fulfilled') setLeaves(lv.value);
         if (ts.status === 'fulfilled') setTimesheets(ts.value);

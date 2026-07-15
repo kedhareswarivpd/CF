@@ -232,8 +232,9 @@ export async function fetchEmployeeProfile(userId) {
     .from('employees')
     .select('*, user:users(name, email, role), department:departments(name)')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
   if (error) throw error;
+  if (!data) return null;
   return {
     _employeeId: data.id,
     employee_code: data.employee_code,
