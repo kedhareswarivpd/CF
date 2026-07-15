@@ -37,14 +37,14 @@ function Overview({ profile, projects, invoices, tickets }) {
           <div key={stat.label} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
             <div className="flex items-center gap-3 mb-2">
               <Icon name={stat.icon} className="text-brand text-2xl" />
-              <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-ink-muted dark:text-white font-semibold">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-white font-bold">{stat.value}</p>
           </div>
         ))}
       </div>
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-        <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-4">Profile</h3>
+        <h3 className="font-display text-headline-sm text-brand-dark dark:text-white font-bold mb-4">Profile</h3>
         <div className="grid sm:grid-cols-2 gap-4">
           {[
             { label: 'Company', value: profile.company_name },
@@ -54,8 +54,8 @@ function Overview({ profile, projects, invoices, tickets }) {
             { label: 'Industry', value: profile.industry },
           ].map((f) => (
             <div key={f.label}>
-              <span className="font-label-caps text-label-caps text-ink-muted">{f.label}</span>
-              <p className="text-body-md text-brand-dark dark:text-dark-brand">{f.value}</p>
+              <span className="font-label-caps text-label-caps text-ink-muted dark:text-white font-semibold">{f.label}</span>
+              <p className="text-body-md text-brand-dark dark:text-white font-semibold">{f.value}</p>
             </div>
           ))}
         </div>
@@ -74,7 +74,7 @@ function Projects({ projects }) {
             <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{p.title}</h3>
             <StatusBadge variant={STATUS_VARIANTS[p.status] || 'neutral'} className="whitespace-nowrap">{p.status.replace('_', ' ')}</StatusBadge>
           </div>
-          <div className="grid sm:grid-cols-3 gap-4 text-body-sm text-ink-muted mb-4">
+          <div className="grid sm:grid-cols-3 gap-4 text-body-sm text-ink-muted dark:text-white mb-4">
             <div>
               <span className="font-label-caps text-label-caps">Progress</span>
               <div className="w-full h-2 bg-surface-container dark:bg-dark-surface-container rounded-full mt-1 overflow-hidden">
@@ -98,7 +98,7 @@ function Invoices({ invoices }) {
         ? <div className="p-stack-lg"><EmptyState icon="receipt" title="No invoices yet" description="Your invoices will appear here." /></div>
         : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
               <tr>
                 <th className="px-stack-lg py-4">Invoice</th>
                 <th className="px-stack-lg py-4">Amount</th>
@@ -112,8 +112,8 @@ function Invoices({ invoices }) {
                 <tr key={inv.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
                   <td className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{inv.id}</td>
                   <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">${inv.amount.toLocaleString()}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted">{inv.issueDate}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted">{inv.dueDate}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{inv.issueDate}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{inv.dueDate}</td>
                   <td className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[inv.status] || 'neutral'}>{inv.status}</StatusBadge></td>
                 </tr>
               ))}
@@ -166,7 +166,7 @@ function Tickets({ tickets, onNewTicket }) {
           ? <div className="p-stack-lg"><EmptyState icon="support" title="No tickets yet" description="Submit a ticket to get support." /></div>
           : (
             <table className="w-full text-left">
-              <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+              <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
                 <tr>
                   <th className="px-stack-lg py-4">ID</th>
                   <th className="px-stack-lg py-4">Subject</th>
@@ -181,7 +181,7 @@ function Tickets({ tickets, onNewTicket }) {
                     <td className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{t.id}</td>
                     <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.subject}</td>
                     <td className="px-stack-lg py-4"><Badge className="text-label-caps">{t.priority}</Badge></td>
-                    <td className="px-stack-lg py-4 text-body-md text-ink-muted">{t.createdAt}</td>
+                    <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{t.createdAt}</td>
                     <td className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[t.status] || 'neutral'}>{t.status}</StatusBadge></td>
                   </tr>
                 ))}
@@ -200,7 +200,7 @@ function Payments({ payments }) {
         ? <div className="p-stack-lg"><EmptyState icon="payments" title="No payments yet" description="Your payment history will appear here." /></div>
         : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
               <tr>
                 <th className="px-stack-lg py-4">Payment ID</th>
                 <th className="px-stack-lg py-4">Invoice</th>
@@ -214,10 +214,10 @@ function Payments({ payments }) {
               {payments.map((p) => (
                 <tr key={p.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
                   <td className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{p.id}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted">{p.invoice}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.invoice}</td>
                   <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">${p.amount.toLocaleString()}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted">{p.method}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted">{p.date}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.method}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.date}</td>
                   <td className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[p.status] || 'neutral'}>{p.status}</StatusBadge></td>
                 </tr>
               ))}
@@ -235,7 +235,7 @@ function Files({ files }) {
         ? <div className="p-stack-lg"><EmptyState icon="folder_open" title="No files yet" description="Shared files will appear here." /></div>
         : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
               <tr>
                 <th className="px-stack-lg py-4">Name</th>
                 <th className="px-stack-lg py-4">Category</th>
@@ -255,9 +255,9 @@ function Files({ files }) {
                     </div>
                   </td>
                   <td className="px-stack-lg py-4"><Badge className="text-label-caps">{f.category}</Badge></td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted">{f.size}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted">{f.uploadedOn}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted">{f.uploadedBy}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.size}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedOn}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedBy}</td>
                   <td className="px-stack-lg py-4">
                     {f.file_url
                       ? <a href={f.file_url} target="_blank" rel="noreferrer" className="text-brand hover:text-brand-dark"><Icon name="download" className="text-xl" /></a>
@@ -293,15 +293,15 @@ function Meetings({ meetings }) {
               )}
             </div>
           </div>
-          <div className="grid sm:grid-cols-4 gap-4 text-body-sm text-ink-muted">
+          <div className="grid sm:grid-cols-4 gap-4 text-body-sm text-ink-muted dark:text-white">
             <div><span className="font-label-caps text-label-caps block">Date</span>{m.date}</div>
             <div><span className="font-label-caps text-label-caps block">Time</span>{m.time}</div>
             <div><span className="font-label-caps text-label-caps block">Duration</span>{m.duration}</div>
             <div><span className="font-label-caps text-label-caps block">Type</span>{m.type}</div>
           </div>
           <div className="mt-3">
-            <span className="font-label-caps text-label-caps text-ink-muted">Attendees: </span>
-            <span className="text-body-sm text-ink-muted">{m.attendees.join(', ')}</span>
+            <span className="font-label-caps text-label-caps text-ink-muted dark:text-white">Attendees: </span>
+            <span className="text-body-sm text-ink-muted dark:text-white">{m.attendees.join(', ')}</span>
           </div>
         </div>
       ))}
@@ -316,7 +316,7 @@ function Reports({ reports }) {
         ? <div className="p-stack-lg"><EmptyState icon="bar_chart" title="No reports yet" description="Generated reports will appear here." /></div>
         : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
               <tr>
                 <th className="px-stack-lg py-4">Report</th>
                 <th className="px-stack-lg py-4">Type</th>
@@ -336,9 +336,9 @@ function Reports({ reports }) {
                     </div>
                   </td>
                   <td className="px-stack-lg py-4"><Badge className="text-label-caps">{r.type}</Badge></td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted">{r.period}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted">{r.generatedOn}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted">{r.size}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.period}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.generatedOn}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.size}</td>
                   <td className="px-stack-lg py-4">
                     {r.file_url
                       ? <a href={r.file_url} target="_blank" rel="noreferrer" className="text-brand hover:text-brand-dark"><Icon name="download" className="text-xl" /></a>
@@ -489,20 +489,20 @@ export default function ClientPortal() {
           <div className="flex items-center gap-4">
             <Avatar name={profile.contact_name || 'Client'} size="lg" />
             <div>
-              <h1 className="font-display text-headline-md text-brand-dark dark:text-dark-brand">Client Portal</h1>
-              <p className="text-body-sm text-ink-muted">{profile.company_name}</p>
+              <h1 className="font-display text-headline-md text-white font-bold">Client Portal</h1>
+              <p className="text-body-sm text-white/70 font-semibold">{profile.company_name}</p>
             </div>
           </div>
-          <button onClick={() => { logout(); setClientAuthed(false); }} className="border border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all">
+          <button onClick={() => { logout(); setClientAuthed(false); }} className="border border-white/40 text-white font-bold px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all">
             Sign Out
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-1 mb-stack-lg border-b border-outline-variant dark:border-dark-outline-variant">
+        <div className="flex flex-wrap gap-1 mb-stack-lg border-b border-white/20">
           {clientPortalTabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors ${
-                activeTab === tab.id ? 'text-brand dark:text-dark-brand border-brand dark:border-dark-brand' : 'text-ink-muted dark:text-dark-ink-muted border-transparent hover:text-brand dark:hover:text-dark-brand'
+                activeTab === tab.id ? 'text-white font-bold border-brand' : 'text-white/70 font-semibold border-transparent hover:text-white hover:border-white/40'
               }`}>
               <Icon name={tab.icon} className="text-lg" />{tab.label}
             </button>

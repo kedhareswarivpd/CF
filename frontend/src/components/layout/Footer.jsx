@@ -29,7 +29,7 @@ const OFFICES = ['Bangalore', 'Dubai', 'Singapore', 'Mumbai'];
 
 export default function Footer() {
   return (
-    <footer className="relative w-full pt-section-padding pb-stack-lg px-margin-mobile md:px-margin-desktop bg-white text-ink overflow-hidden">
+    <footer className="relative w-full pb-stack-lg px-margin-mobile md:px-margin-desktop bg-white text-ink overflow-hidden">
       {/* Real world map with HQ + office pins */}
       <div className="max-w-container mx-auto mb-12 rounded-xl overflow-hidden border border-outline-variant shadow-card">
         <FooterMap />
@@ -103,12 +103,12 @@ export default function Footer() {
 
         {/* Headquarters + Global Offices */}
         <div>
-          <h4 className="font-label-caps text-label-caps uppercase text-brand-dark mb-4">Headquarters</h4>
+          <h4 className="font-label-caps text-label-caps uppercase text-brand-dark mb-6">Headquarters</h4>
           <p className="flex items-start gap-2 font-body text-body-sm text-ink-muted mb-8">
             <Icon name="location_on" className="text-brand text-base mt-0.5 shrink-0" />
             {HQ}
           </p>
-          <h4 className="font-label-caps text-label-caps uppercase text-brand-dark mb-4">Global Offices</h4>
+          <h4 className="font-label-caps text-label-caps uppercase text-brand-dark mb-6">Global Offices</h4>
           <ul className="space-y-3 font-body text-body-sm text-ink-muted">
             {OFFICES.map((office) => (
               <li key={office} className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export default function Footer() {
 
       </div>
 
-      <div className="max-w-container mx-auto pt-10 mt-12 border-t border-ink/10 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="max-w-container mx-auto pt-10 pb-4 mt-12 border-t border-ink/10 flex flex-col md:flex-row justify-between items-center gap-6">
         <div className="flex items-center gap-3">
           <Icon name="public" className="text-brand text-xl" />
           <p className="font-body text-body-sm text-ink-muted">

@@ -16,12 +16,12 @@ export default function CultureSection({ values, benefits }) {
           />
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-gutter">
             {values.map((v, i) => (
-              <Reveal key={v.title} from="zoom" delay={i * 80}>
-                <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg text-center">
+              <Reveal key={v.title} from="zoom" delay={i * 80} className="h-full">
+                <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg text-center flex flex-col items-center h-full">
                   <div className="w-12 h-12 rounded-full bg-accent-cyan-pale flex items-center justify-center mx-auto mb-4">
                     <Icon name={v.icon} className="text-brand text-2xl" />
                   </div>
-                  <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-2">{v.title}</h3>
+                  <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-2 min-h-16 flex items-center">{v.title}</h3>
                   <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{v.description}</p>
                 </div>
               </Reveal>

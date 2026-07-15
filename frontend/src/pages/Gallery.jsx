@@ -15,7 +15,7 @@ export default function Gallery() {
         title="Photo Gallery"
         description="Browse through albums from our events, office life, and community initiatives."
         align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop pt-section-padding"
+        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop [&_p]:!text-white [&_h2]:!text-white"
       />
       <GalleryGrid albums={albums} />
       <CtaBanner />

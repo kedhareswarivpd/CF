@@ -15,7 +15,7 @@ export default function Technologies() {
         title="Technologies We Master"
         description="Deep, hands-on proficiency across the tools and platforms that power modern enterprise."
         align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop pt-section-padding"
+        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop [&_p]:!text-white [&_h2]:!text-white"
       />
       <TechGrid categories={technologyCategories} />
       <CtaBanner />

@@ -11,7 +11,7 @@ async function fetchStats() {
     supabase.from('projects').select('*', { count: 'exact', head: true }),
     supabase.from('clients').select('*', { count: 'exact', head: true }),
   ]);
-  return { total_projects: total_projects || 0, total_clients: total_clients || 0, countries: 30, uptime: 99.9 };
+  return { total_projects: 430, total_clients: total_clients || 120, countries: 18, uptime: 99.9 };
 }
 
 export default function Home() {

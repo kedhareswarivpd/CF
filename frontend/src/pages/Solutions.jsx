@@ -10,13 +10,15 @@ export default function Solutions() {
   return (
     <>
       <SolutionsHero />
-      <SectionHeading
-        eyebrow="Our Capabilities"
-        title="Comprehensive Solution Portfolio"
-        description="End-to-end enterprise solutions designed to address your most complex business and technology challenges."
-        align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop pt-section-padding"
-      />
+      <div className="bg-brand-dark">
+        <SectionHeading
+          eyebrow="Our Capabilities"
+          title="Comprehensive Solution Portfolio"
+          description="End-to-end enterprise solutions designed to address your most complex business and technology challenges."
+          align="center"
+          className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop pb-stack-xl [&_p]:!text-white [&_h2]:!text-white"
+        />
+      </div>
       <SolutionsGrid solutions={solutions} />
       <CtaBanner />
     </>

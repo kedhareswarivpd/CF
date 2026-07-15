@@ -4,6 +4,12 @@
 
 html {
   background-color: var(--background);
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
 }
 
 :root {

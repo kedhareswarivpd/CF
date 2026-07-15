@@ -5,6 +5,38 @@ import Icon from '../ui/Icon.jsx';
 
 const initialForm = { name: '', email: '', phone: '', company: '', department: 'general', subject: '', message: '' };
 
+const NAME_ALLOWED_CHARS = /[^A-Za-z\s'.-]/g;
+const PHONE_ALLOWED_CHARS = /[^0-9+]/g;
+const NAME_REGEX = /^[A-Za-z][A-Za-z\s'.-]*$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^\+[1-9][0-9]{6,14}$/;
+
+function validateForm(data) {
+  const errors = {};
+
+  if (!data.name.trim()) {
+    errors.name = 'Full name is required.';
+  } else if (!NAME_REGEX.test(data.name.trim())) {
+    errors.name = 'Name can only contain letters, spaces, hyphens, and apostrophes.';
+  }
+
+  if (!data.email.trim()) {
+    errors.email = 'Email is required.';
+  } else if (!EMAIL_REGEX.test(data.email.trim())) {
+    errors.email = 'Enter a valid email address (e.g. jane@company.com).';
+  }
+
+  if (data.phone.trim() && !PHONE_REGEX.test(data.phone.trim())) {
+    errors.phone = 'Enter a valid phone number with country code (e.g. +15550000000).';
+  }
+
+  if (!data.message.trim()) {
+    errors.message = 'Message is required.';
+  }
+
+  return errors;
+}
+
 const DEPARTMENTS = [
   { value: 'general', label: 'General Inquiry' },
   { value: 'sales', label: 'Sales' },
@@ -29,11 +61,30 @@ export default function ContactForm() {
 
   const update = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
+  const updateName = (e) => {
+    const value = e.target.value.replace(NAME_ALLOWED_CHARS, '');
+    setForm((prev) => ({ ...prev, name: value }));
+  };
+
+  const updatePhone = (e) => {
+    let value = e.target.value.replace(PHONE_ALLOWED_CHARS, '');
+    value = value.replace(/(?!^)\+/g, ''); // '+' only allowed as the first character
+    setForm((prev) => ({ ...prev, phone: value }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
+
+    const errors = validateForm(form);
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      setStatus('error');
+      return;
+    }
+
     setStatus('submitting');
     setFieldErrors({});
-    setErrorMessage('');
 
     try {
       await submitContactForm(form);
@@ -74,7 +125,7 @@ export default function ContactForm() {
     <form onSubmit={handleSubmit} className="flex flex-col gap-stack-md" ref={formRef}>
       <div className="grid sm:grid-cols-2 gap-stack-md">
         <Field label="Full Name" error={fieldErrors.name} inputId="field-name" errorId="field-error-name">
-          <input required value={form.name} onChange={update('name')} className={inputClass} placeholder="Jane Doe" />
+          <input required value={form.name} onChange={updateName} className={inputClass} placeholder="Jane Doe" />
         </Field>
         <Field label="Email" error={fieldErrors.email} inputId="field-email" errorId="field-error-email">
           <input
@@ -90,7 +141,7 @@ export default function ContactForm() {
 
       <div className="grid sm:grid-cols-2 gap-stack-md">
         <Field label="Phone (optional)" error={fieldErrors.phone} inputId="field-phone" errorId="field-error-phone">
-          <input value={form.phone} onChange={update('phone')} className={inputClass} placeholder="+1 555 000 0000" />
+          <input value={form.phone} onChange={updatePhone} className={inputClass} placeholder="+15550000000" inputMode="tel" />
         </Field>
         <Field label="Company (optional)" error={fieldErrors.company} inputId="field-company" errorId="field-error-company">
           <input value={form.company} onChange={update('company')} className={inputClass} placeholder="Acme Corp" />

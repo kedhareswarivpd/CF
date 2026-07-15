@@ -42,7 +42,7 @@ export default function Careers() {
         title="Join Our Team"
         description="Explore opportunities to work on cutting-edge technology with talented teams across the globe."
         align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop pt-section-padding"
+        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop [&_p]:!text-white [&_h2]:!text-white"
       />
       {loading ? (
         <div className="text-center py-8 text-body-md text-ink-muted">Loading positions...</div>

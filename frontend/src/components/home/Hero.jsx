@@ -28,11 +28,11 @@ return (
       <div className="absolute bottom-10 left-1/3 w-48 h-48 rounded-full blur-2xl animate-float pointer-events-none" style={{ background: 'rgba(37,99,235,0.10)' }} />
 
       <div className="max-w-container mx-auto relative z-10">
-        <div className="flex flex-col gap-stack-lg max-w-2xl">
+        <div className="flex flex-col gap-stack-lg w-full">
           <Badge className="bg-white/10 border border-white/20 text-accent-cyan w-fit animate-hero-1">
             Engineering Tomorrow
           </Badge>
-          <h1 className="font-display text-display-lg-mobile md:text-display-lg text-white leading-tight animate-hero-2">
+          <h1 className="font-display text-display-lg-mobile md:text-display-lg text-white leading-tight animate-hero-2 max-w-4xl">
             Transforming Businesses Through <span className="text-accent-cyan">Intelligent</span> Digital
             Solutions
           </h1>

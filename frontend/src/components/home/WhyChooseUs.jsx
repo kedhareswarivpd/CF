@@ -5,7 +5,7 @@ import Reveal from '../ui/Reveal.jsx';
 
 export default function WhyChooseUs() {
   return (
-    <section className="py-section-padding px-margin-mobile md:px-margin-desktop max-w-container mx-auto bg-white dark:bg-dark-surface">
+    <section className="pt-stack-xl pb-section-padding px-margin-mobile md:px-margin-desktop max-w-container mx-auto bg-white dark:bg-dark-surface">
       <SectionHeading
         align="center"
         eyebrow="Why CoreFusion"
@@ -15,11 +15,11 @@ export default function WhyChooseUs() {
       />
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
         {whyChooseUs.map((item, i) => (
-          <Reveal key={item.title} from="zoom" delay={i * 80} className="bg-white rounded-lg p-stack-lg hover:shadow-card-hover transition-shadow">
+          <Reveal key={item.title} from="zoom" delay={i * 80} className="bg-white rounded-lg p-stack-lg hover:shadow-card-hover transition-shadow flex flex-col">
             <div className="w-12 h-12 rounded-md bg-accent-cyan-pale flex items-center justify-center mb-stack-md">
               <Icon name={item.icon} className="text-brand text-3xl leading-none" />
             </div>
-            <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-2">{item.title}</h3>
+            <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-2 min-h-16">{item.title}</h3>
             <p className="text-body-sm text-black dark:text-black">{item.description}</p>
           </Reveal>
         ))}

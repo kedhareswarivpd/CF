@@ -15,7 +15,7 @@ export default function Downloads() {
         title="Download Our Materials"
         description="Access brochures, whitepapers, datasheets, and case studies."
         align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop pt-section-padding"
+        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop [&_p]:!text-white [&_h2]:!text-white"
       />
       <DownloadsGrid downloads={downloads} categoryFilters={downloadCategoryFilters} />
       <CtaBanner />

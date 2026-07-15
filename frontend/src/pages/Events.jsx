@@ -44,7 +44,7 @@ export default function Events() {
         title="Join Us Around the World"
         description="From intimate workshops to industry conferences, discover opportunities to connect with our team."
         align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop pt-section-padding"
+        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop [&_p]:!text-white [&_h2]:!text-white"
       />
       <EventsGrid events={events} typeFilters={eventTypeFilters} />
       <CtaBanner />

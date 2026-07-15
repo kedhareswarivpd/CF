@@ -15,7 +15,7 @@ export default function Awards() {
         title="Awards & Certifications"
         description="Industry recognition that validates our commitment to excellence."
         align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop pt-section-padding"
+        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop [&_p]:!text-white [&_h2]:!text-white"
       />
       <AwardsGrid awards={awards} yearFilters={awardYearFilters} />
       <CtaBanner />

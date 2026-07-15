@@ -6,7 +6,7 @@ import Reveal from '../ui/Reveal.jsx';
 export default function CtaBanner() {
   return (
     <section className="bg-white text-brand-dark py-section-padding px-margin-mobile md:px-margin-desktop">
-      <Reveal className="max-w-container mx-auto flex flex-col md:flex-row items-center justify-between gap-stack-lg">
+      <Reveal className="max-w-container mx-auto flex flex-col md:flex-row items-center justify-center gap-stack-lg">
         <div>
           <h2 className="font-display text-headline-md text-brand-dark mb-2">Ready to engineer what's next?</h2>
           <p className="text-ink-muted max-w-xl">

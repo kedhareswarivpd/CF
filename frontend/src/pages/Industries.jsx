@@ -15,7 +15,7 @@ export default function Industries() {
         title="Industries Transformed by Technology"
         description="Domain expertise combined with technical excellence to address sector-specific challenges."
         align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop pt-section-padding"
+        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop [&_p]:!text-white [&_h2]:!text-white"
       />
       <IndustriesGrid industries={industries} />
       <CtaBanner />

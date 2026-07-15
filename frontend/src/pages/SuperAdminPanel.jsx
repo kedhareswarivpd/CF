@@ -29,6 +29,7 @@ const superAdminTabs = [
 ];
 
 const FORM_INPUT_CLASS = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
+const LOGIN_INPUT_CLASS = 'border border-outline-variant rounded px-4 py-3 text-body-md text-ink bg-white focus:outline-none focus:border-brand';
 
 function RowAction({ onClick, disabled, variant = 'primary', children }) {
   const styles = variant === 'primary'
@@ -78,25 +79,25 @@ function LoginGate({ onSuccess }) {
 
   return (
     <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container flex items-center justify-center px-margin-mobile">
-      <div className="w-full max-w-sm bg-white dark:bg-dark-surface rounded-lg shadow-card-hover p-stack-lg">
+      <div className="w-full max-w-sm bg-white rounded-lg shadow-card-hover p-stack-lg">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-full bg-brand-dark flex items-center justify-center">
             <Icon name="shield_person" className="text-white text-xl" />
           </div>
           <div>
-            <h1 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Super Admin</h1>
-            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Sign in with a Super Admin account</p>
+            <h1 className="font-display text-headline-sm text-brand-dark">Super Admin</h1>
+            <p className="text-body-sm text-ink-muted">Sign in with a Super Admin account</p>
           </div>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-stack-md">
           <label className="flex flex-col gap-1.5">
             <span className="font-label-caps text-label-caps uppercase text-ink-muted">Email</span>
-            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@corefusiontech.com" className={FORM_INPUT_CLASS} />
+            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@corefusiontech.com" className={LOGIN_INPUT_CLASS} />
           </label>
           <label className="flex flex-col gap-1.5">
             <span className="font-label-caps text-label-caps uppercase text-ink-muted">Password</span>
             <div className="relative">
-              <input required type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={FORM_INPUT_CLASS} />
+              <input required type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={LOGIN_INPUT_CLASS} />
               <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink">
                 <Icon name={showPassword ? 'visibility_off' : 'visibility'} />
               </button>
@@ -203,7 +204,7 @@ function Departments({ accessToken }) {
       )}
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Description</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -354,7 +355,7 @@ function DataExportGdpr({ accessToken }) {
       </form>
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Role</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -398,7 +399,7 @@ function AuditLogs({ accessToken }) {
   return (
     <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Action</th><th className="px-stack-lg py-4">Entity</th><th className="px-stack-lg py-4">IP</th><th className="px-stack-lg py-4">When</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -433,20 +434,20 @@ export default function SuperAdminPanel() {
           <div className="flex items-center gap-4">
             <Avatar name="Super Admin" size="lg" />
             <div>
-              <h1 className="font-display text-headline-md text-brand-dark dark:text-dark-brand">Super Admin</h1>
-              <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Unrestricted system control</p>
+              <h1 className="font-display text-headline-md text-white font-bold">Super Admin</h1>
+              <p className="text-body-sm text-white/70">Unrestricted system control</p>
             </div>
           </div>
-          <button onClick={() => { logout(); setAuthed(false); }} className="border border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all">
+          <button onClick={() => { logout(); setAuthed(false); }} className="border border-white/40 text-white font-bold px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all">
             Sign Out
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-1 mb-stack-lg border-b border-outline-variant dark:border-dark-outline-variant overflow-x-auto">
+        <div className="flex flex-wrap gap-1 mb-stack-lg border-b border-white/20 overflow-x-auto">
           {superAdminTabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id ? 'text-brand dark:text-dark-brand border-brand dark:border-dark-brand' : 'text-ink-muted dark:text-dark-ink-muted border-transparent hover:text-brand dark:hover:text-dark-brand'
+                activeTab === tab.id ? 'text-white font-bold border-brand' : 'text-white/70 font-semibold border-transparent hover:text-white hover:border-white/40'
               }`}>
               <Icon name={tab.icon} className="text-lg" />{tab.label}
             </button>

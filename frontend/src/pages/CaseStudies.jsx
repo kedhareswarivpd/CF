@@ -15,7 +15,7 @@ export default function CaseStudies() {
         title="Success Stories Across Industries"
         description="Real-world impact delivered through technical excellence and deep domain expertise."
         align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop pt-section-padding"
+        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop [&_p]:!text-white [&_h2]:!text-white"
       />
       <CaseStudiesGrid studies={caseStudies} />
       <CtaBanner />

@@ -15,10 +15,10 @@ function AnimatedStat({ value, label }) {
 export default function StatsBar({ stats }) {
   const items = stats
     ? [
-        { label: 'Projects Delivered', value: `${stats.total_projects}+` },
-        { label: 'Enterprise Clients', value: `${stats.total_clients}+` },
-        { label: 'Countries Served', value: `${stats.countries}+` },
-        { label: 'Uptime SLA', value: `${stats.uptime}%` },
+        { label: 'Projects Delivered', value: '430+' },
+        { label: 'Enterprise Clients', value: `${stats.total_clients || 120}+` },
+        { label: 'Countries Served', value: '18+' },
+        { label: 'Uptime SLA', value: `${stats.uptime || 99.9}%` },
       ]
     : homeStats;
   return (

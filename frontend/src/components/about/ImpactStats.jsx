@@ -18,7 +18,7 @@ export default function ImpactStats() {
           <h2 className="font-display text-headline-md text-brand-dark dark:text-dark-brand">
             Numbers that define our journey
           </h2>
-          <p className="text-body-lg text-ink-muted dark:text-dark-ink-muted mt-4 max-w-2xl mx-auto">
+          <p className="text-body-lg text-ink-muted dark:text-white mt-4 max-w-2xl mx-auto">
             Five years of high-performance delivery for enterprises that can't afford downtime.
           </p>
         </Reveal>

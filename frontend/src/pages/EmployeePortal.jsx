@@ -12,7 +12,7 @@ import {
   fetchEmployeeTimesheets, fetchEmployeePayslips,
   checkInEmployee, checkOutEmployee,
 } from '../lib/db.js';
-import { applyLeave as applyLeaveApi, submitTimesheet } from '../api/employees.js';
+import { applyLeave as applyLeaveApi, submitTimesheet, fetchMyDocuments } from '../api/employees.js';
 import {
   fetchLeads, createLead, updateLead,
   fetchProposals, createProposal, sendProposal, acceptProposal, rejectProposal,
@@ -195,17 +195,17 @@ function Attendance({ attendance, employeeId }) {
         <div className="grid sm:grid-cols-3 gap-gutter mb-6">
           <div className="text-center p-stack-lg bg-surface-container dark:bg-dark-surface-container rounded-lg">
             <Icon name="login" className="text-brand text-3xl mb-2" />
-            <p className="font-label-caps text-label-caps text-ink-muted">Check-In</p>
-            <p className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{current.checkIn || '--'}</p>
+            <p className="font-label-caps text-label-caps text-white">Check-In</p>
+            <p className="font-display text-headline-sm text-white">{current.checkIn || '--'}</p>
           </div>
           <div className="text-center p-stack-lg bg-surface-container dark:bg-dark-surface-container rounded-lg">
             <Icon name="logout" className="text-brand text-3xl mb-2" />
-            <p className="font-label-caps text-label-caps text-ink-muted">Check-Out</p>
-            <p className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{current.checkOut || '--'}</p>
+            <p className="font-label-caps text-label-caps text-white">Check-Out</p>
+            <p className="font-display text-headline-sm text-white">{current.checkOut || '--'}</p>
           </div>
           <div className="text-center p-stack-lg bg-surface-container dark:bg-dark-surface-container rounded-lg">
             <Icon name="badge" className="text-brand text-3xl mb-2" />
-            <p className="font-label-caps text-label-caps text-ink-muted">Status</p>
+            <p className="font-label-caps text-label-caps text-white">Status</p>
             <StatusBadge variant={current.status === 'present' ? 'success' : 'warning'} className="mt-1">
               {current.status || 'Not checked in'}
             </StatusBadge>
@@ -301,7 +301,7 @@ function Leaves({ leaves: initialLeaves, employeeId, accessToken }) {
       )}
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Type</th><th className="px-stack-lg py-4">From</th><th className="px-stack-lg py-4">To</th><th className="px-stack-lg py-4">Days</th><th className="px-stack-lg py-4">Status</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -390,7 +390,7 @@ function Timesheets({ timesheets: initialTimesheets, employeeId, accessToken }) 
       )}
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Hours</th><th className="px-stack-lg py-4">Description</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -413,7 +413,7 @@ function Payslips({ payslips }) {
   return (
     <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Period</th><th className="px-stack-lg py-4">Gross</th><th className="px-stack-lg py-4">Deductions</th><th className="px-stack-lg py-4">Net Pay</th><th className="px-stack-lg py-4">Status</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -438,7 +438,7 @@ function Tasks({ tasks }) {
   return (
     <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Task</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Priority</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Due</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -497,12 +497,12 @@ function Performance({ reviews }) {
           </div>
           <div className="grid sm:grid-cols-2 gap-4 mb-4">
             <div className="bg-surface-container dark:bg-dark-surface-container rounded-lg p-4 text-center">
-              <p className="font-label-caps text-label-caps text-ink-muted mb-1">Goals Set</p>
-              <p className="font-stat text-2xl text-brand-dark dark:text-dark-brand">{r.goals}</p>
+              <p className="font-label-caps text-label-caps text-white mb-1">Goals Set</p>
+              <p className="font-stat text-2xl text-white">{r.goals}</p>
             </div>
             <div className="bg-surface-container dark:bg-dark-surface-container rounded-lg p-4 text-center">
-              <p className="font-label-caps text-label-caps text-ink-muted mb-1">Goals Achieved</p>
-              <p className="font-stat text-2xl text-brand-dark dark:text-dark-brand">{r.achieved}</p>
+              <p className="font-label-caps text-label-caps text-white mb-1">Goals Achieved</p>
+              <p className="font-stat text-2xl text-white">{r.achieved}</p>
             </div>
           </div>
           <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted italic">"{r.feedback}"</p>
@@ -517,7 +517,7 @@ function Training({ courses }) {
   return (
     <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Course</th><th className="px-stack-lg py-4">Category</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Completed On</th><th className="px-stack-lg py-4">Score</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -538,22 +538,37 @@ function Training({ courses }) {
 
 function Documents({ docs }) {
   const typeIcon = { contract: 'gavel', id_proof: 'badge', certificate: 'workspace_premium', other: 'description', resume: 'person' };
+
+  const handleDownload = (d) => {
+    if (d.file_url) {
+      window.open(d.file_url, '_blank');
+      return;
+    }
+    // No file on record yet (e.g. demo data) — still give the user a real file to download.
+    const blob = new Blob([`${d.name}\n\nNo file has been uploaded for this document yet.`], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${d.name}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-gutter">
       {docs.map((d) => (
-        <div key={d.id} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg flex items-start gap-4">
-          <div className="w-10 h-10 rounded-md bg-accent-cyan-pale flex items-center justify-center shrink-0">
-            <Icon name={typeIcon[d.type] || 'description'} className="text-brand text-xl" />
+        <div key={d.id} className="bg-brand-dark dark:bg-dark-surface border border-brand/30 dark:border-dark-outline-variant rounded-lg p-stack-lg flex items-start gap-4">
+          <div className="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center shrink-0">
+            <Icon name={typeIcon[d.type] || 'description'} className="text-white text-xl" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-display text-body-md font-semibold text-brand-dark dark:text-dark-brand truncate">{d.name}</p>
-            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted capitalize">{d.type.replace('_', ' ')} &middot; {d.size}</p>
-            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{d.uploadedOn}</p>
+            <p className="font-display text-body-md font-semibold text-white truncate">{d.name}</p>
+            <p className="text-body-sm text-white/70 capitalize">{d.type.replace('_', ' ')}{d.size ? ` · ${d.size}` : ''}</p>
+            <p className="text-body-sm text-white/70">{d.uploadedOn}</p>
           </div>
           <button
-            onClick={() => d.file_url ? window.open(d.file_url, '_blank') : null}
-            disabled={!d.file_url}
-            className={`shrink-0 transition-colors ${d.file_url ? 'text-brand hover:text-brand-dark cursor-pointer' : 'text-ink-muted/30 cursor-not-allowed'}`}
+            onClick={() => handleDownload(d)}
+            className="shrink-0 text-white hover:text-white/70 cursor-pointer transition-colors"
             aria-label="Download">
             <Icon name="download" className="text-xl" />
           </button>
@@ -649,7 +664,7 @@ function Leads({ leads, accessToken, onRefresh }) {
       )}
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Est. Value</th><th className="px-stack-lg py-4">Status</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -745,7 +760,7 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
       )}
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Lead</th><th className="px-stack-lg py-4">Price</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Sent</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -802,7 +817,7 @@ function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
   return (
     <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Deal</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Client Signed</th><th className="px-stack-lg py-4">Company Signed</th><th className="px-stack-lg py-4">Actions</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -851,7 +866,7 @@ function MarketingLeadsView({ accessToken }) {
   return (
     <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Est. Value</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -1031,7 +1046,7 @@ function TeamProjects({ accessToken, userId }) {
             )}
           </div>
         ))}
-        {!projects.length && <p className="text-body-sm text-ink-muted text-center py-8">No projects assigned to you yet.</p>}
+        {!projects.length && <p className="text-body-sm text-white/70 text-center py-8">No projects assigned to you yet.</p>}
       </div>
     </div>
   );
@@ -1114,7 +1129,7 @@ function TaskBoard({ accessToken, userId }) {
         <div className="grid md:grid-cols-5 gap-gutter">
           {TASK_STATUS_COLUMNS.map((col) => (
             <div key={col} className="bg-surface-container dark:bg-dark-surface-container rounded-lg p-3 space-y-2">
-              <p className="font-label-caps text-label-caps uppercase text-ink-muted">{col.replace('_', ' ')} ({tasks.filter((t) => t.status === col).length})</p>
+              <p className="font-label-caps text-label-caps uppercase text-white">{col.replace('_', ' ')} ({tasks.filter((t) => t.status === col).length})</p>
               {tasks.filter((t) => t.status === col).map((t) => (
                 <div key={t.id} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded p-3 space-y-2">
                   <p className="text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{t.title}</p>
@@ -1155,7 +1170,7 @@ function Approvals({ accessToken }) {
   return (
     <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Hours</th><th className="px-stack-lg py-4">Description</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Actions</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -1203,7 +1218,7 @@ function TestQueue({ accessToken }) {
   return (
     <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Task</th><th className="px-stack-lg py-4">Priority</th><th className="px-stack-lg py-4">Due</th><th className="px-stack-lg py-4">Actions</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -1299,7 +1314,7 @@ function TicketQueue({ accessToken, userId }) {
           )}
         </div>
       ))}
-      {!tickets.length && <p className="text-body-sm text-ink-muted text-center py-8">No tickets in the queue.</p>}
+      {!tickets.length && <p className="text-body-sm text-white/70 text-center py-8">No tickets in the queue.</p>}
     </div>
   );
 }
@@ -1388,7 +1403,7 @@ function Invoices({ accessToken }) {
       )}
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Invoice</th><th className="px-stack-lg py-4">Client</th><th className="px-stack-lg py-4">Total</th><th className="px-stack-lg py-4">Due</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -1462,11 +1477,11 @@ function LeaveApprovals({ accessToken }) {
     <div className="space-y-stack-md">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-ink-muted">Filter:</span>
+          <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
           {['pending', 'approved', 'rejected', 'all'].map((s) => (
             <button key={s} onClick={() => setFilter(s)}
               className={`px-3 py-1.5 rounded border font-label-caps text-label-caps uppercase transition-colors ${
-                filter === s ? 'bg-brand text-white border-brand' : 'border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted hover:border-brand hover:text-brand'
+                filter === s ? 'bg-brand text-white border-brand' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
               }`}>{s}
             </button>
           ))}
@@ -1484,7 +1499,7 @@ function LeaveApprovals({ accessToken }) {
       )}
       <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
             <tr>
               <th className="px-stack-lg py-4">Employee</th>
               <th className="px-stack-lg py-4">Type</th>
@@ -1554,7 +1569,7 @@ function Recruitment({ accessToken }) {
   return (
     <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted">
+        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Applicant</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Status</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -1596,7 +1611,7 @@ export default function EmployeePortal() {
   const [projects] = useState(demoEmployeeProjects);
   const [performance] = useState(demoPerformance);
   const [training] = useState(demoTraining);
-  const [documents] = useState(demoDocuments);
+  const [documents, setDocuments] = useState(demoDocuments);
   const [leadsData, setLeadsData] = useState(demoLeads);
   const [proposalsData, setProposalsData] = useState(demoProposals);
   const [contractsData, setContractsData] = useState(demoContracts);
@@ -1650,6 +1665,22 @@ export default function EmployeePortal() {
   }, [empAuthed, user]);
 
   useEffect(() => {
+    if (!empAuthed || !accessToken) return;
+    fetchMyDocuments(accessToken)
+      .then((res) => {
+        const docs = (res?.data || []).map((d) => ({
+          id: d.id,
+          name: d.title,
+          type: d.type,
+          uploadedOn: d.created_at?.slice(0, 10),
+          file_url: d.file_url,
+        }));
+        if (docs.length) setDocuments(docs);
+      })
+      .catch(() => {});
+  }, [empAuthed, accessToken]);
+
+  useEffect(() => {
     if (!empAuthed || effectiveRole !== 'sales' || !accessToken) return;
     refreshCrm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1672,33 +1703,33 @@ export default function EmployeePortal() {
           <div className="flex items-center gap-4">
             <Avatar name={profile.name} size="lg" />
             <div>
-              <h1 className="font-display text-headline-md text-brand-dark dark:text-dark-brand">Employee Portal</h1>
-              <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{profile.designation} &middot; {profile.department}</p>
+              <h1 className="font-display text-headline-md text-white font-bold">Employee Portal</h1>
+              <p className="text-body-sm text-white/70">{profile.designation} &middot; {profile.department}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {import.meta.env.DEV && (
-              <label className="flex items-center gap-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
+              <label className="flex items-center gap-2 text-body-sm text-white/70">
                 <span className="font-label-caps text-label-caps uppercase">Preview role</span>
                 <select value={roleOverride || profile.role || ''} onChange={(e) => setRoleOverride(e.target.value === profile.role ? null : e.target.value)}
-                  className="border border-outline-variant dark:border-dark-outline-variant rounded px-2 py-1.5 text-body-sm bg-white dark:bg-dark-surface">
+                  className="border border-outline-variant dark:border-dark-outline-variant rounded px-2 py-1.5 text-body-sm bg-white dark:bg-dark-surface text-ink dark:text-dark-ink">
                   {EMPLOYEE_ROLES.map((r) => (
                     <option key={r} value={r}>{r.replace('_', ' ')}{r === profile.role ? ' (actual)' : ''}</option>
                   ))}
                 </select>
               </label>
             )}
-            <button onClick={() => { logout(); setEmpAuthed(false); }} className="border border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all">
+            <button onClick={() => { logout(); setEmpAuthed(false); }} className="border border-white/40 text-white font-bold px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all">
               Sign Out
             </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1 mb-stack-lg border-b border-outline-variant dark:border-dark-outline-variant overflow-x-auto">
+        <div className="flex flex-wrap gap-1 mb-stack-lg border-b border-white/20 overflow-x-auto">
           {portalTabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id ? 'text-brand dark:text-dark-brand border-brand dark:border-dark-brand' : 'text-ink-muted dark:text-dark-ink-muted border-transparent hover:text-brand dark:hover:text-dark-brand'
+                activeTab === tab.id ? 'text-white font-bold border-brand' : 'text-white/70 font-semibold border-transparent hover:text-white hover:border-white/40'
               }`}>
               <Icon name={tab.icon} className="text-lg" />{tab.label}
             </button>

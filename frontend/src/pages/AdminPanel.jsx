@@ -401,7 +401,7 @@ function UserManagement({ accessToken, currentRole }) {
           <div className="p-stack-lg"><LoadingSpinner /></div>
         ) : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
+            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
               <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Role</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Actions</th></tr>
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -436,7 +436,7 @@ function UserManagement({ accessToken, currentRole }) {
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">User Roles</h3>
         </div>
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Role</th><th className="px-stack-lg py-4">Users</th><th className="px-stack-lg py-4">Permissions</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant">
@@ -725,7 +725,7 @@ function ProjectsManagement({ accessToken }) {
           <div className="p-stack-lg"><LoadingSpinner /></div>
         ) : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
+            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
               <tr>
                 <th className="px-stack-lg py-4">Title</th>
                 <th className="px-stack-lg py-4">Industry</th>
@@ -892,7 +892,7 @@ function RolesManagement({ accessToken }) {
           </div>
         )}
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Slug</th><th className="px-stack-lg py-4">Description</th><th className="px-stack-lg py-4"></th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -930,7 +930,7 @@ function RolesManagement({ accessToken }) {
           </div>
         )}
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Module</th><th className="px-stack-lg py-4">Action</th><th className="px-stack-lg py-4"></th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -992,7 +992,7 @@ function AnalyticsPage({ accessToken }) {
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Top Pages</h3>
         </div>
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Path</th><th className="px-stack-lg py-4">Views</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -1246,7 +1246,7 @@ function ReportsManagement({ accessToken }) {
           <div className="p-stack-lg"><LoadingSpinner /></div>
         ) : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
+            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
               <tr><th className="px-stack-lg py-4">Title</th><th className="px-stack-lg py-4">Type</th><th className="px-stack-lg py-4">Period</th><th className="px-stack-lg py-4"></th></tr>
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
@@ -1299,7 +1299,7 @@ function AuditLogsManagement({ accessToken }) {
           <div className="p-stack-lg"><LoadingSpinner /></div>
         ) : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
+            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
               <tr>
                 <th className="px-stack-lg py-4">Action</th>
                 <th className="px-stack-lg py-4">Entity</th>
@@ -1370,8 +1370,8 @@ export default function AdminPanel() {
           <div className="flex items-center gap-4">
             <Avatar name="Admin" size="lg" />
             <div>
-              <h1 className="font-display text-headline-md text-brand-dark dark:text-dark-brand">Admin Panel</h1>
-              <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">System administration and management</p>
+              <h1 className="font-display text-headline-md text-white font-bold">Admin Panel</h1>
+              <p className="text-body-sm text-white/70">System administration and management</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -1380,18 +1380,18 @@ export default function AdminPanel() {
             </Button>
             <button
               onClick={() => { logout(); setAdminAuthed(false); }}
-              className="border border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all"
+              className="border border-white/40 text-white font-bold px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all"
             >
               Sign Out
             </button>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1 mb-stack-lg border-b border-outline-variant dark:border-dark-outline-variant overflow-x-auto">
+        <div className="flex flex-wrap gap-1 mb-stack-lg border-b border-white/20 overflow-x-auto">
           {adminPanelTabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id ? 'text-brand dark:text-dark-brand border-brand dark:border-dark-brand' : 'text-ink-muted dark:text-dark-ink-muted border-transparent dark:border-transparent hover:text-brand dark:hover:text-dark-brand'
+                activeTab === tab.id ? 'text-white font-bold border-brand' : 'text-white/70 font-semibold border-transparent hover:text-white hover:border-white/40'
               }`}>
               <Icon name={tab.icon} className="text-lg" />{tab.label}
             </button>
