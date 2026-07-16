@@ -9,7 +9,7 @@ export default function EngagementProcess() {
       <div className="max-w-container mx-auto relative z-10">
         <Reveal className="text-center mb-16">
           <h2 className="font-display text-headline-md text-accent-cyan mb-4">Our Engineering Lifecycle</h2>
-          <p className="font-body text-surface-dim max-w-2xl mx-auto">
+          <p className="font-body text-white max-w-2xl mx-auto">
             A rigorous, transparent framework designed for predictability and excellence at every stage.
           </p>
         </Reveal>
@@ -25,7 +25,7 @@ export default function EngagementProcess() {
                   <h4 className="font-display text-body-lg font-semibold mb-2 text-white">
                     {step.step} {step.title}
                   </h4>
-                  <p className="text-body-sm text-surface-dim">{step.description}</p>
+                  <p className="text-body-sm text-white">{step.description}</p>
                 </div>
               </Reveal>
             ))}

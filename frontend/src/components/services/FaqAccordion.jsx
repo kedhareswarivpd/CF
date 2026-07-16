@@ -13,7 +13,7 @@ function FaqItem({ faq, isOpen, onToggle, index }) {
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls={id}
-        className="w-full flex items-center justify-between text-left cursor-pointer font-display text-body-lg font-semibold text-ink"
+        className="w-full flex items-center justify-between text-left cursor-pointer font-display text-body-lg font-semibold text-white"
       >
         {faq.question}
         <Icon name="expand_more" className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -23,7 +23,7 @@ function FaqItem({ faq, isOpen, onToggle, index }) {
           id={id}
           role="region"
           aria-labelledby={buttonId}
-          className="pt-4 text-body-md text-ink-muted"
+          className="pt-4 text-body-md text-white"
         >
           {faq.answer}
         </div>
@@ -39,8 +39,8 @@ export default function FaqAccordion() {
     <section className="py-section-padding px-margin-mobile md:px-margin-desktop max-w-container mx-auto">
       <div className="grid lg:grid-cols-12 gap-gutter">
         <div className="lg:col-span-4">
-          <h2 className="font-display text-headline-md text-ink mb-stack-md">Common Questions</h2>
-          <p className="text-body-md text-ink-muted mb-stack-lg">
+          <h2 className="font-display text-headline-md text-white mb-stack-md">Common Questions</h2>
+          <p className="text-body-md text-white mb-stack-lg">
             Everything you need to know about partnering with CoreFusion on your next technical venture.
           </p>
           <div className="p-stack-md bg-accent-cyan-pale rounded-lg border border-brand/20">
