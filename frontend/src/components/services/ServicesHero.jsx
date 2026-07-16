@@ -8,7 +8,7 @@ export default function ServicesHero() {
         <div className="flex flex-col gap-stack-md">
           <Badge className="bg-accent-cyan-pale text-brand w-fit animate-hero-1">High-Performance Engineering</Badge>
           <h1 className="font-display text-display-lg-mobile md:text-display-lg text-ink animate-hero-2">Our Technology Offerings</h1>
-          <p className="font-body text-body-lg text-ink-muted max-w-xl animate-hero-3">
+          <p className="font-body text-body-lg text-white max-w-xl animate-hero-3">
             Engineered for scale, security, and velocity. We bridge the gap between complex enterprise needs
             and cutting-edge digital implementation.
           </p>
