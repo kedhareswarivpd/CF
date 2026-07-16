@@ -78,7 +78,7 @@ function LoginGate({ onSuccess }) {
   };
 
   return (
-    <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container flex items-center justify-center px-margin-mobile">
+    <div className="py-section-padding bg-white flex items-center justify-center px-margin-mobile">
       <div className="w-full max-w-sm bg-white rounded-lg shadow-card-hover p-stack-lg">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-full bg-brand-dark flex items-center justify-center">
@@ -424,11 +424,11 @@ export default function SuperAdminPanel() {
   const [authed, setAuthed] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
 
-  if (initializing) return <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container"><LoadingSpinner /></div>;
+  if (initializing) return <div className="py-section-padding bg-white"><LoadingSpinner /></div>;
   if (!authed) return <LoginGate onSuccess={() => setAuthed(true)} />;
 
   return (
-    <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container">
+    <div className="py-section-padding bg-white">
       <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
         <div className="flex items-center justify-between gap-4 mb-stack-lg">
           <div className="flex items-center gap-4">
