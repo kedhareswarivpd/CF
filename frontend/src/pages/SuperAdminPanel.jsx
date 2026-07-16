@@ -91,11 +91,11 @@ function LoginGate({ onSuccess }) {
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-stack-md">
           <label className="flex flex-col gap-1.5">
-            <span className="font-label-caps text-label-caps uppercase text-ink-muted">Email</span>
+            <span className="font-label-caps text-label-caps uppercase text-white">Email</span>
             <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@corefusiontech.com" className={LOGIN_INPUT_CLASS} />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="font-label-caps text-label-caps uppercase text-ink-muted">Password</span>
+            <span className="font-label-caps text-label-caps uppercase text-white">Password</span>
             <div className="relative">
               <input required type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={LOGIN_INPUT_CLASS} />
               <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink">
