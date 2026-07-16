@@ -7,7 +7,7 @@ export default function ServiceCard({ service }) {
         <Icon name={service.icon} className="text-brand text-4xl leading-none" />
       </div>
       <h3 className="font-display text-headline-sm text-ink dark:text-dark-ink mb-stack-sm">{service.title}</h3>
-      <p className="font-body text-body-md text-ink-muted dark:text-dark-ink-muted mb-stack-md">{service.description}</p>
+      <p className="font-body text-body-md text-white mb-stack-md">{service.description}</p>
       <div className="mb-stack-md space-y-2">
         <p className="font-label-caps text-label-caps uppercase text-white">Key Features</p>
         <ul className="space-y-1">

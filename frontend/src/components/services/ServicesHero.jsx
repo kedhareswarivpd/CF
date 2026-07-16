@@ -16,19 +16,19 @@ export default function ServicesHero() {
         <div className="hidden md:block animate-hero-panel">
           <div className="glass-panel-light p-stack-lg rounded-lg flex flex-col gap-stack-md animate-float">
             <div className="flex items-center justify-between border-b border-outline-variant pb-stack-sm">
-              <span className="font-label-caps text-label-caps uppercase text-brand">Real-time Delivery Metrics</span>
-              <span className="material-symbols-outlined text-brand">bolt</span>
+              <span className="font-label-caps text-label-caps uppercase text-white">Real-time Delivery Metrics</span>
+              <span className="material-symbols-outlined text-white">bolt</span>
             </div>
             <div className="grid grid-cols-2 gap-stack-md">
               <div>
-                <p className="font-display text-headline-lg text-ink">
-                  99.9<span className="text-brand">%</span>
+                <p className="font-display text-headline-lg text-white">
+                  99.9<span className="text-accent-cyan">%</span>
                 </p>
-                <p className="font-label-caps text-label-caps uppercase text-ink-muted">Uptime SLA</p>
+                <p className="font-label-caps text-label-caps uppercase text-white">Uptime SLA</p>
               </div>
               <div>
-                <p className="font-display text-headline-lg text-ink">24/7</p>
-                <p className="font-label-caps text-label-caps uppercase text-ink-muted">Global Monitoring</p>
+                <p className="font-display text-headline-lg text-white">24/7</p>
+                <p className="font-label-caps text-label-caps uppercase text-white">Global Monitoring</p>
               </div>
             </div>
           </div>
