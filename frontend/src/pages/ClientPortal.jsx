@@ -19,7 +19,7 @@ const STATUS_VARIANTS = {
   in_progress: 'info', completed: 'success', planning: 'warning', on_hold: 'neutral',
   paid: 'success', pending: 'warning', overdue: 'error', sent: 'info', draft: 'neutral',
   open: 'info', resolved: 'success', closed: 'neutral', cancelled: 'error',
-  completed: 'success', upcoming: 'info',
+  upcoming: 'info',
   project: 'info', financial: 'warning', annual: 'neutral',
 };
 
