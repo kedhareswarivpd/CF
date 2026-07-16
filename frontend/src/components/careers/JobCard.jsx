@@ -8,7 +8,7 @@ export default function JobCard({ job }) {
         <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{job.title}</h3>
         <Badge className="bg-accent-cyan-pale text-brand text-label-caps whitespace-nowrap">{job.department}</Badge>
       </div>
-      <div className="flex flex-wrap gap-4 mb-4 text-body-sm text-ink-muted">
+      <div className="flex flex-wrap gap-4 mb-4 text-body-sm text-white">
         <span className="flex items-center gap-1.5">
           <Icon name="location_on" className="text-body-md leading-none" />
           {job.location}
@@ -22,7 +22,7 @@ export default function JobCard({ job }) {
           {job.experience}
         </span>
       </div>
-      <p className="text-body-md text-ink-muted mb-4">{job.description}</p>
+      <p className="text-body-md text-white mb-4">{job.description}</p>
       <details className="group" aria-label={job.title}>
         <summary className="cursor-pointer font-label-caps text-label-caps uppercase text-brand hover:text-brand-dark transition-colors list-none flex items-center gap-2">
           <span>View Details</span>

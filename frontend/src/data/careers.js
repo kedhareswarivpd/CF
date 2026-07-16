@@ -125,6 +125,27 @@ export const jobs = [
       'Scripting skills in Bash and Python',
     ],
   },
+  {
+    slug: 'senior-qa-automation-engineer',
+    title: 'Senior QA Automation Engineer',
+    department: 'Engineering',
+    location: 'Remote',
+    type: 'Full-time',
+    experience: '5+ years',
+    description: 'We are looking for a Senior QA Automation Engineer to lead E2E testing initiatives for our React + FastAPI projects.',
+    responsibilities: [
+      'Design and implement comprehensive E2E test suites for React frontends',
+      'Build and maintain automated API test frameworks for FastAPI backends',
+      'Integrate automated tests into CI/CD pipelines',
+      'Define and enforce quality assurance best practices across the team',
+    ],
+    requirements: [
+      '5+ years experience in QA automation engineering',
+      'Expertise in Playwright, Cypress, or Selenium for E2E testing',
+      'Strong experience with Python testing frameworks (pytest, unittest)',
+      'Experience testing React applications and RESTful APIs',
+    ],
+  },
 ];
 
 export const benefits = [
