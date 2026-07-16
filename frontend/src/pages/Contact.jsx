@@ -17,7 +17,7 @@ export default function Contact() {
       <Reveal className="text-center max-w-2xl mx-auto mb-stack-xl">
         <span className="font-label-caps text-label-caps uppercase text-brand">Get in Touch</span>
         <h1 className="font-display text-headline-md text-brand-dark dark:text-dark-brand mt-4 mb-4">Let's Build Something Resilient</h1>
-        <p className="text-ink-muted dark:text-dark-ink-muted text-body-lg">
+        <p className="text-white text-body-lg">
           Tell us about your next technical initiative — a Solution Architect will follow up within one
           business day.
         </p>
@@ -42,15 +42,15 @@ export default function Contact() {
           </Reveal>
 
           <Reveal from="right" delay={200} className="bg-surface-low dark:bg-dark-surface-low border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-            <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-4">Global Offices</h3>
+            <h3 className="font-display text-headline-sm text-white mb-4">Global Offices</h3>
             <div className="flex flex-col gap-4">
               {OFFICES.map((office, i) => (
                 <Reveal key={office.city} from="right" delay={300 + i * 80}>
                   <div className="flex items-start gap-3">
-                    <Icon name="location_on" className="text-brand mt-0.5" />
+                    <Icon name="location_on" className="text-white mt-0.5" />
                     <div>
-                      <p className="font-semibold text-ink dark:text-dark-ink text-body-sm">{office.city}</p>
-                      <p className="text-ink-muted dark:text-dark-ink-muted text-xs uppercase tracking-wide">{office.role}</p>
+                      <p className="font-semibold text-white text-body-sm">{office.city}</p>
+                      <p className="text-white text-xs uppercase tracking-wide">{office.role}</p>
                     </div>
                   </div>
                 </Reveal>
