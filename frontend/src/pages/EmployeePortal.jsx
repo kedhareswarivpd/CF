@@ -1689,7 +1689,6 @@ export default function EmployeePortal() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {import.meta.env.DEV && (
               <label className="flex items-center gap-2 text-body-sm text-white/70">
                 <span className="font-label-caps text-label-caps uppercase">Preview role</span>
                 <select value={roleOverride || profile.role || ''} onChange={(e) => { const val = e.target.value === profile.role ? null : e.target.value; if (val) { localStorage.setItem('emp_role_override', val); window.location.href = ROLE_PATH_MAP[val] || '/employee'; } else { localStorage.removeItem('emp_role_override'); window.location.href = ROLE_PATH_MAP[profile.role] || '/employee'; } }}
@@ -1699,7 +1698,6 @@ export default function EmployeePortal() {
                   ))}
                 </select>
               </label>
-            )}
             <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
               Sign Out
             </Button>
