@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Icon from '../components/ui/Icon.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
 import Button from '../components/ui/Button.jsx';
@@ -8,7 +9,7 @@ import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { demoDashboard } from '../data/portal.js';
 import { fetchAdminKPIs } from '../lib/db.js';
-import { loginToPortal } from '../lib/portalAuth.js';
+import { fetchCurrentUser } from '../api/auth.js';
 import {
   fetchDepartments, createDepartment, deleteDepartment,
   fetchRoles, createRole, deleteRole, fetchPermissions, createPermission, deletePermission,
@@ -16,7 +17,7 @@ import {
   fetchAuditLogs,
 } from '../api/admin.js';
 
-const SUPER_ADMIN_PORTAL_ROLES = ['super_admin'];
+
 
 const superAdminTabs = [
   { id: 'overview', label: 'Overview', icon: 'dashboard' },
@@ -29,7 +30,6 @@ const superAdminTabs = [
 ];
 
 const FORM_INPUT_CLASS = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
-const LOGIN_INPUT_CLASS = 'border border-outline-variant rounded px-4 py-3 text-body-md text-ink bg-white focus:outline-none focus:border-brand';
 
 function RowAction({ onClick, disabled, variant = 'primary', children }) {
   const styles = variant === 'primary'
@@ -51,64 +51,6 @@ function ComingSoon({ icon, title, description }) {
       <Icon name={icon} className="text-4xl text-ink-muted dark:text-dark-ink-muted mb-3" />
       <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-2">{title}</h3>
       <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted max-w-md mx-auto">{description}</p>
-    </div>
-  );
-}
-
-function LoginGate({ onSuccess }) {
-  const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError('');
-    try {
-      await loginToPortal(login, email, password, SUPER_ADMIN_PORTAL_ROLES);
-      onSuccess();
-    } catch (err) {
-      setError(err.message || 'Invalid email or password.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="py-section-padding bg-white flex items-center justify-center px-margin-mobile">
-      <div className="w-full max-w-sm bg-white rounded-lg shadow-card-hover p-stack-lg">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full bg-brand-dark flex items-center justify-center">
-            <Icon name="shield_person" className="text-white text-xl" />
-          </div>
-          <div>
-            <h1 className="font-display text-headline-sm text-brand-dark">Super Admin</h1>
-            <p className="text-body-sm text-ink-muted">Sign in with a Super Admin account</p>
-          </div>
-        </div>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-stack-md">
-          <label className="flex flex-col gap-1.5">
-            <span className="font-label-caps text-label-caps uppercase text-white">Email</span>
-            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@corefusiontech.com" className={LOGIN_INPUT_CLASS} />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="font-label-caps text-label-caps uppercase text-white">Password</span>
-            <div className="relative">
-              <input required type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={LOGIN_INPUT_CLASS} />
-              <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink">
-                <Icon name={showPassword ? 'visibility_off' : 'visibility'} />
-              </button>
-            </div>
-          </label>
-          {error && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{error}</p>}
-          <button type="submit" disabled={submitting} className="bg-brand-dark text-white h-11 rounded font-label-caps text-label-caps uppercase hover:opacity-90 transition-all active:scale-95 disabled:opacity-60">
-            {submitting ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-      </div>
     </div>
   );
 }
@@ -420,53 +362,76 @@ function AuditLogs({ accessToken }) {
 
 export default function SuperAdminPanel() {
   useDocumentTitle('Super Admin | CoreFusion Technologies');
-  const { initializing, accessToken, logout } = useAuth();
-  const [authed, setAuthed] = useState(false);
+  const { user, initializing, accessToken, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [currentUser, setCurrentUser] = useState(null);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    fetchCurrentUser(accessToken).then((res) => setCurrentUser(res?.data || null)).catch(() => {});
+  }, [accessToken]);
 
   if (initializing) return <div className="py-section-padding bg-white"><LoadingSpinner /></div>;
-  if (!authed) return <LoginGate onSuccess={() => setAuthed(true)} />;
+  if (!user) { navigate('/login', { replace: true }); return null; }
 
   return (
     <div className="py-section-padding bg-white">
       <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
         <div className="flex items-center justify-between gap-4 mb-stack-lg">
           <div className="flex items-center gap-4">
-            <Avatar name="Super Admin" size="lg" />
+            <Avatar name={currentUser?.name || 'Super Admin'} size="lg" />
             <div>
-              <h1 className="font-display text-headline-md text-white font-bold">Super Admin</h1>
-              <p className="text-body-sm text-white/70">Unrestricted system control</p>
+              <h1 className="font-display text-headline-md text-black font-bold">{currentUser?.name || 'Super Admin'}</h1>
+              <p className="text-body-sm text-black">{currentUser?.email || ''} &middot; super admin</p>
             </div>
           </div>
-          <button onClick={() => { logout(); setAuthed(false); }} className="border border-white/40 text-white font-bold px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all">
+          <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
             Sign Out
-          </button>
+          </Button>
         </div>
 
-        <div className="flex flex-wrap gap-1 mb-stack-lg border-b border-white/20 overflow-x-auto">
-          {superAdminTabs.map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id ? 'text-white font-bold border-brand' : 'text-white/70 font-semibold border-transparent hover:text-white hover:border-white/40'
-              }`}>
-              <Icon name={tab.icon} className="text-lg" />{tab.label}
-            </button>
-          ))}
-        </div>
+        <div className="flex gap-stack-lg">
+          <aside className="w-56 shrink-0 hidden md:block">
+            <nav className="flex flex-col gap-1">
+              {superAdminTabs.map((tab) => (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-label-caps text-label-caps uppercase text-left transition-colors ${
+                    activeTab === tab.id ? 'bg-brand/10 text-brand font-bold' : 'text-ink-muted hover:bg-surface-container hover:text-ink'
+                  }`}>
+                  <Icon name={tab.icon} className="text-lg" />{tab.label}
+                </button>
+              ))}
+            </nav>
+          </aside>
 
-        {activeTab === 'overview' && <Overview />}
-        {activeTab === 'departments' && <Departments accessToken={accessToken} />}
-        {activeTab === 'roles' && <RolesPermissions accessToken={accessToken} />}
-        {activeTab === 'gdpr' && <DataExportGdpr accessToken={accessToken} />}
-        {activeTab === 'audit' && <AuditLogs accessToken={accessToken} />}
-        {activeTab === 'billing' && (
-          <ComingSoon icon="account_balance" title="Billing & Subscription"
-            description="This deployment doesn't have a billing/subscription model yet — there's no plan, invoice-to-platform, or metering system in the current schema. Building it for real is a separate project, not a UI-only add-on." />
-        )}
-        {activeTab === 'impersonation' && (
-          <ComingSoon icon="switch_account" title="Impersonation"
-            description="Deliberately not implemented yet. Signing in as another user safely requires audit-logged, time-boxed session tokens and its own review — that's a security-sensitive feature that shouldn't ship as a quick add-on." />
-        )}
+          <div className="flex md:hidden flex-wrap gap-1 mb-stack-lg border-b border-outline-variant overflow-x-auto">
+            {superAdminTabs.map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === tab.id ? 'text-brand font-bold border-brand' : 'text-ink-muted font-semibold border-transparent hover:text-ink hover:border-outline-variant'
+                }`}>
+                <Icon name={tab.icon} className="text-lg" />{tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            {activeTab === 'overview' && <Overview />}
+            {activeTab === 'departments' && <Departments accessToken={accessToken} />}
+            {activeTab === 'roles' && <RolesPermissions accessToken={accessToken} />}
+            {activeTab === 'gdpr' && <DataExportGdpr accessToken={accessToken} />}
+            {activeTab === 'audit' && <AuditLogs accessToken={accessToken} />}
+            {activeTab === 'billing' && (
+              <ComingSoon icon="account_balance" title="Billing & Subscription"
+                description="This deployment doesn't have a billing/subscription model yet — there's no plan, invoice-to-platform, or metering system in the current schema. Building it for real is a separate project, not a UI-only add-on." />
+            )}
+            {activeTab === 'impersonation' && (
+              <ComingSoon icon="switch_account" title="Impersonation"
+                description="Deliberately not implemented yet. Signing in as another user safely requires audit-logged, time-boxed session tokens and its own review — that's a security-sensitive feature that shouldn't ship as a quick add-on." />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

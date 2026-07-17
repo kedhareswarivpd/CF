@@ -11,6 +11,7 @@ from app.core.dependencies import get_current_user, require_roles
 from app.core.errors import ApiError
 from app.crud.base import CRUDBase
 from app.models.attendance import Attendance
+from app.models.department import Department
 from app.models.employee import Employee
 from app.models.employee_document import EmployeeDocument
 from app.models.leave import Leave
@@ -45,7 +46,14 @@ async def _get_employee_for_user(db: AsyncSession, user: User) -> Employee:
 @router.get("/me/profile", response_model=dict)
 async def my_profile(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
-    return success_response(data=EmployeeOut.model_validate(employee))
+    emp_data = EmployeeOut.model_validate(employee).model_dump()
+    emp_data["name"] = current_user.name
+    emp_data["email"] = current_user.email
+    emp_data["role"] = current_user.role
+    if employee.department_id:
+        dept = (await db.execute(select(Department).where(Department.id == employee.department_id))).scalar_one_or_none()
+        emp_data["department_name"] = dept.name if dept else None
+    return success_response(data=emp_data)
 
 
 @router.post("/me/attendance/check-in", response_model=dict)

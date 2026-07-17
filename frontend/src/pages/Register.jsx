@@ -29,7 +29,7 @@ export default function Register() {
     setSubmitting(true);
     try {
       await register(form.name, form.email, form.password);
-      navigate('/client');
+      navigate('/login');
     } catch (err) {
       const msg = err.message || 'Registration failed. Please try again.';
       // Supabase email-confirmation flow — not an error, show success notice

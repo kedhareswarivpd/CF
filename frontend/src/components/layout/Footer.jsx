@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Icon from '../ui/Icon.jsx';
 import FooterMap from './FooterMap.jsx';
 
@@ -28,12 +28,17 @@ const HQ = 'Connaught Place, New Delhi, India';
 const OFFICES = ['Bangalore', 'Dubai', 'Singapore', 'Mumbai'];
 
 export default function Footer() {
+  const { pathname } = useLocation();
+  const showMap = pathname === '/';
+
   return (
     <footer className="relative w-full pb-stack-lg px-margin-mobile md:px-margin-desktop bg-white text-ink overflow-hidden">
-      {/* Real world map with HQ + office pins */}
-      <div className="max-w-container mx-auto mb-12 rounded-xl overflow-hidden border border-outline-variant shadow-card">
-        <FooterMap />
-      </div>
+      {/* Real world map with HQ + office pins — landing page only */}
+      {showMap && (
+        <div className="max-w-container mx-auto mb-12 rounded-xl overflow-hidden border border-outline-variant shadow-card">
+          <FooterMap />
+        </div>
+      )}
       <div className="max-w-container mx-auto grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-8 gap-y-12">
 
         {/* Brand — spans 2 cols */}

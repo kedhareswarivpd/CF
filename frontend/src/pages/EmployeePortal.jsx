@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../components/ui/Icon.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
 import StatusBadge from '../components/ui/StatusBadge.jsx';
@@ -6,13 +7,12 @@ import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { employeeTabsForRole, demoEmployeeProfile, demoAttendance, demoLeaves, demoTimesheets, demoPayslips, demoTasks, demoEmployeeProjects, demoPerformance, demoTraining, demoDocuments, demoLeads, demoProposals, demoContracts } from '../data/portal.js';
+import { employeeTabsForRole, demoAttendance, demoLeaves, demoTimesheets, demoPayslips, demoTasks, demoEmployeeProjects, demoPerformance, demoTraining, demoDocuments, demoLeads, demoProposals, demoContracts } from '../data/portal.js';
 import {
-  fetchEmployeeProfile, fetchEmployeeAttendance, fetchEmployeeLeaves,
+  fetchEmployeeAttendance, fetchEmployeeLeaves,
   fetchEmployeeTimesheets, fetchEmployeePayslips,
-  checkInEmployee, checkOutEmployee,
 } from '../lib/db.js';
-import { applyLeave as applyLeaveApi, submitTimesheet, fetchMyDocuments } from '../api/employees.js';
+import { fetchMyProfile, applyLeave as applyLeaveApi, submitTimesheet, fetchMyDocuments, checkIn as checkInApi, checkOut as checkOutApi } from '../api/employees.js';
 import {
   fetchLeads, createLead, updateLead,
   fetchProposals, createProposal, sendProposal, acceptProposal, rejectProposal,
@@ -28,69 +28,6 @@ import {
   assignProjectTeam, fetchAdminProjects, createProject,
   fetchClients, fetchEmployees,
 } from '../api/admin.js';
-import { loginToPortal } from '../lib/portalAuth.js';
-
-const EMPLOYEE_PORTAL_ROLES = ['employee', 'developer', 'sales', 'marketing', 'project_manager', 'qa', 'support', 'finance', 'hr'];
-
-function LoginGate({ onSuccess }) {
-  const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError('');
-    try {
-      await loginToPortal(login, email, password, EMPLOYEE_PORTAL_ROLES);
-      onSuccess();
-    } catch (err) {
-      setError(err.message || 'Invalid email or password.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const inputClass = 'w-full rounded border border-outline-variant dark:border-dark-outline-variant px-4 py-2.5 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand';
-
-  return (
-    <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container flex items-center justify-center px-margin-mobile">
-      <div className="w-full max-w-sm bg-white dark:bg-dark-surface rounded-lg shadow-card-hover p-stack-lg">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full bg-brand flex items-center justify-center">
-            <Icon name="badge" className="text-white text-xl" />
-          </div>
-          <div>
-            <h1 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Employee Portal</h1>
-            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Sign in to access your portal</p>
-          </div>
-        </div>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-stack-md">
-          <label className="flex flex-col gap-1.5">
-            <span className="font-label-caps text-label-caps uppercase text-ink-muted">Email</span>
-            <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@corefusiontech.com" className={inputClass} />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="font-label-caps text-label-caps uppercase text-ink-muted">Password</span>
-            <div className="relative">
-              <input required type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className={inputClass} />
-              <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink">
-                <Icon name={showPassword ? 'visibility_off' : 'visibility'} />
-              </button>
-            </div>
-          </label>
-          {error && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{error}</p>}
-          <button type="submit" disabled={submitting} className="bg-brand text-white h-11 rounded font-label-caps text-label-caps uppercase hover:bg-brand-dark transition-all active:scale-95 disabled:opacity-60">
-            {submitting ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
-}
 
 function Overview({ profile, attendance, leaves, timesheets, payslips }) {
   const totalHours = timesheets.reduce((s, t) => s + t.hours, 0);
@@ -156,7 +93,8 @@ function Attendance({ attendance, employeeId }) {
     setLoading(true);
     const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     try {
-      const updated = employeeId ? await checkInEmployee(employeeId) : null;
+      const res = accessToken ? await checkInApi(accessToken) : null;
+      const updated = res?.data;
       const time = updated?.checkIn || now;
       setCurrent((prev) => ({ ...prev, checkIn: time, status: 'present' }));
       setCheckedIn(true);
@@ -174,7 +112,8 @@ function Attendance({ attendance, employeeId }) {
     setLoading(true);
     const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     try {
-      const updated = employeeId ? await checkOutEmployee(employeeId) : null;
+      const res = accessToken ? await checkOutApi(accessToken) : null;
+      const updated = res?.data;
       const time = updated?.checkOut || now;
       setCurrent((prev) => ({ ...prev, checkOut: time }));
       setCheckedOut(true);
@@ -1595,13 +1534,43 @@ function Recruitment({ accessToken }) {
   );
 }
 
+const ROLE_LABELS = {
+  employee: 'Employee',
+  developer: 'Developer',
+  sales: 'Sales',
+  marketing: 'Marketing',
+  project_manager: 'Project Manager',
+  qa: 'QA',
+  support: 'Support',
+  finance: 'Finance',
+  hr: 'HR',
+};
+
+const PATH_ROLE_MAP = {
+  '/employee': 'employee',
+  '/sales': 'sales',
+  '/marketing': 'marketing',
+  '/developer': 'developer',
+  '/project-manager': 'project_manager',
+  '/qa': 'qa',
+  '/support': 'support',
+  '/finance': 'finance',
+  '/hr': 'hr',
+};
+
+const ROLE_PATH_MAP = Object.fromEntries(Object.entries(PATH_ROLE_MAP).map(([path, role]) => [role, path]));
+
 export default function EmployeePortal() {
-  useDocumentTitle('Employee Portal | CoreFusion Technologies');
+  const { pathname } = useLocation();
+  const urlRole = PATH_ROLE_MAP[pathname] || 'employee';
+  const portalTitle = `${ROLE_LABELS[urlRole] || 'Employee'} Portal`;
+
+  useDocumentTitle(`${portalTitle} | CoreFusion Technologies`);
   const { user, initializing, accessToken, logout } = useAuth();
-  const [empAuthed, setEmpAuthed] = useState(false);
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState(demoEmployeeProfile);
+  const [profile, setProfile] = useState({ name: user?.email || '', email: user?.email || '', role: 'employee', designation: '', department: '', status: 'active', employee_code: '' });
   const [employeeId, setEmployeeId] = useState(null);
   const [attendance, setAttendance] = useState(demoAttendance);
   const [leaves, setLeaves] = useState(demoLeaves);
@@ -1619,7 +1588,7 @@ export default function EmployeePortal() {
   // seeded test account per role. Never rendered in production builds (see below) and
   // has no bearing on real permissions — the backend still enforces the logged-in
   // user's actual role on every API call.
-  const [roleOverride, setRoleOverride] = useState(null);
+  const [roleOverride, setRoleOverride] = useState(() => localStorage.getItem('emp_role_override') || null);
   const effectiveRole = roleOverride || profile.role;
   const portalTabs = employeeTabsForRole(effectiveRole);
 
@@ -1634,22 +1603,33 @@ export default function EmployeePortal() {
   };
 
   useEffect(() => {
-    if (!empAuthed || !user) { setLoading(false); return; }
+    if (!user || !accessToken) { setLoading(false); return; }
     setLoading(true);
-    fetchEmployeeProfile(user.id)
-      .then((p) => {
+
+    fetchMyProfile(accessToken)
+      .then((res) => {
+        const p = res?.data;
         if (!p) {
-          // No employee record found — keep demo data, but log a warning
-          console.warn('No employee profile found for user', user.id, '— using demo data');
+          console.warn('No employee profile found for user', user.id);
           return;
         }
-        setProfile(p);
-        setEmployeeId(p._employeeId);
+        const mapped = {
+          _employeeId: p.id,
+          employee_code: p.employee_code,
+          name: p.name || user.email,
+          email: p.email || user.email,
+          role: p.role || 'employee',
+          designation: p.designation,
+          department: p.department_name || p.department_id,
+          status: p.status,
+        };
+        setProfile(mapped);
+        setEmployeeId(p.id);
         return Promise.allSettled([
-          fetchEmployeeAttendance(p._employeeId),
-          fetchEmployeeLeaves(p._employeeId),
-          fetchEmployeeTimesheets(p._employeeId),
-          fetchEmployeePayslips(p._employeeId),
+          fetchEmployeeAttendance(p.id),
+          fetchEmployeeLeaves(p.id),
+          fetchEmployeeTimesheets(p.id),
+          fetchEmployeePayslips(p.id),
         ]);
       })
       .then((results) => {
@@ -1662,10 +1642,10 @@ export default function EmployeePortal() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [empAuthed, user]);
+  }, [user]);
 
   useEffect(() => {
-    if (!empAuthed || !accessToken) return;
+    if (!user || !accessToken) return;
     fetchMyDocuments(accessToken)
       .then((res) => {
         const docs = (res?.data || []).map((d) => ({
@@ -1678,13 +1658,13 @@ export default function EmployeePortal() {
         if (docs.length) setDocuments(docs);
       })
       .catch(() => {});
-  }, [empAuthed, accessToken]);
+  }, [accessToken]);
 
   useEffect(() => {
-    if (!empAuthed || effectiveRole !== 'sales' || !accessToken) return;
+    if (!user || effectiveRole !== 'sales' || !accessToken) return;
     refreshCrm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [empAuthed, effectiveRole, accessToken]);
+  }, [effectiveRole, accessToken]);
 
   // Reset to the first tab whenever the (real or previewed) role changes, since the
   // previously active tab may not exist in the new role's tab set.
@@ -1693,7 +1673,7 @@ export default function EmployeePortal() {
   }, [effectiveRole]);
 
   if (initializing) return <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container"><LoadingSpinner /></div>;
-  if (!empAuthed) return <LoginGate onSuccess={() => setEmpAuthed(true)} />;
+  if (!user) { navigate('/login', { replace: true }); return null; }
   if (loading) return <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container"><LoadingSpinner /></div>;
 
   return (
@@ -1703,15 +1683,16 @@ export default function EmployeePortal() {
           <div className="flex items-center gap-4">
             <Avatar name={profile.name} size="lg" />
             <div>
-              <h1 className="font-display text-headline-md text-white font-bold">Employee Portal</h1>
-              <p className="text-body-sm text-white/70">{profile.designation} &middot; {profile.department}</p>
+              <p className="text-body-xs text-white/50 uppercase tracking-widest font-label-caps mb-1">{portalTitle}</p>
+              <h1 className="font-display text-headline-md text-white font-bold">{profile.name}</h1>
+              <p className="text-body-sm text-white/70">{profile.email} &middot; {profile.designation} &middot; {profile.department}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {import.meta.env.DEV && (
               <label className="flex items-center gap-2 text-body-sm text-white/70">
                 <span className="font-label-caps text-label-caps uppercase">Preview role</span>
-                <select value={roleOverride || profile.role || ''} onChange={(e) => setRoleOverride(e.target.value === profile.role ? null : e.target.value)}
+                <select value={roleOverride || profile.role || ''} onChange={(e) => { const val = e.target.value === profile.role ? null : e.target.value; if (val) { localStorage.setItem('emp_role_override', val); window.location.href = ROLE_PATH_MAP[val] || '/employee'; } else { localStorage.removeItem('emp_role_override'); window.location.href = ROLE_PATH_MAP[profile.role] || '/employee'; } }}
                   className="border border-outline-variant dark:border-dark-outline-variant rounded px-2 py-1.5 text-body-sm bg-white dark:bg-dark-surface text-ink dark:text-dark-ink">
                   {EMPLOYEE_ROLES.map((r) => (
                     <option key={r} value={r}>{r.replace('_', ' ')}{r === profile.role ? ' (actual)' : ''}</option>
@@ -1719,46 +1700,63 @@ export default function EmployeePortal() {
                 </select>
               </label>
             )}
-            <button onClick={() => { logout(); setEmpAuthed(false); }} className="border border-white/40 text-white font-bold px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all">
+            <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
               Sign Out
-            </button>
+            </Button>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1 mb-stack-lg border-b border-white/20 overflow-x-auto">
-          {portalTabs.map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id ? 'text-white font-bold border-brand' : 'text-white/70 font-semibold border-transparent hover:text-white hover:border-white/40'
-              }`}>
-              <Icon name={tab.icon} className="text-lg" />{tab.label}
-            </button>
-          ))}
-        </div>
+        <div className="flex gap-stack-lg">
+          <aside className="w-56 shrink-0 hidden md:block">
+            <nav className="sticky top-24 flex flex-col gap-1">
+              {portalTabs.map((tab) => (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-label-caps text-label-caps uppercase text-left transition-colors ${
+                    activeTab === tab.id ? 'bg-white/10 text-white font-bold' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                  }`}>
+                  <Icon name={tab.icon} className="text-lg" />{tab.label}
+                </button>
+              ))}
+            </nav>
+          </aside>
 
-        {activeTab === 'overview' && <Overview profile={profile} attendance={attendance} leaves={leaves} timesheets={timesheets} payslips={payslips} />}
-        {activeTab === 'leads' && <Leads leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-        {activeTab === 'proposals' && <Proposals proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-        {activeTab === 'contracts' && <Contracts contracts={contractsData} proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-        {activeTab === 'marketing-leads' && <MarketingLeadsView accessToken={accessToken} />}
-        {activeTab === 'testimonials' && <TestimonialModeration accessToken={accessToken} />}
-        {activeTab === 'team-projects' && <TeamProjects accessToken={accessToken} userId={user?.id} />}
-        {activeTab === 'task-board' && <TaskBoard accessToken={accessToken} userId={user?.id} />}
-        {activeTab === 'approvals' && <Approvals accessToken={accessToken} />}
-        {activeTab === 'test-queue' && <TestQueue accessToken={accessToken} />}
-        {activeTab === 'ticket-queue' && <TicketQueue accessToken={accessToken} userId={user?.id} />}
-        {activeTab === 'invoices' && <Invoices accessToken={accessToken} />}
-        {activeTab === 'leave-approvals' && <LeaveApprovals accessToken={accessToken} />}
-        {activeTab === 'recruitment' && <Recruitment accessToken={accessToken} />}
-        {activeTab === 'attendance' && <Attendance attendance={attendance} employeeId={employeeId} />}
-        {activeTab === 'leaves' && <Leaves leaves={leaves} employeeId={employeeId} accessToken={accessToken} />}
-        {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} employeeId={employeeId} accessToken={accessToken} />}
-        {activeTab === 'payslips' && <Payslips payslips={payslips} />}
-        {activeTab === 'tasks' && <Tasks tasks={tasks} />}
-        {activeTab === 'projects' && <Projects projects={projects} />}
-        {activeTab === 'performance' && <Performance reviews={performance} />}
-        {activeTab === 'training' && <Training courses={training} />}
-        {activeTab === 'documents' && <Documents docs={documents} />}
+          <div className="flex md:hidden flex-wrap gap-1 mb-stack-lg border-b border-outline-variant overflow-x-auto">
+            {portalTabs.map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === tab.id ? 'text-brand font-bold border-brand' : 'text-ink-muted font-semibold border-transparent hover:text-ink hover:border-outline-variant'
+                }`}>
+                <Icon name={tab.icon} className="text-lg" />{tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            {activeTab === 'overview' && <Overview profile={profile} attendance={attendance} leaves={leaves} timesheets={timesheets} payslips={payslips} />}
+            {activeTab === 'leads' && <Leads leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+            {activeTab === 'proposals' && <Proposals proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+            {activeTab === 'contracts' && <Contracts contracts={contractsData} proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+            {activeTab === 'marketing-leads' && <MarketingLeadsView accessToken={accessToken} />}
+            {activeTab === 'testimonials' && <TestimonialModeration accessToken={accessToken} />}
+            {activeTab === 'team-projects' && <TeamProjects accessToken={accessToken} userId={user?.id} />}
+            {activeTab === 'task-board' && <TaskBoard accessToken={accessToken} userId={user?.id} />}
+            {activeTab === 'approvals' && <Approvals accessToken={accessToken} />}
+            {activeTab === 'test-queue' && <TestQueue accessToken={accessToken} />}
+            {activeTab === 'ticket-queue' && <TicketQueue accessToken={accessToken} userId={user?.id} />}
+            {activeTab === 'invoices' && <Invoices accessToken={accessToken} />}
+            {activeTab === 'leave-approvals' && <LeaveApprovals accessToken={accessToken} />}
+            {activeTab === 'recruitment' && <Recruitment accessToken={accessToken} />}
+            {activeTab === 'attendance' && <Attendance attendance={attendance} employeeId={employeeId} />}
+            {activeTab === 'leaves' && <Leaves leaves={leaves} employeeId={employeeId} accessToken={accessToken} />}
+            {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} employeeId={employeeId} accessToken={accessToken} />}
+            {activeTab === 'payslips' && <Payslips payslips={payslips} />}
+            {activeTab === 'tasks' && <Tasks tasks={tasks} />}
+            {activeTab === 'projects' && <Projects projects={projects} />}
+            {activeTab === 'performance' && <Performance reviews={performance} />}
+            {activeTab === 'training' && <Training courses={training} />}
+            {activeTab === 'documents' && <Documents docs={documents} />}
+          </div>
+        </div>
       </div>
     </div>
   );

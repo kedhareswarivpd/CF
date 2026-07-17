@@ -43,7 +43,10 @@ async def _get_client_for_user(db: AsyncSession, user: User) -> Client:
 @router.get("/me/profile", response_model=dict)
 async def my_profile(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
-    return success_response(data=ClientOut.model_validate(client))
+    client_data = ClientOut.model_validate(client).model_dump()
+    client_data["contact_name"] = current_user.name
+    client_data["email"] = current_user.email
+    return success_response(data=client_data)
 
 
 @router.get("/me/projects", response_model=dict)

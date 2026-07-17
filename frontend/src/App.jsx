@@ -27,6 +27,7 @@ import CookieConsent from './components/ui/CookieConsent.jsx';
 import AdminPanel from './pages/AdminPanel.jsx';
 import SuperAdminPanel from './pages/SuperAdminPanel.jsx';
 import NotFound from './pages/NotFound.jsx';
+import LoginPage from './pages/LoginPage.jsx';
 import Register from './pages/Register.jsx';
 import BrochurePage from './pages/BrochurePage.jsx';
 import DownloadDetail from './pages/DownloadDetail.jsx';
@@ -61,8 +62,17 @@ export default function App() {
           <Route path="cookies" element={<Cookies />} />
           <Route path="client" element={<ClientPortal />} />
           <Route path="employee" element={<EmployeePortal />} />
+          <Route path="sales" element={<EmployeePortal />} />
+          <Route path="marketing" element={<EmployeePortal />} />
+          <Route path="developer" element={<EmployeePortal />} />
+          <Route path="project-manager" element={<EmployeePortal />} />
+          <Route path="qa" element={<EmployeePortal />} />
+          <Route path="support" element={<EmployeePortal />} />
+          <Route path="finance" element={<EmployeePortal />} />
+          <Route path="hr" element={<EmployeePortal />} />
           <Route path="admin" element={<AdminPanel />} />
           <Route path="super-admin" element={<SuperAdminPanel />} />
+          <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<Register />} />
           <Route path="brochure" element={<BrochurePage />} />
           <Route path="download/:slug" element={<DownloadDetail />} />

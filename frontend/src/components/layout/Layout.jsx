@@ -34,6 +34,9 @@ export default function Layout() {
     return () => cancelAnimationFrame(raf);
   }, [pathname]);
 
+  const PORTAL_PATHS = ['/client', '/employee', '/admin', '/super-admin', '/login', '/register', '/sales', '/marketing', '/developer', '/project-manager', '/qa', '/support', '/finance', '/hr'];
+  const isPortal = PORTAL_PATHS.some((p) => pathname.startsWith(p));
+
   return (
     <div className="min-h-screen flex flex-col bg-surface-white dark:bg-dark-surface">
       <Navbar />
@@ -45,7 +48,7 @@ export default function Layout() {
         )}
         <Outlet />
       </main>
-      <Footer />
+      {!isPortal && <Footer />}
     </div>
   );
 }

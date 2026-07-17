@@ -5,6 +5,7 @@ from sqlalchemy import select
 
 from app.core.database import AsyncSessionLocal
 from app.models.department import Department
+from app.models.employee import Employee
 from app.models.setting import Setting
 from app.models.user import User
 from app.services.supabase_client import get_admin_client
@@ -115,11 +116,40 @@ async def run():
             "Engineering", "Design", "Sales", "Marketing", "Human Resources",
             "Finance", "Quality Assurance", "DevOps", "Customer Support", "Management",
         ]
+        dept_map = {}
         for name in departments:
             exists = (await db.execute(select(Department).where(Department.name == name))).scalar_one_or_none()
             if not exists:
-                db.add(Department(name=name))
+                dept = Department(name=name)
+                db.add(dept)
+                await db.flush()
+                dept_map[name] = dept.id
+            else:
+                dept_map[name] = exists.id
         print("Departments seeded")
+
+        # Seed Employee records for employee/sales users so self-service endpoints work
+        for email, emp_code, designation, dept_name in [
+            (EMPLOYEE_EMAIL, "EMP-001", "Software Engineer", "Engineering"),
+            (SALES_EMAIL, "EMP-002", "Sales Executive", "Sales"),
+        ]:
+            user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+            if not user:
+                continue
+            existing_emp = (await db.execute(select(Employee).where(Employee.user_id == user.id))).scalar_one_or_none()
+            if existing_emp:
+                print(f"  Employee record already exists for {email}")
+                continue
+            emp = Employee(
+                user_id=user.id,
+                employee_code=emp_code,
+                department_id=dept_map.get(dept_name),
+                designation=designation,
+                status="active",
+                employment_type="full_time",
+            )
+            db.add(emp)
+            print(f"  Employee record created for {email}")
 
         settings_data = [
             ("site.title", "CoreFusion Technologies", "public"),

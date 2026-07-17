@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Icon from '../components/ui/Icon.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
 import Button from '../components/ui/Button.jsx';
@@ -23,104 +23,9 @@ import {
   servicesAdmin, solutionsAdmin, caseStudiesAdmin, blogsAdmin, eventsAdmin, downloadsAdmin,
 } from '../api/admin.js';
 import { fetchCurrentUser } from '../api/auth.js';
-import { loginToPortal } from '../lib/portalAuth.js';
-
-const ADMIN_PORTAL_ROLES = ['admin', 'super_admin'];
 
 const DEMO_EMAIL = 'admin@corefusiontech.com';
 const DEMO_PASSWORD = 'ChangeMe@123';
-
-function LoginGate({ onSuccess }) {
-  const { login } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError('');
-    try {
-      await loginToPortal(login, email, password, ADMIN_PORTAL_ROLES);
-      onSuccess();
-    } catch (err) {
-      setError(err.message || 'Invalid email or password.');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const inputClass = 'w-full rounded border border-outline-variant dark:border-dark-outline-variant px-4 py-2.5 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand';
-
-  return (
-    <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container flex items-center justify-center px-margin-mobile">
-      <div className="w-full max-w-sm bg-white dark:bg-dark-surface rounded-lg shadow-card-hover p-stack-lg">
-           <div className="flex items-center gap-3 mb-6">
-             <div className="w-10 h-10 rounded-full bg-brand shrink-0 flex items-center justify-center">
-               <Icon name="settings" className="text-white text-[18px] leading-none" />
-             </div>
-             <div>
-               <h1 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Admin Panel</h1>
-               <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Sign in to access the admin dashboard</p>
-             </div>
-           </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-stack-md">
-          <label className="flex flex-col gap-1.5">
-            <span className="font-label-caps text-label-caps uppercase text-ink-muted">Email</span>
-            <input
-              required
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@corefusiontech.com"
-              className={inputClass}
-            />
-          </label>
-
-          <label className="flex flex-col gap-1.5">
-            <span className="font-label-caps text-label-caps uppercase text-ink-muted">Password</span>
-            <div className="relative">
-              <input
-                required
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className={inputClass}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
-              >
-                <Icon name={showPassword ? 'visibility_off' : 'visibility'} />
-              </button>
-            </div>
-          </label>
-
-          {error && (
-            <p className="text-status-error-text text-body-sm flex items-center gap-1">
-              <Icon name="error" className="text-base" />{error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={submitting}
-            className="bg-brand text-white h-11 rounded font-label-caps text-label-caps uppercase hover:bg-brand-dark transition-all active:scale-95 disabled:opacity-60"
-          >
-            {submitting ? 'Signing in...' : 'Sign In'}
-          </button>
-
-
-        </form>
-      </div>
-    </div>
-  );
-}
 
 function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown }) {
   const kpis = propKpis || demoDashboard;
@@ -1329,16 +1234,17 @@ function AuditLogsManagement({ accessToken }) {
 
 export default function AdminPanel() {
   useDocumentTitle('Admin Panel | CoreFusion Technologies');
-  const { initializing, accessToken, logout } = useAuth();
-  const [adminAuthed, setAdminAuthed] = useState(false);
+  const { user, initializing, accessToken, logout } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [kpis, setKpis] = useState(null);
   const [statusBreakdown, setStatusBreakdown] = useState(null);
   const [currentRole, setCurrentRole] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    if (!adminAuthed) { setLoading(false); return; }
+    if (!user) { setLoading(false); return; }
     setLoading(true);
     Promise.allSettled([
       fetchAdminKPIs(),
@@ -1347,17 +1253,18 @@ export default function AdminPanel() {
     ]).then(([d, sb, me]) => {
       if (d.status === 'fulfilled') setKpis(d.value);
       if (sb.status === 'fulfilled') setStatusBreakdown(sb.value);
-      if (me.status === 'fulfilled') setCurrentRole(me.value?.data?.role || null);
+      if (me.status === 'fulfilled') {
+        setCurrentRole(me.value?.data?.role || null);
+        setCurrentUser(me.value?.data || null);
+      }
     }).finally(() => setLoading(false));
-  }, [adminAuthed, accessToken]);
+  }, [user, accessToken]);
 
   if (initializing) {
     return <div className="py-section-padding bg-surface-container"><LoadingSpinner /></div>;
   }
 
-  if (!adminAuthed) {
-    return <LoginGate onSuccess={() => setAdminAuthed(true)} />;
-  }
+  if (!user) { navigate('/login', { replace: true }); return null; }
 
   if (loading) {
     return <div className="py-section-padding bg-surface-container"><LoadingSpinner /></div>;
@@ -1368,48 +1275,62 @@ export default function AdminPanel() {
       <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
         <div className="flex items-center justify-between gap-4 mb-stack-lg">
           <div className="flex items-center gap-4">
-            <Avatar name="Admin" size="lg" />
+            <Avatar name={currentUser?.name || 'Admin'} size="lg" />
             <div>
-              <h1 className="font-display text-headline-md text-white font-bold">Admin Panel</h1>
-              <p className="text-body-sm text-white/70">System administration and management</p>
+              <h1 className="font-display text-headline-md text-white font-bold">{currentUser?.name || 'Admin'}</h1>
+              <p className="text-body-sm text-white/70">{currentUser?.email || ''} &middot; {(currentUser?.role || currentRole || 'admin').replace('_', ' ')}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Button as={Link} to="/super-admin" variant="primary" size="md" icon={<Icon name="shield_person" />}>
               Super Admin
             </Button>
-            <button
-              onClick={() => { logout(); setAdminAuthed(false); }}
-              className="border border-white/40 text-white font-bold px-4 py-2 rounded font-label-caps text-label-caps uppercase hover:border-brand hover:text-brand transition-all"
-            >
+            <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
               Sign Out
-            </button>
+            </Button>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-1 mb-stack-lg border-b border-white/20 overflow-x-auto">
-          {adminPanelTabs.map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors whitespace-nowrap ${
-                activeTab === tab.id ? 'text-white font-bold border-brand' : 'text-white/70 font-semibold border-transparent hover:text-white hover:border-white/40'
-              }`}>
-              <Icon name={tab.icon} className="text-lg" />{tab.label}
-            </button>
-          ))}
-        </div>
+        <div className="flex gap-stack-lg">
+          <aside className="w-56 shrink-0 hidden md:block">
+            <nav className="flex flex-col gap-1">
+              {adminPanelTabs.map((tab) => (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-label-caps text-label-caps uppercase text-left transition-colors ${
+                    activeTab === tab.id ? 'bg-brand/10 text-brand font-bold' : 'text-ink-muted hover:bg-surface-container hover:text-ink'
+                  }`}>
+                  <Icon name={tab.icon} className="text-lg" />{tab.label}
+                </button>
+              ))}
+            </nav>
+          </aside>
 
-        {activeTab === 'overview' && <Dashboard kpis={kpis} statusBreakdown={statusBreakdown} />}
-        {activeTab === 'content' && <ContentManagement />}
-        {activeTab === 'projects' && <ProjectsManagement accessToken={accessToken} />}
-        {activeTab === 'users' && <UserManagement accessToken={accessToken} currentRole={currentRole} />}
-        {activeTab === 'employees' && <EmployeeManagement />}
-        {activeTab === 'clients' && <ClientManagement />}
-        {activeTab === 'roles' && <RolesManagement accessToken={accessToken} />}
-        {activeTab === 'analytics' && <AnalyticsPage accessToken={accessToken} />}
-        {activeTab === 'media' && <MediaManagement accessToken={accessToken} />}
-        {activeTab === 'notifications' && <NotificationsManagement accessToken={accessToken} />}
-        {activeTab === 'reports' && <ReportsManagement accessToken={accessToken} />}
-        {activeTab === 'logs' && <AuditLogsManagement accessToken={accessToken} />}
+          <div className="flex md:hidden flex-wrap gap-1 mb-stack-lg border-b border-outline-variant overflow-x-auto">
+            {adminPanelTabs.map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === tab.id ? 'text-brand font-bold border-brand' : 'text-ink-muted font-semibold border-transparent hover:text-ink hover:border-outline-variant'
+                }`}>
+                <Icon name={tab.icon} className="text-lg" />{tab.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            {activeTab === 'overview' && <Dashboard kpis={kpis} statusBreakdown={statusBreakdown} />}
+            {activeTab === 'content' && <ContentManagement />}
+            {activeTab === 'projects' && <ProjectsManagement accessToken={accessToken} />}
+            {activeTab === 'users' && <UserManagement accessToken={accessToken} currentRole={currentRole} />}
+            {activeTab === 'employees' && <EmployeeManagement />}
+            {activeTab === 'clients' && <ClientManagement />}
+            {activeTab === 'roles' && <RolesManagement accessToken={accessToken} />}
+            {activeTab === 'analytics' && <AnalyticsPage accessToken={accessToken} />}
+            {activeTab === 'media' && <MediaManagement accessToken={accessToken} />}
+            {activeTab === 'notifications' && <NotificationsManagement accessToken={accessToken} />}
+            {activeTab === 'reports' && <ReportsManagement accessToken={accessToken} />}
+            {activeTab === 'logs' && <AuditLogsManagement accessToken={accessToken} />}
+          </div>
+        </div>}
       </div>
     </div>
   );
