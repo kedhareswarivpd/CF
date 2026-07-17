@@ -446,118 +446,125 @@ function generateFilePDF(file) {
   const preview = getPreviewForFile(file);
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageW = 210;
+  const pageH = 297;
   const margin = 20;
   const contentW = pageW - margin * 2;
-  let y = margin;
+  let cursor = margin;
 
-  const addPageIfNeeded = (needed) => {
-    if (y + needed > 297 - margin) { doc.addPage(); y = margin; }
+  const checkPage = (needed) => {
+    if (cursor + needed > pageH - margin) {
+      doc.addPage();
+      cursor = margin;
+    }
   };
 
-  const drawLine = () => {
-    doc.setDrawColor(200);
-    doc.line(margin, y, pageW - margin, y);
-    y += 4;
+  const writeLine = (text, opts = {}) => {
+    const { font = 'helvetica', style = 'normal', size = 10, color = [50, 50, 50], maxW = contentW } = opts;
+    doc.setFont(font, style);
+    doc.setFontSize(size);
+    doc.setTextColor(...color);
+    const lines = doc.splitTextToSize(text, maxW);
+    const lineH = size * 0.5;
+    checkPage(lines.length * lineH + 2);
+    lines.forEach((line) => {
+      doc.text(line, margin, cursor);
+      cursor += lineH;
+    });
+    cursor += 1;
   };
 
-  if (preview) {
-    const firstHeading = preview.sections[0]?.heading || file.name;
+  const writeTable = (headers, rows) => {
+    const colCount = headers.length;
+    const colW = contentW / colCount;
+    const rowH = 7;
+    checkPage((rows.length + 1) * rowH + 6);
 
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.setTextColor(30, 60, 120);
-    doc.text(firstHeading, pageW / 2, y, { align: 'center' });
-    y += 10;
-    drawLine();
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.setFillColor(45, 65, 110);
+    doc.rect(margin, cursor, contentW, rowH, 'F');
+    headers.forEach((h, ci) => {
+      doc.text(String(h), margin + ci * colW + 2, cursor + 5);
+    });
+    cursor += rowH;
 
-    for (let i = 0; i < preview.sections.length; i++) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    rows.forEach((row, ri) => {
+      checkPage(rowH + 2);
+      if (ri % 2 === 0) {
+        doc.setFillColor(242, 242, 248);
+        doc.rect(margin, cursor, contentW, rowH, 'F');
+      }
+      doc.setTextColor(40, 40, 40);
+      row.forEach((cell, ci) => {
+        doc.text(String(cell), margin + ci * colW + 2, cursor + 5);
+      });
+      cursor += rowH;
+    });
+    cursor += 4;
+  };
+
+  const docTitle = preview
+    ? (preview.sections[0]?.heading || file.name)
+    : file.name;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.setTextColor(35, 55, 110);
+  const titleLines = doc.splitTextToSize(docTitle, contentW);
+  titleLines.forEach((line) => {
+    doc.text(line, pageW / 2, cursor, { align: 'center' });
+    cursor += 8;
+  });
+  cursor += 2;
+
+  doc.setDrawColor(180);
+  doc.setLineWidth(0.5);
+  doc.line(margin, cursor, pageW - margin, cursor);
+  cursor += 8;
+
+  if (preview) {
+    for (let i = 1; i < preview.sections.length; i++) {
       const s = preview.sections[i];
-      if (i === 0) continue;
-
       if (s.heading) {
-        addPageIfNeeded(20);
+        checkPage(16);
+        cursor += 2;
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(13);
-        doc.setTextColor(40, 40, 40);
-        doc.text(s.heading, margin, y);
-        y += 8;
+        doc.setFontSize(12);
+        doc.setTextColor(35, 55, 110);
+        doc.text(String(s.heading), margin, cursor);
+        cursor += 7;
       }
-
       if (s.content) {
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(60, 60, 60);
-        const lines = doc.splitTextToSize(s.content, contentW);
-        addPageIfNeeded(lines.length * 5 + 4);
-        doc.text(lines, margin, y);
-        y += lines.length * 5 + 4;
+        writeLine(String(s.content), { size: 10, color: [50, 50, 50] });
       }
-
       if (s.table) {
-        const { headers, rows } = s.table;
-        const colCount = headers.length;
-        const colWidth = contentW / colCount;
-        const rowH = 8;
-
-        addPageIfNeeded((rows.length + 1) * rowH + 4);
-
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.setTextColor(255, 255, 255);
-        doc.setFillColor(50, 70, 110);
-        doc.rect(margin, y, contentW, rowH, 'F');
-        headers.forEach((h, ci) => {
-          doc.text(h, margin + ci * colWidth + 2, y + 5.5);
-        });
-        y += rowH;
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
-        rows.forEach((row, ri) => {
-          addPageIfNeeded(rowH + 2);
-          if (ri % 2 === 0) {
-            doc.setFillColor(245, 245, 250);
-            doc.rect(margin, y, contentW, rowH, 'F');
-          }
-          doc.setTextColor(50, 50, 50);
-          row.forEach((cell, ci) => {
-            const text = doc.splitTextToSize(String(cell), colWidth - 4);
-            doc.text(text[0] || '', margin + ci * colWidth + 2, y + 5.5);
-          });
-          y += rowH;
-        });
-        y += 4;
+        writeTable(s.table.headers, s.table.rows);
       }
     }
   } else {
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(16);
-    doc.setTextColor(30, 30, 30);
-    doc.text(file.name, pageW / 2, 40, { align: 'center' });
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(11);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Category: ${file.category || 'N/A'}`, margin, 60);
-    doc.text(`Size: ${file.size || 'N/A'}`, margin, 68);
-    doc.text(`Uploaded: ${file.uploadedOn || 'N/A'}`, margin, 76);
-    doc.text(`By: ${file.uploadedBy || 'N/A'}`, margin, 84);
-
-    drawLine();
-    doc.setFontSize(11);
-    doc.setTextColor(80, 80, 80);
-    doc.text('This document is available for reference.', margin, 96);
-    doc.text('For the full version, please contact the CoreFusion team.', margin, 104);
+    writeLine(`Category: ${file.category || 'N/A'}`, { size: 11, color: [60, 60, 60] });
+    writeLine(`Size: ${file.size || 'N/A'}`, { size: 11, color: [60, 60, 60] });
+    writeLine(`Uploaded: ${file.uploadedOn || 'N/A'}`, { size: 11, color: [60, 60, 60] });
+    writeLine(`By: ${file.uploadedBy || 'N/A'}`, { size: 11, color: [60, 60, 60] });
+    cursor += 6;
+    doc.setDrawColor(180);
+    doc.line(margin, cursor, pageW - margin, cursor);
+    cursor += 8;
+    writeLine('This document is available for reference.', { size: 11, color: [80, 80, 80] });
+    writeLine('For the full version, please contact the CoreFusion team.', { size: 11, color: [80, 80, 80] });
   }
 
-  const pageCount = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= pageCount; i++) {
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    doc.setTextColor(150, 150, 150);
-    doc.text(`CoreFusion Technologies — ${file.name}`, margin, 290);
-    doc.text(`Page ${i} of ${pageCount}`, pageW - margin, 290, { align: 'right' });
+    doc.setFontSize(7);
+    doc.setTextColor(160, 160, 160);
+    doc.text(`CoreFusion Technologies  |  ${file.name}`, margin, pageH - 10);
+    doc.text(`Page ${i} of ${totalPages}`, pageW - margin, pageH - 10, { align: 'right' });
   }
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.pdf$/i, '') + '.pdf';
