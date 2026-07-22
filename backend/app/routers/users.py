@@ -9,11 +9,14 @@ from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
 from app.core.errors import ApiError
 from app.crud.base import CRUDBase
+from app.models.employee import Employee
 from app.models.user import User
 from app.schemas.user import UserCreate, UserOut, UserUpdate
 from app.services.supabase_client import get_admin_client
 from app.utils.pagination import PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
+
+EMPLOYEE_ROLES = {"employee", "developer", "sales", "marketing", "project_manager", "qa", "support", "finance", "hr", "admin", "super_admin"}
 
 router = APIRouter(prefix="/users", tags=["Users"], dependencies=[Depends(require_roles("admin", "hr"))])
 
@@ -69,6 +72,17 @@ async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db), c
     data["id"] = uuid.UUID(auth_response.user.id)
     data["is_email_verified"] = True
     user = await crud.create(db, data)
+
+    if payload.role in EMPLOYEE_ROLES:
+        existing = (await db.execute(select(Employee).where(Employee.user_id == user.id))).scalar_one_or_none()
+        if not existing:
+            # Generate a unique employee code from the user id
+            short_id = str(user.id).replace("-", "")[:8].upper()
+            employee_code = f"EMP-{short_id}"
+            employee = Employee(user_id=user.id, employee_code=employee_code)
+            db.add(employee)
+            await db.commit()
+
     return success_response(data=UserOut.model_validate(user), message="User created successfully", status_code=201)
 
 

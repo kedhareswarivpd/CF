@@ -67,26 +67,22 @@ export const leadership = [
   {
     name: 'Dr. Vikram Nair',
     title: 'Founder & CEO',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDGiyjboP63bQCbhMbG51aeHR-jvWDQ-LQd_blhTIT155JwTAYxMAFeSlvQ9H37iKHavJpIG2ij3jCsKkQfgs_yhM-4WorE2yTP-_wE1H3VUYno5tv-2pq1u6Gj0g4Dc5VW_XB94YE-FjPVrU2bVjNjZQmGz8ja5JWl1nVGigj0WOGjX2fCKEwXI--IDjsq5EvoD4k7lBZLPAkkNTvo4WxDS24yny_JmUbvEC5Eqkru-8CejgmuCMMT',
+    image: null,
   },
   {
     name: 'Sara Cheng',
     title: 'Chief Technology Officer',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuA8RdJBX3tHCdadX0DHJcQMS87TD9o1ImoeAoYe9FYy9PXQ1iNnCSt6PxPQkOe1HGvKgCLeLVT9c7_Ir5rpfoWYteN3CbHtGjvZgk23_bV8kvUCSTRETobRLBeQPcdTs3_qQqF7sE8QOL7EN2Ycc8AxSgXE0ZPYr7VRs8-KqcfaU3O-WMm6Sx2P-52_jVE8nzqkbzDNnYF1cjlWAgCI2sKLcMKPBvefGVdJLu2dTz1qcqQNeB6U8DLR',
+    image: null,
   },
   {
     name: 'Arjun Mehta',
     title: 'COO, Global Operations',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuB1O1StiDtGqLQI_qywyNUSCHEVby57G7dXaPoUw7XAGet7pgJg6ztMq_VSxj7-EfxrEsldwPv32OZwHxfyY62TYHRfx48T33MiSeiqY4DL-29UnZkZPlE55Yx322iW42n6NIZB-8_fDeyfIjHTFtjNW1zGy5w8UGgc4A1tG3lRgUePf9fbwhAX__wZQougH0-GLLOrvavaWABQIVrhCr5sd4uQSBIqQ73DNH5msgZTpwgwqEenT_Pt',
+    image: null,
   },
   {
     name: 'Elena Rossi',
     title: 'Chief Experience Officer',
-    image:
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDKHZ5diR2_WYJkVfmtI3_pSqAQfkGMMM8Ix7LMLpvBSfTh3RQNpH93ZiBzonhAFqGfpJsck1gyeJ5_k9p9n8rvWySHz9hv-31tPxVv48ffAEat_AVti9s0p-zICyu-CoxEON_YGafoA3aUJgnfQcfUNDERmYCBxT_k1XoKGcYj1zL4z-WfmCRL7yKSJ_e3MNh5NTsRGsGD2tx3VexJoBHI3uDH6BvbtgSJBMY8wCKjrjF3hrQgWOzg',
+    image: null,
   },
 ];
 

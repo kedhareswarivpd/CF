@@ -9,6 +9,18 @@ function LinkedInIcon() {
   );
 }
 
+function LeaderAvatar({ name, image }) {
+  const initials = name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
+  if (image) {
+    return <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={`Portrait of ${name}`} src={image} />;
+  }
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand to-brand-dark">
+      <span className="text-white font-display font-bold text-5xl select-none">{initials}</span>
+    </div>
+  );
+}
+
 export default function LeadershipGrid() {
   return (
     <section className="py-section-padding bg-white dark:bg-dark-surface">
@@ -27,13 +39,9 @@ export default function LeadershipGrid() {
         </Reveal>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {leadership.map((leader, i) => (
-            <Reveal key={leader.name} from="zoom" delay={i * 100} className="group">
+            <Reveal key={leader.name} from="zoom" delay={i * 60} className="group">
               <div className="aspect-[4/5] bg-surface-container dark:bg-dark-surface-container rounded-lg overflow-hidden mb-6 relative">
-                <img
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  alt={`Portrait of ${leader.name}`}
-                  src={leader.image}
-                />
+                <LeaderAvatar name={leader.name} image={leader.image} />
                 <div className="absolute inset-0 bg-brand/10 group-hover:bg-transparent transition-colors" />
               </div>
               <h4 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{leader.name}</h4>

@@ -1,9 +1,9 @@
 import uuid
-from datetime import date
+from datetime import date, time
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 
-from app.models.enums import DocumentType, EmployeeStatus, EmploymentType, LeaveStatus, TimesheetStatus
+from app.models.enums import DocumentType, EmployeeStatus, EmploymentType, LeaveStatus, LeaveType, TimesheetStatus
 from app.schemas.common import TimestampedRead
 
 
@@ -48,11 +48,31 @@ class EmployeeOut(TimestampedRead):
     address: str | None = None
 
 
+LEAVE_TYPE_ALIASES = {
+    "annual": LeaveType.earned,
+    "personal": LeaveType.casual,
+    "sick": LeaveType.sick,
+    "casual": LeaveType.casual,
+    "earned": LeaveType.earned,
+    "unpaid": LeaveType.unpaid,
+    "maternity": LeaveType.maternity,
+    "paternity": LeaveType.paternity,
+}
+
+
 class LeaveApply(BaseModel):
-    type: str
+    type: LeaveType
     start_date: date
     end_date: date
     reason: str | None = None
+
+    model_config = {"use_enum_values": True}
+
+    @classmethod
+    def model_validate(cls, obj, **kwargs):
+        if isinstance(obj, dict) and "type" in obj:
+            obj = {**obj, "type": LEAVE_TYPE_ALIASES.get(str(obj["type"]).lower(), LeaveType.casual)}
+        return super().model_validate(obj, **kwargs)
 
 
 class LeaveOut(TimestampedRead):
@@ -106,6 +126,12 @@ class AttendanceOut(TimestampedRead):
     employee_id: uuid.UUID
     date: date
     status: str
+    check_in: time | None = None
+    check_out: time | None = None
+
+    @field_serializer('check_in', 'check_out')
+    def serialize_time(self, v: time | None) -> str | None:
+        return v.strftime('%I:%M %p') if v else None
 
 
 class EmployeeDocumentCreate(BaseModel):

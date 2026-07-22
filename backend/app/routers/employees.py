@@ -2,7 +2,7 @@ import uuid
 from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -19,6 +19,7 @@ from app.models.payslip import Payslip
 from app.models.performance_review import PerformanceReview
 from app.models.timesheet import Timesheet
 from app.models.user import User
+from app.models.enums import LeaveStatus
 from app.schemas.employee import (
     AttendanceOut, EmployeeCreate, EmployeeDocumentCreate, EmployeeDocumentOut,
     EmployeeOut, EmployeeUpdate, LeaveApply, LeaveOut, LeaveStatusUpdate,
@@ -35,10 +36,20 @@ leave_crud = CRUDBase(Leave)
 timesheet_crud = CRUDBase(Timesheet)
 
 
+EMPLOYEE_ROLES = {"employee", "developer", "sales", "marketing", "project_manager", "qa", "support", "finance", "hr", "admin", "super_admin"}
+
+
 async def _get_employee_for_user(db: AsyncSession, user: User) -> Employee:
     employee = (await db.execute(select(Employee).where(Employee.user_id == user.id))).scalar_one_or_none()
     if not employee:
-        raise ApiError.not_found("Employee profile not found")
+        if user.role not in EMPLOYEE_ROLES:
+            raise ApiError.not_found("Employee profile not found")
+        # Auto-create a profile for existing users who don't have one yet
+        short_id = str(user.id).replace("-", "")[:8].upper()
+        employee = Employee(user_id=user.id, employee_code=f"EMP-{short_id}")
+        db.add(employee)
+        await db.commit()
+        await db.refresh(employee)
     return employee
 
 
@@ -54,6 +65,18 @@ async def my_profile(db: AsyncSession = Depends(get_db), current_user: User = De
         dept = (await db.execute(select(Department).where(Department.id == employee.department_id))).scalar_one_or_none()
         emp_data["department_name"] = dept.name if dept else None
     return success_response(data=emp_data)
+
+
+@router.get("/me/attendance/today", response_model=dict)
+async def today_attendance(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    employee = await _get_employee_for_user(db, current_user)
+    today = date.today()
+    record = (
+        await db.execute(select(Attendance).where(Attendance.employee_id == employee.id, Attendance.date == today))
+    ).scalar_one_or_none()
+    if not record:
+        return success_response(data=None)
+    return success_response(data=AttendanceOut.model_validate(record))
 
 
 @router.post("/me/attendance/check-in", response_model=dict)
@@ -86,14 +109,35 @@ async def check_out(db: AsyncSession = Depends(get_db), current_user: User = Dep
     return success_response(data=AttendanceOut.model_validate(record), message="Checked out")
 
 
+@router.get("/me/leaves", response_model=dict)
+async def my_leaves(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    employee = await _get_employee_for_user(db, current_user)
+    result = await db.execute(select(Leave).where(Leave.employee_id == employee.id).order_by(Leave.id.desc()))
+    return success_response(data=[LeaveOut.model_validate(l) for l in result.scalars().all()])
+
+
 @router.post("/me/leaves", response_model=dict, status_code=201)
 async def apply_leave(payload: LeaveApply, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
-    leave = Leave(**payload.model_dump(), employee_id=employee.id, status="pending")
+    leave = Leave(
+        employee_id=employee.id,
+        type=payload.type,
+        start_date=payload.start_date,
+        end_date=payload.end_date,
+        reason=payload.reason,
+        status="pending",
+    )
     db.add(leave)
     await db.commit()
     await db.refresh(leave)
     return success_response(data=LeaveOut.model_validate(leave), message="Leave request submitted", status_code=201)
+
+
+@router.get("/me/timesheets", response_model=dict)
+async def my_timesheets(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    employee = await _get_employee_for_user(db, current_user)
+    result = await db.execute(select(Timesheet).where(Timesheet.employee_id == employee.id).order_by(Timesheet.date.desc()))
+    return success_response(data=[TimesheetOut.model_validate(t) for t in result.scalars().all()])
 
 
 @router.post("/me/timesheets", response_model=dict, status_code=201)
@@ -141,18 +185,24 @@ async def list_leaves(request: Request, db: AsyncSession = Depends(get_db), page
     employee_id_filter = request.query_params.get("employee_id")
     stmt = select(Leave).options(selectinload(Leave.employee))
     if status_filter:
-        stmt = stmt.where(Leave.status == status_filter)
+        try:
+            stmt = stmt.where(Leave.status == LeaveStatus(status_filter))
+        except ValueError:
+            pass
     if employee_id_filter:
         stmt = stmt.where(Leave.employee_id == employee_id_filter)
     stmt = stmt.order_by(Leave.id.desc()).offset((page.page - 1) * page.limit).limit(page.limit)
     result = await db.execute(stmt)
     items = result.scalars().all()
-    count_stmt = select(Leave)
+    count_stmt = select(func.count()).select_from(Leave)
     if status_filter:
-        count_stmt = count_stmt.where(Leave.status == status_filter)
+        try:
+            count_stmt = count_stmt.where(Leave.status == LeaveStatus(status_filter))
+        except ValueError:
+            pass
     if employee_id_filter:
         count_stmt = count_stmt.where(Leave.employee_id == employee_id_filter)
-    total = len((await db.execute(count_stmt)).scalars().all())
+    total = (await db.execute(count_stmt)).scalar_one()
     meta = build_pagination_meta(total, page.page, page.limit)
     data = []
     for l in items:

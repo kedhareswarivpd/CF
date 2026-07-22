@@ -9,9 +9,8 @@ import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { adminPanelTabs, demoDashboard, demoProjectStatusBreakdown } from '../data/portal.js';
 import { PORTAL_ROLE_OPTIONS } from '../data/roles.js';
-import { fetchAdminKPIs, fetchProjectStatusBreakdown } from '../lib/db.js';
 import {
-  fetchUsers, createUser,
+  fetchUsers, createUser, updateUser, deactivateUser,
   fetchAdminProjects, createProject, updateProject, deleteProject,
   fetchRoles, createRole, deleteRole, fetchPermissions, createPermission, deletePermission,
   fetchAnalyticsSummary,
@@ -20,6 +19,7 @@ import {
   fetchReports, generateReport, deleteReport,
   fetchAuditLogs,
   fetchEmployees, fetchClients,
+  fetchDashboardOverview, fetchProjectStatusBreakdown as fetchProjectStatusBreakdownApi,
   servicesAdmin, solutionsAdmin, caseStudiesAdmin, blogsAdmin, eventsAdmin, downloadsAdmin,
 } from '../api/admin.js';
 import { fetchCurrentUser } from '../api/auth.js';
@@ -369,96 +369,80 @@ function UserManagement({ accessToken, currentRole }) {
   );
 }
 
-function EmployeeManagement() {
+function EmployeeManagement({ accessToken }) {
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!accessToken) { setLoading(false); return; }
+    fetchEmployees(accessToken, { limit: 100 })
+      .then((res) => setEmployees(res?.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [accessToken]);
+
   return (
-    <div className="space-y-stack-lg">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-        <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-4">Employee Summary</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-gutter mb-6">
-          {[
-            { label: 'Total', value: 285, color: 'text-brand' },
-            { label: 'Active', value: 260, color: 'text-status-success-text' },
-            { label: 'On Leave', value: 18, color: 'text-status-warning-text' },
-            { label: 'New This Month', value: 7, color: 'text-status-info-text' },
-          ].map((s) => (
-            <div key={s.label} className="text-center p-4 bg-surface-container dark:bg-dark-surface-container rounded-lg">
-              <p className={`font-stat text-stat-lg ${s.color}`}>{s.value}</p>
-              <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{s.label}</p>
-            </div>
-          ))}
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted border-b border-outline-variant dark:border-dark-outline-variant">
-              <tr><th className="py-3 pr-4">Department</th><th className="py-3 pr-4">Headcount</th><th className="py-3 pr-4">Avg. Tenure</th></tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant">
-              {[
-                { dept: 'Engineering', headcount: 150, tenure: '2.5 yrs' },
-                { dept: 'Data & AI', headcount: 35, tenure: '1.8 yrs' },
-                { dept: 'Design', headcount: 20, tenure: '2.1 yrs' },
-                { dept: 'Sales & Marketing', headcount: 30, tenure: '3.2 yrs' },
-                { dept: 'HR & Admin', headcount: 15, tenure: '4.0 yrs' },
-                { dept: 'Finance', headcount: 10, tenure: '3.5 yrs' },
-                { dept: 'Security', headcount: 15, tenure: '2.0 yrs' },
-                { dept: 'Operations', headcount: 10, tenure: '1.5 yrs' },
-              ].map((d) => (
-                <tr key={d.dept} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
-                  <td className="py-3 pr-4 text-body-md text-brand-dark dark:text-dark-brand">{d.dept}</td>
-                  <td className="py-3 pr-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{d.headcount}</td>
-                  <td className="py-3 pr-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{d.tenure}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+      <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant">
+        <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Employees</h3>
       </div>
+      {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
+        <table className="w-full text-left">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+            <tr><th className="px-stack-lg py-4">Code</th><th className="px-stack-lg py-4">Designation</th><th className="px-stack-lg py-4">Department</th><th className="px-stack-lg py-4">Status</th></tr>
+          </thead>
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+            {employees.map((e) => (
+              <tr key={e.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{e.employee_code}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.designation || '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.department_name || '—'}</td>
+                <td className="px-stack-lg py-4"><StatusBadge variant={e.status === 'active' ? 'success' : 'neutral'}>{e.status}</StatusBadge></td>
+              </tr>
+            ))}
+            {!employees.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No employees found.</td></tr>}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
 
-function ClientManagement() {
+function ClientManagement({ accessToken }) {
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!accessToken) { setLoading(false); return; }
+    fetchClients(accessToken, { limit: 100 })
+      .then((res) => setClients(res?.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [accessToken]);
+
   return (
-    <div className="space-y-stack-lg">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-        <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-4">Client Summary</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-gutter mb-6">
-          {[
-            { label: 'Total Clients', value: 120, color: 'text-brand' },
-            { label: 'Active Engagements', value: 85, color: 'text-status-success-text' },
-            { label: 'New This Quarter', value: 12, color: 'text-status-info-text' },
-            { label: 'At-Risk', value: 3, color: 'text-status-error-text' },
-          ].map((s) => (
-            <div key={s.label} className="text-center p-4 bg-surface-container dark:bg-dark-surface-container rounded-lg">
-              <p className={`font-stat text-stat-lg ${s.color}`}>{s.value}</p>
-              <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{s.label}</p>
-            </div>
-          ))}
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted border-b border-outline-variant dark:border-dark-outline-variant">
-              <tr><th className="py-3 pr-4">Industry</th><th className="py-3 pr-4">Clients</th><th className="py-3 pr-4">Revenue Share</th></tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant">
-              {[
-                { industry: 'Financial Services', clients: 28, revenue: '35%' },
-                { industry: 'Healthcare', clients: 22, revenue: '20%' },
-                { industry: 'Retail & E-commerce', clients: 18, revenue: '15%' },
-                { industry: 'Logistics', clients: 15, revenue: '12%' },
-                { industry: 'Manufacturing', clients: 12, revenue: '10%' },
-                { industry: 'Government', clients: 10, revenue: '8%' },
-              ].map((c) => (
-                <tr key={c.industry} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
-                  <td className="py-3 pr-4 text-body-md text-brand-dark dark:text-dark-brand">{c.industry}</td>
-                  <td className="py-3 pr-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{c.clients}</td>
-                  <td className="py-3 pr-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{c.revenue}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+      <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant">
+        <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Clients</h3>
       </div>
+      {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
+        <table className="w-full text-left">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+            <tr><th className="px-stack-lg py-4">Company</th><th className="px-stack-lg py-4">Industry</th><th className="px-stack-lg py-4">Country</th><th className="px-stack-lg py-4">Status</th></tr>
+          </thead>
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+            {clients.map((c) => (
+              <tr key={c.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.company_name}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.industry || '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.country || '—'}</td>
+                <td className="px-stack-lg py-4"><StatusBadge variant={c.status === 'active' ? 'success' : 'neutral'}>{c.status || 'active'}</StatusBadge></td>
+              </tr>
+            ))}
+            {!clients.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No clients found.</td></tr>}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
@@ -1244,15 +1228,15 @@ export default function AdminPanel() {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    if (!user || !accessToken) { setLoading(false); return; }
     setLoading(true);
     Promise.allSettled([
-      fetchAdminKPIs(),
-      fetchProjectStatusBreakdown(),
-      accessToken ? fetchCurrentUser(accessToken) : Promise.reject(),
+      fetchDashboardOverview(accessToken),
+      fetchProjectStatusBreakdownApi(accessToken),
+      fetchCurrentUser(accessToken),
     ]).then(([d, sb, me]) => {
-      if (d.status === 'fulfilled') setKpis(d.value);
-      if (sb.status === 'fulfilled') setStatusBreakdown(sb.value);
+      if (d.status === 'fulfilled') setKpis(d.value?.data || null);
+      if (sb.status === 'fulfilled') setStatusBreakdown(sb.value?.data || null);
       if (me.status === 'fulfilled') {
         setCurrentRole(me.value?.data?.role || null);
         setCurrentUser(me.value?.data || null);
@@ -1297,7 +1281,7 @@ export default function AdminPanel() {
               {adminPanelTabs.map((tab) => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg font-label-caps text-label-caps uppercase text-left transition-colors ${
-                    activeTab === tab.id ? 'bg-brand/10 text-brand font-bold' : 'text-ink-muted hover:bg-surface-container hover:text-ink'
+                    activeTab === tab.id ? 'bg-white/10 text-white font-bold' : 'text-white/70 hover:bg-white/5 hover:text-white'
                   }`}>
                   <Icon name={tab.icon} className="text-lg" />{tab.label}
                 </button>
@@ -1321,8 +1305,8 @@ export default function AdminPanel() {
             {activeTab === 'content' && <ContentManagement />}
             {activeTab === 'projects' && <ProjectsManagement accessToken={accessToken} />}
             {activeTab === 'users' && <UserManagement accessToken={accessToken} currentRole={currentRole} />}
-            {activeTab === 'employees' && <EmployeeManagement />}
-            {activeTab === 'clients' && <ClientManagement />}
+            {activeTab === 'employees' && <EmployeeManagement accessToken={accessToken} />}
+            {activeTab === 'clients' && <ClientManagement accessToken={accessToken} />}
             {activeTab === 'roles' && <RolesManagement accessToken={accessToken} />}
             {activeTab === 'analytics' && <AnalyticsPage accessToken={accessToken} />}
             {activeTab === 'media' && <MediaManagement accessToken={accessToken} />}
@@ -1330,7 +1314,7 @@ export default function AdminPanel() {
             {activeTab === 'reports' && <ReportsManagement accessToken={accessToken} />}
             {activeTab === 'logs' && <AuditLogsManagement accessToken={accessToken} />}
           </div>
-        </div>}
+        </div>
       </div>
     </div>
   );

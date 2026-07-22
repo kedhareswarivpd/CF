@@ -6,11 +6,12 @@ const sizes = {
 
 export default function LoadingSpinner({ size = 'md', text }) {
   return (
-    <div className="flex flex-col items-center justify-center py-20">
+    <div className="flex flex-col items-center justify-center py-8">
       <div
-        className={`${sizes[size]} rounded-full border-ink-muted border-t-brand animate-spin`}
+        className={`${sizes[size]} rounded-full border-ink-muted border-t-brand`}
+        style={{ animation: 'spin 0.6s linear infinite' }}
       />
-      {text && <p className="mt-4 text-body-md text-ink-muted">{text}</p>}
+      {text && <p className="mt-3 text-body-md text-ink-muted">{text}</p>}
     </div>
   );
 }

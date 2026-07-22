@@ -96,10 +96,6 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button aria-label="Search" className="p-2 text-ink-muted dark:text-dark-ink-muted hover:text-brand dark:hover:text-dark-brand transition-colors">
-            <Icon name="search" className="text-xl leading-none" />
-          </button>
-
           <ThemeToggle />
 
           <button

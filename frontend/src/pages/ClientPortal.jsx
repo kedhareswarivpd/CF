@@ -10,10 +10,8 @@ import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { clientPortalTabs, demoClientProfile, demoClientProjects, demoClientInvoices, demoClientTickets, demoClientPayments, demoClientFiles, demoClientMeetings, demoClientReports } from '../data/portal.js';
-import { fetchClientProjects, fetchClientInvoices, fetchClientTickets, fetchClientPayments, fetchClientMeetings, fetchClientFiles, fetchClientReports } from '../lib/db.js';
-import { fetchMyProfile } from '../api/clients.js';
-import { apiRequest } from '../api/client.js';
+import { clientPortalTabs } from '../data/portal.js';
+import { fetchMyProfile, fetchMyProjects, fetchMyInvoices, fetchMyTickets, fetchMyPayments, fetchMyMeetings, fetchMyFiles, fetchMyReports, createTicket as createTicketApi } from '../api/clients.js';
 
 
 
@@ -742,63 +740,109 @@ function Reports({ reports }) {
   );
 }
 
+// ─── Data normalizers (map backend schema → portal UI shape) ─────────────────
+const normalizeProject = (p) => ({
+  id: p.id, title: p.title, status: p.status,
+  progress: p.progress_percent ?? p.progress ?? 0,
+  deadline: p.end_date ?? p.deadline ?? '—',
+  budget: p.budget ? `$${Number(p.budget).toLocaleString()}` : 'TBD',
+});
+const normalizeProjects = (arr) => (Array.isArray(arr) ? arr.map(normalizeProject) : []);
+
+const normalizeInvoice = (i) => ({
+  id: i.invoice_number ?? i.id, amount: Number(i.total_amount ?? i.amount ?? 0),
+  status: i.status, issueDate: i.issue_date ?? i.issueDate, dueDate: i.due_date ?? i.dueDate,
+});
+const normalizeInvoices = (arr) => (Array.isArray(arr) ? arr.map(normalizeInvoice) : []);
+
+const normalizeTicket = (t) => ({
+  id: t.ticket_number ?? t.id, subject: t.subject, status: t.status,
+  priority: t.priority, createdAt: t.created_at?.slice(0, 10) ?? t.createdAt,
+});
+const normalizeTickets = (arr) => (Array.isArray(arr) ? arr.map(normalizeTicket) : []);
+
+const normalizePayment = (p) => ({
+  id: p.id, invoice: p.invoice_number ?? p.invoice ?? '—',
+  amount: Number(p.amount ?? 0),
+  method: (p.method ?? p.payment_method ?? '').replace('_', ' '),
+  date: p.paid_at?.slice(0, 10) ?? p.date, status: p.status,
+});
+const normalizePayments = (arr) => (Array.isArray(arr) ? arr.map(normalizePayment) : []);
+
+const normalizeMeeting = (m) => ({
+  id: m.id, title: m.title,
+  date: m.scheduled_at?.slice(0, 10) ?? m.date,
+  time: m.scheduled_at ? new Date(m.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (m.time ?? '—'),
+  duration: m.duration_minutes ? `${m.duration_minutes} min` : (m.duration ?? '—'),
+  type: m.meeting_link ? 'Video Call' : (m.type ?? 'On-site'),
+  meeting_link: m.meeting_link,
+  attendees: m.attendees ?? [],
+  status: m.status === 'scheduled' ? 'upcoming' : (m.status ?? 'upcoming'),
+});
+const normalizeMeetings = (arr) => (Array.isArray(arr) ? arr.map(normalizeMeeting) : []);
+
+const normalizeFile = (f) => ({
+  id: f.id, name: f.name, category: f.category,
+  size: f.size_bytes ? `${(f.size_bytes / 1024).toFixed(0)} KB` : (f.size ?? '—'),
+  uploadedOn: f.created_at?.slice(0, 10) ?? f.uploadedOn,
+  uploadedBy: f.uploaded_by ?? f.uploadedBy ?? 'CoreFusion Team',
+});
+const normalizeFiles = (arr) => (Array.isArray(arr) ? arr.map(normalizeFile) : []);
+
+const normalizeReport = (r) => ({
+  id: r.id, title: r.title, type: r.report_type ?? r.type,
+  period: r.period,
+  generatedOn: r.created_at?.slice(0, 10) ?? r.generatedOn,
+  size: r.size_bytes ? `${(r.size_bytes / 1024).toFixed(0)} KB` : (r.size ?? '—'),
+  file_url: r.file_url,
+});
+const normalizeReports = (arr) => (Array.isArray(arr) ? arr.map(normalizeReport) : []);
+
 export default function ClientPortal() {
   useDocumentTitle('Client Portal | CoreFusion Technologies');
   const { user, accessToken, initializing, logout } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState({ contact_name: user?.email || '', email: user?.email || '', company_name: '', industry: '', country: '' });
-  const [projects, setProjects] = useState(demoClientProjects);
-  const [invoices, setInvoices] = useState(demoClientInvoices);
-  const [tickets, setTickets] = useState(demoClientTickets);
-  const [payments, setPayments] = useState(demoClientPayments);
-  const [files, setFiles] = useState(demoClientFiles);
-  const [meetings, setMeetings] = useState(demoClientMeetings);
-  const [reports, setReports] = useState(demoClientReports);
+  const [profile, setProfile] = useState({ contact_name: '', email: '', company_name: '', industry: '', country: '' });
+  const [projects, setProjects] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [tickets, setTickets] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [files, setFiles] = useState([]);
+  const [meetings, setMeetings] = useState([]);
+  const [reports, setReports] = useState([]);
 
   useEffect(() => {
-    if (!user || !user) { setLoading(false); return; }
+    if (!user || !accessToken) { setLoading(false); return; }
     setLoading(true);
     Promise.allSettled([
-      fetchMyProfile(accessToken).then((res) => res.data),
-      fetchClientProjects(user.id),
-      fetchClientInvoices(user.id),
-      fetchClientTickets(user.id),
-      fetchClientPayments(user.id),
-      fetchClientMeetings(user.id),
-      fetchClientFiles(user.id),
-      fetchClientReports(user.id),
+      fetchMyProfile(accessToken).then((res) => res?.data),
+      fetchMyProjects(accessToken).then((res) => res?.data),
+      fetchMyInvoices(accessToken).then((res) => res?.data),
+      fetchMyTickets(accessToken).then((res) => res?.data),
+      fetchMyPayments(accessToken).then((res) => res?.data),
+      fetchMyMeetings(accessToken).then((res) => res?.data),
+      fetchMyFiles(accessToken).then((res) => res?.data),
+      fetchMyReports(accessToken).then((res) => res?.data),
     ]).then(([p, pr, inv, t, pay, mtg, fil, rep]) => {
-      if (p.status === 'fulfilled') setProfile(p.value);
-      if (pr.status === 'fulfilled') setProjects(pr.value);
-      if (inv.status === 'fulfilled') setInvoices(inv.value);
-      if (t.status === 'fulfilled') setTickets(t.value);
-      if (pay.status === 'fulfilled') setPayments(pay.value);
-      if (mtg.status === 'fulfilled') setMeetings(mtg.value);
-      if (fil.status === 'fulfilled') setFiles(fil.value);
-      if (rep.status === 'fulfilled') setReports(rep.value);
+      if (p.status === 'fulfilled' && p.value) setProfile(p.value);
+      if (pr.status === 'fulfilled' && pr.value) setProjects(normalizeProjects(pr.value));
+      if (inv.status === 'fulfilled' && inv.value) setInvoices(normalizeInvoices(inv.value));
+      if (t.status === 'fulfilled' && t.value) setTickets(normalizeTickets(t.value));
+      if (pay.status === 'fulfilled' && pay.value) setPayments(normalizePayments(pay.value));
+      if (mtg.status === 'fulfilled' && mtg.value) setMeetings(normalizeMeetings(mtg.value));
+      if (fil.status === 'fulfilled' && fil.value) setFiles(normalizeFiles(fil.value));
+      if (rep.status === 'fulfilled' && rep.value) setReports(normalizeReports(rep.value));
     }).finally(() => setLoading(false));
-  }, [user]);
+  }, [user, accessToken]);
 
   const handleNewTicket = async (subject, description) => {
-    if (!user) return;
+    if (!user || !accessToken) return;
     try {
-      if (accessToken) {
-        // Use backend API so support team sees it immediately
-        const res = await apiRequest('/tickets', {
-          method: 'POST',
-          token: accessToken,
-          body: { subject, description: description || subject, priority: 'medium' },
-        });
-        const d = res?.data;
-        setTickets((prev) => [{ id: d.ticket_number, subject: d.subject, status: d.status, priority: d.priority, createdAt: d.created_at?.slice(0, 10) }, ...prev]);
-      } else {
-        // Fallback: Supabase direct
-        const { createTicket: createTicketDirect } = await import('../lib/db.js');
-        const ticket = await createTicketDirect(user.id, subject, description);
-        setTickets((prev) => [ticket, ...prev]);
-      }
+      const res = await createTicketApi(accessToken, { subject, description: description || subject, priority: 'medium' });
+      const d = res?.data;
+      setTickets((prev) => [normalizeTicket(d), ...prev]);
     } catch (err) {
       console.error('Failed to create ticket:', err);
     }

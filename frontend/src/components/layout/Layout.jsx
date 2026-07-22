@@ -27,7 +27,7 @@ export default function Layout() {
     el.style.opacity = '0';
     el.style.transform = 'translateY(12px)';
     const raf = requestAnimationFrame(() => {
-      el.style.transition = 'opacity 0.45s cubic-bezier(0.22,1,0.36,1), transform 0.45s cubic-bezier(0.22,1,0.36,1)';
+      el.style.transition = 'opacity 0.2s cubic-bezier(0.22,1,0.36,1), transform 0.2s cubic-bezier(0.22,1,0.36,1)';
       el.style.opacity = '1';
       el.style.transform = 'translateY(0)';
     });

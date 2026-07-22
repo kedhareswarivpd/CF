@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../components/ui/Icon.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
@@ -7,16 +7,17 @@ import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { employeeTabsForRole, demoAttendance, demoLeaves, demoTimesheets, demoPayslips, demoTasks, demoEmployeeProjects, demoPerformance, demoTraining, demoDocuments, demoLeads, demoProposals, demoContracts } from '../data/portal.js';
+import { employeeTabsForRole, demoLeads, demoProposals, demoContracts } from '../data/portal.js';
 import {
-  fetchEmployeeAttendance, fetchEmployeeLeaves,
-  fetchEmployeeTimesheets, fetchEmployeePayslips,
-} from '../lib/db.js';
-import { fetchMyProfile, applyLeave as applyLeaveApi, submitTimesheet, fetchMyDocuments, checkIn as checkInApi, checkOut as checkOutApi } from '../api/employees.js';
+  fetchMyProfile, applyLeave as applyLeaveApi, submitTimesheet, fetchMyDocuments,
+  checkIn as checkInApi, checkOut as checkOutApi,
+  fetchMyPayslips, fetchMyPerformanceReviews, fetchMyTrainingEnrollments,
+} from '../api/employees.js';
+import { apiRequest } from '../api/client.js';
 import {
-  fetchLeads, createLead, updateLead,
   fetchProposals, createProposal, sendProposal, acceptProposal, rejectProposal,
   fetchContracts, createContract, signContract,
+  fetchLeads, createLead, updateLead,
 } from '../api/crm.js';
 import {
   fetchLeaves, reviewLeave, fetchAllTimesheets, reviewTimesheet,
@@ -28,7 +29,6 @@ import {
   assignProjectTeam, fetchAdminProjects, createProject,
   fetchClients, fetchEmployees,
 } from '../api/admin.js';
-
 function Overview({ profile, attendance, leaves, timesheets, payslips }) {
   const totalHours = timesheets.reduce((s, t) => s + t.hours, 0);
   const pendingLeaves = leaves.filter((l) => l.status === 'pending').length;
@@ -170,7 +170,15 @@ function Attendance({ attendance, employeeId }) {
 
 function Leaves({ leaves: initialLeaves, employeeId, accessToken }) {
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ type: 'Annual', from: '', to: '', reason: '' });
+  const LEAVE_TYPES = [
+    { label: 'Earned (Annual)', value: 'earned' },
+    { label: 'Sick', value: 'sick' },
+    { label: 'Casual (Personal)', value: 'casual' },
+    { label: 'Unpaid', value: 'unpaid' },
+    { label: 'Maternity', value: 'maternity' },
+    { label: 'Paternity', value: 'paternity' },
+  ];
+  const [form, setForm] = useState({ type: 'earned', from: '', to: '', reason: '' });
   const [allLeaves, setAllLeaves] = useState(initialLeaves);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState('');
@@ -185,7 +193,7 @@ function Leaves({ leaves: initialLeaves, employeeId, accessToken }) {
       let newLeave;
       if (accessToken) {
         const res = await applyLeaveApi(accessToken, {
-          type: form.type.toLowerCase(),
+          type: form.type,
           start_date: form.from,
           end_date: form.to,
           reason: form.reason,
@@ -198,7 +206,7 @@ function Leaves({ leaves: initialLeaves, employeeId, accessToken }) {
         newLeave = { id: `LV-${Date.now()}`, type: form.type, from: form.from, to: form.to, status: 'pending', days };
       }
       setAllLeaves((prev) => [newLeave, ...prev]);
-      setForm({ type: 'Annual', from: '', to: '', reason: '' });
+      setForm({ type: 'earned', from: '', to: '', reason: '' });
       setShowForm(false);
       showToast('Leave request submitted successfully.');
     } catch (err) {
@@ -218,7 +226,7 @@ function Leaves({ leaves: initialLeaves, employeeId, accessToken }) {
           <div className="grid sm:grid-cols-3 gap-4">
             <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
               className="border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand">
-              <option>Annual</option><option>Sick</option><option>Personal</option>
+              {LEAVE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
             <input type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })}
               className="border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand" />
@@ -1379,22 +1387,21 @@ function LeaveApprovals({ accessToken }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     const params = { limit: 100 };
     if (filter !== 'all') params.status = filter;
     fetchLeaves(accessToken, params).then((r) => setLeaves(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
+  }, [accessToken, filter]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken, filter]);
+  useEffect(() => { load(); }, [load]);
 
   // auto-refresh every 30s so new employee submissions appear
   useEffect(() => {
     const id = setInterval(load, 30000);
     return () => clearInterval(id);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, filter]);
+  }, [load]);
 
   const review = async (id, status) => {
     setActingId(id);
@@ -1560,6 +1567,58 @@ const PATH_ROLE_MAP = {
 
 const ROLE_PATH_MAP = Object.fromEntries(Object.entries(PATH_ROLE_MAP).map(([path, role]) => [role, path]));
 
+// ─── Employee data normalizers ───────────────────────────────────────────────
+const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+const normalizeLeaves = (arr) => (arr || []).map((l) => ({
+  id: l.id, type: l.type,
+  from: l.start_date ?? l.from, to: l.end_date ?? l.to, status: l.status,
+  days: l.start_date && l.end_date ? Math.ceil((new Date(l.end_date) - new Date(l.start_date)) / 86400000) + 1 : (l.days ?? 1),
+}));
+
+const normalizeTimesheets = (arr) => (arr || []).map((t) => ({
+  id: t.id, date: t.date,
+  project: t.project?.title ?? t.project_name ?? 'General',
+  hours: Number(t.hours ?? 0), description: t.description,
+}));
+
+const normalizePayslips = (arr) => (arr || []).map((p) => ({
+  month: MONTH_NAMES[(p.month ?? 1) - 1], year: p.year,
+  grossPay: Number(p.basic ?? 0) + Number(p.allowances ?? 0),
+  deductions: Number(p.deductions ?? 0), netPay: Number(p.net_pay ?? 0), status: p.status,
+}));
+
+const normalizeTasks = (arr) => (arr || []).map((t) => ({
+  id: t.id, title: t.title,
+  project: t.project?.title ?? t.project_name ?? '—',
+  priority: t.priority, status: t.status, due: t.due_date ?? t.due ?? '—',
+}));
+
+const normalizeEmpProjects = (arr) => (arr || []).map((p) => ({
+  id: p.id, title: p.title,
+  role: p.role ?? 'Member', status: p.status,
+  progress: p.progress_percent ?? p.progress ?? 0,
+  deadline: p.end_date ?? p.deadline ?? '—',
+}));
+
+const normalizePerformance = (arr) => (arr || []).map((r) => ({
+  period: r.review_period ?? r.period,
+  rating: Number(r.rating ?? 0), goals: r.goals_set ?? r.goals ?? 0,
+  achieved: r.goals_achieved ?? r.achieved ?? 0, feedback: r.feedback ?? r.comments ?? '',
+}));
+
+const normalizeTraining = (arr) => (arr || []).map((t) => ({
+  id: t.id, title: t.training?.title ?? t.title,
+  category: t.training?.category ?? t.category ?? '—',
+  status: t.status, completedOn: t.completed_at?.slice(0, 10) ?? t.completedOn ?? null,
+  score: t.score ?? null,
+}));
+
+const normalizeDocs = (arr) => (arr || []).map((d) => ({
+  id: d.id, name: d.title ?? d.name, type: d.type,
+  uploadedOn: d.created_at?.slice(0, 10) ?? d.uploadedOn, file_url: d.file_url,
+}));
+
 export default function EmployeePortal() {
   const { pathname } = useLocation();
   const urlRole = PATH_ROLE_MAP[pathname] || 'employee';
@@ -1570,17 +1629,17 @@ export default function EmployeePortal() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState({ name: user?.email || '', email: user?.email || '', role: 'employee', designation: '', department: '', status: 'active', employee_code: '' });
+  const [profile, setProfile] = useState({ name: '', email: '', role: 'employee', designation: '', department: '', status: 'active', employee_code: '' });
   const [employeeId, setEmployeeId] = useState(null);
-  const [attendance, setAttendance] = useState(demoAttendance);
-  const [leaves, setLeaves] = useState(demoLeaves);
-  const [timesheets, setTimesheets] = useState(demoTimesheets);
-  const [payslips, setPayslips] = useState(demoPayslips);
-  const [tasks] = useState(demoTasks);
-  const [projects] = useState(demoEmployeeProjects);
-  const [performance] = useState(demoPerformance);
-  const [training] = useState(demoTraining);
-  const [documents, setDocuments] = useState(demoDocuments);
+  const [attendance, setAttendance] = useState({ date: new Date().toISOString().slice(0, 10), checkIn: null, checkOut: null, status: 'absent' });
+  const [leaves, setLeaves] = useState([]);
+  const [timesheets, setTimesheets] = useState([]);
+  const [payslips, setPayslips] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [performance, setPerformance] = useState([]);
+  const [training, setTraining] = useState([]);
+  const [documents, setDocuments] = useState([]);
   const [leadsData, setLeadsData] = useState(demoLeads);
   const [proposalsData, setProposalsData] = useState(demoProposals);
   const [contractsData, setContractsData] = useState(demoContracts);
@@ -1588,6 +1647,7 @@ export default function EmployeePortal() {
   // seeded test account per role. Never rendered in production builds (see below) and
   // has no bearing on real permissions — the backend still enforces the logged-in
   // user's actual role on every API call.
+  const CRM_ROLES = ['sales', 'marketing', 'admin', 'project_manager'];
   const [roleOverride, setRoleOverride] = useState(() => localStorage.getItem('emp_role_override') || null);
   const effectiveRole = roleOverride || profile.role;
   const portalTabs = employeeTabsForRole(effectiveRole);
@@ -1606,62 +1666,62 @@ export default function EmployeePortal() {
     if (!user || !accessToken) { setLoading(false); return; }
     setLoading(true);
 
-    fetchMyProfile(accessToken)
-      .then((res) => {
-        const p = res?.data;
-        if (!p) {
-          console.warn('No employee profile found for user', user.id);
-          return;
+    Promise.allSettled([
+      fetchMyProfile(accessToken),
+      fetchMyPayslips(accessToken),
+      fetchMyPerformanceReviews(accessToken),
+      fetchMyTrainingEnrollments(accessToken),
+      fetchMyDocuments(accessToken),
+    ]).then(([profileRes, psRes, perfRes, trainRes, docsRes]) => {
+      if (profileRes.status === 'fulfilled') {
+        const p = profileRes.value?.data;
+        if (p) {
+          const realRole = p.role || 'employee';
+          setProfile({
+            _employeeId: p.id,
+            employee_code: p.employee_code,
+            name: p.name || user.email,
+            email: p.email || user.email,
+            role: realRole,
+            designation: p.designation,
+            department: p.department_name || p.department_id,
+            status: p.status,
+          });
+          setEmployeeId(p.id);
+          // Clear stale role override if it belongs to a different user's session
+          const storedOverride = localStorage.getItem('emp_role_override');
+          if (storedOverride && !CRM_ROLES.includes(realRole) && CRM_ROLES.includes(storedOverride)) {
+            localStorage.removeItem('emp_role_override');
+            setRoleOverride(null);
+          }
+          // fetch attendance, leaves, timesheets, tasks, projects scoped to this employee
+          Promise.allSettled([
+            apiRequest(`/employees/me/attendance/today`, { token: accessToken }),
+            apiRequest(`/employees/me/leaves`, { token: accessToken }),
+            apiRequest(`/employees/me/timesheets`, { token: accessToken }),
+            apiRequest(`/tasks?assigned_to=${p.id}&limit=50`, { token: accessToken }),
+            apiRequest(`/projects?employee_id=${p.id}&limit=50`, { token: accessToken }),
+          ]).then(([attRes, lvRes, tsRes, taskRes, projRes]) => {
+            if (attRes.status === 'fulfilled' && attRes.value?.data) {
+              const a = attRes.value.data;
+              setAttendance({ date: a.date, checkIn: a.check_in, checkOut: a.check_out, status: a.status });
+            }
+            if (lvRes.status === 'fulfilled') setLeaves(normalizeLeaves(lvRes.value?.data));
+            if (tsRes.status === 'fulfilled') setTimesheets(normalizeTimesheets(tsRes.value?.data));
+            if (taskRes.status === 'fulfilled') setTasks(normalizeTasks(taskRes.value?.data));
+            if (projRes.status === 'fulfilled') setProjects(normalizeEmpProjects(projRes.value?.data));
+          });
         }
-        const mapped = {
-          _employeeId: p.id,
-          employee_code: p.employee_code,
-          name: p.name || user.email,
-          email: p.email || user.email,
-          role: p.role || 'employee',
-          designation: p.designation,
-          department: p.department_name || p.department_id,
-          status: p.status,
-        };
-        setProfile(mapped);
-        setEmployeeId(p.id);
-        return Promise.allSettled([
-          fetchEmployeeAttendance(p.id),
-          fetchEmployeeLeaves(p.id),
-          fetchEmployeeTimesheets(p.id),
-          fetchEmployeePayslips(p.id),
-        ]);
-      })
-      .then((results) => {
-        if (!results) return;
-        const [att, lv, ts, ps] = results;
-        if (att.status === 'fulfilled') setAttendance(att.value);
-        if (lv.status === 'fulfilled') setLeaves(lv.value);
-        if (ts.status === 'fulfilled') setTimesheets(ts.value);
-        if (ps.status === 'fulfilled') setPayslips(ps.value);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, [user]);
+      }
+      if (psRes.status === 'fulfilled') setPayslips(normalizePayslips(psRes.value?.data));
+      if (perfRes.status === 'fulfilled') setPerformance(normalizePerformance(perfRes.value?.data));
+      if (trainRes.status === 'fulfilled') setTraining(normalizeTraining(trainRes.value?.data));
+      if (docsRes.status === 'fulfilled') setDocuments(normalizeDocs(docsRes.value?.data));
+    }).finally(() => setLoading(false));
+  }, [user, accessToken]);
 
   useEffect(() => {
-    if (!user || !accessToken) return;
-    fetchMyDocuments(accessToken)
-      .then((res) => {
-        const docs = (res?.data || []).map((d) => ({
-          id: d.id,
-          name: d.title,
-          type: d.type,
-          uploadedOn: d.created_at?.slice(0, 10),
-          file_url: d.file_url,
-        }));
-        if (docs.length) setDocuments(docs);
-      })
-      .catch(() => {});
-  }, [accessToken]);
-
-  useEffect(() => {
-    if (!user || effectiveRole !== 'sales' || !accessToken) return;
+    if (!user || !accessToken || !CRM_ROLES.includes(effectiveRole)) return;
     refreshCrm();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveRole, accessToken]);
@@ -1731,19 +1791,19 @@ export default function EmployeePortal() {
 
           <div className="flex-1 min-w-0">
             {activeTab === 'overview' && <Overview profile={profile} attendance={attendance} leaves={leaves} timesheets={timesheets} payslips={payslips} />}
-            {activeTab === 'leads' && <Leads leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-            {activeTab === 'proposals' && <Proposals proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-            {activeTab === 'contracts' && <Contracts contracts={contractsData} proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-            {activeTab === 'marketing-leads' && <MarketingLeadsView accessToken={accessToken} />}
-            {activeTab === 'testimonials' && <TestimonialModeration accessToken={accessToken} />}
-            {activeTab === 'team-projects' && <TeamProjects accessToken={accessToken} userId={user?.id} />}
-            {activeTab === 'task-board' && <TaskBoard accessToken={accessToken} userId={user?.id} />}
-            {activeTab === 'approvals' && <Approvals accessToken={accessToken} />}
-            {activeTab === 'test-queue' && <TestQueue accessToken={accessToken} />}
-            {activeTab === 'ticket-queue' && <TicketQueue accessToken={accessToken} userId={user?.id} />}
-            {activeTab === 'invoices' && <Invoices accessToken={accessToken} />}
-            {activeTab === 'leave-approvals' && <LeaveApprovals accessToken={accessToken} />}
-            {activeTab === 'recruitment' && <Recruitment accessToken={accessToken} />}
+            {activeTab === 'leads' && effectiveRole === 'sales' && <Leads leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+            {activeTab === 'proposals' && effectiveRole === 'sales' && <Proposals proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+            {activeTab === 'contracts' && effectiveRole === 'sales' && <Contracts contracts={contractsData} proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+            {activeTab === 'marketing-leads' && effectiveRole === 'marketing' && <MarketingLeadsView accessToken={accessToken} />}
+            {activeTab === 'testimonials' && effectiveRole === 'marketing' && <TestimonialModeration accessToken={accessToken} />}
+            {activeTab === 'team-projects' && effectiveRole === 'project_manager' && <TeamProjects accessToken={accessToken} userId={user?.id} />}
+            {activeTab === 'task-board' && effectiveRole === 'project_manager' && <TaskBoard accessToken={accessToken} userId={user?.id} />}
+            {activeTab === 'approvals' && effectiveRole === 'project_manager' && <Approvals accessToken={accessToken} />}
+            {activeTab === 'test-queue' && effectiveRole === 'qa' && <TestQueue accessToken={accessToken} />}
+            {activeTab === 'ticket-queue' && effectiveRole === 'support' && <TicketQueue accessToken={accessToken} userId={user?.id} />}
+            {activeTab === 'invoices' && effectiveRole === 'finance' && <Invoices accessToken={accessToken} />}
+            {activeTab === 'leave-approvals' && effectiveRole === 'hr' && <LeaveApprovals accessToken={accessToken} />}
+            {activeTab === 'recruitment' && effectiveRole === 'hr' && <Recruitment accessToken={accessToken} />}
             {activeTab === 'attendance' && <Attendance attendance={attendance} employeeId={employeeId} />}
             {activeTab === 'leaves' && <Leaves leaves={leaves} employeeId={employeeId} accessToken={accessToken} />}
             {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} employeeId={employeeId} accessToken={accessToken} />}
