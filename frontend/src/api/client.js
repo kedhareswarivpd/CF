@@ -41,6 +41,18 @@ export async function apiRequest(path, { method = 'GET', body, token, headers, s
   try {
     payload = await response.json();
   } catch {
+    const contentType = response.headers?.get?.('content-type') || '';
+    if (response.ok && !contentType.includes('json')) {
+      const bodyText = await response.text?.().catch(() => '') || '';
+      throw new ApiRequestError(
+        `Expected JSON from ${API_URL}${path} but got ${contentType || 'non-JSON'} (HTTP ${response.status}). ` +
+          (bodyText.trim().startsWith('<!doctype') || bodyText.trim().startsWith('<html')
+            ? 'The SPA fallback (index.html) was returned instead of the API — check that VITE_API_URL is unset/"/api/v1" on the host and that the /api/v1 proxy rewrite is active.'
+            : `Body preview: ${bodyText.slice(0, 200)}`),
+        response.status,
+        []
+      );
+    }
     // No/invalid JSON body (e.g. 204 No Content) — that's fine for some requests.
   }
 

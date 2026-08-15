@@ -13,12 +13,13 @@ function AnimatedStat({ value, label }) {
 }
 
 export default function StatsBar({ stats }) {
+  const fallback = Object.fromEntries(homeStats.map((s) => [s.label, s.value]));
   const items = stats
     ? [
-        { label: 'Projects Delivered', value: `${stats.total_projects ?? 0}+` },
-        { label: 'Enterprise Clients', value: `${stats.total_clients ?? 0}+` },
-        { label: 'Countries Served', value: `${stats.countries ?? 0}+` },
-        { label: 'Uptime SLA', value: stats.uptime ? `${stats.uptime}%` : 'High Availability' },
+        { label: 'Projects Delivered', value: stats.total_projects > 0 ? `${stats.total_projects}+` : fallback['Projects Delivered'] },
+        { label: 'Enterprise Clients', value: stats.total_clients > 0 ? `${stats.total_clients}+` : fallback['Enterprise Clients'] },
+        { label: 'Countries Served', value: stats.countries > 0 ? `${stats.countries}+` : fallback['Countries Served'] },
+        { label: 'Uptime SLA', value: stats.uptime ? `${stats.uptime}%` : fallback['Uptime SLA'] },
       ]
     : homeStats;
   return (
