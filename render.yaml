@@ -16,8 +16,6 @@ services:
         value: CoreFusion Technologies
       - key: API_PREFIX
         value: /api/v1
-      - key: PORT
-        value: "8000"
       - key: DB_HOST
         sync: false
       - key: DB_PORT
