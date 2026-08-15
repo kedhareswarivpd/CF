@@ -179,10 +179,15 @@ python -m app.seeders.seed
 
 Interactive API docs: `http://localhost:8000/docs` (Swagger) or `/redoc`.
 
-Default seeded admin (change immediately in production):
+Default seeded accounts (change immediately in production):
 ```
+Super Admin:
+email: superadmin@corefusiontech.com
+password: SuperAdmin@123
+
+Admin:
 email: admin@corefusiontech.com
-password: ChangeMe@123
+password: Admin@123
 ```
 
 ### Running with Docker

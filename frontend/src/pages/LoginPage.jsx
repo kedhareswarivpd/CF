@@ -67,11 +67,11 @@ export default function LoginPage() {
   const inputClass = 'w-full rounded border border-outline-variant dark:border-dark-outline-variant px-4 py-2.5 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand';
 
   return (
-    <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container flex items-center justify-center px-margin-mobile">
-      <div className="w-full max-w-sm bg-white dark:bg-dark-surface rounded-lg shadow-card-hover p-stack-lg">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full bg-brand shrink-0 flex items-center justify-center">
-            <Icon name="login" className="text-white text-[18px] leading-none" />
+    <div className="flex items-center justify-center bg-surface-container px-margin-mobile py-section-padding dark:bg-dark-surface-container">
+      <div className="w-full max-w-sm rounded-lg bg-white p-stack-lg shadow-card-hover dark:bg-dark-surface">
+        <div className="mb-6 flex items-center gap-3">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand">
+            <Icon name="login" className="text-[18px] leading-none text-white" />
           </div>
           <div>
             <h1 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Sign In</h1>
@@ -114,7 +114,7 @@ export default function LoginPage() {
           </label>
 
           {error && (
-            <p className="text-status-error-text text-body-sm flex items-center gap-1">
+            <p className="flex items-center gap-1 text-body-sm text-status-error-text">
               <Icon name="error" className="text-base" />{error}
             </p>
           )}
@@ -122,14 +122,14 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="bg-brand text-white h-11 rounded font-label-caps text-label-caps uppercase hover:bg-brand-dark transition-all active:scale-95 disabled:opacity-60"
+            className="h-11 rounded bg-brand font-label-caps text-label-caps uppercase text-white transition-all hover:bg-brand-dark active:scale-95 disabled:opacity-60"
           >
             {submitting ? 'Signing in...' : 'Sign In'}
           </button>
 
-          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted text-center">
+          <p className="text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">
             Don&apos;t have an account?{' '}
-            <a href="/register" className="text-brand hover:underline font-semibold">Create account</a>
+            <a href="/register" className="font-semibold text-brand hover:underline">Create account</a>
           </p>
         </form>
       </div>

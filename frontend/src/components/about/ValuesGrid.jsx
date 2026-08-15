@@ -4,41 +4,41 @@ import Reveal from '../ui/Reveal.jsx';
 
 export default function ValuesGrid() {
   return (
-    <section className="py-section-padding bg-white dark:bg-dark-surface">
-      <div className="px-margin-mobile md:px-margin-desktop max-w-container mx-auto">
-        <div className="text-center mb-16">
-          <span className="font-label-caps text-label-caps uppercase text-brand tracking-widest">Principles</span>
-          <h2 className="font-display text-headline-md text-brand-dark dark:text-dark-brand mt-4">Core Values</h2>
+    <section className="bg-white py-section-padding dark:bg-dark-surface">
+      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
+        <div className="mb-16 text-center">
+          <span className="font-label-caps text-label-caps uppercase tracking-widest text-brand">Principles</span>
+          <h2 className="mt-4 font-display text-headline-md text-brand-dark dark:text-dark-brand">Core Values</h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 auto-rows-[240px]">
+        <div className="grid auto-rows-[240px] grid-cols-1 gap-6 md:grid-cols-12">
           {coreValues.map((value) => {
             const isDark = value.variant === 'dark';
             return (
               <Reveal
                 key={value.title}
-                className={`${value.span} p-10 rounded-lg relative overflow-hidden group transition-all ${
+                className={`${value.span} group relative overflow-hidden rounded-lg p-10 transition-all ${
                   isDark
                     ? 'bg-brand text-white hover:scale-[1.02]'
                     : 'bg-white hover:shadow-card-hover'
                 } ${value.title === 'Global Collaboration' ? 'flex flex-col justify-between' : ''}`}
               >
                 <div className="relative z-10">
-                  <Icon name={value.icon} className={`text-4xl mb-6 ${isDark ? 'text-accent-cyan' : 'text-brand'}`} />
-                  <h3 className={`font-display text-headline-sm mb-4 ${isDark ? 'text-white' : 'text-brand-dark dark:text-dark-brand'}`}>
+                  <Icon name={value.icon} className={`mb-6 text-4xl ${isDark ? 'text-accent-cyan' : 'text-brand'}`} />
+                  <h3 className={`mb-4 font-display text-headline-sm ${isDark ? 'text-white' : 'text-brand-dark dark:text-dark-brand'}`}>
                     {value.title}
                   </h3>
                   <p className={`max-w-md ${isDark ? 'text-white/80' : 'text-ink-muted'}`}>{value.description}</p>
                 </div>
                 {value.decorativeIcon && (
-                  <div className="absolute right-0 bottom-0 opacity-5 group-hover:opacity-10 transition-opacity">
-                    <Icon name={value.decorativeIcon} className="text-[160px] translate-y-12 translate-x-12" />
+                  <div className="absolute bottom-0 right-0 opacity-5 transition-opacity group-hover:opacity-10">
+                    <Icon name={value.decorativeIcon} className="translate-x-12 translate-y-12 text-[160px]" />
                   </div>
                 )}
                 {value.showAvatars && (
-                  <div className="flex gap-4 mt-6 relative z-10">
-                    <div className="w-8 h-8 rounded-full bg-brand/10" />
-                    <div className="w-8 h-8 rounded-full bg-brand/10" />
-                    <div className="w-8 h-8 rounded-full bg-brand/10" />
+                  <div className="relative z-10 mt-6 flex gap-4">
+                    <div className="size-8 rounded-full bg-brand/10" />
+                    <div className="size-8 rounded-full bg-brand/10" />
+                    <div className="size-8 rounded-full bg-brand/10" />
                   </div>
                 )}
               </Reveal>

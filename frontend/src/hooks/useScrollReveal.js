@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 
 export default function useScrollReveal(options = { threshold: 0.1 }) {
   const ref = useRef(null);
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -13,11 +15,10 @@ export default function useScrollReveal(options = { threshold: 0.1 }) {
         setVisible(true);
         observer.disconnect();
       }
-    }, options);
+    }, optionsRef.current);
 
     observer.observe(node);
     return () => observer.disconnect();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return [ref, visible];

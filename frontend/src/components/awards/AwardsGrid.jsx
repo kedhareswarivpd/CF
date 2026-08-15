@@ -6,9 +6,9 @@ import EmptyState from '../ui/EmptyState.jsx';
 import Reveal from '../ui/Reveal.jsx';
 
 export default function AwardsGrid({ awards, yearFilters }) {
+  const [activeYear, setActiveYear] = useState('All');
   if (!awards) return <LoadingSpinner />;
   if (!awards.length) return <EmptyState icon="trophy" title="No awards found" description="No awards to display." />;
-  const [activeYear, setActiveYear] = useState('All');
 
   const filtered = activeYear === 'All'
     ? awards
@@ -16,36 +16,36 @@ export default function AwardsGrid({ awards, yearFilters }) {
 
   return (
     <section className="py-section-padding">
-      <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
-        <div className="flex flex-wrap gap-2 mb-stack-lg">
+      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
+        <div className="mb-stack-lg flex flex-wrap gap-2">
           {yearFilters.map((y) => (
             <button
               key={y}
               onClick={() => setActiveYear(y)}
-              className={`px-4 py-2 rounded-full font-label-caps text-label-caps uppercase transition-all ${
+              className={`rounded-full px-4 py-2 font-label-caps text-label-caps uppercase transition-all ${
                 activeYear === y
                   ? 'bg-brand text-white'
-                  : 'bg-surface-container dark:bg-dark-surface-container text-ink-muted dark:text-dark-ink-muted hover:bg-outline-variant dark:hover:bg-dark-outline-variant'
+                  : 'bg-surface-container text-ink-muted hover:bg-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted dark:hover:bg-dark-outline-variant'
               }`}
             >
               {y}
             </button>
           ))}
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+        <div className="grid gap-gutter md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((award, i) => (
             <Reveal key={award.title} from="zoom" delay={i * 80}>
-              <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-all hover:-translate-y-1 flex flex-col h-full">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="w-12 h-12 rounded-lg bg-status-warning-bg flex items-center justify-center">
-                    <Icon name="trophy" className="text-status-warning-text text-2xl" />
+              <div className="flex h-full flex-col rounded-lg border border-outline-variant bg-white p-stack-lg transition-all hover:-translate-y-1 hover:shadow-card-hover dark:border-dark-outline-variant dark:bg-dark-surface">
+                <div className="mb-3 flex items-start justify-between">
+                  <div className="flex size-12 items-center justify-center rounded-lg bg-status-warning-bg">
+                    <Icon name="trophy" className="text-2xl text-status-warning-text" />
                   </div>
                   <span className="font-stat text-stat-lg text-brand">{award.year}</span>
                 </div>
-                <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-2">{award.title}</h3>
-                <p className="font-label-caps text-label-caps uppercase text-ink-muted mb-3">{award.issuedBy}</p>
-                <p className="text-body-md text-ink-muted dark:text-dark-ink-muted flex-1">{award.description}</p>
-                <div className="mt-4 pt-4 border-t border-outline-variant">
+                <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-dark-brand">{award.title}</h3>
+                <p className="mb-3 font-label-caps text-label-caps uppercase text-ink-muted">{award.issuedBy}</p>
+                <p className="flex-1 text-body-md text-ink-muted dark:text-dark-ink-muted">{award.description}</p>
+                <div className="mt-4 border-t border-outline-variant pt-4">
                   <StatusBadge variant="warning">{award.category}</StatusBadge>
                 </div>
               </div>

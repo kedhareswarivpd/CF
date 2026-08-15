@@ -14,6 +14,11 @@ export default [
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
       globals: {
         ...globals.browser,
         ...globals.es2021,
@@ -35,6 +40,29 @@ export default [
       ...reactHooksPlugin.configs.recommended.rules,
       ...tailwindcssPlugin.configs.recommended.rules,
       'react/prop-types': 'off',
+    },
+  },
+  {
+    files: ['**/*.test.{js,jsx}', '**/__tests__/**/*.{js,jsx}', '**/test/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        ...globals.vitest,
+      },
+    },
+    plugins: {
+      'react-hooks': reactHooksPlugin,
+    },
+    rules: {
+      'tailwindcss/no-custom-classname': 'off',
     },
   },
 ];

@@ -10,38 +10,38 @@ export default function AboutHero({ stats }) {
       ]
     : aboutStats;
   return (
-    <section className="relative min-h-[620px] flex items-center overflow-hidden bg-white dark:bg-dark-surface">
-      <div className="absolute top-10 right-10 w-72 h-72 rounded-full bg-white/5 blur-3xl animate-float-slow pointer-events-none" />
-      <div className="absolute bottom-0 left-1/4 w-48 h-48 rounded-full bg-accent-cyan/10 blur-2xl animate-float pointer-events-none" />
-      <div className="relative z-10 max-w-container mx-auto px-margin-mobile md:px-margin-desktop grid md:grid-cols-2 gap-stack-lg items-center py-20">
+    <section className="relative flex min-h-[620px] items-center overflow-hidden bg-white dark:bg-dark-surface">
+      <div className="animate-float-slow pointer-events-none absolute right-10 top-10 size-72 rounded-full bg-white/5 blur-3xl" />
+      <div className="animate-float pointer-events-none absolute bottom-0 left-1/4 size-48 rounded-full bg-accent-cyan/10 blur-2xl" />
+      <div className="relative z-10 mx-auto grid max-w-container items-center gap-stack-lg px-margin-mobile py-20 md:grid-cols-2 md:px-margin-desktop">
         <div>
-          <span className="font-label-caps text-label-caps uppercase text-accent-cyan mb-4 block animate-hero-1">
+          <span className="animate-hero-1 mb-4 block font-label-caps text-label-caps uppercase text-accent-cyan">
             Engineering the Future
           </span>
-          <h1 className="font-display text-display-lg-mobile md:text-display-lg text-brand-dark dark:text-dark-brand mb-6 animate-hero-2">
+          <h1 className="animate-hero-2 mb-6 font-display text-display-lg-mobile text-brand-dark dark:text-dark-brand md:text-display-lg">
             Innovating at the Core of <span className="text-brand">Global Scale</span>
           </h1>
-          <p className="text-ink-muted font-body text-body-lg mb-stack-lg max-w-xl animate-hero-3">
+          <p className="animate-hero-3 mb-stack-lg max-w-xl font-body text-body-lg text-ink-muted">
             CoreFusion Technologies is a global engineering powerhouse focused on driving digital
             transformation through precise technical excellence and strategic innovation.
           </p>
-          <div className="flex gap-4 animate-hero-4">
+          <div className="animate-hero-4 flex gap-4">
             <button
               onClick={() => document.getElementById('our-impact')?.scrollIntoView({ behavior: 'smooth' })}
-              className="bg-brand text-white h-11 px-8 rounded font-label-caps text-label-caps uppercase flex items-center hover:opacity-90 transition-colors"
+              className="flex h-11 items-center rounded bg-brand px-8 font-label-caps text-label-caps uppercase text-white transition-colors hover:opacity-90"
             >
               Our Impact
             </button>
             <button
               onClick={() => document.getElementById('global-offices')?.scrollIntoView({ behavior: 'smooth' })}
-              className="border border-brand text-brand h-11 px-8 rounded font-label-caps text-label-caps uppercase flex items-center hover:bg-brand hover:text-white transition-colors"
+              className="flex h-11 items-center rounded border border-brand px-8 font-label-caps text-label-caps uppercase text-brand transition-colors hover:bg-brand hover:text-white"
             >
               View Global Offices
             </button>
           </div>
         </div>
-        <div className="hidden md:block animate-hero-panel">
-          <div className="glass-panel p-8 rounded-lg animate-float">
+        <div className="animate-hero-panel hidden md:block">
+          <div className="glass-panel animate-float rounded-lg p-8">
             <div className="grid grid-cols-2 gap-8">
               {items.map((stat) => (
                 <div key={stat.label} className="animate-count-in">

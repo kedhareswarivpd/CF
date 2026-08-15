@@ -7,9 +7,9 @@ import EmptyState from '../ui/EmptyState.jsx';
 import Reveal from '../ui/Reveal.jsx';
 
 export default function DownloadsGrid({ downloads, categoryFilters }) {
+  const [activeCategory, setActiveCategory] = useState('All');
   if (!downloads) return <LoadingSpinner />;
   if (!downloads.length) return <EmptyState icon="download" title="No downloads available" description="No resources to download." />;
-  const [activeCategory, setActiveCategory] = useState('All');
 
   const filtered = activeCategory === 'All'
     ? downloads
@@ -17,13 +17,13 @@ export default function DownloadsGrid({ downloads, categoryFilters }) {
 
   return (
     <section className="py-section-padding">
-      <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
-        <div className="flex flex-wrap gap-2 mb-stack-lg">
+      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
+        <div className="mb-stack-lg flex flex-wrap gap-2">
           {categoryFilters.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-full font-label-caps text-label-caps uppercase transition-all ${
+              className={`rounded-full px-4 py-2 font-label-caps text-label-caps uppercase transition-all ${
                 activeCategory === cat
                   ? 'bg-brand text-white'
                   : 'bg-surface-container text-ink-muted hover:bg-outline-variant'
@@ -33,25 +33,25 @@ export default function DownloadsGrid({ downloads, categoryFilters }) {
             </button>
           ))}
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+        <div className="grid gap-gutter md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((d, i) => (
             <Reveal key={d.title} from="zoom" delay={i * 80}>
-              <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-all hover:-translate-y-1 flex flex-col h-full">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-status-error-bg flex items-center justify-center">
-                    <Icon name="description" className="text-status-error-text text-xl" />
+              <div className="flex h-full flex-col rounded-lg border border-outline-variant bg-white p-stack-lg transition-all hover:-translate-y-1 hover:shadow-card-hover dark:border-dark-outline-variant dark:bg-dark-surface">
+                <div className="mb-3 flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-status-error-bg">
+                    <Icon name="description" className="text-xl text-status-error-text" />
                   </div>
                   <StatusBadge variant="neutral">{d.format}</StatusBadge>
                 </div>
-                <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-2">{d.title}</h3>
-                <p className="text-body-md text-ink-muted dark:text-dark-ink-muted mb-4 flex-1">{d.description}</p>
-                <div className="flex items-center gap-4 text-body-sm text-ink-muted dark:text-dark-ink-muted pt-4 border-t border-outline-variant dark:border-dark-outline-variant mb-4">
+                <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-dark-brand">{d.title}</h3>
+                <p className="mb-4 flex-1 text-body-md text-ink-muted dark:text-dark-ink-muted">{d.description}</p>
+                <div className="mb-4 flex items-center gap-4 border-t border-outline-variant pt-4 text-body-sm text-ink-muted dark:border-dark-outline-variant dark:text-dark-ink-muted">
                   <span className="flex items-center gap-1">
-                    <Icon name="folder" className="text-brand text-lg" />
+                    <Icon name="folder" className="text-lg text-brand" />
                     {d.category}
                   </span>
                   <span>{d.fileSize}</span>
-                  <span className="flex items-center gap-1 ml-auto">
+                  <span className="ml-auto flex items-center gap-1">
                     <Icon name="download" className="text-lg" />
                     {d.downloadCount}
                   </span>

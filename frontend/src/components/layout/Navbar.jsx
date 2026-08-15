@@ -21,10 +21,10 @@ function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label="Toggle theme"
-      className="relative w-14 h-7 rounded-full border border-outline-variant dark:border-dark-outline-variant bg-slate-100 dark:bg-dark-surface-low transition-colors duration-300 flex items-center px-1"
+      className="relative flex h-7 w-14 items-center rounded-full border border-outline-variant bg-slate-100 px-1 transition-colors duration-300 dark:border-dark-outline-variant dark:bg-dark-surface-low"
     >
       <span
-        className={`absolute left-1 w-5 h-5 rounded-full flex items-center justify-center text-xs transition-all duration-300 shadow ${
+        className={`absolute left-1 flex size-5 items-center justify-center rounded-full text-xs shadow transition-all duration-300 ${
           dark ? 'translate-x-7 bg-brand text-white' : 'translate-x-0 bg-white text-amber-500'
         }`}
       >
@@ -46,25 +46,25 @@ export default function Navbar() {
 
   return (
     <header
-      className={`fixed top-0 w-full z-50 border-b border-outline-variant transition-all duration-300 ${
-        scrolled ? 'bg-white dark:bg-dark-surface shadow-sm h-16' : 'bg-white dark:bg-dark-surface h-20'
+      className={`fixed top-0 z-50 w-full border-b border-outline-variant transition-all duration-300 ${
+        scrolled ? 'h-16 bg-white shadow-sm dark:bg-dark-surface' : 'h-20 bg-white dark:bg-dark-surface'
       }`}
     >
-      <div className="w-full h-full px-margin-mobile md:px-margin-desktop flex items-center justify-between">
+      <div className="flex size-full items-center justify-between px-margin-mobile md:px-margin-desktop">
         <div className="flex items-center gap-8 md:gap-12">
-          <Link to="/" className="flex items-center shrink-0 gap-2">
-<div className="h-10 w-10 md:h-11 md:w-11 rounded-full overflow-hidden shrink-0 border-2 border-brand/20">
+          <Link to="/" className="flex shrink-0 items-center gap-2">
+<div className="size-10 shrink-0 overflow-hidden rounded-full border-2 border-brand/20 md:size-11">
   <img
     src="/logo.jpeg"
     alt="CoreFusion"
-    className="h-full w-full object-cover scale-110"
+    className="size-full scale-110 object-cover"
   />
 </div>
-            <span className="font-display font-bold text-xl text-brand-dark dark:text-white tracking-tight">
+            <span className="font-display text-xl font-bold tracking-tight text-brand-dark dark:text-white">
               Core<span className="text-brand">Fusion</span>
             </span>
           </Link>
-          <nav className="hidden md:flex items-center gap-6">
+          <nav className="hidden items-center gap-6 md:flex">
             {NAV_LINKS.map((link) => (
               <NavLink
                 key={link.to}
@@ -82,13 +82,13 @@ export default function Navbar() {
             ))}
             <NavLink
               to="/login"
-              className="font-label-caps text-label-caps uppercase pb-1 border-b-2 transition-colors duration-200 text-ink-muted dark:text-white border-transparent hover:text-brand dark:hover:text-dark-brand"
+              className="border-b-2 border-transparent pb-1 font-label-caps text-label-caps uppercase text-ink-muted transition-colors duration-200 hover:text-brand dark:text-white dark:hover:text-dark-brand"
             >
               Login
             </NavLink>
             <Link
               to="/register"
-              className="bg-brand text-white font-label-caps text-label-caps uppercase px-4 py-2 rounded hover:bg-brand-dark transition-all"
+              className="rounded bg-brand px-4 py-2 font-label-caps text-label-caps uppercase text-white transition-all hover:bg-brand-dark"
             >
               Register
             </Link>
@@ -99,7 +99,7 @@ export default function Navbar() {
           <ThemeToggle />
 
           <button
-            className="md:hidden p-2 text-brand"
+            className="p-2 text-brand md:hidden"
             onClick={() => setMobileOpen((open) => !open)}
             aria-label="Toggle navigation menu"
           >
@@ -109,7 +109,7 @@ export default function Navbar() {
       </div>
 
       {mobileOpen && (
-        <nav className="md:hidden bg-white dark:bg-dark-surface border-t border-outline-variant dark:border-dark-outline-variant px-margin-mobile py-stack-md flex flex-col gap-4">
+        <nav className="flex flex-col gap-4 border-t border-outline-variant bg-white px-margin-mobile py-stack-md dark:border-dark-outline-variant dark:bg-dark-surface md:hidden">
           {NAV_LINKS.map((link) => (
             <NavLink
               key={link.to}
@@ -125,14 +125,14 @@ export default function Navbar() {
           <NavLink
             to="/login"
             onClick={() => setMobileOpen(false)}
-            className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-white hover:text-brand transition-colors"
+            className="font-label-caps text-label-caps uppercase text-ink-muted transition-colors hover:text-brand dark:text-white"
           >
             Login
           </NavLink>
           <Link
             to="/register"
             onClick={() => setMobileOpen(false)}
-            className="bg-brand text-white font-label-caps text-label-caps uppercase px-4 py-2 rounded text-center hover:bg-brand-dark transition-all"
+            className="rounded bg-brand px-4 py-2 text-center font-label-caps text-label-caps uppercase text-white transition-all hover:bg-brand-dark"
           >
             Register
           </Link>

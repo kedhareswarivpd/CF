@@ -7,7 +7,7 @@ function AnimatedStat({ value, label }) {
   return (
     <div ref={ref}>
       <div className="font-stat text-stat-lg text-brand">{display}</div>
-      <div className="font-label-caps text-label-caps uppercase text-ink-muted mt-1">{label}</div>
+      <div className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted">{label}</div>
     </div>
   );
 }
@@ -15,15 +15,15 @@ function AnimatedStat({ value, label }) {
 export default function StatsBar({ stats }) {
   const items = stats
     ? [
-        { label: 'Projects Delivered', value: '430+' },
-        { label: 'Enterprise Clients', value: `${stats.total_clients || 120}+` },
-        { label: 'Countries Served', value: '18+' },
-        { label: 'Uptime SLA', value: `${stats.uptime || 99.9}%` },
+        { label: 'Projects Delivered', value: `${stats.total_projects ?? 0}+` },
+        { label: 'Enterprise Clients', value: `${stats.total_clients ?? 0}+` },
+        { label: 'Countries Served', value: `${stats.countries ?? 0}+` },
+        { label: 'Uptime SLA', value: stats.uptime ? `${stats.uptime}%` : 'High Availability' },
       ]
     : homeStats;
   return (
-    <section className="bg-white border-b border-outline-variant py-stack-lg px-margin-mobile md:px-margin-desktop">
-      <div className="max-w-container mx-auto grid grid-cols-2 md:grid-cols-4 gap-stack-lg text-center">
+    <section className="border-b border-outline-variant bg-white px-margin-mobile py-stack-lg md:px-margin-desktop">
+      <div className="mx-auto grid max-w-container grid-cols-2 gap-stack-lg text-center md:grid-cols-4">
         {items.map((stat, i) => (
           <Reveal key={stat.label} from="zoom" delay={i * 80}>
             <AnimatedStat value={stat.value} label={stat.label} />

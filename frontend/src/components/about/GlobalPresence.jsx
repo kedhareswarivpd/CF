@@ -40,14 +40,14 @@ export default function GlobalPresence() {
   }
 
   return (
-    <section id="global-offices" className="py-section-padding bg-brand text-white relative overflow-hidden">
-      <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-white/5 blur-3xl animate-float-slow pointer-events-none" />
-      <div className="relative z-10 px-margin-mobile md:px-margin-desktop max-w-container mx-auto">
-        <div className="grid lg:grid-cols-2 gap-20 items-center">
+    <section id="global-offices" className="relative overflow-hidden bg-brand py-section-padding text-white">
+      <div className="animate-float-slow pointer-events-none absolute -right-20 -top-20 size-80 rounded-full bg-white/5 blur-3xl" />
+      <div className="relative z-10 mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
+        <div className="grid items-center gap-20 lg:grid-cols-2">
           <Reveal from="left">
             <span className="font-label-caps text-label-caps uppercase text-accent-cyan">Our Network</span>
-            <h2 className="font-display text-headline-md mt-4 mb-8">Global Engineering Hubs</h2>
-            <div className="grid grid-cols-2 gap-y-12 gap-x-8">
+            <h2 className="mb-8 mt-4 font-display text-headline-md">Global Engineering Hubs</h2>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-12">
               {globalOffices.map((office, i) => (
                 <Reveal key={office.city} from="left" delay={i * 80}>
                   <button
@@ -61,8 +61,8 @@ export default function GlobalPresence() {
                       className={active === office.city ? 'text-yellow-400' : 'text-accent-cyan'}
                     />
                     <div>
-                      <h4 className="font-display text-headline-sm text-base mb-1">{office.city}</h4>
-                      <p className="text-xs text-white/60 uppercase tracking-tighter">{office.description}</p>
+                      <h4 className="mb-1 font-display text-base text-headline-sm">{office.city}</h4>
+                      <p className="text-xs uppercase tracking-tighter text-white/60">{office.description}</p>
                     </div>
                   </button>
                 </Reveal>
@@ -70,7 +70,7 @@ export default function GlobalPresence() {
             </div>
           </Reveal>
 
-          <Reveal from="right" className="relative h-[400px] md:h-[500px] rounded-xl border border-white/10 overflow-hidden bg-[#0a1628]">
+          <Reveal from="right" className="relative h-[400px] overflow-hidden rounded-xl border border-white/10 bg-[#0a1628] md:h-[500px]">
             <ComposableMap
               projection="geoMercator"
               projectionConfig={{ scale: 140 }}
@@ -138,7 +138,7 @@ export default function GlobalPresence() {
             {active && (
               <button
                 onClick={() => { setPosition(DEFAULT_POSITION); setActive(null); }}
-                className="absolute top-3 right-3 text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-full transition"
+                className="absolute right-3 top-3 rounded-full bg-white/10 px-3 py-1 text-xs text-white transition hover:bg-white/20"
               >
                 Reset
               </button>

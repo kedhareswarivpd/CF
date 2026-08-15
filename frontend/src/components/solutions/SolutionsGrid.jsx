@@ -9,25 +9,25 @@ export default function SolutionsGrid({ solutions }) {
   if (!solutions.length) return <EmptyState icon="cloud" title="No solutions listed" description="Solutions will appear here." />;
   return (
     <section className="py-section-padding">
-      <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
+        <div className="grid gap-gutter md:grid-cols-2 lg:grid-cols-3">
           {solutions.map((s, i) => (
             <Reveal key={s.title} from="zoom" delay={i * 80}>
-              <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-all hover:-translate-y-1 flex flex-col h-full">
-                <div className="w-12 h-12 rounded-lg bg-accent-cyan-pale flex items-center justify-center mb-4">
-                  <Icon name={s.icon} className="text-brand text-2xl" />
+              <div className="flex h-full flex-col rounded-lg border border-outline-variant bg-white p-stack-lg transition-all hover:-translate-y-1 hover:shadow-card-hover dark:border-dark-outline-variant dark:bg-dark-surface">
+                <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-accent-cyan-pale">
+                  <Icon name={s.icon} className="text-2xl text-brand" />
                 </div>
-                <h3 className="font-display text-headline-sm text-black dark:text-white mb-3 min-h-16">{s.title}</h3>
-                <p className="text-body-md text-black dark:text-white mb-4 min-h-24">{s.description}</p>
-                <ul className="space-y-2 mb-4">
+                <h3 className="mb-3 min-h-16 font-display text-headline-sm text-black dark:text-white">{s.title}</h3>
+                <p className="mb-4 min-h-24 text-body-md text-black dark:text-white">{s.description}</p>
+                <ul className="mb-4 space-y-2">
                   {s.capabilities.slice(0, 4).map((cap) => (
                     <li key={cap} className="flex items-start gap-2 text-body-sm text-black dark:text-white">
-                      <Icon name="check_circle" className="text-brand text-lg flex-shrink-0 mt-0.5" />
+                      <Icon name="check_circle" className="mt-0.5 flex-shrink-0 text-lg text-brand" />
                       <span>{cap}</span>
                     </li>
                   ))}
                 </ul>
-                <div className="flex flex-wrap gap-2 pt-4 border-t border-outline-variant">
+                <div className="flex flex-wrap gap-2 border-t border-outline-variant pt-4">
                   {s.industries.map((ind) => (
                     <StatusBadge key={ind} variant="neutral" className="!text-black">{ind}</StatusBadge>
                   ))}

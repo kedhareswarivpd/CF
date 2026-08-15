@@ -1,8 +1,9 @@
+from slugify import slugify
+
 from app.crud.base import CRUDBase
 from app.models.category import Category
 from app.schemas.cms import CategoryCreate, CategoryOut, CategoryUpdate
 from app.utils.router_factory import build_crud_router
-from slugify import slugify
 
 crud = CRUDBase(Category, searchable_fields=["name"])
 

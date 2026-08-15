@@ -25,7 +25,7 @@ export default function Button({
 }) {
   return (
     <Tag
-      className={`inline-flex items-center justify-center gap-2 rounded font-stat uppercase tracking-wide font-semibold transition-all active:scale-95 ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded font-stat font-semibold uppercase tracking-wide transition-all active:scale-95 ${VARIANTS[variant]} ${SIZES[size]} ${className}`}
       {...rest}
     >
       {children}

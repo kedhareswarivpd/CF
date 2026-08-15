@@ -13,6 +13,10 @@ source_patcher.start()
 supabase_patcher = patch("app.services.supabase_client.create_client", return_value=MagicMock())
 supabase_patcher.start()
 
+# Patch aiosmtplib to prevent real SMTP connections
+smtp_patcher = patch("app.services.email_service.aiosmtplib")
+smtp_patcher.start()
+
 from app.main import app  # noqa: E402
 
 
@@ -26,7 +30,6 @@ async def async_client(test_app):
     transport = ASGITransport(app=test_app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
-
 
 
 @pytest.fixture(scope="session")

@@ -15,6 +15,7 @@ export default {
         accent: {
           cyan: '#00D4FF',    // bright cyan highlight for dark backgrounds
           'cyan-pale': '#E0F7FF', // pale cyan for chip/badge backgrounds on light surfaces
+          red: '#EF4444',     // required-field asterisk / error emphasis
         },
         warning: '#FD5521',
 
@@ -57,6 +58,7 @@ export default {
         body: ['Inter', 'sans-serif'],
         stat: ['Montserrat', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
+        'label-caps': ['Inter', 'sans-serif'],
       },
       fontSize: {
         'display-lg': ['48px', { lineHeight: '56px', letterSpacing: '-0.02em', fontWeight: '700' }],
@@ -68,9 +70,12 @@ export default {
         'body-lg': ['18px', { lineHeight: '28px', fontWeight: '400' }],
         'body-md': ['16px', { lineHeight: '24px', fontWeight: '400' }],
         'body-sm': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+        'body-xs': ['12px', { lineHeight: '16px', fontWeight: '400' }],
         'stat-lg': ['40px', { lineHeight: '48px', letterSpacing: '-0.01em', fontWeight: '700' }],
         'label-caps': ['12px', { lineHeight: '16px', letterSpacing: '0.05em', fontWeight: '600' }],
         'code-snippet': ['14px', { lineHeight: '20px', fontWeight: '400' }],
+        'display-md': ['28px', { lineHeight: '36px', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'display-md-mobile': ['22px', { lineHeight: '30px', letterSpacing: '-0.01em', fontWeight: '700' }],
       },
       borderRadius: {
         DEFAULT: '0.5rem',

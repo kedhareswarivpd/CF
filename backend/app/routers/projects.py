@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Request
 from slugify import slugify
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -10,10 +10,11 @@ from app.core.dependencies import get_current_user, get_optional_user, require_r
 from app.core.errors import ApiError
 from app.core.logger import logger
 from app.crud.base import CRUDBase
+from app.models.associations import project_members
 from app.models.project import Project
 from app.models.user import User
 from app.schemas.project import AssignTeamRequest, ProjectCreate, ProjectOut, ProjectUpdate
-from app.utils.pagination import PageParams, page_params
+from app.utils.pagination import PageParams, apply_sort, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
@@ -35,6 +36,19 @@ async def list_projects(
         filters["is_published"] = True  # public callers only ever see published projects
     elif is_published := request.query_params.get("is_published"):
         filters["is_published"] = is_published.lower() == "true"
+
+    employee_filter = request.query_params.get("employee_id")
+    if employee_filter:
+        # Restrict to projects where the employee is a team member.
+        query = select(Project).join(project_members, project_members.c.project_id == Project.id).where(project_members.c.employee_id == employee_filter)
+        query = crud._with_relationships(query)
+        query = apply_sort(query, Project, page.sort)
+        query = query.limit(page.limit).offset(page.offset)
+        result = await db.execute(query)
+        count_query = select(func.count()).select_from(project_members).where(project_members.c.employee_id == employee_filter)
+        total = (await db.execute(count_query)).scalar_one()
+        meta = build_pagination_meta(total, page.page, page.limit)
+        return success_response(data=[ProjectOut.model_validate(p) for p in result.scalars().unique().all()], message="Projects fetched", meta=meta)
 
     items, total = await crud.list(db, page, filters)
     meta = build_pagination_meta(total, page.page, page.limit)

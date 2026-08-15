@@ -6,6 +6,24 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 
+# SQLAlchemy driver aliases used to switch a `postgresql://` URL between the
+# async and sync dialects. The order matters for prefixes like
+# `postgresql+asyncpg://` which already contain a `+`.
+_DRIVER_ALIASES = (
+    ("postgresql+asyncpg://", "postgresql+psycopg2://"),
+    ("postgresql+psycopg2://", "postgresql+asyncpg://"),
+    ("postgresql://", "postgresql+asyncpg://"),
+    ("postgresql://", "postgresql+psycopg2://"),
+)
+
+
+def _as_scheme(url: str, scheme: str) -> str:
+    """Convert a PostgreSQL URL to the given driver scheme, leaving others untouched."""
+    for old, new in _DRIVER_ALIASES:
+        if new == scheme and url.startswith(old):
+            return scheme + url[len(old):]
+    return url
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -66,30 +84,19 @@ class Settings(BaseSettings):
     # Extra CORS origins (comma-separated, e.g. for Vercel preview URLs)
     extra_cors_origins: str = ""
 
+    # Trust `x-forwarded-for` for client IP (only when behind a known proxy/load balancer)
+    trust_proxy_headers: bool = False
+
     def _get_async_database_url(self) -> str:
         """Get the async PostgreSQL URL."""
-        if self.database_url:
-            # Parse and convert to async if needed
-            if "postgresql://" in self.database_url:
-                return self.database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-            return self.database_url
-        # Fallback to component-based construction
-        return (
+        return _as_scheme(self.database_url, "postgresql+asyncpg://") if self.database_url else (
             f"postgresql+asyncpg://{self.db_user}:{self.db_pass}"
             f"@{self.db_host}:{self.db_port}/{self.db_name}"
         )
 
     def _get_sync_database_url(self) -> str:
         """Get the sync PostgreSQL URL (for Alembic migrations)."""
-        if self.database_url:
-            # Parse and convert to sync if needed
-            if "postgresql://" in self.database_url:
-                return self.database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
-            elif "postgresql+asyncpg://" in self.database_url:
-                return self.database_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1)
-            return self.database_url
-        # Fallback to component-based construction
-        return (
+        return _as_scheme(self.database_url, "postgresql+psycopg2://") if self.database_url else (
             f"postgresql+psycopg2://{self.db_user}:{self.db_pass}"
             f"@{self.db_host}:{self.db_port}/{self.db_name}"
         )

@@ -30,23 +30,27 @@ from app.models.proposal import Proposal  # noqa: F401
 from app.models.contract import Contract  # noqa: F401
 
 # CMS / content
-from app.models.category import Category  # noqa: F401
 from app.models.blog import Blog  # noqa: F401
+from app.models.category import Category  # noqa: F401
 from app.models.comment import Comment  # noqa: F401
 from app.models.service import Service  # noqa: F401
-from app.models.industry import Industry  # noqa: F401
-from app.models.technology import Technology  # noqa: F401
 from app.models.case_study import CaseStudy  # noqa: F401
-from app.models.portfolio import Portfolio  # noqa: F401
 from app.models.testimonial import Testimonial  # noqa: F401
-from app.models.partner import Partner  # noqa: F401
-from app.models.award import Award  # noqa: F401
-from app.models.faq import Faq  # noqa: F401
-from app.models.gallery import Gallery  # noqa: F401
 from app.models.download import Download  # noqa: F401
 from app.models.career import Career  # noqa: F401
 from app.models.application import Application  # noqa: F401
 from app.models.event import Event  # noqa: F401
+from app.models.industry import Industry  # noqa: F401
+from app.models.technology import Technology  # noqa: F401
+from app.models.product import Product  # noqa: F401
+from app.models.award import Award  # noqa: F401
+from app.models.faq import Faq  # noqa: F401
+from app.models.gallery import Gallery  # noqa: F401
+from app.models.portfolio import Portfolio  # noqa: F401
+from app.models.partner import Partner  # noqa: F401
+from app.models.resource import Resource  # noqa: F401
+from app.models.seo import SeoMetadata  # noqa: F401
+from app.models.page_content import PageContent  # noqa: F401
 
 # Ops / support
 from app.models.ticket import Ticket  # noqa: F401
@@ -59,14 +63,10 @@ from app.models.media import Media  # noqa: F401
 from app.models.contact_submission import ContactSubmission  # noqa: F401
 
 # Phase 2 — new resources
-from app.models.product import Product  # noqa: F401
 from app.models.solution import Solution  # noqa: F401
-from app.models.resource import Resource  # noqa: F401
 from app.models.training import Course, TrainingEnrollment  # noqa: F401
 from app.models.performance_review import PerformanceReview  # noqa: F401
 from app.models.newsletter import NewsletterSubscriber  # noqa: F401
-from app.models.seo import SeoMetadata  # noqa: F401
-from app.models.page_content import PageContent  # noqa: F401
 from app.models.analytics import PageView  # noqa: F401
 from app.models.report import Report  # noqa: F401
 
@@ -76,14 +76,17 @@ __all__ = [
     "Department", "Employee", "Attendance", "Leave", "Timesheet", "Payslip", "EmployeeDocument",
     "Client", "ClientFile", "ClientReport", "Project", "Task", "Invoice", "Payment",
     "Lead", "Proposal", "Contract",
-    "Category", "Blog", "Comment", "Service", "Industry", "Technology", "CaseStudy",
-    "Portfolio", "Testimonial", "Partner", "Award", "Faq", "Gallery", "Download",
+    "Blog", "Category", "Comment", "Service",
+    "CaseStudy",
+    "Testimonial", "Download",
     "Career", "Application", "Event",
+    "Industry", "Technology", "Product", "Award", "Faq", "Gallery", "Portfolio",
+    "Partner", "Resource", "SeoMetadata", "PageContent",
     "Ticket", "TicketReply", "Meeting", "Notification", "AuditLog", "Setting", "Media",
     "ContactSubmission",
-    "Product", "Solution", "Resource",
+    "Solution",
     "Course", "TrainingEnrollment",
     "PerformanceReview",
     "NewsletterSubscriber",
-    "SeoMetadata", "PageContent", "PageView", "Report",
+    "PageView", "Report",
 ]

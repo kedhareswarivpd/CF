@@ -4,30 +4,30 @@ import Reveal from '../ui/Reveal.jsx';
 export default function TechGrid({ categories }) {
   return (
     <section className="py-section-padding">
-      <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
+      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
         <div className="space-y-stack-lg">
           {categories.map((cat, i) => (
             <Reveal key={cat.name} from="left" delay={i * 80}>
-              <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-                <div className="bg-surface-container dark:bg-dark-surface-container px-stack-lg py-4 flex items-center gap-3 border-b border-outline-variant dark:border-dark-outline-variant">
-                  <Icon name={cat.icon} className="text-accent-cyan text-2xl" />
-                  <h3 className="font-display text-headline-sm font-bold text-white tracking-wide">{cat.name}</h3>
+              <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+                <div className="flex items-center gap-3 border-b border-outline-variant bg-surface-container px-stack-lg py-4 dark:border-dark-outline-variant dark:bg-dark-surface-container">
+                  <Icon name={cat.icon} className="text-2xl text-accent-cyan" />
+                  <h3 className="font-display text-headline-sm font-bold tracking-wide text-white">{cat.name}</h3>
                 </div>
                 <div className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
                   {cat.technologies.map((tech) => (
-                    <div key={tech.name} className="px-stack-lg py-4 flex items-center justify-between gap-4">
+                    <div key={tech.name} className="flex items-center justify-between gap-4 px-stack-lg py-4">
                       <div className="flex-1">
                         <span className="font-body text-body-md font-semibold text-brand-dark dark:text-dark-brand">{tech.name}</span>
-                        <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted mt-0.5">{tech.description}</p>
+                        <p className="mt-0.5 text-body-sm text-ink-muted dark:text-dark-ink-muted">{tech.description}</p>
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <div className="w-24 h-2 bg-surface-container dark:bg-dark-surface-low rounded-full overflow-hidden">
+                      <div className="flex flex-shrink-0 items-center gap-3">
+                        <div className="h-2 w-24 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-low">
                           <div
-                            className="h-full bg-brand rounded-full transition-all"
+                            className="h-full rounded-full bg-brand transition-all"
                             style={{ width: `${tech.proficiency}%` }}
                           />
                         </div>
-                        <span className="font-display text-body-lg font-semibold text-brand-dark dark:text-dark-brand w-12 text-right">
+                        <span className="w-12 text-right font-display text-body-lg font-semibold text-brand-dark dark:text-dark-brand">
                           {tech.proficiency}%
                         </span>
                       </div>

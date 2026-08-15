@@ -20,7 +20,7 @@ from app.models.project import Project
 from app.models.ticket import Ticket
 from app.models.ticket_reply import TicketReply
 from app.models.user import User
-from app.schemas.client import ClientCreate, ClientOut, ClientUpdate, TicketCreate
+from app.schemas.client import ClientCreate, ClientOut, TicketCreate
 from app.schemas.finance import ClientFileCreate, ClientFileOut, ClientPaymentOut, ClientReportCreate, ClientReportOut, InvoiceOut
 from app.schemas.ops import MeetingOut, TicketOut
 from app.schemas.project import ProjectOut
@@ -107,7 +107,18 @@ async def my_meetings(db: AsyncSession = Depends(get_db), current_user: User = D
     result = await db.execute(
         select(Meeting).where(Meeting.client_id == client.id).order_by(Meeting.scheduled_at.desc())
     )
-    return success_response(data=[MeetingOut.model_validate(m) for m in result.scalars().all()])
+    meetings = result.scalars().all()
+    data = []
+    for m in meetings:
+        meeting = MeetingOut.model_validate(m).model_dump()
+        meeting["attendees"] = []
+        if m.organizer_id:
+            org = (
+                await db.execute(select(User).where(User.id == m.organizer_id))
+            ).scalar_one_or_none()
+            meeting["attendees"] = [org.name] if org else []
+        data.append(meeting)
+    return success_response(data=data)
 
 
 @router.get("/me/files", response_model=dict)
@@ -157,25 +168,7 @@ async def list_clients(request: Request, db: AsyncSession = Depends(get_db), pag
     return success_response(data=[ClientOut.model_validate(c) for c in items], message="Clients fetched", meta=meta)
 
 
-@router.get("/{client_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "sales", "project_manager"))])
-async def get_client(client_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    client = await crud.get(db, client_id)
-    return success_response(data=ClientOut.model_validate(client))
-
-
 @router.post("", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "sales"))])
 async def create_client(payload: ClientCreate, db: AsyncSession = Depends(get_db)):
     client = await crud.create(db, payload.model_dump())
     return success_response(data=ClientOut.model_validate(client), message="Client created successfully", status_code=201)
-
-
-@router.put("/{client_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "sales"))])
-async def update_client(client_id: uuid.UUID, payload: ClientUpdate, db: AsyncSession = Depends(get_db)):
-    client = await crud.update(db, client_id, payload.model_dump(exclude_unset=True))
-    return success_response(data=ClientOut.model_validate(client), message="Client updated successfully")
-
-
-@router.delete("/{client_id}", response_model=dict, dependencies=[Depends(require_roles("admin"))])
-async def delete_client(client_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    await crud.delete(db, client_id)
-    return success_response(message="Client removed successfully")

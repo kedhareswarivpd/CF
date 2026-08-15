@@ -1,4 +1,4 @@
-import { apiRequest, toQueryString } from './client.js';
+import { apiRequest } from './client.js';
 
 export function fetchMyProfile(token) {
   return apiRequest('/employees/me/profile', { token });
@@ -36,14 +36,10 @@ export function fetchMyTrainingEnrollments(token) {
   return apiRequest('/trainings/my-enrollments', { token });
 }
 
-export function fetchEmployeeDocuments(token, employeeId) {
-  return apiRequest(`/employees/${employeeId}/documents`, { token });
+export function fetchTrainingCatalog(token) {
+  return apiRequest('/trainings/courses?limit=50', { token });
 }
 
-export function addEmployeeDocument(token, employeeId, body) {
-  return apiRequest(`/employees/${employeeId}/documents`, { method: 'POST', body, token });
-}
-
-export function deleteEmployeeDocument(token, employeeId, documentId) {
-  return apiRequest(`/employees/${employeeId}/documents/${documentId}`, { method: 'DELETE', token });
+export function enrollInCourse(token, courseId) {
+  return apiRequest(`/trainings/enroll?course_id=${courseId}`, { method: 'POST', token });
 }

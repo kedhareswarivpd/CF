@@ -46,7 +46,7 @@ async def _fetch_jwks_async() -> list[dict]:
             response.raise_for_status()
             return response.json().get("keys", [])
     except Exception as exc:
-        logger.warning("Could not fetch Supabase JWKS: %s", exc)
+        logger.warning("Could not fetch Supabase JWKS (%s): %s", type(exc).__name__, exc)
         return []
 
 
@@ -145,9 +145,12 @@ async def decode_supabase_token(token: str) -> dict:
     except JWTError as exc:
         try:
             claims = jwt.get_unverified_claims(token)
-            iss = claims.get("iss", "unknown")
+            iss = str(claims.get("iss", "unknown"))
         except Exception:
             iss = "unknown"
+        # The claims are attacker-controlled until verified, so only log a
+        # truncated, control-character-stripped issuer.
+        iss = "".join(ch for ch in iss if ch.isprintable())[:200]
         logger.warning(
             "Token verification failed — alg=%s kid=%s iss=%s: %s",
             alg, header.get("kid"), iss, exc,

@@ -1,20 +1,47 @@
+import { useEffect, useState } from 'react';
 import FaqSection from '../components/faq/FaqSection.jsx';
 import CtaBanner from '../components/home/CtaBanner.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
-import { faqCategories } from '../data/faq.js';
+import { faqCategories as staticFaqCategories } from '../data/faq.js';
+import { fetchFaqs } from '../api/cms.js';
+
+function toFrontend(apiItems) {
+  const groups = new Map();
+  apiItems.forEach((item) => {
+    const key = item.category || 'General';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push({ question: item.question, answer: item.answer });
+  });
+  return Array.from(groups.entries()).map(([name, items]) => ({
+    name,
+    icon: 'help_outline',
+    items,
+  }));
+}
 
 export default function Faq() {
   useDocumentTitle('FAQ | CoreFusion Technologies');
+  const [faqCategories, setFaqCategories] = useState(staticFaqCategories);
+
+  useEffect(() => {
+    fetchFaqs()
+      .then((res) => {
+        const items = res?.data;
+        if (Array.isArray(items) && items.length) setFaqCategories(toFrontend(items));
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <>
-      <section className="bg-brand-dark text-white pt-32 pb-section-padding">
-        <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
+      <section className="bg-brand-dark pb-section-padding pt-32 text-white">
+        <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
           <div className="max-w-3xl">
             <span className="font-label-caps text-label-caps uppercase tracking-widest text-accent-cyan">FAQ</span>
-            <h1 className="font-display text-headline-lg md:text-display-lg text-white mt-4 mb-6">
+            <h1 className="mb-6 mt-4 font-display text-headline-lg text-white md:text-display-lg">
               Frequently Asked Questions
             </h1>
-            <p className="text-body-lg text-white/80 max-w-2xl">
+            <p className="max-w-2xl text-body-lg text-white/80">
               Quick answers to common questions about our services, engagement models, security practices, and careers.
             </p>
           </div>

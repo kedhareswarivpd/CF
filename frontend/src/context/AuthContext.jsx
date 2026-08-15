@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useCallback, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase.js';
 import { login as loginApi, register as registerApi, logout as logoutApi } from '../api/auth.js';
 
@@ -24,7 +24,7 @@ export function AuthProvider({ children }) {
     return () => subscription?.unsubscribe();
   }, []);
 
-  const register = async (name, email, password) => {
+  const register = useCallback(async (name, email, password) => {
     // Sign up directly via Supabase Auth first — this always works even if
     // the backend is temporarily unreachable.
     const { data, error } = await supabase.auth.signUp({
@@ -50,9 +50,9 @@ export function AuthProvider({ children }) {
     }
 
     return data;
-  };
+  }, []);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     const response = await loginApi(email, password);
     const tokenData = response?.data;
     if (!tokenData?.access_token || !tokenData?.refresh_token) {
@@ -68,15 +68,15 @@ export function AuthProvider({ children }) {
     if (!sessionData.session) throw new Error('Login failed to initialize session.');
 
     return tokenData.user;
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     const accessToken = session?.access_token ?? null;
     if (accessToken) {
       await logoutApi(accessToken);
     }
     await supabase.auth.signOut();
-  };
+  }, [session]);
 
   const value = useMemo(
     () => ({
@@ -88,7 +88,7 @@ export function AuthProvider({ children }) {
       logout,
       register,
     }),
-    [user, session, initializing]
+    [user, session, initializing, login, logout, register]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

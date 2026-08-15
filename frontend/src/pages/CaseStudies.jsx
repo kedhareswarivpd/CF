@@ -1,12 +1,37 @@
+import { useEffect, useState } from 'react';
 import CaseStudiesHero from '../components/caseStudies/CaseStudiesHero.jsx';
 import CaseStudiesGrid from '../components/caseStudies/CaseStudiesGrid.jsx';
 import CtaBanner from '../components/home/CtaBanner.jsx';
 import SectionHeading from '../components/ui/SectionHeading.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
-import { caseStudies } from '../data/caseStudies.js';
+import { caseStudies as staticCaseStudies } from '../data/caseStudies.js';
+import { fetchCaseStudies } from '../api/cms.js';
+
+function toFrontend(cs) {
+  return {
+    slug: cs.slug,
+    industry: cs.industry || 'Technology',
+    title: cs.title,
+    description: cs.solution || cs.problem || '',
+    results: cs.roi ? [cs.roi] : (cs.result ? [cs.result] : []),
+    technologies: [],
+    image: cs.cover_image || '',
+  };
+}
 
 export default function CaseStudies() {
   useDocumentTitle('Case Studies | CoreFusion Technologies');
+  const [caseStudies, setCaseStudies] = useState(staticCaseStudies);
+
+  useEffect(() => {
+    fetchCaseStudies()
+      .then((res) => {
+        const items = res?.data;
+        if (Array.isArray(items) && items.length) setCaseStudies(items.map(toFrontend));
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <>
       <CaseStudiesHero />
@@ -15,7 +40,7 @@ export default function CaseStudies() {
         title="Success Stories Across Industries"
         description="Real-world impact delivered through technical excellence and deep domain expertise."
         align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop [&_p]:!text-white [&_h2]:!text-white"
+        className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white"
       />
       <CaseStudiesGrid studies={caseStudies} />
       <CtaBanner />

@@ -17,7 +17,7 @@ export default function About() {
   useEffect(() => {
     getStats()
       .then((res) => setStats(res.data))
-      .catch(() => console.warn('Failed to fetch about stats, using fallback'));
+      .catch(() => setStats(null));
   }, []);
 
   return (

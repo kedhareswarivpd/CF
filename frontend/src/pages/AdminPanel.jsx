@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Icon from '../components/ui/Icon.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
@@ -15,17 +15,16 @@ import {
   fetchRoles, createRole, deleteRole, fetchPermissions, createPermission, deletePermission,
   fetchAnalyticsSummary,
   fetchMedia, deleteMedia, uploadMedia,
-  fetchNotifications, markNotificationRead, markAllNotificationsRead, createNotification,
+  fetchNotifications, markNotificationRead, markAllNotificationsRead,
   fetchReports, generateReport, deleteReport,
   fetchAuditLogs,
   fetchEmployees, fetchClients,
   fetchDashboardOverview, fetchProjectStatusBreakdown as fetchProjectStatusBreakdownApi,
-  servicesAdmin, solutionsAdmin, caseStudiesAdmin, blogsAdmin, eventsAdmin, downloadsAdmin,
 } from '../api/admin.js';
 import { fetchCurrentUser } from '../api/auth.js';
-
-const DEMO_EMAIL = 'admin@corefusiontech.com';
-const DEMO_PASSWORD = 'ChangeMe@123';
+import { useRoleGuard } from '../hooks/useRoleGuard.js';
+import ContentManager from '../components/admin/ContentManager.jsx';
+import { FORM_INPUT_CLASS } from '../components/ui/formClasses.js';
 
 function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown }) {
   const kpis = propKpis || demoDashboard;
@@ -44,10 +43,10 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-gutter">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {statCards.map((s) => (
-          <div key={s.label} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-            <div className="flex items-center justify-between mb-2">
+          <div key={s.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-2 flex items-center justify-between">
               <Icon name={s.icon} className={`${s.color} text-2xl`} />
             </div>
             <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{s.value}</p>
@@ -56,17 +55,17 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown }) {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-gutter">
-        <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-          <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-4">Project Status Breakdown</h3>
+      <div className="grid gap-gutter lg:grid-cols-2">
+        <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Project Status Breakdown</h3>
           <div className="space-y-4">
             {statusBreakdown.map((item) => (
               <div key={item.status}>
-                <div className="flex justify-between text-body-sm mb-1">
+                <div className="mb-1 flex justify-between text-body-sm">
                   <span className="capitalize text-brand-dark dark:text-dark-brand">{item.status.replace('_', ' ')}</span>
                   <span className="text-ink-muted dark:text-dark-ink-muted">{item.count}</span>
                 </div>
-                <div className="w-full h-2 bg-surface-container rounded-full overflow-hidden">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container">
                   <div className={`h-full rounded-full transition-all ${
                     item.status === 'completed' ? 'bg-status-success-text' :
                     item.status === 'in_progress' ? 'bg-status-info-text' :
@@ -78,8 +77,8 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown }) {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-          <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-4">Quick Actions</h3>
+        <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Quick Actions</h3>
           <div className="space-y-3">
             {[
               { icon: 'add_circle', label: 'Create User', desc: 'Add a new employee, client, or partner account' },
@@ -87,8 +86,8 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown }) {
               { icon: 'upload_file', label: 'Upload Resource', desc: 'Add a whitepaper or downloadable asset' },
               { icon: 'campaign', label: 'Send Notification', desc: 'Broadcast a message to all users' },
             ].map((action) => (
-              <div key={action.label} className="flex items-center gap-4 p-3 bg-surface-container dark:bg-dark-surface-container rounded-lg hover:bg-outline-variant dark:hover:bg-dark-outline-variant transition-colors cursor-pointer">
-                <Icon name={action.icon} className="text-brand text-2xl" />
+              <div key={action.label} className="flex cursor-pointer items-center gap-4 rounded-lg bg-surface-container p-3 transition-colors hover:bg-outline-variant dark:bg-dark-surface-container dark:hover:bg-dark-outline-variant">
+                <Icon name={action.icon} className="text-2xl text-brand" />
                 <div>
                   <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{action.label}</p>
                   <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{action.desc}</p>
@@ -99,9 +98,9 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown }) {
         </div>
       </div>
 
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-        <h3 className="font-display text-headline-sm text-brand-dark mb-2">Recent Activity</h3>
-        <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted mb-4">Unresolved contacts: {kpis.unresolved_contacts} | Published blogs: {kpis.published_blogs}</p>
+      <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <h3 className="mb-2 font-display text-headline-sm text-brand-dark">Recent Activity</h3>
+        <p className="mb-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">Unresolved contacts: {kpis.unresolved_contacts} | Published blogs: {kpis.published_blogs}</p>
         <div className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
           Last refreshed: {new Date().toLocaleString()}
         </div>
@@ -110,33 +109,8 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown }) {
   );
 }
 
-function ContentManagement() {
-  return (
-    <div className="space-y-stack-lg">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-        <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-4">Content Overview</h3>
-        <p className="text-body-md text-ink-muted dark:text-dark-ink-muted mb-4">Manage website content including services, solutions, case studies, blog posts, and more.</p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            { label: 'Services', count: 6, icon: 'settings' },
-            { label: 'Solutions', count: 6, icon: 'cloud' },
-            { label: 'Case Studies', count: 6, icon: 'description' },
-            { label: 'Blog Posts', count: 6, icon: 'article' },
-            { label: 'Events', count: 6, icon: 'event' },
-            { label: 'Downloads', count: 6, icon: 'download' },
-          ].map((item) => (
-            <div key={item.label} className="flex items-center gap-3 p-4 bg-surface-container dark:bg-dark-surface-container rounded-lg">
-              <Icon name={item.icon} className="text-brand text-2xl" />
-              <div>
-                <p className="font-body text-body-md font-semibold text-brand-dark dark:text-dark-brand">{item.label}</p>
-                <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{item.count} items</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+function ContentManagement({ accessToken }) {
+  return <ContentManager accessToken={accessToken} />;
 }
 
 function AddUserForm({ accessToken, currentRole, onCreated, onCancel }) {
@@ -179,7 +153,7 @@ function AddUserForm({ accessToken, currentRole, onCreated, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <input required type="text" placeholder="Full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
         <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputClass} />
         <input required type="password" minLength={8} placeholder="Temporary password (min. 8 characters)" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputClass} />
@@ -201,11 +175,11 @@ function AddUserForm({ accessToken, currentRole, onCreated, onCancel }) {
             <option value="" disabled>Select a role</option>
             {selectedPortal.roles.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
-          {roleError && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{roleError}</p>}
+          {roleError && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{roleError}</p>}
         </label>
       )}
 
-      {submitError && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{submitError}</p>}
+      {submitError && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{submitError}</p>}
 
       <div className="flex gap-2">
         <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Creating...' : 'Create Account'}</Button>
@@ -221,16 +195,15 @@ function UserManagement({ accessToken, currentRole }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
 
-  const loadUsers = () => {
+  const loadUsers = useCallback(() => {
     if (!accessToken) { setLoadingUsers(false); return; }
     setLoadingUsers(true);
     fetchUsers(accessToken).then((res) => setUsers(res?.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     loadUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+  }, [loadUsers]);
 
   const handleEdit = (user) => {
     setEditingUser(user);
@@ -263,18 +236,18 @@ function UserManagement({ accessToken, currentRole }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-        <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant flex items-center justify-between gap-4">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">All Users</h3>
           <Button variant="primary" size="md" icon={<Icon name="person_add" />} onClick={() => { setShowAddForm((v) => !v); setEditingUser(null); }}>
             {showAddForm ? 'Close' : 'Add User'}
           </Button>
         </div>
         {(showAddForm || editingUser) && (
-          <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
+          <div className="border-b border-outline-variant bg-surface-container p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface-container">
             {editingUser ? (
               <form onSubmit={handleUpdate} className="space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <input required type="text" placeholder="Full name" value={editingUser.name} onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })} className={FORM_INPUT_CLASS} />
                   <input required type="email" placeholder="Email" value={editingUser.email} onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })} className={FORM_INPUT_CLASS} />
                   <input type="text" placeholder="Phone (optional)" value={editingUser.phone || ''} onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })} className={FORM_INPUT_CLASS} />
@@ -286,7 +259,7 @@ function UserManagement({ accessToken, currentRole }) {
                   <input type="checkbox" checked={editingUser.is_active} onChange={(e) => setEditingUser({ ...editingUser, is_active: e.target.checked })} />
                   Active
                 </label>
-                {userError && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{userError}</p>}
+                {userError && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{userError}</p>}
                 <div className="flex gap-2">
                   <Button type="submit" variant="primary" size="md" disabled={submittingUser}>{submittingUser ? 'Updating...' : 'Update User'}</Button>
                   <Button type="button" variant="outline" size="md" onClick={() => { setEditingUser(null); setUserError(''); }}>Cancel</Button>
@@ -306,22 +279,22 @@ function UserManagement({ accessToken, currentRole }) {
           <div className="p-stack-lg"><LoadingSpinner /></div>
         ) : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
               <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Role</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Actions</th></tr>
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {users.map((u) => (
-                <tr key={u.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+                <tr key={u.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                   <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{u.name}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{u.email}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted capitalize">{u.role?.replace('_', ' ')}</td>
+                  <td className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{u.role?.replace('_', ' ')}</td>
                   <td className="px-stack-lg py-4"><StatusBadge variant={u.is_active ? 'success' : 'neutral'}>{u.is_active ? 'active' : 'inactive'}</StatusBadge></td>
                   <td className="px-stack-lg py-4">
                     <div className="flex gap-2">
-                      <button onClick={() => handleEdit(u)} className="text-ink-muted hover:text-brand transition-colors" title="Edit">
+                      <button onClick={() => handleEdit(u)} className="text-ink-muted transition-colors hover:text-brand" title="Edit">
                         <Icon name="edit" className="text-lg" />
                       </button>
-                      <button onClick={() => { if (window.confirm(`Deactivate user "${u.name}"?`)) { deactivateUser(accessToken, u.id).then(loadUsers); }}} className="text-ink-muted hover:text-status-warning-text transition-colors" title="Deactivate">
+                      <button onClick={() => { if (window.confirm(`Deactivate user "${u.name}"?`)) { deactivateUser(accessToken, u.id).then(loadUsers); }}} className="text-ink-muted transition-colors hover:text-status-warning-text" title="Deactivate">
                         <Icon name="block" className="text-lg" />
                       </button>
                     </div>
@@ -336,12 +309,12 @@ function UserManagement({ accessToken, currentRole }) {
         )}
       </div>
 
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-        <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">User Roles</h3>
         </div>
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
             <tr><th className="px-stack-lg py-4">Role</th><th className="px-stack-lg py-4">Users</th><th className="px-stack-lg py-4">Permissions</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant">
@@ -356,7 +329,7 @@ function UserManagement({ accessToken, currentRole }) {
               { role: 'Client', users: 85, permissions: 'Client portal access' },
               { role: 'Employee', users: 150, permissions: 'Employee portal access' },
             ].map((r) => (
-              <tr key={r.role} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+              <tr key={r.role} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{r.role}</td>
                 <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{r.users}</td>
                 <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{r.permissions}</td>
@@ -382,18 +355,18 @@ function EmployeeManagement({ accessToken }) {
   }, [accessToken]);
 
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-      <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant">
+    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
         <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Employees</h3>
       </div>
       {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
             <tr><th className="px-stack-lg py-4">Code</th><th className="px-stack-lg py-4">Designation</th><th className="px-stack-lg py-4">Department</th><th className="px-stack-lg py-4">Status</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {employees.map((e) => (
-              <tr key={e.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+              <tr key={e.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{e.employee_code}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.designation || '—'}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.department_name || '—'}</td>
@@ -421,18 +394,18 @@ function ClientManagement({ accessToken }) {
   }, [accessToken]);
 
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-      <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant">
+    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
         <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Clients</h3>
       </div>
       {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
             <tr><th className="px-stack-lg py-4">Company</th><th className="px-stack-lg py-4">Industry</th><th className="px-stack-lg py-4">Country</th><th className="px-stack-lg py-4">Status</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {clients.map((c) => (
-              <tr key={c.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+              <tr key={c.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.company_name}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.industry || '—'}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.country || '—'}</td>
@@ -481,7 +454,7 @@ function AddProjectForm({ accessToken, onCreated, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <input required type="text" placeholder="Project title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} />
         <input type="text" placeholder="Industry (optional)" value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} className={inputClass} />
         <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputClass}>
@@ -497,7 +470,7 @@ function AddProjectForm({ accessToken, onCreated, onCancel }) {
           <input type="checkbox" checked={form.is_featured} onChange={(e) => setForm({ ...form, is_featured: e.target.checked })} />Featured
         </label>
       </div>
-      {error && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{error}</p>}
+      {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Creating...' : 'Create Project'}</Button>
         <Button type="button" variant="outline" size="md" onClick={onCancel}>Cancel</Button>
@@ -512,16 +485,15 @@ function ProjectsManagement({ accessToken }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
 
-  const loadProjects = () => {
+  const loadProjects = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     fetchAdminProjects(accessToken, { limit: 50 }).then((res) => setProjects(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     loadProjects();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+  }, [loadProjects]);
 
   const handleEdit = (project) => {
     setEditingProject(project);
@@ -571,18 +543,18 @@ function ProjectsManagement({ accessToken }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-        <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant flex items-center justify-between gap-4">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">All Projects</h3>
           <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => { setShowAddForm((v) => !v); setEditingProject(null); }}>
             {showAddForm ? 'Close' : 'New Project'}
           </Button>
         </div>
         {(showAddForm || editingProject) && (
-          <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
+          <div className="border-b border-outline-variant bg-surface-container p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface-container">
             {editingProject ? (
               <form onSubmit={handleUpdate} className="space-y-4">
-                <div className="grid sm:grid-cols-2 gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
                   <input required type="text" placeholder="Project title" value={editingProject.title} onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })} className={FORM_INPUT_CLASS} />
                   <input type="text" placeholder="Industry (optional)" value={editingProject.industry || ''} onChange={(e) => setEditingProject({ ...editingProject, industry: e.target.value })} className={FORM_INPUT_CLASS} />
                   <select value={editingProject.status} onChange={(e) => setEditingProject({ ...editingProject, status: e.target.value })} className={FORM_INPUT_CLASS}>
@@ -599,7 +571,7 @@ function ProjectsManagement({ accessToken }) {
                     <input type="checkbox" checked={editingProject.is_featured} onChange={(e) => setEditingProject({ ...editingProject, is_featured: e.target.checked })} />Featured
                   </label>
                 </div>
-                {projectError && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{projectError}</p>}
+                {projectError && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{projectError}</p>}
                 <div className="flex gap-2">
                   <Button type="submit" variant="primary" size="md" disabled={submittingProject}>{submittingProject ? 'Updating...' : 'Update Project'}</Button>
                   <Button type="button" variant="outline" size="md" onClick={() => { setEditingProject(null); setProjectError(''); }}>Cancel</Button>
@@ -614,7 +586,7 @@ function ProjectsManagement({ accessToken }) {
           <div className="p-stack-lg"><LoadingSpinner /></div>
         ) : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
               <tr>
                 <th className="px-stack-lg py-4">Title</th>
                 <th className="px-stack-lg py-4">Industry</th>
@@ -626,7 +598,7 @@ function ProjectsManagement({ accessToken }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {projects.map((p) => (
-                <tr key={p.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+                <tr key={p.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                   <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.title}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.industry || '—'}</td>
                   <td className="px-stack-lg py-4"><StatusBadge variant={PROJECT_STATUS_VARIANT[p.status] || 'neutral'}>{p.status?.replace('_', ' ')}</StatusBadge></td>
@@ -637,11 +609,11 @@ function ProjectsManagement({ accessToken }) {
                     </button>
                   </td>
                   <td className="px-stack-lg py-4 text-right">
-                    <div className="flex gap-2 justify-end">
-                      <button onClick={() => handleEdit(p)} className="text-ink-muted hover:text-brand transition-colors" title="Edit">
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => handleEdit(p)} className="text-ink-muted transition-colors hover:text-brand" title="Edit">
                         <Icon name="edit" className="text-lg" />
                       </button>
-                      <button onClick={() => remove(p)} className="text-ink-muted hover:text-status-error-text transition-colors" title="Delete">
+                      <button onClick={() => remove(p)} className="text-ink-muted transition-colors hover:text-status-error-text" title="Delete">
                         <Icon name="delete" className="text-lg" />
                       </button>
                     </div>
@@ -681,12 +653,12 @@ function AddRoleForm({ accessToken, onCreated, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         <input required type="text" placeholder="Role name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
         <input required type="text" placeholder="Slug (e.g. content-editor)" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className={inputClass} />
       </div>
       <textarea placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputClass} w-full`} rows={2} />
-      {error && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{error}</p>}
+      {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Creating...' : 'Create Role'}</Button>
         <Button type="button" variant="outline" size="md" onClick={onCancel}>Cancel</Button>
@@ -717,12 +689,12 @@ function AddPermissionForm({ accessToken, onCreated, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <input required type="text" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
         <input required type="text" placeholder="Module (e.g. projects)" value={form.module} onChange={(e) => setForm({ ...form, module: e.target.value })} className={inputClass} />
         <input required type="text" placeholder="Action (e.g. delete)" value={form.action} onChange={(e) => setForm({ ...form, action: e.target.value })} className={inputClass} />
       </div>
-      {error && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{error}</p>}
+      {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Creating...' : 'Create Permission'}</Button>
         <Button type="button" variant="outline" size="md" onClick={onCancel}>Cancel</Button>
@@ -738,7 +710,7 @@ function RolesManagement({ accessToken }) {
   const [showRoleForm, setShowRoleForm] = useState(false);
   const [showPermForm, setShowPermForm] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     Promise.allSettled([fetchRoles(accessToken, { limit: 50 }), fetchPermissions(accessToken, { limit: 100 })])
@@ -747,12 +719,11 @@ function RolesManagement({ accessToken }) {
         if (p.status === 'fulfilled') setPermissions(p.value?.data || []);
       })
       .finally(() => setLoading(false));
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+  }, [load]);
 
   const removeRole = async (role) => {
     if (!window.confirm(`Delete role "${role.name}"?`)) return;
@@ -768,31 +739,31 @@ function RolesManagement({ accessToken }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-        <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant flex items-center justify-between gap-4">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Custom Roles</h3>
           <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowRoleForm((v) => !v)}>
             {showRoleForm ? 'Close' : 'New Role'}
           </Button>
         </div>
         {showRoleForm && (
-          <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
+          <div className="border-b border-outline-variant bg-surface-container p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface-container">
             <AddRoleForm accessToken={accessToken} onCreated={() => { setShowRoleForm(false); load(); }} onCancel={() => setShowRoleForm(false)} />
           </div>
         )}
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
             <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Slug</th><th className="px-stack-lg py-4">Description</th><th className="px-stack-lg py-4"></th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {roles.map((r) => (
-              <tr key={r.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+              <tr key={r.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{r.name}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.slug}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.description || '—'}</td>
                 <td className="px-stack-lg py-4 text-right">
                   {!r.is_system && (
-                    <button onClick={() => removeRole(r)} className="text-ink-muted hover:text-status-error-text transition-colors">
+                    <button onClick={() => removeRole(r)} className="text-ink-muted transition-colors hover:text-status-error-text">
                       <Icon name="delete" className="text-lg" />
                     </button>
                   )}
@@ -806,30 +777,30 @@ function RolesManagement({ accessToken }) {
         </table>
       </div>
 
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-        <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant flex items-center justify-between gap-4">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Permissions</h3>
           <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowPermForm((v) => !v)}>
             {showPermForm ? 'Close' : 'New Permission'}
           </Button>
         </div>
         {showPermForm && (
-          <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
+          <div className="border-b border-outline-variant bg-surface-container p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface-container">
             <AddPermissionForm accessToken={accessToken} onCreated={() => { setShowPermForm(false); load(); }} onCancel={() => setShowPermForm(false)} />
           </div>
         )}
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
             <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Module</th><th className="px-stack-lg py-4">Action</th><th className="px-stack-lg py-4"></th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {permissions.map((p) => (
-              <tr key={p.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+              <tr key={p.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.name}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.module}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.action}</td>
                 <td className="px-stack-lg py-4 text-right">
-                  <button onClick={() => removePermission(p)} className="text-ink-muted hover:text-status-error-text transition-colors">
+                  <button onClick={() => removePermission(p)} className="text-ink-muted transition-colors hover:text-status-error-text">
                     <Icon name="delete" className="text-lg" />
                   </button>
                 </td>
@@ -853,7 +824,7 @@ function AnalyticsPage({ accessToken }) {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     fetchAnalyticsSummary(accessToken).then((res) => setSummary(res?.data || null)).catch(() => {}).finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [accessToken]);
 
   if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
@@ -863,30 +834,30 @@ function AnalyticsPage({ accessToken }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="grid grid-cols-2 lg:grid-cols-2 gap-gutter">
-        <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-          <Icon name="visibility" className="text-brand text-2xl mb-2" />
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-2">
+        <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <Icon name="visibility" className="mb-2 text-2xl text-brand" />
           <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{totalViews.toLocaleString()}</p>
           <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">Total Page Views</p>
         </div>
-        <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-          <Icon name="link" className="text-status-info-text text-2xl mb-2" />
+        <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <Icon name="link" className="mb-2 text-2xl text-status-info-text" />
           <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{(summary?.unique_paths ?? 0).toLocaleString()}</p>
           <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">Unique Pages</p>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-        <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Top Pages</h3>
         </div>
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
             <tr><th className="px-stack-lg py-4">Path</th><th className="px-stack-lg py-4">Views</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {topPages.map((row) => (
-              <tr key={row.path} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+              <tr key={row.path} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{row.path}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{row.count.toLocaleString()}</td>
               </tr>
@@ -915,16 +886,15 @@ function MediaManagement({ accessToken }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
-  const loadMedia = () => {
+  const loadMedia = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     fetchMedia(accessToken, { limit: 60 }).then((res) => setMedia(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     loadMedia();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+  }, [loadMedia]);
 
   const handleUpload = async (e) => {
     const files = e.target.files;
@@ -949,40 +919,40 @@ function MediaManagement({ accessToken }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-        <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant flex items-center justify-between gap-4">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Media Library</h3>
-          <label className="bg-brand text-white px-4 py-2.5 rounded font-label-caps text-label-caps uppercase hover:bg-brand-dark transition-all cursor-pointer flex items-center gap-2">
+          <label className="flex cursor-pointer items-center gap-2 rounded bg-brand px-4 py-2.5 font-label-caps text-label-caps uppercase text-white transition-all hover:bg-brand-dark">
             <Icon name="upload_file" className="text-lg" />
             {uploading ? 'Uploading...' : 'Upload Files'}
             <input type="file" multiple className="hidden" onChange={handleUpload} disabled={uploading} />
           </label>
         </div>
-        {error && <p className="px-stack-lg pt-4 text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{error}</p>}
+        {error && <p className="flex items-center gap-1 px-stack-lg pt-4 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
         {loading ? (
           <div className="p-stack-lg"><LoadingSpinner /></div>
         ) : (
-          <div className="p-stack-lg grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-gutter">
+          <div className="grid grid-cols-2 gap-gutter p-stack-lg sm:grid-cols-3 lg:grid-cols-4">
             {media.map((m) => (
-              <div key={m.id} className="border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden group relative">
+              <div key={m.id} className="group relative overflow-hidden rounded-lg border border-outline-variant dark:border-dark-outline-variant">
                 {m.mime_type?.startsWith('image/') ? (
-                  <img src={m.url} alt={m.file_name} className="w-full h-28 object-cover" />
+                  <img src={m.url} alt={m.file_name} className="h-28 w-full object-cover" />
                 ) : (
-                  <div className="w-full h-28 flex items-center justify-center bg-surface-container dark:bg-dark-surface-container">
+                  <div className="flex h-28 w-full items-center justify-center bg-surface-container dark:bg-dark-surface-container">
                     <Icon name={mediaIcon(m.mime_type)} className="text-4xl text-ink-muted" />
                   </div>
                 )}
                 <div className="p-2">
-                  <p className="text-body-sm text-brand-dark dark:text-dark-brand truncate" title={m.file_name}>{m.file_name}</p>
+                  <p className="truncate text-body-sm text-brand-dark dark:text-dark-brand" title={m.file_name}>{m.file_name}</p>
                   <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{m.folder}</p>
                 </div>
-                <button onClick={() => remove(m)} className="absolute top-2 right-2 bg-white/90 dark:bg-dark-surface/90 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity text-ink-muted hover:text-status-error-text">
+                <button onClick={() => remove(m)} className="absolute right-2 top-2 rounded-full bg-white/90 p-1 text-ink-muted opacity-0 transition-opacity hover:text-status-error-text group-hover:opacity-100 dark:bg-dark-surface/90">
                   <Icon name="delete" className="text-base" />
                 </button>
               </div>
             ))}
             {!media.length && (
-              <p className="col-span-full text-center text-body-sm text-ink-muted py-8">No media uploaded yet.</p>
+              <p className="col-span-full py-8 text-center text-body-sm text-ink-muted">No media uploaded yet.</p>
             )}
           </div>
         )}
@@ -992,22 +962,21 @@ function MediaManagement({ accessToken }) {
 }
 
 const NOTIFICATION_ICON = { info: 'info', success: 'check_circle', warning: 'warning', error: 'error' };
-const NOTIFICATION_VARIANT = { info: 'info', success: 'success', warning: 'warning', error: 'error' };
+const NOTIFICATION_TEXT = { info: 'text-status-info-text', success: 'text-status-success-text', warning: 'text-status-warning-text', error: 'text-status-error-text' };
 
 function NotificationsManagement({ accessToken }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     fetchNotifications(accessToken).then((res) => setNotifications(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+  }, [load]);
 
   const markOne = async (n) => {
     try { await markNotificationRead(accessToken, n.id); load(); } catch { /* row stays unread on failure */ }
@@ -1021,8 +990,8 @@ function NotificationsManagement({ accessToken }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-        <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant flex items-center justify-between gap-4">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">
             Notifications {unreadCount > 0 && <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">({unreadCount} unread)</span>}
           </h3>
@@ -1036,21 +1005,21 @@ function NotificationsManagement({ accessToken }) {
           <div className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {notifications.map((n) => (
               <div key={n.id} className={`flex items-start gap-4 p-stack-lg ${n.is_read ? '' : 'bg-surface-container dark:bg-dark-surface-container'}`}>
-                <Icon name={NOTIFICATION_ICON[n.type] || 'info'} className={`text-2xl mt-0.5 text-status-${NOTIFICATION_VARIANT[n.type] || 'info'}-text`} />
+                <Icon name={NOTIFICATION_ICON[n.type] || 'info'} className={`mt-0.5 text-2xl ${NOTIFICATION_TEXT[n.type] || 'text-status-info-text'}`} />
                 <div className="flex-1">
                   <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{n.title}</p>
                   {n.message && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{n.message}</p>}
-                  <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted mt-1">{new Date(n.created_at).toLocaleString()}</p>
+                  <p className="mt-1 font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{new Date(n.created_at).toLocaleString()}</p>
                 </div>
                 {!n.is_read && (
-                  <button onClick={() => markOne(n)} className="text-ink-muted hover:text-brand transition-colors" title="Mark as read">
+                  <button onClick={() => markOne(n)} className="text-ink-muted transition-colors hover:text-brand" title="Mark as read">
                     <Icon name="check" className="text-lg" />
                   </button>
                 )}
               </div>
             ))}
             {!notifications.length && (
-              <p className="text-center text-body-sm text-ink-muted py-8">No notifications.</p>
+              <p className="py-8 text-center text-body-sm text-ink-muted">No notifications.</p>
             )}
           </div>
         )}
@@ -1081,13 +1050,13 @@ function GenerateReportForm({ accessToken, onCreated, onCancel }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid sm:grid-cols-3 gap-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         <input required type="text" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} />
         <input required type="text" placeholder="Type (e.g. financial)" value={form.report_type} onChange={(e) => setForm({ ...form, report_type: e.target.value })} className={inputClass} />
         <input required type="text" placeholder="Period (e.g. Q1 2026)" value={form.period} onChange={(e) => setForm({ ...form, period: e.target.value })} className={inputClass} />
       </div>
       <textarea placeholder="Summary (optional)" value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} className={`${inputClass} w-full`} rows={2} />
-      {error && <p className="text-status-error-text text-body-sm flex items-center gap-1"><Icon name="error" className="text-base" />{error}</p>}
+      {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
       <div className="flex gap-2">
         <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Generating...' : 'Generate Report'}</Button>
         <Button type="button" variant="outline" size="md" onClick={onCancel}>Cancel</Button>
@@ -1101,16 +1070,15 @@ function ReportsManagement({ accessToken }) {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     fetchReports(accessToken, { limit: 50 }).then((res) => setReports(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken]);
+  }, [load]);
 
   const remove = async (report) => {
     if (!window.confirm(`Delete report "${report.title}"?`)) return;
@@ -1119,15 +1087,15 @@ function ReportsManagement({ accessToken }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-        <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant flex items-center justify-between gap-4">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Reports</h3>
           <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>
             {showForm ? 'Close' : 'Generate Report'}
           </Button>
         </div>
         {showForm && (
-          <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
+          <div className="border-b border-outline-variant bg-surface-container p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface-container">
             <GenerateReportForm accessToken={accessToken} onCreated={() => { setShowForm(false); load(); }} onCancel={() => setShowForm(false)} />
           </div>
         )}
@@ -1135,22 +1103,22 @@ function ReportsManagement({ accessToken }) {
           <div className="p-stack-lg"><LoadingSpinner /></div>
         ) : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
               <tr><th className="px-stack-lg py-4">Title</th><th className="px-stack-lg py-4">Type</th><th className="px-stack-lg py-4">Period</th><th className="px-stack-lg py-4"></th></tr>
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {reports.map((r) => (
-                <tr key={r.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+                <tr key={r.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                   <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{r.title}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted capitalize">{r.report_type}</td>
+                  <td className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{r.report_type}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.period}</td>
-                  <td className="px-stack-lg py-4 text-right flex items-center justify-end gap-3">
+                  <td className="flex items-center justify-end gap-3 px-stack-lg py-4 text-right">
                     {r.file_url && (
-                      <a href={r.file_url} target="_blank" rel="noreferrer" className="text-ink-muted hover:text-brand transition-colors">
+                      <a href={r.file_url} target="_blank" rel="noreferrer" className="text-ink-muted transition-colors hover:text-brand">
                         <Icon name="download" className="text-lg" />
                       </a>
                     )}
-                    <button onClick={() => remove(r)} className="text-ink-muted hover:text-status-error-text transition-colors">
+                    <button onClick={() => remove(r)} className="text-ink-muted transition-colors hover:text-status-error-text">
                       <Icon name="delete" className="text-lg" />
                     </button>
                   </td>
@@ -1175,20 +1143,20 @@ function AuditLogsManagement({ accessToken }) {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     fetchAuditLogs(accessToken, { limit: 50 }).then((res) => setLogs(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [accessToken]);
 
   return (
     <div className="space-y-stack-lg">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-        <div className="p-stack-lg border-b border-outline-variant dark:border-dark-outline-variant">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Audit Logs</h3>
         </div>
         {loading ? (
           <div className="p-stack-lg"><LoadingSpinner /></div>
         ) : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
               <tr>
                 <th className="px-stack-lg py-4">Action</th>
                 <th className="px-stack-lg py-4">Entity</th>
@@ -1198,7 +1166,7 @@ function AuditLogsManagement({ accessToken }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {logs.map((l) => (
-                <tr key={l.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+                <tr key={l.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                   <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{l.action}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.entity_type || '—'}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.ip_address || '—'}</td>
@@ -1219,6 +1187,7 @@ function AuditLogsManagement({ accessToken }) {
 export default function AdminPanel() {
   useDocumentTitle('Admin Panel | CoreFusion Technologies');
   const { user, initializing, accessToken, logout } = useAuth();
+  const { denied } = useRoleGuard('admin', '/login');
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
@@ -1245,23 +1214,28 @@ export default function AdminPanel() {
   }, [user, accessToken]);
 
   if (initializing) {
-    return <div className="py-section-padding bg-surface-container"><LoadingSpinner /></div>;
+    return <div className="bg-surface-container py-section-padding"><LoadingSpinner /></div>;
   }
 
   if (!user) { navigate('/login', { replace: true }); return null; }
 
+  if (denied || (currentRole && !['admin', 'super_admin'].includes(currentRole))) {
+    navigate('/login', { replace: true });
+    return null;
+  }
+
   if (loading) {
-    return <div className="py-section-padding bg-surface-container"><LoadingSpinner /></div>;
+    return <div className="bg-surface-container py-section-padding"><LoadingSpinner /></div>;
   }
 
   return (
-    <div className="py-section-padding bg-surface-container">
-      <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
-        <div className="flex items-center justify-between gap-4 mb-stack-lg">
+    <div className="bg-surface-container py-section-padding">
+      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
+        <div className="sticky top-0 z-20 mb-stack-lg flex items-center justify-between gap-4 bg-surface-container py-3">
           <div className="flex items-center gap-4">
             <Avatar name={currentUser?.name || 'Admin'} size="lg" />
             <div>
-              <h1 className="font-display text-headline-md text-white font-bold">{currentUser?.name || 'Admin'}</h1>
+              <h1 className="font-display text-headline-md font-bold text-white">{currentUser?.name || 'Admin'}</h1>
               <p className="text-body-sm text-white/70">{currentUser?.email || ''} &middot; {(currentUser?.role || currentRole || 'admin').replace('_', ' ')}</p>
             </div>
           </div>
@@ -1269,19 +1243,19 @@ export default function AdminPanel() {
             <Button as={Link} to="/super-admin" variant="primary" size="md" icon={<Icon name="shield_person" />}>
               Super Admin
             </Button>
-            <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
+            <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
               Sign Out
             </Button>
           </div>
         </div>
 
         <div className="flex gap-stack-lg">
-          <aside className="w-56 shrink-0 hidden md:block">
+          <aside className="hidden w-56 shrink-0 md:block">
             <nav className="flex flex-col gap-1">
               {adminPanelTabs.map((tab) => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-label-caps text-label-caps uppercase text-left transition-colors ${
-                    activeTab === tab.id ? 'bg-white/10 text-white font-bold' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
+                    activeTab === tab.id ? 'bg-white/10 font-bold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
                   }`}>
                   <Icon name={tab.icon} className="text-lg" />{tab.label}
                 </button>
@@ -1289,20 +1263,20 @@ export default function AdminPanel() {
             </nav>
           </aside>
 
-          <div className="flex md:hidden flex-wrap gap-1 mb-stack-lg border-b border-outline-variant overflow-x-auto">
+          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant md:hidden">
             {adminPanelTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.id ? 'text-brand font-bold border-brand' : 'text-ink-muted font-semibold border-transparent hover:text-ink hover:border-outline-variant'
+                className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
+                  activeTab === tab.id ? 'border-brand font-bold text-brand' : 'border-transparent font-semibold text-ink-muted hover:border-outline-variant hover:text-ink'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>
             ))}
           </div>
 
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             {activeTab === 'overview' && <Dashboard kpis={kpis} statusBreakdown={statusBreakdown} />}
-            {activeTab === 'content' && <ContentManagement />}
+            {activeTab === 'content' && <ContentManagement accessToken={accessToken} />}
             {activeTab === 'projects' && <ProjectsManagement accessToken={accessToken} />}
             {activeTab === 'users' && <UserManagement accessToken={accessToken} currentRole={currentRole} />}
             {activeTab === 'employees' && <EmployeeManagement accessToken={accessToken} />}

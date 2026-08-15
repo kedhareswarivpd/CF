@@ -14,7 +14,7 @@ export default function Avatar({ name = '', size = 'md', className = '' }) {
 
   return (
     <div
-      className={`${sizes[size]} rounded-full bg-gradient-to-br from-brand to-brand-dark flex items-center justify-center text-white font-semibold ring-2 ring-brand/30 ring-offset-2 ring-offset-surface-container dark:ring-offset-dark-surface-container shrink-0 select-none ${className}`}
+      className={`${sizes[size]} flex shrink-0 select-none items-center justify-center rounded-full bg-gradient-to-br from-brand to-brand-dark font-semibold text-white ring-2 ring-brand/30 ring-offset-2 ring-offset-surface-container dark:ring-offset-dark-surface-container ${className}`}
       title={name}
     >
       {initials || '?'}

@@ -2,25 +2,25 @@ import { globalNodes } from '../../data/projects.js';
 
 export default function GlobalMap() {
   return (
-    <section className="bg-brand py-stack-xl px-margin-mobile md:px-margin-desktop overflow-hidden">
-      <div className="max-w-5xl mx-auto text-center mb-16">
+    <section className="overflow-hidden bg-brand px-margin-mobile py-stack-xl md:px-margin-desktop">
+      <div className="mx-auto mb-16 max-w-5xl text-center">
         <span className="font-label-caps text-label-caps uppercase text-accent-cyan">Global Footprint</span>
-        <h2 className="font-display text-headline-lg text-white mt-2">Engineering Without Borders</h2>
-        <p className="font-body text-body-lg text-surface-dim max-w-2xl mx-auto mt-4 opacity-90">
+        <h2 className="mt-2 font-display text-headline-lg text-white">Engineering Without Borders</h2>
+        <p className="mx-auto mt-4 max-w-2xl font-body text-body-lg text-surface-dim opacity-90">
           From our hubs in Delhi and Dubai to our partners in Seattle, we deliver excellence at a planetary
           scale.
         </p>
       </div>
-      <div className="relative w-full max-w-5xl mx-auto aspect-[2/1] bg-brand-dark/40 rounded-xl overflow-hidden border border-white/10">
+      <div className="relative mx-auto aspect-[2/1] w-full max-w-5xl overflow-hidden rounded-xl border border-white/10 bg-brand-dark/40">
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative w-72 h-72 md:w-96 md:h-96">
+          <div className="relative size-72 md:size-96">
             {/* Outer glow ring */}
-            <div className="absolute inset-0 rounded-full border-2 border-accent-cyan/30 animate-ping" style={{ animationDuration: '3s' }} />
+            <div className="absolute inset-0 animate-ping rounded-full border-2 border-accent-cyan/30" style={{ animationDuration: '3s' }} />
             <div className="absolute inset-2 rounded-full border border-accent-cyan/20" />
             {/* Globe circle */}
-            <div className="absolute inset-4 rounded-full bg-brand-dark/60 border border-accent-cyan/40 overflow-hidden flex items-center justify-center shadow-[0_0_60px_rgba(0,212,255,0.15)]">
+            <div className="absolute inset-4 flex items-center justify-center overflow-hidden rounded-full border border-accent-cyan/40 bg-brand-dark/60 shadow-[0_0_60px_rgba(0,212,255,0.15)]">
               {/* SVG continents */}
-              <svg viewBox="0 0 200 200" className="w-full h-full opacity-70" xmlns="http://www.w3.org/2000/svg">
+              <svg viewBox="0 0 200 200" className="size-full opacity-70" xmlns="http://www.w3.org/2000/svg">
                 <circle cx="100" cy="100" r="100" fill="#0a2540" />
                 {/* Latitude lines */}
                 {[30,50,70,90,110,130,150,170].map(y => (
@@ -54,9 +54,9 @@ export default function GlobalMap() {
             title={node.label}
           />
         ))}
-        <div className="absolute bottom-6 left-6 glass-panel p-4 rounded-lg hidden md:block">
+        <div className="glass-panel absolute bottom-6 left-6 hidden rounded-lg p-4 md:block">
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-accent-cyan rounded-full" />
+            <div className="size-3 rounded-full bg-accent-cyan" />
             <span className="font-label-caps text-label-caps uppercase text-white">Active Project Nodes</span>
           </div>
         </div>

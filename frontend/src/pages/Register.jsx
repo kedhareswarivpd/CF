@@ -46,12 +46,12 @@ export default function Register() {
   const inputClass = 'w-full rounded border border-outline-variant dark:border-dark-outline-variant px-4 py-2.5 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand';
 
   return (
-    <div className="bg-surface-container dark:bg-dark-surface-container flex items-center justify-center px-margin-mobile py-16">
-      <div className="w-full max-w-md bg-white dark:bg-dark-surface rounded-lg shadow-card-hover p-stack-lg">
-        <h1 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-1">Create an account</h1>
-        <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted mb-stack-md">
+    <div className="flex items-center justify-center bg-surface-container px-margin-mobile py-16 dark:bg-dark-surface-container">
+      <div className="w-full max-w-md rounded-lg bg-white p-stack-lg shadow-card-hover dark:bg-dark-surface">
+        <h1 className="mb-1 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Create an account</h1>
+        <p className="mb-stack-md text-body-sm text-ink-muted dark:text-dark-ink-muted">
           Already have an account?{' '}
-          <button type="button" onClick={() => navigate('/')} className="text-brand hover:underline font-semibold">Sign in</button>
+          <button type="button" onClick={() => navigate('/')} className="font-semibold text-brand hover:underline">Sign in</button>
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-stack-md">
@@ -75,7 +75,7 @@ export default function Register() {
             </div>
           </label>
 
-          <div className="rounded-lg bg-surface-container dark:bg-dark-surface-container p-stack-md">
+          <div className="rounded-lg bg-surface-container p-stack-md dark:bg-dark-surface-container">
             <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
               Self-serve registration creates a Client account. Employee, Admin, and Partner accounts must be provisioned by your Admin/HR team.
             </p>
@@ -87,21 +87,21 @@ export default function Register() {
           </label>
 
           {error && (
-            <p className="text-status-error-text text-body-sm flex items-center gap-1">
+            <p className="flex items-center gap-1 text-body-sm text-status-error-text">
               <Icon name="error" className="text-base" />{error}
             </p>
           )}
           {success && (
-            <p className="text-green-600 text-body-sm flex items-center gap-1 bg-green-50 rounded p-3">
+            <p className="flex items-center gap-1 rounded bg-green-50 p-3 text-body-sm text-green-600">
               <Icon name="check_circle" className="text-base" />{success}
             </p>
           )}
 
-          <button type="submit" disabled={submitting} className="bg-brand text-white h-11 rounded font-label-caps text-label-caps uppercase hover:bg-brand-dark transition-all active:scale-95 disabled:opacity-60">
+          <button type="submit" disabled={submitting} className="h-11 rounded bg-brand font-label-caps text-label-caps uppercase text-white transition-all hover:bg-brand-dark active:scale-95 disabled:opacity-60">
             {submitting ? 'Creating account...' : 'Create Account'}
           </button>
 
-          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted text-center">
+          <p className="text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">
             By registering you agree to our{' '}
             <Link to="/terms" className="text-brand hover:underline">Terms</Link>{' '}and{' '}
             <Link to="/privacy" className="text-brand hover:underline">Privacy Policy</Link>.

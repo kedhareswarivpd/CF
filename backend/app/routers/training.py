@@ -1,18 +1,17 @@
 import uuid
 
 from fastapi import APIRouter, Depends
-from slugify import slugify
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, require_roles
+from app.core.dependencies import get_current_user
 from app.core.errors import ApiError
 from app.crud.base import CRUDBase
 from app.models.training import Course, TrainingEnrollment
 from app.models.user import User
-from app.schemas.training import CourseCreate, CourseOut, CourseUpdate, TrainingEnrollmentOut
+from app.schemas.training import CourseOut, TrainingEnrollmentOut
 from app.utils.pagination import PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
@@ -37,28 +36,6 @@ async def list_courses(
 async def get_course(course_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     course = await course_crud.get(db, course_id)
     return success_response(data=CourseOut.model_validate(course))
-
-
-# ---------- Admin CRUD ----------
-@router.post("/courses", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr"))])
-async def create_course(payload: CourseCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    data = payload.model_dump()
-    data["slug"] = data.get("slug") or slugify(data["title"])
-    data["created_by"] = current_user.id
-    course = await course_crud.create(db, data)
-    return success_response(data=CourseOut.model_validate(course), message="Course created", status_code=201)
-
-
-@router.put("/courses/{course_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "hr"))])
-async def update_course(course_id: uuid.UUID, payload: CourseUpdate, db: AsyncSession = Depends(get_db)):
-    course = await course_crud.update(db, course_id, payload.model_dump(exclude_unset=True))
-    return success_response(data=CourseOut.model_validate(course), message="Course updated")
-
-
-@router.delete("/courses/{course_id}", response_model=dict, dependencies=[Depends(require_roles("admin"))])
-async def delete_course(course_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    await course_crud.delete(db, course_id)
-    return success_response(message="Course deleted")
 
 
 # ---------- Employee enrollment (self-service) ----------

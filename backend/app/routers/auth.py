@@ -11,10 +11,7 @@ from app.core.dependencies import get_current_user
 from app.core.errors import ApiError
 from app.core.security import decode_supabase_token
 from app.models.user import User
-from app.schemas.auth import (
-    ForgotPasswordRequest, LoginRequest, LoginResponse, LogoutRequest,
-    RefreshRequest, RegisterRequest, ResetPasswordRequest, TokenPair, UserRead,
-)
+from app.schemas.auth import LoginRequest, LoginResponse, LogoutRequest, RegisterRequest, UserRead
 from app.services.supabase_client import get_admin_client, get_anon_client
 from app.utils.responses import success_response
 
@@ -98,24 +95,6 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     return success_response(data=response, message="Logged in successfully")
 
 
-@router.post("/refresh-token", response_model=dict)
-async def refresh_token_endpoint(payload: RefreshRequest):
-    anon = get_anon_client()
-    try:
-        auth_response = await run_in_threadpool(anon.auth.refresh_session, payload.refresh_token)
-    except Exception as exc:  # noqa: BLE001
-        raise ApiError.unauthorized("Invalid or expired refresh token") from exc
-
-    session = auth_response.session
-    if session is None:
-        raise ApiError.unauthorized("Invalid or expired refresh token")
-
-    return success_response(
-        data=TokenPair(access_token=session.access_token, refresh_token=session.refresh_token, expires_in=session.expires_in),
-        message="Token refreshed",
-    )
-
-
 @router.post("/logout", response_model=dict)
 async def logout(payload: LogoutRequest):
     try:
@@ -129,30 +108,3 @@ async def logout(payload: LogoutRequest):
 @router.get("/me", response_model=dict)
 async def me(current_user: User = Depends(get_current_user)):
     return success_response(data=UserRead.model_validate(current_user), message="Current user fetched")
-
-
-@router.post("/forgot-password", response_model=dict)
-async def forgot_password(payload: ForgotPasswordRequest):
-    anon = get_anon_client()
-    options = {"redirect_to": payload.redirect_to} if payload.redirect_to else {}
-    try:
-        await run_in_threadpool(anon.auth.reset_password_for_email, payload.email, options)
-    except Exception:  # noqa: BLE001
-        pass
-    return success_response(message="If the email exists, a password reset link has been sent")
-
-
-@router.post("/reset-password", response_model=dict)
-async def reset_password(payload: ResetPasswordRequest):
-    try:
-        claims = await decode_supabase_token(payload.recovery_token)
-    except ValueError as exc:
-        raise ApiError.bad_request("Password reset token is invalid or has expired") from exc
-
-    admin = get_admin_client()
-    try:
-        await run_in_threadpool(admin.auth.admin.update_user_by_id, claims["sub"], {"password": payload.password})
-    except Exception as exc:  # noqa: BLE001
-        raise ApiError.bad_request(f"Could not reset password: {exc}") from exc
-
-    return success_response(message="Password has been reset successfully")

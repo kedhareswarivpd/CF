@@ -5,11 +5,11 @@ import Reveal from '../ui/Reveal.jsx';
 
 export default function CtaBanner() {
   return (
-    <section className="bg-white text-brand-dark py-section-padding px-margin-mobile md:px-margin-desktop">
-      <Reveal className="max-w-container mx-auto flex flex-col md:flex-row items-center justify-center gap-stack-lg">
+    <section className="bg-white px-margin-mobile py-section-padding text-brand-dark md:px-margin-desktop">
+      <Reveal className="mx-auto flex max-w-container flex-col items-center justify-center gap-stack-lg md:flex-row">
         <div>
-          <h2 className="font-display text-headline-md text-brand-dark mb-2">Ready to engineer what's next?</h2>
-          <p className="text-ink-muted max-w-xl">
+          <h2 className="mb-2 font-display text-headline-md text-brand-dark">Ready to engineer what&apos;s next?</h2>
+          <p className="max-w-xl text-ink-muted">
             Talk to a Solution Architect about your next digital transformation initiative.
           </p>
         </div>

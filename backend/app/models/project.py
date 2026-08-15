@@ -37,7 +37,7 @@ class Project(Base):
     tasks = relationship("Task", back_populates="project")
     invoices = relationship("Invoice", back_populates="project")
     case_studies = relationship("CaseStudy", back_populates="project")
-    gallery_items = relationship("Gallery", back_populates="project")
     meetings = relationship("Meeting", back_populates="project")
     timesheets = relationship("Timesheet", back_populates="project")
+    gallery_items = relationship("Gallery", back_populates="project")
     team = relationship("Employee", secondary=project_members, back_populates="projects")

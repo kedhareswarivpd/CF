@@ -39,12 +39,6 @@ async def list_contracts(request: Request, db: AsyncSession = Depends(get_db), p
     return success_response(data=[ContractOut.model_validate(c) for c in items], message="Contracts fetched", meta=meta)
 
 
-@router.get("/{contract_id}", response_model=dict)
-async def get_contract(contract_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    contract = await crud.get(db, contract_id)
-    return success_response(data=ContractOut.model_validate(contract))
-
-
 @router.post("", response_model=dict, status_code=201)
 async def create_contract(payload: ContractCreate, db: AsyncSession = Depends(get_db)):
     proposal = (await db.execute(select(Proposal).where(Proposal.id == payload.proposal_id))).scalar_one_or_none()

@@ -30,60 +30,60 @@ function RegisterModal({ event, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={onClose}>
-      <div className="bg-white dark:bg-dark-surface rounded-xl shadow-2xl w-full max-w-md p-8" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-start justify-between mb-6">
+      <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-2xl dark:bg-dark-surface" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-6 flex items-start justify-between">
           <div>
             <h2 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Register for Event</h2>
-            <p className="text-body-sm text-ink-muted mt-1">{event.title}</p>
+            <p className="mt-1 text-body-sm text-ink-muted">{event.title}</p>
           </div>
-          <button onClick={onClose} className="text-ink-muted hover:text-ink ml-4">
+          <button onClick={onClose} className="ml-4 text-ink-muted hover:text-ink">
             <Icon name="close" className="text-xl" />
           </button>
         </div>
 
         {status === 'success' ? (
-          <div className="text-center py-6">
-            <Icon name="check_circle" className="text-5xl text-green-500 mb-3" />
-            <p className="font-semibold text-ink-dark dark:text-dark-ink">Registration received!</p>
-            <p className="text-body-sm text-ink-muted mt-1">We'll send confirmation details to {form.email}.</p>
+          <div className="py-6 text-center">
+            <Icon name="check_circle" className="mb-3 text-5xl text-green-500" />
+            <p className="font-semibold text-ink dark:text-dark-ink">Registration received!</p>
+            <p className="mt-1 text-body-sm text-ink-muted">We&apos;ll send confirmation details to {form.email}.</p>
             <Button variant="outline" size="md" className="mt-6" onClick={onClose}>Close</Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-label-caps font-label-caps text-ink-muted mb-1">Full Name *</label>
+              <label className="mb-1 block font-label-caps text-label-caps text-ink-muted">Full Name *</label>
               <input
                 required
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full border border-outline-variant rounded-lg px-3 py-2 text-body-md bg-white dark:bg-dark-surface-container dark:border-dark-outline-variant focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full rounded-lg border border-outline-variant bg-white px-3 py-2 text-body-md focus:outline-none focus:ring-2 focus:ring-brand dark:border-dark-outline-variant dark:bg-dark-surface-container"
               />
             </div>
             <div>
-              <label className="block text-label-caps font-label-caps text-ink-muted mb-1">Email *</label>
+              <label className="mb-1 block font-label-caps text-label-caps text-ink-muted">Email *</label>
               <input
                 required
                 type="email"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full border border-outline-variant rounded-lg px-3 py-2 text-body-md bg-white dark:bg-dark-surface-container dark:border-dark-outline-variant focus:outline-none focus:ring-2 focus:ring-brand"
+                className="w-full rounded-lg border border-outline-variant bg-white px-3 py-2 text-body-md focus:outline-none focus:ring-2 focus:ring-brand dark:border-dark-outline-variant dark:bg-dark-surface-container"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-label-caps font-label-caps text-ink-muted mb-1">Phone</label>
+                <label className="mb-1 block font-label-caps text-label-caps text-ink-muted">Phone</label>
                 <input
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  className="w-full border border-outline-variant rounded-lg px-3 py-2 text-body-md bg-white dark:bg-dark-surface-container dark:border-dark-outline-variant focus:outline-none focus:ring-2 focus:ring-brand"
+                  className="w-full rounded-lg border border-outline-variant bg-white px-3 py-2 text-body-md focus:outline-none focus:ring-2 focus:ring-brand dark:border-dark-outline-variant dark:bg-dark-surface-container"
                 />
               </div>
               <div>
-                <label className="block text-label-caps font-label-caps text-ink-muted mb-1">Company</label>
+                <label className="mb-1 block font-label-caps text-label-caps text-ink-muted">Company</label>
                 <input
                   value={form.company}
                   onChange={(e) => setForm({ ...form, company: e.target.value })}
-                  className="w-full border border-outline-variant rounded-lg px-3 py-2 text-body-md bg-white dark:bg-dark-surface-container dark:border-dark-outline-variant focus:outline-none focus:ring-2 focus:ring-brand"
+                  className="w-full rounded-lg border border-outline-variant bg-white px-3 py-2 text-body-md focus:outline-none focus:ring-2 focus:ring-brand dark:border-dark-outline-variant dark:bg-dark-surface-container"
                 />
               </div>
             </div>
@@ -101,11 +101,10 @@ function RegisterModal({ event, onClose }) {
 }
 
 export default function EventsGrid({ events, typeFilters }) {
-  if (!events) return <LoadingSpinner />;
-  if (!events.length) return <EmptyState icon="event" title="No events scheduled" description="Check back later." />;
-
   const [activeType, setActiveType] = useState('All');
   const [registerEvent, setRegisterEvent] = useState(null);
+  if (!events) return <LoadingSpinner />;
+  if (!events.length) return <EmptyState icon="event" title="No events scheduled" description="Check back later." />;
 
   const filtered = activeType === 'All' ? events : events.filter((e) => e.type === activeType);
 
@@ -120,49 +119,49 @@ export default function EventsGrid({ events, typeFilters }) {
 
   return (
     <section className="py-section-padding">
-      <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
-        <div className="flex flex-wrap gap-2 mb-stack-lg">
+      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
+        <div className="mb-stack-lg flex flex-wrap gap-2">
           {typeFilters.map((t) => (
             <button
               key={t}
               onClick={() => setActiveType(t)}
-              className={`px-4 py-2 rounded-full font-label-caps text-label-caps uppercase transition-all ${
+              className={`rounded-full px-4 py-2 font-label-caps text-label-caps uppercase transition-all ${
                 activeType === t
                   ? 'bg-brand text-white'
-                  : 'bg-surface-container dark:bg-dark-surface-container text-ink-muted dark:text-dark-ink-muted hover:bg-outline-variant dark:hover:bg-dark-outline-variant'
+                  : 'bg-surface-container text-ink-muted hover:bg-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted dark:hover:bg-dark-outline-variant'
               }`}
             >
               {t}
             </button>
           ))}
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+        <div className="grid gap-gutter md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((event, i) => (
             <Reveal key={event.slug} from="zoom" delay={i * 80}>
-              <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg hover:shadow-card-hover transition-all hover:-translate-y-1 flex flex-col h-full">
-                <div className="flex items-start justify-between mb-3">
+              <div className="flex h-full flex-col rounded-lg border border-outline-variant bg-white p-stack-lg transition-all hover:-translate-y-1 hover:shadow-card-hover dark:border-dark-outline-variant dark:bg-dark-surface">
+                <div className="mb-3 flex items-start justify-between">
                   <StatusBadge variant={event.isVirtual ? 'info' : 'success'}>
                     {event.isVirtual ? 'Virtual' : 'In-Person'}
                   </StatusBadge>
-                  <Badge className="bg-accent-cyan-pale text-brand text-label-caps">{event.type}</Badge>
+                  <Badge className="bg-accent-cyan-pale text-label-caps text-brand">{event.type}</Badge>
                 </div>
-                <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-3">{event.title}</h3>
-                <p className="text-body-md text-ink-muted mb-4 flex-1">{event.description}</p>
-                <div className="space-y-2 text-body-sm text-ink-muted pt-4 border-t border-outline-variant">
+                <h3 className="mb-3 font-display text-headline-sm text-brand-dark dark:text-dark-brand">{event.title}</h3>
+                <p className="mb-4 flex-1 text-body-md text-ink-muted">{event.description}</p>
+                <div className="space-y-2 border-t border-outline-variant pt-4 text-body-sm text-ink-muted">
                   <div className="flex items-center gap-2">
-                    <Icon name="calendar_today" className="text-brand text-lg" />
+                    <Icon name="calendar_today" className="text-lg text-brand" />
                     <span>{new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Icon name="schedule" className="text-brand text-lg" />
+                    <Icon name="schedule" className="text-lg text-brand" />
                     <span>{event.time}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Icon name="location_on" className="text-brand text-lg" />
+                    <Icon name="location_on" className="text-lg text-brand" />
                     <span>{event.location}</span>
                   </div>
                 </div>
-                <div className="mt-4 pt-4 border-t border-outline-variant">
+                <div className="mt-4 border-t border-outline-variant pt-4">
                   <Button variant="outline" size="md" className="w-full" onClick={() => handleRegister(event)}>
                     Register Now
                   </Button>

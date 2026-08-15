@@ -21,4 +21,51 @@ describe('Button', () => {
     fireEvent.click(screen.getByRole('button', { name: /clickable/i }));
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
+
+  it('renders as a link when as prop is provided', () => {
+    render(<Button as="a" href="/test">Link Button</Button>);
+    const link = screen.getByRole('link', { name: /link button/i });
+    expect(link).toBeInTheDocument();
+    expect(link.getAttribute('href')).toBe('/test');
+  });
+
+  it('applies primary variant by default', () => {
+    const { container } = render(<Button>Primary</Button>);
+    const btn = container.firstChild;
+    expect(btn.className).toContain('bg-brand');
+  });
+
+  it('applies size classes', () => {
+    const { container } = render(<Button size="md">Medium</Button>);
+    const btn = container.firstChild;
+    expect(btn.className).toContain('h-11');
+  });
+
+  it('applies large size by default', () => {
+    const { container } = render(<Button>Large</Button>);
+    const btn = container.firstChild;
+    expect(btn.className).toContain('h-[52px]');
+  });
+
+  it('renders icon when provided', () => {
+    render(<Button icon={<span data-testid="icon">→</span>}>With Icon</Button>);
+    expect(screen.getByTestId('icon')).toBeInTheDocument();
+  });
+
+  it('passes additional props to the element', () => {
+    render(<Button disabled>Disabled</Button>);
+    expect(screen.getByRole('button')).toBeDisabled();
+  });
+
+  it('applies custom className', () => {
+    const { container } = render(<Button className="custom-class">Custom</Button>);
+    const btn = container.firstChild;
+    expect(btn.className).toContain('custom-class');
+  });
+
+  it('has active scale animation class', () => {
+    const { container } = render(<Button>Animated</Button>);
+    const btn = container.firstChild;
+    expect(btn.className).toContain('active:scale-95');
+  });
 });

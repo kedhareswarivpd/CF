@@ -17,7 +17,7 @@ export default function Breadcrumbs() {
     <nav aria-label="Breadcrumb" itemScope itemType="https://schema.org/BreadcrumbList">
       <ol className="flex items-center gap-2 text-body-sm text-white/70">
         <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-          <Link to="/" itemProp="item" className="hover:text-accent-cyan transition-colors">
+          <Link to="/" itemProp="item" className="transition-colors hover:text-accent-cyan">
             <span itemProp="name">Home</span>
           </Link>
           <meta itemProp="position" content="1" />
@@ -30,9 +30,9 @@ export default function Breadcrumbs() {
             <li key={segment} className="flex items-center gap-2" itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
               <span className="text-white/40">&gt;</span>
               {isLast ? (
-                <span itemProp="name" className="text-white font-semibold">{formatLabel(segment)}</span>
+                <span itemProp="name" className="font-semibold text-white">{formatLabel(segment)}</span>
               ) : (
-                <Link to={href} itemProp="item" className="hover:text-accent-cyan transition-colors">
+                <Link to={href} itemProp="item" className="transition-colors hover:text-accent-cyan">
                   <span itemProp="name">{formatLabel(segment)}</span>
                 </Link>
               )}

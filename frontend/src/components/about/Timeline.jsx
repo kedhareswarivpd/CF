@@ -6,14 +6,14 @@ function TimelineCard({ entry }) {
   const isPresent = entry.side === 'present';
   return (
     <div
-    className={`p-8 rounded-lg shadow-sm hover:shadow-md transition-all ${
+    className={`rounded-lg p-8 shadow-sm transition-all hover:shadow-md ${
         isPresent ? 'bg-brand shadow-lg' : 'bg-white'
       }`}
     >
-      <span className={`font-stat text-stat-lg block mb-2 ${isPresent ? 'text-white' : 'text-brand'}`}>
+      <span className={`mb-2 block font-stat text-stat-lg ${isPresent ? 'text-white' : 'text-brand'}`}>
         {entry.year}
       </span>
-      <h4 className={`font-display text-headline-sm mb-2 ${isPresent ? 'text-white' : 'text-brand-dark dark:text-dark-brand'}`}>
+      <h4 className={`mb-2 font-display text-headline-sm ${isPresent ? 'text-white' : 'text-brand-dark dark:text-dark-brand'}`}>
         {entry.title}
       </h4>
       <p className={isPresent ? 'text-white/80' : 'text-ink-muted'}>{entry.description}</p>
@@ -23,40 +23,40 @@ function TimelineCard({ entry }) {
 
 export default function Timeline() {
   return (
-    <section className="py-section-padding px-margin-mobile md:px-margin-desktop max-w-container mx-auto overflow-hidden">
-      <div className="text-center mb-20">
+    <section className="mx-auto max-w-container overflow-hidden px-margin-mobile py-section-padding md:px-margin-desktop">
+      <div className="mb-20 text-center">
         <h2 className="font-display text-headline-md text-brand-dark dark:text-dark-brand">Our Journey</h2>
-        <div className="h-1 w-20 bg-brand mx-auto mt-4 rounded-full" />
+        <div className="mx-auto mt-4 h-1 w-20 rounded-full bg-brand" />
       </div>
-      <div className="relative space-y-24 timeline-line">
+      <div className="timeline-line relative space-y-24">
         {timeline.map((entry) => (
           <Reveal
             key={entry.year}
-            className="relative z-10 flex flex-col md:flex-row items-center justify-between"
+            className="relative z-10 flex flex-col items-center justify-between md:flex-row"
           >
             {entry.side === 'left' && (
               <>
-                <div className="md:w-5/12 text-right order-2 md:order-1">
+                <div className="order-2 text-right md:order-1 md:w-5/12">
                   <TimelineCard entry={entry} />
                 </div>
                 <TimelineDot />
-                <div className="md:w-5/12 order-3" />
+                <div className="order-3 md:w-5/12" />
               </>
             )}
             {entry.side === 'right' && (
               <>
-                <div className="md:w-5/12 order-1" />
+                <div className="order-1 md:w-5/12" />
                 <TimelineDot />
-                <div className="md:w-5/12 order-2 md:order-3">
+                <div className="order-2 md:order-3 md:w-5/12">
                   <TimelineCard entry={entry} />
                 </div>
               </>
             )}
             {entry.side === 'present' && (
               <>
-                <div className="md:w-5/12 order-1" />
+                <div className="order-1 md:w-5/12" />
                 <TimelineDot icon={entry.icon} glow />
-                <div className="md:w-5/12 order-2 md:order-3">
+                <div className="order-2 md:order-3 md:w-5/12">
                   <TimelineCard entry={entry} />
                 </div>
               </>
@@ -71,11 +71,11 @@ export default function Timeline() {
 function TimelineDot({ icon, glow = false }) {
   return (
     <div
-      className={`w-12 h-12 bg-brand border-4 border-white rounded-full order-1 md:order-2 my-4 md:my-0 flex items-center justify-center flex-shrink-0 ${
+      className={`order-1 my-4 flex size-12 flex-shrink-0 items-center justify-center rounded-full border-4 border-white bg-brand md:order-2 md:my-0 ${
         glow ? 'shadow-[0_0_20px_rgba(61,98,104,0.4)]' : ''
       }`}
     >
-      {icon ? <Icon name={icon} className="text-white text-sm" /> : <span className="w-2 h-2 bg-white rounded-full" />}
+      {icon ? <Icon name={icon} className="text-sm text-white" /> : <span className="size-2 rounded-full bg-white" />}
     </div>
   );
 }

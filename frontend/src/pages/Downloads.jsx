@@ -1,12 +1,38 @@
+import { useEffect, useState } from 'react';
 import DownloadsHero from '../components/downloads/DownloadsHero.jsx';
 import DownloadsGrid from '../components/downloads/DownloadsGrid.jsx';
 import CtaBanner from '../components/home/CtaBanner.jsx';
 import SectionHeading from '../components/ui/SectionHeading.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
-import { downloads, downloadCategoryFilters } from '../data/downloads.js';
+import { downloads as staticDownloads, downloadCategoryFilters } from '../data/downloads.js';
+import { fetchDownloads } from '../api/cms.js';
+
+function toFrontend(d) {
+  return {
+    id: d.slug || d.title,
+    title: d.title,
+    description: d.description || '',
+    category: d.category || 'General',
+    fileUrl: d.file_url || '#',
+    fileSize: '',
+    format: d.file_type || 'PDF',
+    downloadCount: d.download_count ?? 0,
+  };
+}
 
 export default function Downloads() {
   useDocumentTitle('Downloads | CoreFusion Technologies');
+  const [downloads, setDownloads] = useState(staticDownloads);
+
+  useEffect(() => {
+    fetchDownloads()
+      .then((res) => {
+        const items = res?.data;
+        if (Array.isArray(items) && items.length) setDownloads(items.map(toFrontend));
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <>
       <DownloadsHero />
@@ -15,7 +41,7 @@ export default function Downloads() {
         title="Download Our Materials"
         description="Access brochures, whitepapers, datasheets, and case studies."
         align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop [&_p]:!text-white [&_h2]:!text-white"
+        className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white"
       />
       <DownloadsGrid downloads={downloads} categoryFilters={downloadCategoryFilters} />
       <CtaBanner />

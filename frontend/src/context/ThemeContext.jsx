@@ -1,11 +1,13 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
+export const THEME_STORAGE_KEY = 'corefusion.theme';
+
 const ThemeContext = createContext(null);
 
 export function ThemeProvider({ children }) {
   const [dark, setDark] = useState(() => {
     try {
-      const stored = localStorage.getItem('theme');
+      const stored = localStorage.getItem(THEME_STORAGE_KEY);
       if (stored) return stored === 'dark';
       return window.matchMedia('(prefers-color-scheme: dark)').matches;
     } catch {
@@ -15,7 +17,7 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
-    localStorage.setItem('theme', dark ? 'dark' : 'light');
+    localStorage.setItem(THEME_STORAGE_KEY, dark ? 'dark' : 'light');
   }, [dark]);
 
   return (

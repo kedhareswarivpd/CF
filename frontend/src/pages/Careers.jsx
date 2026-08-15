@@ -10,6 +10,7 @@ import { jobs as fallbackJobs, benefits, cultureValues } from '../data/careers.j
 
 function adaptJobs(apiJobs) {
   return apiJobs.map((j) => ({
+    id: j.id,
     slug: j.slug,
     title: j.title,
     department: j.department || 'General',
@@ -30,7 +31,7 @@ export default function Careers() {
   useEffect(() => {
     apiRequest('/careers?limit=20')
       .then((res) => setJobs(adaptJobs(res.data || [])))
-      .catch(() => { console.warn('Failed to fetch careers, using fallback'); setJobs(fallbackJobs); })
+      .catch(() => setJobs(fallbackJobs))
       .finally(() => setLoading(false));
   }, []);
 
@@ -42,10 +43,10 @@ export default function Careers() {
         title="Join Our Team"
         description="Explore opportunities to work on cutting-edge technology with talented teams across the globe."
         align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop [&_p]:!text-white [&_h2]:!text-white [&_span]:!text-white"
+        className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white [&_span]:!text-white"
       />
       {loading ? (
-        <div className="text-center py-8 text-body-md text-ink-muted">Loading positions...</div>
+        <div className="py-8 text-center text-body-md text-ink-muted">Loading positions...</div>
       ) : (
         <JobListings jobs={jobs} />
       )}

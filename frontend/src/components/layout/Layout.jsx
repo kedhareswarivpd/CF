@@ -4,6 +4,8 @@ import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
 import Breadcrumbs from '../ui/Breadcrumbs.jsx';
 import useScrollToTop from '../../hooks/useScrollToTop.js';
+import { THEME_STORAGE_KEY } from '../../context/ThemeContext.jsx';
+import { portalPaths } from '../../data/portal.js';
 
 export default function Layout() {
   const { pathname } = useLocation();
@@ -11,7 +13,7 @@ export default function Layout() {
   useScrollToTop();
 
   useEffect(() => {
-    const stored = localStorage.getItem('corefusion.theme');
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
     if (stored === 'dark' || stored === 'light') {
       document.documentElement.classList.toggle('dark', stored === 'dark');
     } else {
@@ -34,15 +36,14 @@ export default function Layout() {
     return () => cancelAnimationFrame(raf);
   }, [pathname]);
 
-  const PORTAL_PATHS = ['/client', '/employee', '/admin', '/super-admin', '/login', '/register', '/sales', '/marketing', '/developer', '/project-manager', '/qa', '/support', '/finance', '/hr'];
-  const isPortal = PORTAL_PATHS.some((p) => pathname.startsWith(p));
+  const isPortal = portalPaths.some((p) => pathname.startsWith(`/${p}`));
 
   return (
-    <div className="min-h-screen flex flex-col bg-surface-white dark:bg-dark-surface">
-      <Navbar />
-      <main ref={mainRef} className="flex-1 pt-20">
-        {pathname !== '/' && (
-          <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop pt-4">
+    <div className="flex min-h-screen flex-col bg-surface-white dark:bg-dark-surface">
+      {!isPortal && <Navbar />}
+      <main ref={mainRef} className={`flex-1 ${isPortal ? '' : 'pt-20'}`}>
+        {!isPortal && pathname !== '/' && (
+          <div className="mx-auto max-w-container px-margin-mobile pt-4 md:px-margin-desktop">
             <Breadcrumbs />
           </div>
         )}

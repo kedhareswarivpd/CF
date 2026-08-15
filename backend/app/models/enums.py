@@ -133,33 +133,11 @@ class CommentStatus(str, enum.Enum):
     spam = "spam"
 
 
-class CategoryType(str, enum.Enum):
-    blog = "blog"
-    gallery = "gallery"
-    download = "download"
-    event = "event"
-
-
-class TechnologyCategory(str, enum.Enum):
-    frontend = "frontend"
-    backend = "backend"
-    database = "database"
-    cloud = "cloud"
-    devops = "devops"
-    ai_ml = "ai_ml"
-    mobile = "mobile"
-    other = "other"
-
-
-class PartnerType(str, enum.Enum):
-    technology_partner = "technology_partner"
-    business_partner = "business_partner"
-    reseller = "reseller"
-
-
-class GalleryType(str, enum.Enum):
-    image = "image"
-    video = "video"
+class ContactStatus(str, enum.Enum):
+    new = "new"
+    in_progress = "in_progress"
+    resolved = "resolved"
+    spam = "spam"
 
 
 class CareerEmploymentType(str, enum.Enum):
@@ -249,3 +227,32 @@ class ContractStatus(str, enum.Enum):
     pending = "pending"
     signed = "signed"
     void = "void"
+
+
+class CategoryType(str, enum.Enum):
+    blog = "blog"
+    gallery = "gallery"
+    download = "download"
+    event = "event"
+
+
+class GalleryType(str, enum.Enum):
+    image = "image"
+    video = "video"
+
+
+class PartnerType(str, enum.Enum):
+    technology_partner = "technology_partner"
+    business_partner = "business_partner"
+    reseller = "reseller"
+
+
+class TechnologyCategory(str, enum.Enum):
+    frontend = "frontend"
+    backend = "backend"
+    database = "database"
+    cloud = "cloud"
+    devops = "devops"
+    ai_ml = "ai_ml"
+    mobile = "mobile"
+    other = "other"

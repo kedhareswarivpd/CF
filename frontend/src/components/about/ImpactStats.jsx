@@ -11,27 +11,27 @@ const IMPACTS = [
 
 export default function ImpactStats() {
   return (
-    <section id="our-impact" className="py-section-padding bg-surface-low dark:bg-dark-surface-low">
-      <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
-        <Reveal from="up" className="text-center mb-stack-xl">
-          <span className="font-label-caps text-label-caps uppercase text-brand block mb-3">Our Impact</span>
+    <section id="our-impact" className="bg-surface-low py-section-padding dark:bg-dark-surface-low">
+      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
+        <Reveal from="up" className="mb-stack-xl text-center">
+          <span className="mb-3 block font-label-caps text-label-caps uppercase text-brand">Our Impact</span>
           <h2 className="font-display text-headline-md text-brand-dark dark:text-dark-brand">
             Numbers that define our journey
           </h2>
-          <p className="text-body-lg text-ink-muted dark:text-white mt-4 max-w-2xl mx-auto">
-            Five years of high-performance delivery for enterprises that can't afford downtime.
+          <p className="mx-auto mt-4 max-w-2xl text-body-lg text-ink-muted dark:text-white">
+            Five years of high-performance delivery for enterprises that can&apos;t afford downtime.
           </p>
         </Reveal>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-gutter">
+        <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
           {IMPACTS.map((item, i) => (
             <Reveal key={item.label} from="zoom" delay={i * 80}>
-              <div className="bg-white dark:bg-dark-surface rounded-xl p-8 shadow-card hover:shadow-card-hover transition-shadow flex flex-col gap-4">
-                <div className="w-12 h-12 rounded-lg bg-accent-cyan-pale flex items-center justify-center">
-                  <span className="material-symbols-outlined text-brand text-2xl">{item.icon}</span>
+              <div className="flex flex-col gap-4 rounded-xl bg-white p-8 shadow-card transition-shadow hover:shadow-card-hover dark:bg-dark-surface">
+                <div className="flex size-12 items-center justify-center rounded-lg bg-accent-cyan-pale">
+                  <span className="material-symbols-outlined text-2xl text-brand">{item.icon}</span>
                 </div>
                 <div className="font-stat text-4xl font-bold text-brand-dark dark:text-dark-brand">{item.value}</div>
                 <div>
-                  <p className="font-display font-semibold text-headline-sm text-brand-dark dark:text-dark-brand mb-1">{item.label}</p>
+                  <p className="mb-1 font-display text-headline-sm font-semibold text-brand-dark dark:text-dark-brand">{item.label}</p>
                   <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{item.desc}</p>
                 </div>
               </div>

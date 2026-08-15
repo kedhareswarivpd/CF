@@ -31,7 +31,7 @@ export default function Blog() {
   useEffect(() => {
     apiRequest('/blogs?limit=20')
       .then((res) => setPosts(adaptBlogPosts(res.data || [])))
-      .catch(() => { console.warn('Failed to fetch blog posts, using fallback'); setPosts(fallbackPosts); })
+      .catch(() => setPosts(fallbackPosts))
       .finally(() => setLoading(false));
   }, []);
 
@@ -43,10 +43,10 @@ export default function Blog() {
         title="Thought Leadership & Engineering Deep Dives"
         description="Practical knowledge and perspectives from our team of experts."
         align="center"
-        className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop [&_p]:!text-white [&_h2]:!text-white"
+        className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white"
       />
       {loading ? (
-        <div className="text-center py-8 text-body-md text-ink-muted">Loading posts...</div>
+        <div className="py-8 text-center text-body-md text-ink-muted">Loading posts...</div>
       ) : (
         <BlogGrid posts={posts} categories={categories} />
       )}

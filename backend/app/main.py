@@ -13,6 +13,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.audit import log_audit
 from app.core.config import settings
+from app.core.dependencies import get_client_ip
 from app.core.errors import ApiError
 from app.core.logger import logger
 from app.core.security import decode_supabase_token
@@ -40,10 +41,10 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 _ALLOWED_ORIGINS = list({
     settings.client_url,
     settings.site_url,
-    "http://localhost:5173",
-    "http://localhost:4173",
     *[o.strip() for o in settings.extra_cors_origins.split(",") if o.strip()],
 })
+if settings.env.lower() in {"development", "test", "local"}:
+    _ALLOWED_ORIGINS.extend(["http://localhost:5173", "http://localhost:4173"])
 
 
 # ---------- Security headers middleware ----------
@@ -86,7 +87,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 try:
                     claims = await decode_supabase_token(token)
                     user_id = uuid.UUID(claims["sub"])
-                except (ValueError, Exception):
+                except Exception:
                     pass
 
             entity_type = path.strip("/").split("/")[-2] if path.count("/") >= 2 else None
@@ -101,12 +102,12 @@ class AuditMiddleware(BaseHTTPMiddleware):
                 action=f"{request.method}_{path.strip('/').replace('/', '_')}",
                 entity_type=entity_type,
                 entity_id=entity_id,
-                ip_address=request.headers.get("x-forwarded-for", request.client.host if request.client else None),
+                ip_address=get_client_ip(request),
                 user_agent=request.headers.get("user-agent"),
                 log_metadata={"path": path, "query": str(request.query_params)},
             )
         except Exception as exc:
-            logger.warning(f"Audit log failed: {exc}")
+            logger.warning("Audit log failed: %s", exc)
 
         return response
 
@@ -136,9 +137,9 @@ app.mount("/uploads", StaticFiles(directory=upload_root), name="uploads")
 @app.exception_handler(ApiError)
 async def api_error_handler(request: Request, exc: ApiError):
     if exc.status_code >= 500:
-        logger.error(f"{request.method} {request.url.path} - {exc.message}")
+        logger.error("%s %s - %s", request.method, request.url.path, exc.message)
     else:
-        logger.warning(f"{request.method} {request.url.path} - {exc.message}")
+        logger.warning("%s %s - %s", request.method, request.url.path, exc.message)
     return JSONResponse(
         status_code=exc.status_code,
         content={"success": False, "status_code": exc.status_code, "message": exc.message, "errors": exc.errors},
@@ -156,7 +157,7 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
 
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled error on {request.method} {request.url.path}: {exc}", exc_info=True)
+    logger.error("Unhandled error on %s %s: %s", request.method, request.url.path, exc, exc_info=True)
     return JSONResponse(
         status_code=500,
         content={"success": False, "status_code": 500, "message": "Internal Server Error"},

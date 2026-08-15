@@ -5,8 +5,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.errors import ApiError
+from app.core.logger import logger
 from app.core.security import decode_supabase_token
 from app.models.user import User
 
@@ -69,7 +71,8 @@ async def get_optional_user(
         claims = await decode_supabase_token(credentials.credentials)
         user = await _resolve_user(claims, db)
         return user if (user and user.is_active) else None
-    except Exception:
+    except Exception as exc:
+        logger.warning("Could not resolve optional user from token: %s", exc)
         return None
 
 
@@ -91,7 +94,14 @@ def require_roles(*roles: str):
 
 
 def get_client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    return forwarded.split(",")[0] if forwarded else (
-        request.client.host if request.client else "unknown"
-    )
+    """Return the client IP.
+
+    `x-forwarded-for` is only trusted when the app is behind a known proxy
+    (`TRUST_PROXY_HEADERS=true`) — otherwise an attacker could spoof the header
+    and bypass IP-based rate limiting.
+    """
+    if settings.trust_proxy_headers:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"

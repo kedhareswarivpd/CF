@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.concurrency import run_in_threadpool
 
 from app.core.database import get_db
+from app.core.logger import logger
 from app.core.dependencies import get_current_user, require_roles
 from app.core.errors import ApiError
 from app.crud.base import CRUDBase
@@ -18,9 +19,10 @@ from app.utils.responses import build_pagination_meta, success_response
 
 EMPLOYEE_ROLES = {"employee", "developer", "sales", "marketing", "project_manager", "qa", "support", "finance", "hr", "admin", "super_admin"}
 
-router = APIRouter(prefix="/users", tags=["Users"], dependencies=[Depends(require_roles("admin", "hr"))])
+# Effectively permanent ban (100 years) applied to a deactivated Supabase auth account.
+DEACTIVATED_BAN_DURATION = "876000h"
 
-self_router = APIRouter(prefix="/users", tags=["Users"])
+router = APIRouter(prefix="/users", tags=["Users"], dependencies=[Depends(require_roles("admin", "hr"))])
 
 crud = CRUDBase(User, searchable_fields=["name", "email"])
 
@@ -66,7 +68,8 @@ async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db), c
             },
         )
     except Exception as exc:  # noqa: BLE001
-        raise ApiError.bad_request(f"Could not create Supabase auth account: {exc}") from exc
+        logger.warning("Supabase auth account creation failed for %s: %s", payload.email, exc)
+        raise ApiError.bad_request("Could not create the account. Please try again.") from exc
 
     data = payload.model_dump(exclude={"password"})
     data["id"] = uuid.UUID(auth_response.user.id)
@@ -87,7 +90,15 @@ async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db), c
 
 
 @router.put("/{user_id}", response_model=dict)
-async def update_user(user_id: uuid.UUID, payload: UserUpdate, db: AsyncSession = Depends(get_db)):
+async def update_user(user_id: uuid.UUID, payload: UserUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Update a user.
+
+    Mirrors the `create_user` role restriction: only a Super Admin may grant
+    `admin`/`super_admin`, preventing an Admin or HR caller from escalating
+    their own (or anyone else's) privileges.
+    """
+    if payload.role in ("admin", "super_admin") and current_user.role != "super_admin":
+        raise ApiError.forbidden("Only a Super Admin can grant Admin or Super Admin roles")
     user = await crud.update(db, user_id, payload.model_dump(exclude_unset=True))
     return success_response(data=UserOut.model_validate(user), message="User updated successfully")
 
@@ -98,7 +109,7 @@ async def deactivate_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)
     user = await crud.update(db, user_id, {"is_active": False})
     admin = get_admin_client()
     try:
-        await run_in_threadpool(admin.auth.admin.update_user_by_id, str(user_id), {"ban_duration": "876000h"})
+        await run_in_threadpool(admin.auth.admin.update_user_by_id, str(user_id), {"ban_duration": DEACTIVATED_BAN_DURATION})
     except Exception:  # noqa: BLE001 — profile deactivation already succeeded; don't fail the request over this
         pass
     return success_response(data=UserOut.model_validate(user), message="User deactivated")

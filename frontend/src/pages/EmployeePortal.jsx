@@ -5,13 +5,25 @@ import Avatar from '../components/ui/Avatar.jsx';
 import StatusBadge from '../components/ui/StatusBadge.jsx';
 import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
+import RowAction from '../components/ui/RowAction.jsx';
+import { FORM_INPUT_CLASS } from '../components/ui/formClasses.js';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
+import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { employeeTabsForRole, demoLeads, demoProposals, demoContracts } from '../data/portal.js';
+import {
+  employeeTabsForRole,
+  demoLeads, demoProposals, demoContracts, demoPayslips,
+  demoTasks, demoQaTasks, demoEmployeeProjects, demoPerformance, demoTraining, demoDocuments,
+  demoTimesheets, demoApprovalTimesheets,
+  demoTickets,
+  demoCareers, demoApplications, demoTestimonials,
+} from '../data/portal.js';
+import { downloadDocumentPdf } from '../utils/documentPdf.js';
 import {
   fetchMyProfile, applyLeave as applyLeaveApi, submitTimesheet, fetchMyDocuments,
   checkIn as checkInApi, checkOut as checkOutApi,
   fetchMyPayslips, fetchMyPerformanceReviews, fetchMyTrainingEnrollments,
+  fetchTrainingCatalog, enrollInCourse,
 } from '../api/employees.js';
 import { apiRequest } from '../api/client.js';
 import {
@@ -34,26 +46,26 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
   const pendingLeaves = leaves.filter((l) => l.status === 'pending').length;
   return (
     <div className="space-y-stack-lg">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-gutter">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {[
           { label: 'Today', value: attendance.status, icon: 'clock_loader_60', sub: `${attendance.checkIn || '--'} - ${attendance.checkOut || '--'}` },
           { label: 'Hours This Week', value: `${totalHours}h`, icon: 'schedule' },
           { label: 'Pending Leaves', value: pendingLeaves, icon: 'beach_access' },
           { label: 'Latest Payslip', value: `$${payslips[0]?.netPay?.toLocaleString() || 0}`, icon: 'payments' },
         ].map((stat) => (
-          <div key={stat.label} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-            <div className="flex items-center gap-3 mb-2">
-              <Icon name={stat.icon} className="text-brand text-2xl" />
+          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-2 flex items-center gap-3">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
               <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand capitalize">{stat.value}</p>
-            {stat.sub && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted mt-1">{stat.sub}</p>}
+            <p className="font-stat text-stat-lg capitalize text-brand-dark dark:text-dark-brand">{stat.value}</p>
+            {stat.sub && <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{stat.sub}</p>}
           </div>
         ))}
       </div>
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-        <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-4">My Profile</h3>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">My Profile</h3>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { label: 'Name', value: profile.name },
             { label: 'Employee Code', value: profile.employee_code },
@@ -64,7 +76,7 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
           ].map((f) => (
             <div key={f.label}>
               <span className="font-label-caps text-label-caps text-ink-muted">{f.label}</span>
-              <p className="text-body-md text-brand-dark dark:text-dark-brand capitalize">{f.value}</p>
+              <p className="text-body-md capitalize text-brand-dark dark:text-dark-brand">{f.value}</p>
             </div>
           ))}
         </div>
@@ -73,14 +85,11 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
   );
 }
 
-function Attendance({ attendance, employeeId }) {
+function Attendance({ attendance, accessToken, onChange }) {
   const today = new Date().toISOString().slice(0, 10);
   const isToday = attendance.date === today;
   const [checkedIn, setCheckedIn] = useState(isToday && Boolean(attendance.checkIn));
   const [checkedOut, setCheckedOut] = useState(isToday && Boolean(attendance.checkOut));
-  const [current, setCurrent] = useState(
-    isToday ? attendance : { date: today, checkIn: null, checkOut: null, status: 'absent' }
-  );
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState('');
 
@@ -89,20 +98,22 @@ function Attendance({ attendance, employeeId }) {
     setTimeout(() => setToast(''), 3000);
   };
 
+  const currentTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
   const handleCheckIn = async () => {
     setLoading(true);
-    const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     try {
       const res = accessToken ? await checkInApi(accessToken) : null;
       const updated = res?.data;
-      const time = updated?.checkIn || now;
-      setCurrent((prev) => ({ ...prev, checkIn: time, status: 'present' }));
+      const time = toLocalTime(updated?.check_in) || currentTime();
+      onChange?.({ ...attendance, checkIn: time, status: 'present' });
       setCheckedIn(true);
       showToast(`Checked in at ${time}`);
     } catch {
-      setCurrent((prev) => ({ ...prev, checkIn: now, status: 'present' }));
+      const time = currentTime();
+      onChange?.({ ...attendance, checkIn: time, status: 'present' });
       setCheckedIn(true);
-      showToast(`Checked in at ${now}`);
+      showToast(`Checked in at ${time}`);
     } finally {
       setLoading(false);
     }
@@ -110,18 +121,18 @@ function Attendance({ attendance, employeeId }) {
 
   const handleCheckOut = async () => {
     setLoading(true);
-    const now = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     try {
       const res = accessToken ? await checkOutApi(accessToken) : null;
       const updated = res?.data;
-      const time = updated?.checkOut || now;
-      setCurrent((prev) => ({ ...prev, checkOut: time }));
+      const time = toLocalTime(updated?.check_out) || currentTime();
+      onChange?.({ ...attendance, checkOut: time });
       setCheckedOut(true);
       showToast(`Checked out at ${time}`);
     } catch {
-      setCurrent((prev) => ({ ...prev, checkOut: now }));
+      const time = currentTime();
+      onChange?.({ ...attendance, checkOut: time });
       setCheckedOut(true);
-      showToast(`Checked out at ${now}`);
+      showToast(`Checked out at ${time}`);
     } finally {
       setLoading(false);
     }
@@ -129,28 +140,28 @@ function Attendance({ attendance, employeeId }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-        <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-6">Today's Attendance</h3>
-        <div className="grid sm:grid-cols-3 gap-gutter mb-6">
-          <div className="text-center p-stack-lg bg-surface-container dark:bg-dark-surface-container rounded-lg">
-            <Icon name="login" className="text-brand text-3xl mb-2" />
+      <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <h3 className="mb-6 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Today&apos;s Attendance</h3>
+        <div className="mb-6 grid gap-gutter sm:grid-cols-3">
+          <div className="rounded-lg bg-surface-container p-stack-lg text-center dark:bg-dark-surface-container">
+            <Icon name="login" className="mb-2 text-3xl text-brand" />
             <p className="font-label-caps text-label-caps text-white">Check-In</p>
-            <p className="font-display text-headline-sm text-white">{current.checkIn || '--'}</p>
+            <p className="font-display text-headline-sm text-white">{attendance.checkIn || '--'}</p>
           </div>
-          <div className="text-center p-stack-lg bg-surface-container dark:bg-dark-surface-container rounded-lg">
-            <Icon name="logout" className="text-brand text-3xl mb-2" />
+          <div className="rounded-lg bg-surface-container p-stack-lg text-center dark:bg-dark-surface-container">
+            <Icon name="logout" className="mb-2 text-3xl text-brand" />
             <p className="font-label-caps text-label-caps text-white">Check-Out</p>
-            <p className="font-display text-headline-sm text-white">{current.checkOut || '--'}</p>
+            <p className="font-display text-headline-sm text-white">{attendance.checkOut || '--'}</p>
           </div>
-          <div className="text-center p-stack-lg bg-surface-container dark:bg-dark-surface-container rounded-lg">
-            <Icon name="badge" className="text-brand text-3xl mb-2" />
+          <div className="rounded-lg bg-surface-container p-stack-lg text-center dark:bg-dark-surface-container">
+            <Icon name="badge" className="mb-2 text-3xl text-brand" />
             <p className="font-label-caps text-label-caps text-white">Status</p>
-            <StatusBadge variant={current.status === 'present' ? 'success' : 'warning'} className="mt-1">
-              {current.status || 'Not checked in'}
+            <StatusBadge variant={attendance.status === 'present' ? 'success' : 'warning'} className="mt-1">
+              {attendance.status || 'Not checked in'}
             </StatusBadge>
           </div>
         </div>
-        <div className="flex gap-3 justify-center">
+        <div className="flex justify-center gap-3">
           <Button onClick={handleCheckIn} variant={checkedIn ? 'outline' : 'primary'} size="md" disabled={checkedIn || loading} icon={<Icon name="login" />}>
             {loading && !checkedIn ? 'Checking in...' : checkedIn ? 'Checked In ✓' : 'Check In'}
           </Button>
@@ -159,7 +170,7 @@ function Attendance({ attendance, employeeId }) {
           </Button>
         </div>
         {toast && (
-          <p className="mt-4 text-center text-body-sm text-green-600 bg-green-50 border border-green-200 rounded-lg py-2 px-4">
+          <p className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-center text-body-sm text-green-600">
             ✓ {toast}
           </p>
         )}
@@ -168,7 +179,7 @@ function Attendance({ attendance, employeeId }) {
   );
 }
 
-function Leaves({ leaves: initialLeaves, employeeId, accessToken }) {
+function Leaves({ leaves: initialLeaves, accessToken }) {
   const [showForm, setShowForm] = useState(false);
   const LEAVE_TYPES = [
     { label: 'Earned (Annual)', value: 'earned' },
@@ -222,19 +233,19 @@ function Leaves({ leaves: initialLeaves, employeeId, accessToken }) {
         <Button onClick={() => setShowForm(!showForm)} variant="primary" size="md" icon={<Icon name="add" />}>Apply Leave</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white border border-outline-variant rounded-lg p-stack-lg space-y-4">
-          <div className="grid sm:grid-cols-3 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg">
+          <div className="grid gap-4 sm:grid-cols-3">
             <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
-              className="border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand">
+              className="rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink">
               {LEAVE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
             </select>
             <input type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })}
-              className="border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand" />
+              className="rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
             <input type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })}
-              className="border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand" />
+              className="rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
           </div>
           <textarea placeholder="Reason" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}
-            rows={2} className="w-full border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand" />
+            rows={2} className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit'}</Button>
             <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -242,19 +253,19 @@ function Leaves({ leaves: initialLeaves, employeeId, accessToken }) {
         </form>
       )}
       {toast && (
-        <p className={`text-body-sm rounded-lg py-2 px-4 ${
-          toast.includes('success') ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.includes('success') ? 'border border-green-200 bg-green-50 text-green-600' : 'border border-red-200 bg-red-50 text-red-600'
         }`}>{toast}</p>
       )}
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
             <tr><th className="px-stack-lg py-4">Type</th><th className="px-stack-lg py-4">From</th><th className="px-stack-lg py-4">To</th><th className="px-stack-lg py-4">Days</th><th className="px-stack-lg py-4">Status</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {allLeaves.map((l) => (
-              <tr key={l.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand capitalize">{l.type}</td>
+              <tr key={l.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                <td className="px-stack-lg py-4 text-body-md capitalize text-brand-dark dark:text-dark-brand">{l.type}</td>
                 <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{l.from}</td>
                 <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{l.to}</td>
                 <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{l.days}</td>
@@ -268,7 +279,7 @@ function Leaves({ leaves: initialLeaves, employeeId, accessToken }) {
   );
 }
 
-function Timesheets({ timesheets: initialTimesheets, employeeId, accessToken }) {
+function Timesheets({ timesheets: initialTimesheets, accessToken }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ date: '', project: '', hours: '', description: '' });
   const [allEntries, setAllEntries] = useState(initialTimesheets);
@@ -277,6 +288,17 @@ function Timesheets({ timesheets: initialTimesheets, employeeId, accessToken }) 
   const totalHours = allEntries.reduce((s, e) => s + e.hours, 0);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const refresh = async () => {
+    if (!accessToken) return;
+    try {
+      const res = await apiRequest('/employees/me/timesheets', { token: accessToken });
+      if (res?.data?.length) setAllEntries(normalizeTimesheets(res.data));
+      showToast('Timesheets refreshed.');
+    } catch (err) {
+      showToast(err?.message || 'Refresh failed.');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -310,20 +332,25 @@ function Timesheets({ timesheets: initialTimesheets, employeeId, accessToken }) 
     <div className="space-y-stack-md">
       <div className="flex items-center justify-between">
         <p className="text-body-md text-ink-muted">Total hours logged: <span className="font-semibold text-brand-dark dark:text-dark-brand">{totalHours}h</span></p>
-        <Button onClick={() => setShowForm(!showForm)} variant="primary" size="md" icon={<Icon name="add" />}>Log Hours</Button>
+        <div className="flex items-center gap-3">
+          <button onClick={refresh} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+            <Icon name="refresh" className="text-base" /> Refresh
+          </button>
+          <Button onClick={() => setShowForm(!showForm)} variant="primary" size="md" icon={<Icon name="add" />}>Log Hours</Button>
+        </div>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white border border-outline-variant rounded-lg p-stack-lg space-y-4">
-          <div className="grid sm:grid-cols-3 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg">
+          <div className="grid gap-4 sm:grid-cols-3">
             <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
-              className="border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand" />
+              className="rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
             <input type="text" placeholder="Project name" value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })}
-              className="border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand" />
+              className="rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
             <input type="number" step="0.5" placeholder="Hours" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })}
-              className="border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand" />
+              className="rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
           </div>
           <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-            rows={2} className="w-full border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand" />
+            rows={2} className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Logging...' : 'Log'}</Button>
             <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -331,24 +358,25 @@ function Timesheets({ timesheets: initialTimesheets, employeeId, accessToken }) 
         </form>
       )}
       {toast && (
-        <p className={`text-body-sm rounded-lg py-2 px-4 ${
-          toast.includes('success') ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.includes('success') ? 'border border-green-200 bg-green-50 text-green-600' : 'border border-red-200 bg-red-50 text-red-600'
         }`}>{toast}</p>
       )}
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
             <tr><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Hours</th><th className="px-stack-lg py-4">Description</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {allEntries.map((e) => (
-              <tr key={e.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+              <tr key={e.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                 <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{e.date}</td>
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{e.project}</td>
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{e.hours}h</td>
                 <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{e.description}</td>
               </tr>
             ))}
+            {!allEntries.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No timesheets logged yet. Click &ldquo;Log Hours&rdquo; to get started.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -358,18 +386,18 @@ function Timesheets({ timesheets: initialTimesheets, employeeId, accessToken }) 
 
 function Payslips({ payslips }) {
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+        <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
           <tr><th className="px-stack-lg py-4">Period</th><th className="px-stack-lg py-4">Gross</th><th className="px-stack-lg py-4">Deductions</th><th className="px-stack-lg py-4">Net Pay</th><th className="px-stack-lg py-4">Status</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
           {payslips.map((p) => (
-            <tr key={`${p.month}-${p.year}`} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+            <tr key={`${p.month}-${p.year}`} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
               <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.month} {p.year}</td>
               <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">${p.grossPay.toLocaleString()}</td>
               <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">${p.deductions.toLocaleString()}</td>
-              <td className="px-stack-lg py-4 font-semibold text-body-md text-brand-dark dark:text-dark-brand">${p.netPay.toLocaleString()}</td>
+              <td className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-dark-brand">${p.netPay.toLocaleString()}</td>
               <td className="px-stack-lg py-4"><StatusBadge variant="success">{p.status}</StatusBadge></td>
             </tr>
           ))}
@@ -383,14 +411,14 @@ function Tasks({ tasks }) {
   const priorityColor = { urgent: 'error', high: 'warning', medium: 'info', low: 'neutral' };
   const statusColor = { done: 'success', in_progress: 'info', todo: 'neutral', blocked: 'error' };
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+        <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
           <tr><th className="px-stack-lg py-4">Task</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Priority</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Due</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
           {tasks.map((t) => (
-            <tr key={t.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+            <tr key={t.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
               <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.title}</td>
               <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.project}</td>
               <td className="px-stack-lg py-4"><StatusBadge variant={priorityColor[t.priority]}>{t.priority}</StatusBadge></td>
@@ -409,8 +437,8 @@ function Projects({ projects }) {
   return (
     <div className="space-y-4">
       {projects.map((p) => (
-        <div key={p.id} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-          <div className="flex items-start justify-between gap-4 mb-3">
+        <div key={p.id} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div className="mb-3 flex items-start justify-between gap-4">
             <div>
               <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{p.title}</h3>
               <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Role: {p.role} &middot; Deadline: {p.deadline}</p>
@@ -418,10 +446,10 @@ function Projects({ projects }) {
             <StatusBadge variant={statusColor[p.status]}>{p.status.replace('_', ' ')}</StatusBadge>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-2 bg-surface-container dark:bg-dark-surface-container rounded-full overflow-hidden">
-              <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${p.progress}%` }} />
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
+              <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress}%` }} />
             </div>
-            <span className="text-body-sm font-semibold text-brand-dark dark:text-dark-brand w-10 text-right">{p.progress}%</span>
+            <span className="w-10 text-right text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{p.progress}%</span>
           </div>
         </div>
       ))}
@@ -433,52 +461,88 @@ function Performance({ reviews }) {
   return (
     <div className="space-y-4">
       {reviews.map((r) => (
-        <div key={r.period} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-          <div className="flex items-center justify-between mb-4">
+        <div key={r.period} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div className="mb-4 flex items-center justify-between">
             <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{r.period}</h3>
             <div className="flex items-center gap-2">
-              <Icon name="star" className="text-yellow-400 text-xl" />
+              <Icon name="star" className="text-xl text-yellow-400" />
               <span className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{r.rating}</span>
               <span className="text-body-sm text-ink-muted">/5</span>
             </div>
           </div>
-          <div className="grid sm:grid-cols-2 gap-4 mb-4">
-            <div className="bg-surface-container dark:bg-dark-surface-container rounded-lg p-4 text-center">
-              <p className="font-label-caps text-label-caps text-white mb-1">Goals Set</p>
+          <div className="mb-4 grid gap-4 sm:grid-cols-2">
+            <div className="rounded-lg bg-surface-container p-4 text-center dark:bg-dark-surface-container">
+              <p className="mb-1 font-label-caps text-label-caps text-white">Goals Set</p>
               <p className="font-stat text-2xl text-white">{r.goals}</p>
             </div>
-            <div className="bg-surface-container dark:bg-dark-surface-container rounded-lg p-4 text-center">
-              <p className="font-label-caps text-label-caps text-white mb-1">Goals Achieved</p>
+            <div className="rounded-lg bg-surface-container p-4 text-center dark:bg-dark-surface-container">
+              <p className="mb-1 font-label-caps text-label-caps text-white">Goals Achieved</p>
               <p className="font-stat text-2xl text-white">{r.achieved}</p>
             </div>
           </div>
-          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted italic">"{r.feedback}"</p>
+          <p className="text-body-sm italic text-ink-muted dark:text-dark-ink-muted">&ldquo;{r.feedback}&rdquo;</p>
         </div>
       ))}
     </div>
   );
 }
 
-function Training({ courses }) {
+function Training({ courses, catalog, onEnroll, enrollingId }) {
   const statusColor = { completed: 'success', in_progress: 'info', pending: 'neutral' };
+  const enrolledIds = new Set(courses.map((c) => c.courseId ?? c.id));
+  const available = (catalog || []).filter((c) => !enrolledIds.has(c.id));
+
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
-      <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
-          <tr><th className="px-stack-lg py-4">Course</th><th className="px-stack-lg py-4">Category</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Completed On</th><th className="px-stack-lg py-4">Score</th></tr>
-        </thead>
-        <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-          {courses.map((c) => (
-            <tr key={c.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
-              <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.title}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.category}</td>
-              <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[c.status]}>{c.status.replace('_', ' ')}</StatusBadge></td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.completedOn || '—'}</td>
-              <td className="px-stack-lg py-4 text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{c.score || '—'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="space-y-stack-lg">
+      {available.length > 0 && (
+        <section>
+          <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Available Courses</h3>
+          <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
+            {available.map((c) => (
+              <div key={c.id} className="flex flex-col rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+                <p className="font-display text-body-md font-semibold text-brand-dark dark:text-dark-brand">{c.title}</p>
+                <p className="mt-1 text-body-xs uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">{c.category}</p>
+                <p className="mt-2 flex-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.description || 'No description available.'}</p>
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
+                    {c.duration_hours ? `${c.duration_hours}h` : 'Self-paced'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => onEnroll(c.id)}
+                    disabled={enrollingId === c.id}
+                    className="inline-flex items-center gap-1.5 rounded bg-brand px-4 py-2 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark disabled:opacity-60"
+                  >
+                    <Icon name="school" className="text-base leading-none" />
+                    {enrollingId === c.id ? 'Enrolling...' : 'Enroll'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+      <section>
+        <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">My Enrollments</h3>
+        <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+          <table className="w-full text-left">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+              <tr><th className="px-stack-lg py-4">Course</th><th className="px-stack-lg py-4">Category</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Completed On</th><th className="px-stack-lg py-4">Score</th></tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+              {courses.map((c) => (
+                <tr key={c.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.title}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.category}</td>
+                  <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[c.status]}>{c.status.replace('_', ' ')}</StatusBadge></td>
+                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.completedOn || '—'}</td>
+                  <td className="px-stack-lg py-4 text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{c.score || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }
@@ -486,36 +550,30 @@ function Training({ courses }) {
 function Documents({ docs }) {
   const typeIcon = { contract: 'gavel', id_proof: 'badge', certificate: 'workspace_premium', other: 'description', resume: 'person' };
 
-  const handleDownload = (d) => {
+  const handleDownload = async (d) => {
     if (d.file_url) {
       window.open(d.file_url, '_blank');
       return;
     }
-    // No file on record yet (e.g. demo data) — still give the user a real file to download.
-    const blob = new Blob([`${d.name}\n\nNo file has been uploaded for this document yet.`], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${d.name}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // No file on record yet (e.g. demo data) — generate a branded PDF with content and imagery for this document.
+    await downloadDocumentPdf(d);
   };
 
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-gutter">
+    <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
       {docs.map((d) => (
-        <div key={d.id} className="bg-brand-dark dark:bg-dark-surface border border-brand/30 dark:border-dark-outline-variant rounded-lg p-stack-lg flex items-start gap-4">
-          <div className="w-10 h-10 rounded-md bg-white/10 flex items-center justify-center shrink-0">
-            <Icon name={typeIcon[d.type] || 'description'} className="text-white text-xl" />
+        <div key={d.id} className="flex items-start gap-4 rounded-lg border border-brand/30 bg-brand-dark p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-white/10">
+            <Icon name={typeIcon[d.type] || 'description'} className="text-xl text-white" />
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-display text-body-md font-semibold text-white truncate">{d.name}</p>
-            <p className="text-body-sm text-white/70 capitalize">{d.type.replace('_', ' ')}{d.size ? ` · ${d.size}` : ''}</p>
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-display text-body-md font-semibold text-white">{d.name}</p>
+            <p className="text-body-sm capitalize text-white/70">{d.type.replace('_', ' ')}{d.size ? ` · ${d.size}` : ''}</p>
             <p className="text-body-sm text-white/70">{d.uploadedOn}</p>
           </div>
           <button
             onClick={() => handleDownload(d)}
-            className="shrink-0 text-white hover:text-white/70 cursor-pointer transition-colors"
+            className="shrink-0 cursor-pointer text-white transition-colors hover:text-white/70"
             aria-label="Download">
             <Icon name="download" className="text-xl" />
           </button>
@@ -525,19 +583,6 @@ function Documents({ docs }) {
   );
 }
 
-function RowAction({ onClick, disabled, variant = 'primary', children }) {
-  const styles = variant === 'primary'
-    ? 'border-brand text-brand hover:bg-brand hover:text-white'
-    : 'border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted hover:border-brand hover:text-brand';
-  return (
-    <button type="button" onClick={onClick} disabled={disabled}
-      className={`text-label-caps uppercase font-label-caps px-3 py-1.5 rounded border transition-colors disabled:opacity-50 ${styles}`}>
-      {children}
-    </button>
-  );
-}
-
-const EMPLOYEE_ROLES = ['developer', 'sales', 'marketing', 'project_manager', 'qa', 'support', 'finance', 'hr'];
 const LEAD_STATUS_OPTIONS = ['new', 'contacted', 'requirement_gathering', 'proposal_sent', 'proposal_approved', 'converted', 'disqualified'];
 const LEAD_SOURCE_OPTIONS = ['website', 'contact_form', 'referral', 'campaign', 'cold_outreach', 'event', 'other'];
 const LEAD_STATUS_COLOR = { new: 'neutral', contacted: 'info', requirement_gathering: 'info', proposal_sent: 'warning', proposal_approved: 'success', converted: 'success', disqualified: 'error' };
@@ -587,8 +632,8 @@ function Leads({ leads, accessToken, onRefresh }) {
         <Button onClick={() => setShowForm(!showForm)} variant="primary" size="md" icon={<Icon name="add" />}>New Lead</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div className="grid gap-4 sm:grid-cols-2">
             <input type="text" placeholder="Company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className={inputClass} />
             <input required type="text" placeholder="Contact name" value={form.contact_name} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} className={inputClass} />
             <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputClass} />
@@ -605,30 +650,30 @@ function Leads({ leads, accessToken, onRefresh }) {
         </form>
       )}
       {toast && (
-        <p className={`text-body-sm rounded-lg py-2 px-4 ${
-          toast.includes('successfully') ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.includes('successfully') ? 'border border-green-200 bg-green-50 text-green-600' : 'border border-red-200 bg-red-50 text-red-600'
         }`}>{toast}</p>
       )}
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
             <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Est. Value</th><th className="px-stack-lg py-4">Status</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {leads.map((l) => (
-              <tr key={l.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+              <tr key={l.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                 <td className="px-stack-lg py-4">
                   <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{l.company || '—'}</p>
                   <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.contact_name}</p>
                 </td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.email}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted capitalize">{l.source?.replace('_', ' ')}</td>
+                <td className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{l.source?.replace('_', ' ')}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-dark-brand">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
                 <td className="px-stack-lg py-4">
                   <div className="flex items-center gap-2">
                     <StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge>
                     <select value={l.status} disabled={savingId === l.id || !accessToken} onChange={(e) => handleStatusChange(l.id, e.target.value)}
-                      className="text-body-sm rounded border border-outline-variant dark:border-dark-outline-variant bg-white dark:bg-dark-surface px-2 py-1 disabled:opacity-50">
+                      className="rounded border border-outline-variant bg-white px-2 py-1 text-body-sm disabled:opacity-50 dark:border-dark-outline-variant dark:bg-dark-surface">
                       {LEAD_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                     </select>
                   </div>
@@ -687,8 +732,8 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
         <Button onClick={() => setShowForm(!showForm)} variant="primary" size="md" icon={<Icon name="add" />}>New Proposal</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg space-y-4">
-          <div className="grid sm:grid-cols-3 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div className="grid gap-4 sm:grid-cols-3">
             <select required value={form.lead_id} onChange={(e) => setForm({ ...form, lead_id: e.target.value })} className={inputClass}>
               <option value="" disabled>Select lead</option>
               {leads.map((l) => <option key={l.id} value={l.id}>{l.company || l.contact_name}</option>)}
@@ -705,14 +750,14 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
           </div>
         </form>
       )}
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
             <tr><th className="px-stack-lg py-4">Lead</th><th className="px-stack-lg py-4">Price</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Sent</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {proposals.map((p) => (
-              <tr key={p.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+              <tr key={p.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{leadLabel(p.lead_id)}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.currency} {Number(p.price).toLocaleString()}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={PROPOSAL_STATUS_COLOR[p.status]}>{p.status}</StatusBadge></td>
@@ -762,14 +807,14 @@ function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
   };
 
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
+    <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+        <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
           <tr><th className="px-stack-lg py-4">Deal</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Client Signed</th><th className="px-stack-lg py-4">Company Signed</th><th className="px-stack-lg py-4">Actions</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
           {contracts.map((c) => (
-            <tr key={c.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+            <tr key={c.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
               <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{describe(c.proposal_id)}</td>
               <td className="px-stack-lg py-4"><StatusBadge variant={CONTRACT_STATUS_COLOR[c.status]}>{c.status}</StatusBadge></td>
               <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.signed_by_client_at ? c.signed_by_client_at.slice(0, 10) : '—'}</td>
@@ -797,7 +842,6 @@ const INVOICE_STATUS_COLOR = { draft: 'neutral', sent: 'warning', paid: 'success
 const TIMESHEET_STATUS_COLOR = { draft: 'neutral', submitted: 'warning', approved: 'success', rejected: 'error' };
 const APPLICATION_STATUS_OPTIONS = ['applied', 'shortlisted', 'interview', 'offered', 'rejected', 'hired'];
 const APPLICATION_STATUS_COLOR = { applied: 'neutral', shortlisted: 'info', interview: 'warning', offered: 'success', rejected: 'error', hired: 'success' };
-const FORM_INPUT_CLASS = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
 // ---------- Marketing ----------
 function MarketingLeadsView({ accessToken }) {
@@ -811,19 +855,19 @@ function MarketingLeadsView({ accessToken }) {
 
   if (loading) return <LoadingSpinner />;
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
+    <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+        <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
           <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Est. Value</th></tr>
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
           {leads.map((l) => (
-            <tr key={l.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+            <tr key={l.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
               <td className="px-stack-lg py-4">
                 <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{l.company || '—'}</p>
                 <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.contact_name}</p>
               </td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted capitalize">{l.source?.replace('_', ' ')}</td>
+              <td className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{l.source?.replace('_', ' ')}</td>
               <td className="px-stack-lg py-4"><StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge></td>
               <td className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-dark-brand">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
             </tr>
@@ -836,39 +880,115 @@ function MarketingLeadsView({ accessToken }) {
 }
 
 function TestimonialModeration({ accessToken }) {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(demoTestimonials);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState(null);
+  const [filter, setFilter] = useState('pending');
+  const [toast, setToast] = useState('');
 
-  const load = () => {
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const load = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
-    fetchTestimonials(accessToken, { is_published: 'false' }).then((r) => setItems(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
+    fetchTestimonials(accessToken, { limit: 100 })
+      .then((r) => { if (r?.data?.length) setItems(r.data); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [accessToken]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken]);
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
+  }, [load]);
 
   const approve = async (id) => {
     setActingId(id);
-    try { await updateTestimonial(accessToken, id, { is_published: true }); load(); } finally { setActingId(null); }
+    try {
+      await updateTestimonial(accessToken, id, { is_published: true });
+      showToast('Testimonial approved and published.');
+      load();
+    } catch (err) {
+      showToast(err?.message || 'Action failed.');
+    } finally {
+      setActingId(null);
+    }
   };
+
+  const pending = items.filter((t) => !t.is_published);
+  const published = items.filter((t) => t.is_published);
+  const visible = filter === 'pending' ? pending : filter === 'published' ? published : items;
+
+  const kpis = [
+    { label: 'Pending Moderation', value: pending.length, icon: 'rate_review' },
+    { label: 'Published', value: published.length, icon: 'publish' },
+    { label: 'Total Reviews', value: items.length, icon: 'reviews' },
+  ];
+
+  const stars = (rating) => Array.from({ length: 5 }, (_, i) => (
+    <Icon key={i} name={i < (rating || 0) ? 'star' : 'star_outline'} className="text-base text-yellow-400" />
+  ));
 
   if (loading) return <LoadingSpinner />;
   return (
-    <div className="space-y-4">
-      {items.map((t) => (
-        <div key={t.id} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-          <div className="flex items-start justify-between gap-4 mb-2">
-            <div>
-              <p className="font-display text-body-md font-semibold text-brand-dark dark:text-dark-brand">{t.author_name}</p>
-              <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.author_title}{t.company_name ? ` · ${t.company_name}` : ''}</p>
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-2 flex items-center gap-3">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
+              <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
             </div>
-            <RowAction disabled={actingId === t.id} onClick={() => approve(t.id)}>Approve &amp; Publish</RowAction>
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{stat.value}</p>
           </div>
-          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted italic">&ldquo;{t.content}&rdquo;</p>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
+          {['pending', 'published', 'all'].map((s) => (
+            <button key={s} onClick={() => setFilter(s)}
+              className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
+                filter === s ? 'border-brand bg-brand text-white' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
+              }`}>{s}
+            </button>
+          ))}
         </div>
-      ))}
-      {!items.length && <p className="text-body-sm text-ink-muted text-center py-8">No testimonials awaiting moderation.</p>}
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+          <Icon name="refresh" className="text-base" /> Refresh
+        </button>
+      </div>
+
+      {toast && (
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.includes('success') || toast.includes('published')
+            ? 'border border-green-200 bg-green-50 text-green-600'
+            : 'border border-red-200 bg-red-50 text-red-600'
+        }`}>{toast}</p>
+      )}
+
+      <div className="space-y-4">
+        {visible.map((t) => (
+          <div key={t.id} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="font-display text-body-md font-semibold text-brand-dark dark:text-dark-brand">{t.author_name}</p>
+                <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.author_title}{t.company_name ? ` · ${t.company_name}` : ''}</p>
+                <div className="mt-1 flex items-center gap-0.5">{stars(t.rating)}</div>
+              </div>
+              <div className="flex items-center gap-3">
+                <StatusBadge variant={t.is_published ? 'success' : 'warning'}>{t.is_published ? 'published' : 'pending'}</StatusBadge>
+                {!t.is_published && <RowAction disabled={actingId === t.id} onClick={() => approve(t.id)}>Approve &amp; Publish</RowAction>}
+              </div>
+            </div>
+            <p className="text-body-sm italic text-ink-muted dark:text-dark-ink-muted">&ldquo;{t.content}&rdquo;</p>
+          </div>
+        ))}
+        {!visible.length && <p className="py-8 text-center text-body-sm text-ink-muted">No testimonials to show.</p>}
+      </div>
     </div>
   );
 }
@@ -885,7 +1005,7 @@ function TeamProjects({ accessToken, userId }) {
   const [assigningId, setAssigningId] = useState(null);
   const [teamSelection, setTeamSelection] = useState([]);
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!accessToken || !userId) { setLoading(false); return; }
     setLoading(true);
     Promise.allSettled([
@@ -897,9 +1017,9 @@ function TeamProjects({ accessToken, userId }) {
       if (e.status === 'fulfilled') setEmployees(e.value?.data || []);
       if (c.status === 'fulfilled') setClients(c.value?.data || []);
     }).finally(() => setLoading(false));
-  };
+  }, [accessToken, userId]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken, userId]);
+  useEffect(() => { load();   }, [load]);
 
   const clientName = (id) => clients.find((c) => c.id === id)?.company_name || '—';
 
@@ -936,8 +1056,8 @@ function TeamProjects({ accessToken, userId }) {
         <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Project</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg space-y-4">
-          <div className="grid sm:grid-cols-2 gap-4">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div className="grid gap-4 sm:grid-cols-2">
             <input required type="text" placeholder="Project title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={FORM_INPUT_CLASS} />
             <select value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className={FORM_INPUT_CLASS}>
               <option value="">No client yet</option>
@@ -958,27 +1078,27 @@ function TeamProjects({ accessToken, userId }) {
 
       <div className="space-y-4">
         {projects.map((p) => (
-          <div key={p.id} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-            <div className="flex items-start justify-between gap-4 mb-3">
+          <div key={p.id} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-3 flex items-start justify-between gap-4">
               <div>
                 <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{p.title}</h3>
                 <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Client: {clientName(p.client_id)}{p.budget ? ` · Budget: $${Number(p.budget).toLocaleString()}` : ''}</p>
               </div>
               <StatusBadge variant={PROJECT_STATUS_COLOR[p.status]}>{p.status?.replace('_', ' ')}</StatusBadge>
             </div>
-            <div className="flex items-center gap-3 mb-3">
-              <div className="flex-1 h-2 bg-surface-container dark:bg-dark-surface-container rounded-full overflow-hidden">
-                <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${p.progress_percent}%` }} />
+            <div className="mb-3 flex items-center gap-3">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
+                <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress_percent}%` }} />
               </div>
-              <span className="text-body-sm font-semibold text-brand-dark dark:text-dark-brand w-10 text-right">{p.progress_percent}%</span>
+              <span className="w-10 text-right text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{p.progress_percent}%</span>
             </div>
             {assigningId === p.id ? (
-              <div className="border-t border-outline-variant dark:border-dark-outline-variant pt-3 space-y-2">
+              <div className="space-y-2 border-t border-outline-variant pt-3 dark:border-dark-outline-variant">
                 <p className="font-label-caps text-label-caps uppercase text-ink-muted">Select team members</p>
                 <div className="flex flex-wrap gap-2">
                   {employees.map((emp) => (
                     <button key={emp.id} type="button" onClick={() => toggleTeamMember(emp.id)}
-                      className={`text-body-sm px-3 py-1.5 rounded border transition-colors ${teamSelection.includes(emp.id) ? 'bg-brand text-white border-brand' : 'border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted hover:border-brand'}`}>
+                      className={`rounded border px-3 py-1.5 text-body-sm transition-colors ${teamSelection.includes(emp.id) ? 'border-brand bg-brand text-white' : 'border-outline-variant text-ink-muted hover:border-brand dark:border-dark-outline-variant dark:text-dark-ink-muted'}`}>
                       {emp.employee_code}{emp.designation ? ` · ${emp.designation}` : ''}
                     </button>
                   ))}
@@ -993,7 +1113,7 @@ function TeamProjects({ accessToken, userId }) {
             )}
           </div>
         ))}
-        {!projects.length && <p className="text-body-sm text-white/70 text-center py-8">No projects assigned to you yet.</p>}
+        {!projects.length && <p className="py-8 text-center text-body-sm text-white/70">No projects assigned to you yet.</p>}
       </div>
     </div>
   );
@@ -1016,16 +1136,16 @@ function TaskBoard({ accessToken, userId }) {
       setProjects(items);
       setSelectedProject((prev) => prev || items[0]?.id || '');
     }).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [accessToken, userId]);
 
-  const loadTasks = () => {
+  const loadTasks = useCallback(() => {
     if (!accessToken || !selectedProject) { setLoading(false); return; }
     setLoading(true);
     fetchTasks(accessToken, { project_id: selectedProject, limit: 100 }).then((r) => setTasks(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
+  }, [accessToken, selectedProject]);
 
-  useEffect(() => { loadTasks(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken, selectedProject]);
+  useEffect(() => { loadTasks();   }, [loadTasks]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -1057,8 +1177,8 @@ function TaskBoard({ accessToken, userId }) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg space-y-4">
-          <div className="grid sm:grid-cols-3 gap-4">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div className="grid gap-4 sm:grid-cols-3">
             <input required type="text" placeholder="Task title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={FORM_INPUT_CLASS} />
             <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className={FORM_INPUT_CLASS}>
               {['low', 'medium', 'high', 'urgent'].map((p) => <option key={p} value={p}>{p}</option>)}
@@ -1073,16 +1193,16 @@ function TaskBoard({ accessToken, userId }) {
       )}
 
       {loading ? <LoadingSpinner /> : (
-        <div className="grid md:grid-cols-5 gap-gutter">
+        <div className="grid gap-gutter md:grid-cols-5">
           {TASK_STATUS_COLUMNS.map((col) => (
-            <div key={col} className="bg-surface-container dark:bg-dark-surface-container rounded-lg p-3 space-y-2">
+            <div key={col} className="space-y-2 rounded-lg bg-surface-container p-3 dark:bg-dark-surface-container">
               <p className="font-label-caps text-label-caps uppercase text-white">{col.replace('_', ' ')} ({tasks.filter((t) => t.status === col).length})</p>
               {tasks.filter((t) => t.status === col).map((t) => (
-                <div key={t.id} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded p-3 space-y-2">
+                <div key={t.id} className="space-y-2 rounded border border-outline-variant bg-white p-3 dark:border-dark-outline-variant dark:bg-dark-surface">
                   <p className="text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{t.title}</p>
                   <StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
                   <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
-                    className="w-full text-body-sm rounded border border-outline-variant dark:border-dark-outline-variant bg-white dark:bg-dark-surface px-2 py-1">
+                    className="w-full rounded border border-outline-variant bg-white px-2 py-1 text-body-sm dark:border-dark-outline-variant dark:bg-dark-surface">
                     {TASK_STATUS_COLUMNS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                   </select>
                 </div>
@@ -1096,123 +1216,313 @@ function TaskBoard({ accessToken, userId }) {
 }
 
 function Approvals({ accessToken }) {
-  const [timesheets, setTimesheets] = useState([]);
+  const [timesheets, setTimesheets] = useState(demoApprovalTimesheets);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState(null);
+  const [filter, setFilter] = useState('submitted');
+  const [toast, setToast] = useState('');
 
-  const load = () => {
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const load = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
-    fetchAllTimesheets(accessToken, { status: 'submitted', limit: 100 }).then((r) => setTimesheets(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
+    fetchAllTimesheets(accessToken, { limit: 100 })
+      .then((r) => { if (r?.data?.length) setTimesheets(r.data); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [accessToken]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken]);
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
+  }, [load]);
 
   const review = async (id, status) => {
     setActingId(id);
-    try { await reviewTimesheet(accessToken, id, status); load(); } finally { setActingId(null); }
+    try {
+      await reviewTimesheet(accessToken, id, status);
+      showToast(`Timesheet ${status}.`);
+      load();
+    } catch (err) {
+      showToast(err?.message || 'Action failed.');
+    } finally {
+      setActingId(null);
+    }
   };
+
+  const visible = filter === 'all' ? timesheets : timesheets.filter((t) => t.status === filter);
+  const kpis = [
+    { label: 'Pending Approval', value: timesheets.filter((t) => t.status === 'submitted').length, icon: 'pending_actions' },
+    { label: 'Approved', value: timesheets.filter((t) => t.status === 'approved').length, icon: 'task_alt' },
+    { label: 'Rejected', value: timesheets.filter((t) => t.status === 'rejected').length, icon: 'cancel' },
+    { label: 'Total Entries', value: timesheets.length, icon: 'calendar_month' },
+  ];
 
   if (loading) return <LoadingSpinner />;
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
-      <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
-          <tr><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Hours</th><th className="px-stack-lg py-4">Description</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Actions</th></tr>
-        </thead>
-        <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-          {timesheets.map((t) => (
-            <tr key={t.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.date}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-dark-brand">{t.hours}h</td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.description || '—'}</td>
-              <td className="px-stack-lg py-4"><StatusBadge variant={TIMESHEET_STATUS_COLOR[t.status]}>{t.status}</StatusBadge></td>
-              <td className="px-stack-lg py-4">
-                <div className="flex gap-2">
-                  <RowAction disabled={actingId === t.id} onClick={() => review(t.id, 'approved')}>Approve</RowAction>
-                  <RowAction variant="outline" disabled={actingId === t.id} onClick={() => review(t.id, 'rejected')}>Reject</RowAction>
-                </div>
-              </td>
-            </tr>
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-2 flex items-center gap-3">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
+              <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
+            </div>
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
+          {['submitted', 'approved', 'rejected', 'all'].map((s) => (
+            <button key={s} onClick={() => setFilter(s)}
+              className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
+                filter === s ? 'border-brand bg-brand text-white' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
+              }`}>{s}
+            </button>
           ))}
-          {!timesheets.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No timesheets awaiting approval.</td></tr>}
-        </tbody>
-      </table>
+        </div>
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+          <Icon name="refresh" className="text-base" /> Refresh
+        </button>
+      </div>
+
+      {toast && (
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.includes('success') || toast.includes('approved') || toast.includes('rejected')
+            ? 'border border-green-200 bg-green-50 text-green-600'
+            : 'border border-red-200 bg-red-50 text-red-600'
+        }`}>{toast}</p>
+      )}
+
+      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <table className="w-full text-left">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+            <tr>
+              <th className="px-stack-lg py-4">Employee</th>
+              <th className="px-stack-lg py-4">Date</th>
+              <th className="px-stack-lg py-4">Hours</th>
+              <th className="px-stack-lg py-4">Description</th>
+              <th className="px-stack-lg py-4">Status</th>
+              <th className="px-stack-lg py-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+            {visible.map((t) => (
+              <tr key={t.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                <td className="px-stack-lg py-4">
+                  <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{t.employee_name || t.employee_code || '—'}</p>
+                  {t.employee_code && t.employee_name && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.employee_code}</p>}
+                </td>
+                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.date}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-dark-brand">{t.hours}h</td>
+                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.description || '—'}</td>
+                <td className="px-stack-lg py-4"><StatusBadge variant={TIMESHEET_STATUS_COLOR[t.status]}>{t.status}</StatusBadge></td>
+                <td className="px-stack-lg py-4">
+                  <div className="flex gap-2">
+                    <RowAction disabled={actingId === t.id} onClick={() => review(t.id, 'approved')}>Approve</RowAction>
+                    <RowAction variant="outline" disabled={actingId === t.id} onClick={() => review(t.id, 'rejected')}>Reject</RowAction>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {!visible.length && <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No timesheets to show.</td></tr>}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
 // ---------- QA ----------
 function TestQueue({ accessToken }) {
-  const [tasks, setTasks] = useState([]);
+  const [tasks, setTasks] = useState(demoQaTasks);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
+  const [filter, setFilter] = useState('in_review');
+  const [toast, setToast] = useState('');
 
-  const load = () => {
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const load = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
-    fetchTasks(accessToken, { status: 'in_review', limit: 100 }).then((r) => setTasks(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
+    fetchTasks(accessToken, { limit: 100 })
+      .then((r) => { if (r?.data?.length) setTasks(r.data); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [accessToken]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken]);
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
+  }, [load]);
 
   const resolve = async (id, status) => {
     setSavingId(id);
-    try { await updateTaskStatus(accessToken, id, status); load(); } finally { setSavingId(null); }
+    try {
+      await updateTaskStatus(accessToken, id, status);
+      showToast(status === 'done' ? 'Task passed QA.' : 'Task blocked — bug logged.');
+      load();
+    } catch (err) {
+      showToast(err?.message || 'Action failed.');
+    } finally {
+      setSavingId(null);
+    }
   };
+
+  const visible = filter === 'all' ? tasks : tasks.filter((t) => t.status === filter);
+  const kpis = [
+    { label: 'In Review', value: tasks.filter((t) => t.status === 'in_review').length, icon: 'bug_report' },
+    { label: 'Passed', value: tasks.filter((t) => t.status === 'done').length, icon: 'task_alt' },
+    { label: 'Blocked / Bugs', value: tasks.filter((t) => t.status === 'blocked').length, icon: 'report' },
+    { label: 'Total Tasks', value: tasks.length, icon: 'fact_check' },
+  ];
+
+  const TASK_STATUS_COLOR = { todo: 'neutral', in_progress: 'info', in_review: 'warning', done: 'success', blocked: 'error' };
 
   if (loading) return <LoadingSpinner />;
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
-      <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
-          <tr><th className="px-stack-lg py-4">Task</th><th className="px-stack-lg py-4">Priority</th><th className="px-stack-lg py-4">Due</th><th className="px-stack-lg py-4">Actions</th></tr>
-        </thead>
-        <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-          {tasks.map((t) => (
-            <tr key={t.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
-              <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.title}</td>
-              <td className="px-stack-lg py-4"><StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge></td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.due_date || '—'}</td>
-              <td className="px-stack-lg py-4">
-                <div className="flex gap-2">
-                  <RowAction disabled={savingId === t.id} onClick={() => resolve(t.id, 'done')}>Pass</RowAction>
-                  <RowAction variant="outline" disabled={savingId === t.id} onClick={() => resolve(t.id, 'blocked')}>Fail / Log Bug</RowAction>
-                </div>
-              </td>
-            </tr>
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-2 flex items-center gap-3">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
+              <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
+            </div>
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
+          {['in_review', 'done', 'blocked', 'all'].map((s) => (
+            <button key={s} onClick={() => setFilter(s)}
+              className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
+                filter === s ? 'border-brand bg-brand text-white' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
+              }`}>{s.replace('_', ' ')}
+            </button>
           ))}
-          {!tasks.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">Nothing waiting for QA sign-off.</td></tr>}
-        </tbody>
-      </table>
+        </div>
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+          <Icon name="refresh" className="text-base" /> Refresh
+        </button>
+      </div>
+
+      {toast && (
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.includes('passed') || toast.includes('success')
+            ? 'border border-green-200 bg-green-50 text-green-600'
+            : 'border border-red-200 bg-red-50 text-red-600'
+        }`}>{toast}</p>
+      )}
+
+      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <table className="w-full text-left">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+            <tr>
+              <th className="px-stack-lg py-4">Task</th>
+              <th className="px-stack-lg py-4">Priority</th>
+              <th className="px-stack-lg py-4">Status</th>
+              <th className="px-stack-lg py-4">Due</th>
+              <th className="px-stack-lg py-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+            {visible.map((t) => (
+              <tr key={t.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.title}</td>
+                <td className="px-stack-lg py-4"><StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge></td>
+                <td className="px-stack-lg py-4"><StatusBadge variant={TASK_STATUS_COLOR[t.status]}>{t.status?.replace('_', ' ')}</StatusBadge></td>
+                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.due_date || '—'}</td>
+                <td className="px-stack-lg py-4">
+                  <div className="flex gap-2">
+                    <RowAction disabled={savingId === t.id} onClick={() => resolve(t.id, 'done')}>Pass</RowAction>
+                    <RowAction variant="outline" disabled={savingId === t.id} onClick={() => resolve(t.id, 'blocked')}>Fail / Log Bug</RowAction>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {!visible.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">Nothing waiting for QA sign-off.</td></tr>}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
 
 // ---------- Support ----------
 function TicketQueue({ accessToken, userId }) {
-  const [tickets, setTickets] = useState([]);
+  const [tickets, setTickets] = useState(demoTickets);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
   const [replyDraft, setReplyDraft] = useState({});
   const [openTicketId, setOpenTicketId] = useState(null);
+  const [filter, setFilter] = useState('all');
+  const [toast, setToast] = useState('');
 
-  const load = () => {
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const isRealId = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '');
+
+  const load = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
-    fetchTickets(accessToken, { limit: 100 }).then((r) => setTickets(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
+    fetchTickets(accessToken, { limit: 100 })
+      .then((r) => { if (r?.data?.length) setTickets(r.data); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [accessToken]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken]);
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
+  }, [load]);
 
   const changeStatus = async (id, status) => {
     setSavingId(id);
-    try { await updateTicket(accessToken, id, { status }); load(); } finally { setSavingId(null); }
+    try {
+      if (isRealId(id)) {
+        await updateTicket(accessToken, id, { status });
+      } else {
+        setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
+      }
+      showToast(`Ticket ${status.replace('_', ' ')}.`);
+      if (isRealId(id)) load();
+    } catch (err) {
+      showToast(err?.message || 'Action failed.');
+    } finally {
+      setSavingId(null);
+    }
   };
 
   const assignToMe = async (id) => {
     setSavingId(id);
-    try { await updateTicket(accessToken, id, { assigned_to: userId }); load(); } finally { setSavingId(null); }
+    try {
+      if (isRealId(id)) {
+        await updateTicket(accessToken, id, { assigned_to: userId });
+      } else {
+        setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, assigned_to: userId || 'u-support' } : t)));
+      }
+      showToast('Ticket assigned to you.');
+      if (isRealId(id)) load();
+    } catch (err) {
+      showToast(err?.message || 'Assignment failed.');
+    } finally {
+      setSavingId(null);
+    }
   };
 
   const sendReply = async (id) => {
@@ -1220,48 +1530,99 @@ function TicketQueue({ accessToken, userId }) {
     if (!message) return;
     setSavingId(id);
     try {
-      await replyToTicket(accessToken, id, { message });
+      if (isRealId(id)) {
+        await replyToTicket(accessToken, id, { message });
+      }
       setReplyDraft((prev) => ({ ...prev, [id]: '' }));
       setOpenTicketId(null);
+      showToast('Reply sent.');
+    } catch (err) {
+      showToast(err?.message || 'Reply failed.');
     } finally {
       setSavingId(null);
     }
   };
 
+  const visible = filter === 'all' ? tickets : tickets.filter((t) => t.status === filter);
+  const kpis = [
+    { label: 'Open', value: tickets.filter((t) => t.status === 'open').length, icon: 'confirmation_number' },
+    { label: 'In Progress', value: tickets.filter((t) => t.status === 'in_progress').length, icon: 'pending_actions' },
+    { label: 'Resolved', value: tickets.filter((t) => t.status === 'resolved').length, icon: 'task_alt' },
+    { label: 'Unassigned', value: tickets.filter((t) => !t.assigned_to).length, icon: 'person_off' },
+  ];
+
   if (loading) return <LoadingSpinner />;
   return (
-    <div className="space-y-4">
-      {tickets.map((t) => (
-        <div key={t.id} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-          <div className="flex items-start justify-between gap-4 mb-2">
-            <div>
-              <p className="font-display text-body-md font-semibold text-brand-dark dark:text-dark-brand">{t.subject}</p>
-              <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.ticket_number}</p>
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-2 flex items-center gap-3">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
+              <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <StatusBadge variant={TICKET_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
-              <StatusBadge variant={TICKET_STATUS_COLOR[t.status]}>{t.status.replace('_', ' ')}</StatusBadge>
-            </div>
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{stat.value}</p>
           </div>
-          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted mb-3">{t.description}</p>
-          <div className="flex flex-wrap items-center gap-2">
-            {!t.assigned_to && <RowAction disabled={savingId === t.id} onClick={() => assignToMe(t.id)}>Assign to me</RowAction>}
-            <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
-              className="text-body-sm rounded border border-outline-variant dark:border-dark-outline-variant bg-white dark:bg-dark-surface px-2 py-1.5">
-              {['open', 'in_progress', 'resolved', 'closed'].map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-            </select>
-            <RowAction variant="outline" onClick={() => setOpenTicketId(openTicketId === t.id ? null : t.id)}>Reply</RowAction>
-          </div>
-          {openTicketId === t.id && (
-            <div className="mt-3 flex gap-2">
-              <textarea rows={2} value={replyDraft[t.id] || ''} onChange={(e) => setReplyDraft((prev) => ({ ...prev, [t.id]: e.target.value }))}
-                placeholder="Type a reply..." className="flex-1 border border-outline-variant dark:border-dark-outline-variant rounded px-3 py-2 text-body-sm bg-white dark:bg-dark-surface focus:outline-none focus:border-brand" />
-              <RowAction disabled={savingId === t.id} onClick={() => sendReply(t.id)}>Send</RowAction>
-            </div>
-          )}
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
+          {['all', 'open', 'in_progress', 'resolved', 'closed'].map((s) => (
+            <button key={s} onClick={() => setFilter(s)}
+              className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
+                filter === s ? 'border-brand bg-brand text-white' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
+              }`}>{s.replace('_', ' ')}
+            </button>
+          ))}
         </div>
-      ))}
-      {!tickets.length && <p className="text-body-sm text-white/70 text-center py-8">No tickets in the queue.</p>}
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+          <Icon name="refresh" className="text-base" /> Refresh
+        </button>
+      </div>
+
+      {toast && (
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.includes('sent') || toast.includes('assigned') || toast.includes('resolved') || toast.includes('closed')
+            ? 'border border-green-200 bg-green-50 text-green-600'
+            : 'border border-red-200 bg-red-50 text-red-600'
+        }`}>{toast}</p>
+      )}
+
+      <div className="space-y-4">
+        {visible.map((t) => (
+          <div key={t.id} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="font-display text-body-md font-semibold text-brand-dark dark:text-dark-brand">{t.subject}</p>
+                <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.ticket_number}</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <StatusBadge variant={TICKET_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
+                <StatusBadge variant={TICKET_STATUS_COLOR[t.status]}>{t.status.replace('_', ' ')}</StatusBadge>
+              </div>
+            </div>
+            <p className="mb-3 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.description}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              {!t.assigned_to && <RowAction disabled={savingId === t.id} onClick={() => assignToMe(t.id)}>Assign to me</RowAction>}
+              <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
+                className="rounded border border-outline-variant bg-white px-2 py-1.5 text-body-sm dark:border-dark-outline-variant dark:bg-dark-surface">
+                {['open', 'in_progress', 'resolved', 'closed'].map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+              </select>
+              <RowAction variant="outline" onClick={() => setOpenTicketId(openTicketId === t.id ? null : t.id)}>Reply</RowAction>
+            </div>
+            {openTicketId === t.id && (
+              <div className="mt-3 flex gap-2">
+                <textarea rows={2} value={replyDraft[t.id] || ''} onChange={(e) => setReplyDraft((prev) => ({ ...prev, [t.id]: e.target.value }))}
+                  placeholder="Type a reply..." className="flex-1 rounded border border-outline-variant bg-white px-3 py-2 text-body-sm focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface" />
+                <RowAction disabled={savingId === t.id} onClick={() => sendReply(t.id)}>Send</RowAction>
+              </div>
+            )}
+          </div>
+        ))}
+        {!visible.length && <p className="py-8 text-center text-body-sm text-white/70">No tickets in the queue.</p>}
+      </div>
     </div>
   );
 }
@@ -1276,16 +1637,16 @@ function Invoices({ accessToken }) {
   const [submitting, setSubmitting] = useState(false);
   const [actingId, setActingId] = useState(null);
 
-  const load = () => {
+  const load = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     Promise.allSettled([fetchInvoices(accessToken, { limit: 100 }), fetchClients(accessToken, { limit: 100 })]).then(([i, c]) => {
       if (i.status === 'fulfilled') setInvoices(i.value?.data || []);
       if (c.status === 'fulfilled') setClients(c.value?.data || []);
     }).finally(() => setLoading(false));
-  };
+  }, [accessToken]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken]);
+  useEffect(() => { load();   }, [load]);
 
   const clientName = (id) => clients.find((c) => c.id === id)?.company_name || '—';
 
@@ -1328,8 +1689,8 @@ function Invoices({ accessToken }) {
         <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Invoice</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg space-y-4">
-          <div className="grid sm:grid-cols-3 gap-4">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div className="grid gap-4 sm:grid-cols-3">
             <select required value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className={FORM_INPUT_CLASS}>
               <option value="" disabled>Select client</option>
               {clients.map((c) => <option key={c.id} value={c.id}>{c.company_name || c.id}</option>)}
@@ -1348,14 +1709,14 @@ function Invoices({ accessToken }) {
           </div>
         </form>
       )}
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
             <tr><th className="px-stack-lg py-4">Invoice</th><th className="px-stack-lg py-4">Client</th><th className="px-stack-lg py-4">Total</th><th className="px-stack-lg py-4">Due</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {invoices.map((inv) => (
-              <tr key={inv.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+              <tr key={inv.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{inv.invoice_number}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{clientName(inv.client_id)}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-dark-brand">{inv.currency} {Number(inv.total_amount).toLocaleString()}</td>
@@ -1421,31 +1782,31 @@ function LeaveApprovals({ accessToken }) {
   if (loading) return <LoadingSpinner />;
   return (
     <div className="space-y-stack-md">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
           {['pending', 'approved', 'rejected', 'all'].map((s) => (
             <button key={s} onClick={() => setFilter(s)}
-              className={`px-3 py-1.5 rounded border font-label-caps text-label-caps uppercase transition-colors ${
-                filter === s ? 'bg-brand text-white border-brand' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
+              className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
+                filter === s ? 'border-brand bg-brand text-white' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
               }`}>{s}
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 text-body-sm text-brand hover:text-brand-dark font-label-caps uppercase">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
       {toast && (
-        <p className={`text-body-sm rounded-lg py-2 px-4 ${
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('approved') || toast.includes('rejected')
-            ? 'text-green-600 bg-green-50 border border-green-200'
-            : 'text-red-600 bg-red-50 border border-red-200'
+            ? 'border border-green-200 bg-green-50 text-green-600'
+            : 'border border-red-200 bg-red-50 text-red-600'
         }`}>{toast}</p>
       )}
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
+      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <table className="w-full text-left">
-          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
             <tr>
               <th className="px-stack-lg py-4">Employee</th>
               <th className="px-stack-lg py-4">Type</th>
@@ -1463,12 +1824,12 @@ function LeaveApprovals({ accessToken }) {
                 ? Math.ceil((new Date(l.end_date) - new Date(l.start_date)) / 86400000) + 1
                 : '—';
               return (
-                <tr key={l.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+                <tr key={l.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                   <td className="px-stack-lg py-4">
                     <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{l.employee_code || '—'}</p>
                     {l.designation && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.designation}</p>}
                   </td>
-                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand capitalize">{l.type}</td>
+                  <td className="px-stack-lg py-4 text-body-md capitalize text-brand-dark dark:text-dark-brand">{l.type}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.start_date}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.end_date}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{days}</td>
@@ -1494,49 +1855,151 @@ function LeaveApprovals({ accessToken }) {
 }
 
 function Recruitment({ accessToken }) {
-  const [applications, setApplications] = useState([]);
+  const [positions, setPositions] = useState(demoCareers);
+  const [applications, setApplications] = useState(demoApplications);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [toast, setToast] = useState('');
 
-  const load = () => {
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const load = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
-    fetchApplications(accessToken, { limit: 100 }).then((r) => setApplications(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  };
+    Promise.allSettled([
+      apiRequest('/careers?limit=50', { token: accessToken }),
+      fetchApplications(accessToken, { limit: 100 }),
+    ]).then(([positionsRes, appsRes]) => {
+      if (positionsRes.status === 'fulfilled' && positionsRes.value?.data?.length) setPositions(positionsRes.value.data);
+      if (appsRes.status === 'fulfilled' && appsRes.value?.data?.length) setApplications(appsRes.value.data);
+    }).finally(() => setLoading(false));
+  }, [accessToken]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [accessToken]);
+  useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    const id = setInterval(load, 30000);
+    return () => clearInterval(id);
+  }, [load]);
 
   const changeStatus = async (id, status) => {
     setSavingId(id);
-    try { await updateApplicationStatus(accessToken, id, status); load(); } finally { setSavingId(null); }
+    try {
+      await updateApplicationStatus(accessToken, id, status);
+      showToast('Application status updated.');
+      load();
+    } catch (err) {
+      showToast(err?.message || 'Update failed.');
+    } finally {
+      setSavingId(null);
+    }
   };
+
+  const positionTitle = (careerId) => positions.find((p) => p.id === careerId)?.title || 'Position';
+
+  const openPositions = positions.filter((p) => p.status === 'open');
+  const inPipeline = applications.filter((a) => ['applied', 'shortlisted', 'interview', 'offered'].includes(a.status)).length;
+  const hiredCount = applications.filter((a) => a.status === 'hired').length;
+  const filtered = statusFilter === 'all' ? applications : applications.filter((a) => a.status === statusFilter);
+
+  const kpis = [
+    { label: 'Open Positions', value: openPositions.length, icon: 'work' },
+    { label: 'Applications', value: applications.length, icon: 'person_add' },
+    { label: 'In Pipeline', value: inPipeline, icon: 'swap_horiz' },
+    { label: 'Hired', value: hiredCount, icon: 'verified' },
+  ];
 
   if (loading) return <LoadingSpinner />;
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-x-auto">
-      <table className="w-full text-left">
-        <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
-          <tr><th className="px-stack-lg py-4">Applicant</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Status</th></tr>
-        </thead>
-        <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-          {applications.map((a) => (
-            <tr key={a.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
-              <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{a.full_name}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{a.email}</td>
-              <td className="px-stack-lg py-4">
-                <div className="flex items-center gap-2">
-                  <StatusBadge variant={APPLICATION_STATUS_COLOR[a.status]}>{a.status}</StatusBadge>
-                  <select value={a.status} disabled={savingId === a.id} onChange={(e) => changeStatus(a.id, e.target.value)}
-                    className="text-body-sm rounded border border-outline-variant dark:border-dark-outline-variant bg-white dark:bg-dark-surface px-2 py-1">
-                    {APPLICATION_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-              </td>
-            </tr>
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-2 flex items-center gap-3">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
+              <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
+            </div>
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Open Positions</h3>
+          <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+            <Icon name="refresh" className="text-base" /> Refresh
+          </button>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {openPositions.map((p) => (
+            <div key={p.id} className="rounded-lg border border-outline-variant p-4 dark:border-dark-outline-variant">
+              <p className="mb-1 font-display text-body-lg font-semibold text-brand-dark dark:text-dark-brand">{p.title}</p>
+              <p className="text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">
+                {p.department || 'General'} · {p.location || 'Remote'} · {String(p.employment_type || 'full_time').replace('_', ' ')}
+              </p>
+              <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.experience_required ? `Experience: ${p.experience_required}` : ''}</p>
+            </div>
           ))}
-          {!applications.length && <tr><td colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No applications yet.</td></tr>}
-        </tbody>
-      </table>
+          {!openPositions.length && <p className="text-body-sm text-ink-muted">No open positions right now.</p>}
+        </div>
+      </div>
+
+      {toast && (
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.includes('success') || toast.includes('updated')
+            ? 'border border-green-200 bg-green-50 text-green-600'
+            : 'border border-red-200 bg-red-50 text-red-600'
+        }`}>{toast}</p>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
+          {['all', ...APPLICATION_STATUS_OPTIONS].map((s) => (
+            <button key={s} onClick={() => setStatusFilter(s)}
+              className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
+                statusFilter === s ? 'border-brand bg-brand text-white' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
+              }`}>{s}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <table className="w-full text-left">
+          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+            <tr>
+              <th className="px-stack-lg py-4">Applicant</th>
+              <th className="px-stack-lg py-4">Position</th>
+              <th className="px-stack-lg py-4">Email</th>
+              <th className="px-stack-lg py-4">Applied</th>
+              <th className="px-stack-lg py-4">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+            {filtered.map((a) => (
+              <tr key={a.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{a.full_name}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{positionTitle(a.career_id)}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{a.email}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{(a.created_at || '').slice(0, 10) || '—'}</td>
+                <td className="px-stack-lg py-4">
+                  <div className="flex items-center gap-2">
+                    <StatusBadge variant={APPLICATION_STATUS_COLOR[a.status]}>{a.status}</StatusBadge>
+                    <select value={a.status} disabled={savingId === a.id} onChange={(e) => changeStatus(a.id, e.target.value)}
+                      className="rounded border border-outline-variant bg-white px-2 py-1 text-body-sm dark:border-dark-outline-variant dark:bg-dark-surface">
+                      {APPLICATION_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {!filtered.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No applications found.</td></tr>}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -1565,7 +2028,7 @@ const PATH_ROLE_MAP = {
   '/hr': 'hr',
 };
 
-const ROLE_PATH_MAP = Object.fromEntries(Object.entries(PATH_ROLE_MAP).map(([path, role]) => [role, path]));
+const CRM_ROLES = ['sales', 'marketing', 'admin', 'project_manager'];
 
 // ─── Employee data normalizers ───────────────────────────────────────────────
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1608,16 +2071,33 @@ const normalizePerformance = (arr) => (arr || []).map((r) => ({
 }));
 
 const normalizeTraining = (arr) => (arr || []).map((t) => ({
-  id: t.id, title: t.training?.title ?? t.title,
+  id: t.id, courseId: t.course_id ?? t.courseId ?? t.training?.id,
+  title: t.training?.title ?? t.title,
   category: t.training?.category ?? t.category ?? '—',
   status: t.status, completedOn: t.completed_at?.slice(0, 10) ?? t.completedOn ?? null,
   score: t.score ?? null,
+}));
+
+const normalizeCatalog = (arr) => (arr || []).map((c) => ({
+  id: c.id, title: c.title, category: c.category || 'General',
+  description: c.description, duration_hours: c.duration_hours,
 }));
 
 const normalizeDocs = (arr) => (arr || []).map((d) => ({
   id: d.id, name: d.title ?? d.name, type: d.type,
   uploadedOn: d.created_at?.slice(0, 10) ?? d.uploadedOn, file_url: d.file_url,
 }));
+
+const toLocalTime = (t) => {
+  if (!t) return null;
+  const m = String(t).match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!m) return t;
+  let h = Number(m[1]) % 12;
+  if (m[3].toUpperCase() === 'PM') h += 12;
+  const d = new Date();
+  d.setUTCHours(h, Number(m[2]), 0, 0);
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
 
 export default function EmployeePortal() {
   const { pathname } = useLocation();
@@ -1626,40 +2106,51 @@ export default function EmployeePortal() {
 
   useDocumentTitle(`${portalTitle} | CoreFusion Technologies`);
   const { user, initializing, accessToken, logout } = useAuth();
+  const { denied } = useRoleGuard('employee', '/login');
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState({ name: '', email: '', role: 'employee', designation: '', department: '', status: 'active', employee_code: '' });
-  const [employeeId, setEmployeeId] = useState(null);
   const [attendance, setAttendance] = useState({ date: new Date().toISOString().slice(0, 10), checkIn: null, checkOut: null, status: 'absent' });
   const [leaves, setLeaves] = useState([]);
-  const [timesheets, setTimesheets] = useState([]);
-  const [payslips, setPayslips] = useState([]);
-  const [tasks, setTasks] = useState([]);
-  const [projects, setProjects] = useState([]);
-  const [performance, setPerformance] = useState([]);
-  const [training, setTraining] = useState([]);
-  const [documents, setDocuments] = useState([]);
+  const [timesheets, setTimesheets] = useState(demoTimesheets);
+  const [payslips, setPayslips] = useState(demoPayslips);
+  const [tasks, setTasks] = useState(demoTasks);
+  const [projects, setProjects] = useState(demoEmployeeProjects);
+  const [performance, setPerformance] = useState(demoPerformance);
+  const [training, setTraining] = useState(demoTraining);
+  const [catalog, setCatalog] = useState([]);
+  const [enrollingId, setEnrollingId] = useState(null);
+  const [documents, setDocuments] = useState(demoDocuments);
   const [leadsData, setLeadsData] = useState(demoLeads);
   const [proposalsData, setProposalsData] = useState(demoProposals);
   const [contractsData, setContractsData] = useState(demoContracts);
-  // Dev-only: lets QA preview any role's tab set locally without needing a separate
-  // seeded test account per role. Never rendered in production builds (see below) and
-  // has no bearing on real permissions — the backend still enforces the logged-in
-  // user's actual role on every API call.
-  const CRM_ROLES = ['sales', 'marketing', 'admin', 'project_manager'];
-  const [roleOverride, setRoleOverride] = useState(() => localStorage.getItem('emp_role_override') || null);
-  const effectiveRole = roleOverride || profile.role;
+  // The portal always uses the role the backend authenticated for this session.
+  // No client-side role override is possible — tabs and permissions reflect the
+  // real role returned by `/employees/me/profile`.
+  const effectiveRole = profile.role;
   const portalTabs = employeeTabsForRole(effectiveRole);
 
-  const refreshCrm = () => {
+  const refreshCrm = useCallback(() => {
     if (!accessToken) return;
     Promise.allSettled([fetchLeads(accessToken), fetchProposals(accessToken), fetchContracts(accessToken)])
       .then(([l, p, c]) => {
-        if (l.status === 'fulfilled') setLeadsData(l.value?.data || []);
-        if (p.status === 'fulfilled') setProposalsData(p.value?.data || []);
-        if (c.status === 'fulfilled') setContractsData(c.value?.data || []);
+        if (l.status === 'fulfilled' && l.value?.data?.length) setLeadsData(l.value.data);
+        if (p.status === 'fulfilled' && p.value?.data?.length) setProposalsData(p.value.data);
+        if (c.status === 'fulfilled' && c.value?.data?.length) setContractsData(c.value.data);
       });
+  }, [accessToken]);
+
+  const handleEnroll = (courseId) => {
+    if (!accessToken) return;
+    setEnrollingId(courseId);
+    enrollInCourse(accessToken, courseId)
+      .then(() => fetchMyTrainingEnrollments(accessToken))
+      .then((res) => {
+        if (res?.data?.length) setTraining(normalizeTraining(res.data));
+      })
+      .catch(() => {})
+      .finally(() => setEnrollingId(null));
   };
 
   useEffect(() => {
@@ -1672,13 +2163,15 @@ export default function EmployeePortal() {
       fetchMyPerformanceReviews(accessToken),
       fetchMyTrainingEnrollments(accessToken),
       fetchMyDocuments(accessToken),
-    ]).then(([profileRes, psRes, perfRes, trainRes, docsRes]) => {
+      fetchTrainingCatalog(accessToken),
+    ]).then(([profileRes, psRes, perfRes, trainRes, docsRes, catRes]) => {
       if (profileRes.status === 'fulfilled') {
         const p = profileRes.value?.data;
         if (p) {
           const realRole = p.role || 'employee';
           setProfile({
             _employeeId: p.id,
+            _userId: p.user_id,
             employee_code: p.employee_code,
             name: p.name || user.email,
             email: p.email || user.email,
@@ -1687,44 +2180,37 @@ export default function EmployeePortal() {
             department: p.department_name || p.department_id,
             status: p.status,
           });
-          setEmployeeId(p.id);
-          // Clear stale role override if it belongs to a different user's session
-          const storedOverride = localStorage.getItem('emp_role_override');
-          if (storedOverride && !CRM_ROLES.includes(realRole) && CRM_ROLES.includes(storedOverride)) {
-            localStorage.removeItem('emp_role_override');
-            setRoleOverride(null);
-          }
           // fetch attendance, leaves, timesheets, tasks, projects scoped to this employee
           Promise.allSettled([
             apiRequest(`/employees/me/attendance/today`, { token: accessToken }),
             apiRequest(`/employees/me/leaves`, { token: accessToken }),
             apiRequest(`/employees/me/timesheets`, { token: accessToken }),
-            apiRequest(`/tasks?assigned_to=${p.id}&limit=50`, { token: accessToken }),
+            apiRequest(`/tasks?assigned_to=${p.user_id}&limit=50`, { token: accessToken }),
             apiRequest(`/projects?employee_id=${p.id}&limit=50`, { token: accessToken }),
           ]).then(([attRes, lvRes, tsRes, taskRes, projRes]) => {
             if (attRes.status === 'fulfilled' && attRes.value?.data) {
               const a = attRes.value.data;
-              setAttendance({ date: a.date, checkIn: a.check_in, checkOut: a.check_out, status: a.status });
+              setAttendance({ date: a.date, checkIn: toLocalTime(a.check_in), checkOut: toLocalTime(a.check_out), status: a.status });
             }
             if (lvRes.status === 'fulfilled') setLeaves(normalizeLeaves(lvRes.value?.data));
             if (tsRes.status === 'fulfilled') setTimesheets(normalizeTimesheets(tsRes.value?.data));
-            if (taskRes.status === 'fulfilled') setTasks(normalizeTasks(taskRes.value?.data));
-            if (projRes.status === 'fulfilled') setProjects(normalizeEmpProjects(projRes.value?.data));
+            if (taskRes.status === 'fulfilled' && taskRes.value?.data?.length) setTasks(normalizeTasks(taskRes.value.data));
+            if (projRes.status === 'fulfilled' && projRes.value?.data?.length) setProjects(normalizeEmpProjects(projRes.value.data));
           });
         }
       }
-      if (psRes.status === 'fulfilled') setPayslips(normalizePayslips(psRes.value?.data));
-      if (perfRes.status === 'fulfilled') setPerformance(normalizePerformance(perfRes.value?.data));
-      if (trainRes.status === 'fulfilled') setTraining(normalizeTraining(trainRes.value?.data));
-      if (docsRes.status === 'fulfilled') setDocuments(normalizeDocs(docsRes.value?.data));
+      if (psRes.status === 'fulfilled' && psRes.value?.data?.length) setPayslips(normalizePayslips(psRes.value.data));
+      if (perfRes.status === 'fulfilled' && perfRes.value?.data?.length) setPerformance(normalizePerformance(perfRes.value.data));
+      if (trainRes.status === 'fulfilled' && trainRes.value?.data?.length) setTraining(normalizeTraining(trainRes.value.data));
+      if (catRes.status === 'fulfilled' && catRes.value?.data?.length) setCatalog(normalizeCatalog(catRes.value.data));
+      if (docsRes.status === 'fulfilled' && docsRes.value?.data?.length) setDocuments(normalizeDocs(docsRes.value.data));
     }).finally(() => setLoading(false));
   }, [user, accessToken]);
 
   useEffect(() => {
     if (!user || !accessToken || !CRM_ROLES.includes(effectiveRole)) return;
     refreshCrm();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [effectiveRole, accessToken]);
+  }, [user, accessToken, effectiveRole, refreshCrm]);
 
   // Reset to the first tab whenever the (real or previewed) role changes, since the
   // previously active tab may not exist in the new role's tab set.
@@ -1732,32 +2218,27 @@ export default function EmployeePortal() {
     setActiveTab('overview');
   }, [effectiveRole]);
 
-  if (initializing) return <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container"><LoadingSpinner /></div>;
+  if (initializing) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
   if (!user) { navigate('/login', { replace: true }); return null; }
-  if (loading) return <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container"><LoadingSpinner /></div>;
+  if (denied) {
+    navigate(profile.role === 'client' ? '/client' : '/login', { replace: true });
+    return null;
+  }
+  if (loading) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
 
   return (
-    <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container">
-      <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
-        <div className="flex items-center justify-between gap-4 mb-stack-lg">
+    <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container">
+      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
+        <div className="sticky top-0 z-20 mb-stack-lg flex items-center justify-between gap-4 bg-surface-container py-3 dark:bg-dark-surface-container">
           <div className="flex items-center gap-4">
             <Avatar name={profile.name} size="lg" />
             <div>
-              <p className="text-body-xs text-white/50 uppercase tracking-widest font-label-caps mb-1">{portalTitle}</p>
-              <h1 className="font-display text-headline-md text-white font-bold">{profile.name}</h1>
+              <p className="mb-1 font-label-caps text-body-xs uppercase tracking-widest text-white/50">{portalTitle}</p>
+              <h1 className="font-display text-headline-md font-bold text-white">{profile.name}</h1>
               <p className="text-body-sm text-white/70">{profile.email} &middot; {profile.designation} &middot; {profile.department}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 text-body-sm text-white/70">
-                <span className="font-label-caps text-label-caps uppercase">Preview role</span>
-                <select value={roleOverride || profile.role || ''} onChange={(e) => { const val = e.target.value === profile.role ? null : e.target.value; if (val) { localStorage.setItem('emp_role_override', val); window.location.href = ROLE_PATH_MAP[val] || '/employee'; } else { localStorage.removeItem('emp_role_override'); window.location.href = ROLE_PATH_MAP[profile.role] || '/employee'; } }}
-                  className="border border-outline-variant dark:border-dark-outline-variant rounded px-2 py-1.5 text-body-sm bg-white dark:bg-dark-surface text-ink dark:text-dark-ink">
-                  {EMPLOYEE_ROLES.map((r) => (
-                    <option key={r} value={r}>{r.replace('_', ' ')}{r === profile.role ? ' (actual)' : ''}</option>
-                  ))}
-                </select>
-              </label>
             <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
               Sign Out
             </Button>
@@ -1765,12 +2246,12 @@ export default function EmployeePortal() {
         </div>
 
         <div className="flex gap-stack-lg">
-          <aside className="w-56 shrink-0 hidden md:block">
+          <aside className="hidden w-56 shrink-0 md:block">
             <nav className="sticky top-24 flex flex-col gap-1">
               {portalTabs.map((tab) => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-label-caps text-label-caps uppercase text-left transition-colors ${
-                    activeTab === tab.id ? 'bg-white/10 text-white font-bold' : 'text-white/70 hover:bg-white/5 hover:text-white'
+                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
+                    activeTab === tab.id ? 'bg-white/10 font-bold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
                   }`}>
                   <Icon name={tab.icon} className="text-lg" />{tab.label}
                 </button>
@@ -1778,18 +2259,18 @@ export default function EmployeePortal() {
             </nav>
           </aside>
 
-          <div className="flex md:hidden flex-wrap gap-1 mb-stack-lg border-b border-outline-variant overflow-x-auto">
+          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant md:hidden">
             {portalTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.id ? 'text-brand font-bold border-brand' : 'text-ink-muted font-semibold border-transparent hover:text-ink hover:border-outline-variant'
+                className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
+                  activeTab === tab.id ? 'border-brand font-bold text-brand' : 'border-transparent font-semibold text-ink-muted hover:border-outline-variant hover:text-ink'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>
             ))}
           </div>
 
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             {activeTab === 'overview' && <Overview profile={profile} attendance={attendance} leaves={leaves} timesheets={timesheets} payslips={payslips} />}
             {activeTab === 'leads' && effectiveRole === 'sales' && <Leads leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
             {activeTab === 'proposals' && effectiveRole === 'sales' && <Proposals proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
@@ -1804,14 +2285,14 @@ export default function EmployeePortal() {
             {activeTab === 'invoices' && effectiveRole === 'finance' && <Invoices accessToken={accessToken} />}
             {activeTab === 'leave-approvals' && effectiveRole === 'hr' && <LeaveApprovals accessToken={accessToken} />}
             {activeTab === 'recruitment' && effectiveRole === 'hr' && <Recruitment accessToken={accessToken} />}
-            {activeTab === 'attendance' && <Attendance attendance={attendance} employeeId={employeeId} />}
-            {activeTab === 'leaves' && <Leaves leaves={leaves} employeeId={employeeId} accessToken={accessToken} />}
-            {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} employeeId={employeeId} accessToken={accessToken} />}
+            {activeTab === 'attendance' && <Attendance attendance={attendance} accessToken={accessToken} onChange={setAttendance} />}
+            {activeTab === 'leaves' && <Leaves leaves={leaves} accessToken={accessToken} />}
+            {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} accessToken={accessToken} />}
             {activeTab === 'payslips' && <Payslips payslips={payslips} />}
             {activeTab === 'tasks' && <Tasks tasks={tasks} />}
             {activeTab === 'projects' && <Projects projects={projects} />}
             {activeTab === 'performance' && <Performance reviews={performance} />}
-            {activeTab === 'training' && <Training courses={training} />}
+            {activeTab === 'training' && <Training courses={training} catalog={catalog} onEnroll={handleEnroll} enrollingId={enrollingId} />}
             {activeTab === 'documents' && <Documents docs={documents} />}
           </div>
         </div>

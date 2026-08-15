@@ -5,8 +5,8 @@ import Button from '../ui/Button.jsx';
 
 
 export default function Hero() {
-return (
-    <section className="relative min-h-[720px] flex items-center overflow-hidden py-section-padding px-margin-mobile md:px-margin-desktop bg-brand-dark">
+  return (
+    <section className="relative flex min-h-[720px] items-center overflow-hidden bg-brand-dark px-margin-mobile py-section-padding md:px-margin-desktop">
       {/* Background video */}
       <video
         autoPlay
@@ -14,33 +14,30 @@ return (
         loop
         playsInline
         preload="metadata"
-        className="absolute inset-0 w-full h-full object-cover"
+        className="absolute inset-0 size-full object-cover"
         src='/hero-video.mp4'
       />
 
       {/* Dark gradient overlay */}
-      <div
-        className="absolute inset-0"
-        style={{ background: 'linear-gradient(to right, rgba(10,37,64,0.92) 0%, rgba(15,52,96,0.75) 60%, rgba(10,37,64,0.4) 100%)' }}
-      />
+      <div className="absolute inset-0 bg-gradient-to-r from-brand-dark/90 via-surface/75 to-brand-dark/40" />
       {/* Decorative floating orbs */}
-      <div className="absolute top-20 right-1/4 w-64 h-64 rounded-full blur-3xl animate-float-slow pointer-events-none" style={{ background: 'rgba(0,212,255,0.08)' }} />
-      <div className="absolute bottom-10 left-1/3 w-48 h-48 rounded-full blur-2xl animate-float pointer-events-none" style={{ background: 'rgba(37,99,235,0.10)' }} />
+      <div className="animate-float-slow pointer-events-none absolute right-1/4 top-20 size-64 rounded-full bg-accent-cyan/10 blur-3xl" />
+      <div className="animate-float pointer-events-none absolute bottom-10 left-1/3 size-48 rounded-full bg-brand/10 blur-2xl" />
 
-      <div className="max-w-container mx-auto relative z-10">
-        <div className="flex flex-col gap-stack-lg w-full">
-          <Badge className="bg-white/10 border border-white/20 text-accent-cyan w-fit animate-hero-1">
+      <div className="relative z-10 mx-auto max-w-container">
+        <div className="flex w-full flex-col gap-stack-lg">
+          <Badge className="animate-hero-1 w-fit border border-white/20 bg-white/10 text-accent-cyan">
             Engineering Tomorrow
           </Badge>
-          <h1 className="font-display text-display-lg-mobile md:text-display-lg text-white leading-tight animate-hero-2 max-w-4xl">
+          <h1 className="animate-hero-2 max-w-4xl font-display text-display-lg-mobile leading-tight text-white md:text-display-lg">
             Transforming Businesses Through <span className="text-accent-cyan">Intelligent</span> Digital
             Solutions
           </h1>
-          <p className="font-body text-body-lg text-white max-w-xl animate-hero-3">
+          <p className="animate-hero-3 max-w-xl font-body text-body-lg text-white">
             Empowering global enterprises with high-performance architectures, AI-driven automation, and
             secure-by-design digital infrastructure.
           </p>
-          <div className="flex flex-wrap gap-4 pt-4 animate-hero-4">
+          <div className="animate-hero-4 flex flex-wrap gap-4 pt-4">
             <Button as={Link} to="/services" variant="primary" icon={<Icon name="arrow_forward" />}>
               Explore Solutions
             </Button>

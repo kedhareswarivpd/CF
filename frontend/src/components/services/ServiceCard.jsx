@@ -1,30 +1,31 @@
+import { Link } from 'react-router-dom';
 import Icon from '../ui/Icon.jsx';
 
 export default function ServiceCard({ service }) {
   return (
-    <div className="bg-surface-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant p-stack-lg rounded-lg transition-all duration-300 flex flex-col h-full hover:-translate-y-1 hover:shadow-card-hover">
-      <div className="w-12 h-12 rounded-lg bg-accent-cyan-pale flex items-center justify-center mb-stack-md">
-        <Icon name={service.icon} className="text-brand text-4xl leading-none" />
+    <div className="flex h-full flex-col rounded-lg border border-outline-variant bg-surface-white p-stack-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-card-hover dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="mb-stack-md flex size-12 items-center justify-center rounded-lg bg-accent-cyan-pale">
+        <Icon name={service.icon} className="text-4xl leading-none text-brand" />
       </div>
-      <h3 className="font-display text-headline-sm text-ink dark:text-dark-ink mb-stack-sm">{service.title}</h3>
-      <p className="font-body text-body-md text-white mb-stack-md">{service.description}</p>
+      <h3 className="mb-stack-sm font-display text-headline-sm text-ink dark:text-dark-ink">{service.title}</h3>
+      <p className="mb-stack-md font-body text-body-md text-white">{service.description}</p>
       <div className="mb-stack-md space-y-2">
         <p className="font-label-caps text-label-caps uppercase text-white">Key Features</p>
         <ul className="space-y-1">
           {service.features.map((feature) => (
             <li key={feature} className="flex items-center gap-2 text-body-md text-white">
-              <Icon name="check_circle" className="text-brand text-body-lg leading-none" />
+              <Icon name="check_circle" className="text-body-lg leading-none text-brand" />
               {feature}
             </li>
           ))}
         </ul>
       </div>
-      <div className="mt-auto pt-stack-md border-t border-outline-variant">
+      <div className="mt-auto border-t border-outline-variant pt-stack-md">
         <p className="font-body font-semibold text-white">Business Benefit</p>
-        <p className="text-body-md text-white mb-stack-md">{service.benefit}</p>
-        <a href="#" className="flex items-center w-fit text-brand font-label-caps text-label-caps uppercase hover:gap-2 gap-1 transition-all">
+        <p className="mb-stack-md text-body-md text-white">{service.benefit}</p>
+        <Link to="/services" className="flex w-fit items-center gap-1 font-label-caps text-label-caps uppercase text-brand transition-all hover:gap-2">
           Learn more <Icon name="arrow_forward" className="text-body-lg leading-none" />
-        </a>
+        </Link>
       </div>
     </div>
   );

@@ -21,8 +21,8 @@ from app.models.timesheet import Timesheet
 from app.models.user import User
 from app.models.enums import LeaveStatus
 from app.schemas.employee import (
-    AttendanceOut, EmployeeCreate, EmployeeDocumentCreate, EmployeeDocumentOut,
-    EmployeeOut, EmployeeUpdate, LeaveApply, LeaveOut, LeaveStatusUpdate,
+    AttendanceOut, EmployeeCreate, EmployeeDocumentOut,
+    EmployeeOut, LeaveApply, LeaveOut, LeaveStatusUpdate,
     PayslipOut, TimesheetCreate, TimesheetOut, TimesheetStatusUpdate,
 )
 from app.schemas.performance import PerformanceReviewOut
@@ -223,9 +223,28 @@ async def review_leave(leave_id: uuid.UUID, payload: LeaveStatusUpdate, db: Asyn
 @router.get("/timesheets", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
 async def list_all_timesheets(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params)):
     filters = {k: request.query_params.get(k) for k in ("employee_id", "project_id", "status") if request.query_params.get(k)}
-    items, total = await timesheet_crud.list(db, page, filters)
+    stmt = select(Timesheet).options(selectinload(Timesheet.employee))
+    count_stmt = select(func.count()).select_from(Timesheet)
+    for field, value in filters.items():
+        column = getattr(Timesheet, field, None)
+        if column is not None:
+            stmt = stmt.where(column == value)
+            count_stmt = count_stmt.where(column == value)
+    stmt = stmt.order_by(Timesheet.date.desc()).offset((page.page - 1) * page.limit).limit(page.limit)
+    result = await db.execute(stmt)
+    items = result.scalars().all()
+    total = (await db.execute(count_stmt)).scalar_one()
     meta = build_pagination_meta(total, page.page, page.limit)
-    return success_response(data=[TimesheetOut.model_validate(t) for t in items], message="Timesheets fetched", meta=meta)
+    data = []
+    for t in items:
+        out = TimesheetOut.model_validate(t).model_dump()
+        emp = t.employee
+        out["employee_code"] = emp.employee_code if emp else None
+        out["designation"] = emp.designation if emp else None
+        user = (await db.execute(select(User).where(User.id == emp.user_id))).scalar_one_or_none() if emp else None
+        out["employee_name"] = user.name if user else None
+        data.append(out)
+    return success_response(data=data, message="Timesheets fetched", meta=meta)
 
 
 @router.patch("/timesheets/{timesheet_id}/approve", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
@@ -239,58 +258,23 @@ async def review_timesheet(timesheet_id: uuid.UUID, payload: TimesheetStatusUpda
 async def list_employees(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params)):
     filters = {k: request.query_params.get(k) for k in ("department_id", "status", "employment_type") if request.query_params.get(k)}
     items, total = await crud.list(db, page, filters)
+    data = []
+    for e in items:
+        out = EmployeeOut.model_validate(e).model_dump()
+        if e.department_id:
+            dept = (await db.execute(select(Department).where(Department.id == e.department_id))).scalar_one_or_none()
+            out["department_name"] = dept.name if dept else None
+        else:
+            out["department_name"] = None
+        user = (await db.execute(select(User).where(User.id == e.user_id))).scalar_one_or_none()
+        out["name"] = user.name if user else None
+        out["email"] = user.email if user else None
+        data.append(out)
     meta = build_pagination_meta(total, page.page, page.limit)
-    return success_response(data=[EmployeeOut.model_validate(e) for e in items], message="Employees fetched", meta=meta)
+    return success_response(data=data, message="Employees fetched", meta=meta)
 
 
 @router.post("", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr"))])
 async def create_employee(payload: EmployeeCreate, db: AsyncSession = Depends(get_db)):
     employee = await crud.create(db, payload.model_dump())
     return success_response(data=EmployeeOut.model_validate(employee), message="Employee created successfully", status_code=201)
-
-
-@router.get("/{employee_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
-async def get_employee(employee_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    employee = await crud.get(db, employee_id)
-    return success_response(data=EmployeeOut.model_validate(employee))
-
-
-@router.put("/{employee_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "hr"))])
-async def update_employee(employee_id: uuid.UUID, payload: EmployeeUpdate, db: AsyncSession = Depends(get_db)):
-    employee = await crud.update(db, employee_id, payload.model_dump(exclude_unset=True))
-    return success_response(data=EmployeeOut.model_validate(employee), message="Employee updated successfully")
-
-
-@router.delete("/{employee_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "hr"))])
-async def delete_employee(employee_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    await crud.delete(db, employee_id)
-    return success_response(message="Employee removed successfully")
-
-
-# ---------- Documents (HR/Admin manage; employee reads their own via /me/documents) ----------
-@router.get("/{employee_id}/documents", response_model=dict, dependencies=[Depends(require_roles("admin", "hr"))])
-async def list_employee_documents(employee_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(EmployeeDocument).where(EmployeeDocument.employee_id == employee_id))
-    return success_response(data=[EmployeeDocumentOut.model_validate(d) for d in result.scalars().all()])
-
-
-@router.post("/{employee_id}/documents", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr"))])
-async def add_employee_document(employee_id: uuid.UUID, payload: EmployeeDocumentCreate, db: AsyncSession = Depends(get_db)):
-    document = EmployeeDocument(employee_id=employee_id, **payload.model_dump())
-    db.add(document)
-    await db.commit()
-    await db.refresh(document)
-    return success_response(data=EmployeeDocumentOut.model_validate(document), message="Document added", status_code=201)
-
-
-@router.delete("/{employee_id}/documents/{document_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "hr"))])
-async def delete_employee_document(employee_id: uuid.UUID, document_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
-        select(EmployeeDocument).where(EmployeeDocument.id == document_id, EmployeeDocument.employee_id == employee_id)
-    )
-    document = result.scalar_one_or_none()
-    if not document:
-        raise ApiError.not_found("Document not found")
-    await db.delete(document)
-    await db.commit()
-    return success_response(message="Document deleted")

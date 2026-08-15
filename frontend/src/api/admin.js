@@ -26,7 +26,6 @@ export const updateApplicationStatus = (token, id, status) => apiRequest(`/caree
 
 // ── Tickets (Support) ─────────────────────────────────────────────────────────
 export const fetchTickets   = (token, p = {}) => apiRequest(`/tickets${toQueryString(p)}`, { token });
-export const fetchTicket    = (token, id)     => apiRequest(`/tickets/${id}`, { token });
 export const updateTicket   = (token, id, b)  => apiRequest(`/tickets/${id}`, { method: 'PATCH', body: b, token });
 export const replyToTicket  = (token, id, b)  => apiRequest(`/tickets/${id}/replies`, { method: 'POST', body: b, token });
 
@@ -43,7 +42,6 @@ export const updateTestimonial = (token, id, b)  => apiRequest(`/testimonials/${
 // ── Tasks (QA / PM) ────────────────────────────────────────────────────────────
 export const fetchTasks       = (token, p = {}) => apiRequest(`/tasks${toQueryString(p)}`, { token });
 export const createTask       = (token, body)   => apiRequest('/tasks', { method: 'POST', body, token });
-export const updateTask       = (token, id, b)  => apiRequest(`/tasks/${id}`, { method: 'PUT', body: b, token });
 export const updateTaskStatus = (token, id, status) => apiRequest(`/tasks/${id}/status`, { method: 'PATCH', body: { status }, token });
 
 // ── Project team assignment (PM) ────────────────────────────────────────────────
@@ -52,7 +50,6 @@ export const assignProjectTeam = (token, id, employeeIds) => apiRequest(`/projec
 // ── Departments (Super Admin) ──────────────────────────────────────────────────
 export const fetchDepartments = (token, p = {}) => apiRequest(`/departments${toQueryString(p)}`, { token });
 export const createDepartment = (token, body)   => apiRequest('/departments', { method: 'POST', body, token });
-export const updateDepartment = (token, id, b)  => apiRequest(`/departments/${id}`, { method: 'PUT', body: b, token });
 export const deleteDepartment = (token, id)     => apiRequest(`/departments/${id}`, { method: 'DELETE', token });
 
 // ── GDPR — act on behalf of another user (Super Admin) ──────────────────────────
@@ -71,7 +68,6 @@ export const deleteProject      = (token, id)     => apiRequest(`/projects/${id}
 // ── Roles & Permissions ────────────────────────────────────────────────────
 export const fetchRoles       = (token, p = {}) => apiRequest(`/access-control/roles${toQueryString(p)}`, { token });
 export const createRole       = (token, body)   => apiRequest('/access-control/roles', { method: 'POST', body, token });
-export const updateRole       = (token, id, b)  => apiRequest(`/access-control/roles/${id}`, { method: 'PUT', body: b, token });
 export const deleteRole       = (token, id)     => apiRequest(`/access-control/roles/${id}`, { method: 'DELETE', token });
 export const fetchPermissions = (token, p = {}) => apiRequest(`/access-control/permissions${toQueryString(p)}`, { token });
 export const createPermission = (token, body)   => apiRequest('/access-control/permissions', { method: 'POST', body, token });
@@ -118,29 +114,5 @@ export const fetchReports  = (token, p = {}) => apiRequest(`/reports${toQueryStr
 export const generateReport = (token, body)  => apiRequest('/reports/generate', { method: 'POST', body, token });
 export const deleteReport  = (token, id)     => apiRequest(`/reports/${id}`, { method: 'DELETE', token });
 
-// ── Settings ───────────────────────────────────────────────────────────────
-export const fetchSettings  = (token)          => apiRequest('/settings', { token });
-export const upsertSetting  = (token, key, body) => apiRequest(`/settings/${key}`, { method: 'PUT', body, token });
-
 // ── Audit Logs ─────────────────────────────────────────────────────────────
 export const fetchAuditLogs = (token, p = {}) => apiRequest(`/audit-logs${toQueryString(p)}`, { token });
-
-// ── Notifications (compose/broadcast) ───────────────────────────────────────
-export const createNotification = (token, body) => apiRequest('/notifications', { method: 'POST', body, token });
-
-// ── Content management (Services, Solutions, Case Studies, Blog, Events, Downloads) ──
-function contentCrud(path) {
-  return {
-    fetch:  (token, p = {}) => apiRequest(`${path}${toQueryString(p)}`, { token }),
-    create: (token, body)   => apiRequest(path, { method: 'POST', body, token }),
-    update: (token, id, b)  => apiRequest(`${path}/${id}`, { method: 'PUT', body: b, token }),
-    delete: (token, id)     => apiRequest(`${path}/${id}`, { method: 'DELETE', token }),
-  };
-}
-
-export const servicesAdmin    = contentCrud('/services');
-export const solutionsAdmin   = contentCrud('/solutions');
-export const caseStudiesAdmin = contentCrud('/case-studies');
-export const blogsAdmin       = contentCrud('/blogs');
-export const eventsAdmin      = contentCrud('/events');
-export const downloadsAdmin   = contentCrud('/downloads');

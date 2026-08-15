@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { jsPDF } from 'jspdf';
 import Icon from '../components/ui/Icon.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
 import Badge from '../components/ui/Badge.jsx';
@@ -9,6 +8,7 @@ import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
+import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { clientPortalTabs } from '../data/portal.js';
 import { fetchMyProfile, fetchMyProjects, fetchMyInvoices, fetchMyTickets, fetchMyPayments, fetchMyMeetings, fetchMyFiles, fetchMyReports, createTicket as createTicketApi } from '../api/clients.js';
@@ -27,25 +27,25 @@ function Overview({ profile, projects, invoices, tickets }) {
   const activeProjects = projects.filter((p) => p.status === 'in_progress').length;
   return (
     <div className="space-y-stack-lg">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-gutter">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {[
           { label: 'Active Projects', value: activeProjects, icon: 'folder' },
           { label: 'Open Invoices', value: invoices.filter((i) => i.status === 'pending' || i.status === 'overdue').length, icon: 'receipt' },
           { label: 'Open Tickets', value: tickets.filter((t) => t.status !== 'resolved' && t.status !== 'closed').length, icon: 'support' },
           { label: 'Total Spend', value: `$${(invoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0) / 1000).toFixed(0)}K`, icon: 'payments' },
         ].map((stat) => (
-          <div key={stat.label} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-            <div className="flex items-center gap-3 mb-2">
-              <Icon name={stat.icon} className="text-brand text-2xl" />
-              <span className="font-label-caps text-label-caps text-ink-muted dark:text-white font-semibold">{stat.label}</span>
+          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-2 flex items-center gap-3">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
+              <span className="font-label-caps text-label-caps font-semibold text-ink-muted dark:text-white">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-brand-dark dark:text-white font-bold">{stat.value}</p>
+            <p className="font-stat text-stat-lg font-bold text-brand-dark dark:text-white">{stat.value}</p>
           </div>
         ))}
       </div>
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-        <h3 className="font-display text-headline-sm text-brand-dark dark:text-white font-bold mb-4">Profile</h3>
-        <div className="grid sm:grid-cols-2 gap-4">
+      <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <h3 className="mb-4 font-display text-headline-sm font-bold text-brand-dark dark:text-white">Profile</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
           {[
             { label: 'Company', value: profile.company_name },
             { label: 'Contact', value: profile.contact_name },
@@ -54,8 +54,8 @@ function Overview({ profile, projects, invoices, tickets }) {
             { label: 'Industry', value: profile.industry },
           ].map((f) => (
             <div key={f.label}>
-              <span className="font-label-caps text-label-caps text-ink-muted dark:text-white font-semibold">{f.label}</span>
-              <p className="text-body-md text-brand-dark dark:text-white font-semibold">{f.value}</p>
+              <span className="font-label-caps text-label-caps font-semibold text-ink-muted dark:text-white">{f.label}</span>
+              <p className="text-body-md font-semibold text-brand-dark dark:text-white">{f.value}</p>
             </div>
           ))}
         </div>
@@ -69,16 +69,16 @@ function Projects({ projects }) {
     <div className="space-y-stack-md">
       {projects.length === 0 && <EmptyState icon="folder" title="No projects yet" description="Your projects will appear here." />}
       {projects.map((p) => (
-        <div key={p.id} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-          <div className="flex items-start justify-between gap-4 mb-3">
+        <div key={p.id} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div className="mb-3 flex items-start justify-between gap-4">
             <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{p.title}</h3>
             <StatusBadge variant={STATUS_VARIANTS[p.status] || 'neutral'} className="whitespace-nowrap">{p.status.replace('_', ' ')}</StatusBadge>
           </div>
-          <div className="grid sm:grid-cols-3 gap-4 text-body-sm text-ink-muted dark:text-white mb-4">
+          <div className="mb-4 grid gap-4 text-body-sm text-ink-muted dark:text-white sm:grid-cols-3">
             <div>
               <span className="font-label-caps text-label-caps">Progress</span>
-              <div className="w-full h-2 bg-surface-container dark:bg-dark-surface-container rounded-full mt-1 overflow-hidden">
-                <div className="h-full bg-brand rounded-full transition-all" style={{ width: `${p.progress}%` }} />
+              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
+                <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress}%` }} />
               </div>
               <span className="text-body-sm">{p.progress}%</span>
             </div>
@@ -93,12 +93,12 @@ function Projects({ projects }) {
 
 function Invoices({ invoices }) {
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       {invoices.length === 0
         ? <div className="p-stack-lg"><EmptyState icon="receipt" title="No invoices yet" description="Your invoices will appear here." /></div>
         : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
               <tr>
                 <th className="px-stack-lg py-4">Invoice</th>
                 <th className="px-stack-lg py-4">Amount</th>
@@ -109,7 +109,7 @@ function Invoices({ invoices }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {invoices.map((inv) => (
-                <tr key={inv.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+                <tr key={inv.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                   <td className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{inv.id}</td>
                   <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">${inv.amount.toLocaleString()}</td>
                   <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{inv.issueDate}</td>
@@ -128,15 +128,19 @@ function Tickets({ tickets, onNewTicket }) {
   const [newTicket, setNewTicket] = useState({ subject: '', description: '' });
   const [showForm, setShowForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!newTicket.subject.trim()) return;
     setSubmitting(true);
+    setError('');
     try {
       await onNewTicket(newTicket.subject, newTicket.description);
       setNewTicket({ subject: '', description: '' });
       setShowForm(false);
+    } catch (err) {
+      setError(err?.message || 'Could not submit the ticket. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -148,25 +152,28 @@ function Tickets({ tickets, onNewTicket }) {
         <Button onClick={() => setShowForm(!showForm)} variant="primary" size="md" icon={<Icon name="add" />}>New Ticket</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="bg-white border border-outline-variant rounded-lg p-stack-lg space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg">
+          {error && (
+            <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>
+          )}
           <input type="text" placeholder="Subject" value={newTicket.subject}
             onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
-            className="w-full border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand" />
+            className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
           <textarea placeholder="Describe your issue..." value={newTicket.description}
             onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-            rows={3} className="w-full border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand" />
+            rows={3} className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit'}</Button>
             <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
           </div>
         </form>
       )}
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         {tickets.length === 0
           ? <div className="p-stack-lg"><EmptyState icon="support" title="No tickets yet" description="Submit a ticket to get support." /></div>
           : (
             <table className="w-full text-left">
-              <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+              <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
                 <tr>
                   <th className="px-stack-lg py-4">ID</th>
                   <th className="px-stack-lg py-4">Subject</th>
@@ -177,7 +184,7 @@ function Tickets({ tickets, onNewTicket }) {
               </thead>
               <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
                 {tickets.map((t) => (
-                  <tr key={t.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+                  <tr key={t.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                     <td className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{t.id}</td>
                     <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.subject}</td>
                     <td className="px-stack-lg py-4"><Badge className="text-label-caps">{t.priority}</Badge></td>
@@ -195,12 +202,12 @@ function Tickets({ tickets, onNewTicket }) {
 
 function Payments({ payments }) {
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       {payments.length === 0
         ? <div className="p-stack-lg"><EmptyState icon="payments" title="No payments yet" description="Your payment history will appear here." /></div>
         : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
               <tr>
                 <th className="px-stack-lg py-4">Payment ID</th>
                 <th className="px-stack-lg py-4">Invoice</th>
@@ -212,7 +219,7 @@ function Payments({ payments }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {payments.map((p) => (
-                <tr key={p.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+                <tr key={p.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                   <td className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{p.id}</td>
                   <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.invoice}</td>
                   <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">${p.amount.toLocaleString()}</td>
@@ -440,7 +447,8 @@ const CERTIFICATE_PREVIEW = {
   ],
 };
 
-function generateFilePDF(file) {
+async function generateFilePDF(file) {
+  const { jsPDF } = await import('jspdf');
   const preview = getPreviewForFile(file);
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const pageW = 210;
@@ -575,12 +583,12 @@ function Files({ files }) {
 
   return (
     <div className="space-y-4">
-      <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         {files.length === 0
           ? <div className="p-stack-lg"><EmptyState icon="folder_open" title="No files yet" description="Shared files will appear here." /></div>
           : (
             <table className="w-full text-left">
-              <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+              <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
                 <tr>
                   <th className="px-stack-lg py-4">Name</th>
                   <th className="px-stack-lg py-4">Category</th>
@@ -592,11 +600,11 @@ function Files({ files }) {
               </thead>
               <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
                 {files.map((f) => (
-                  <tr key={f.id} className={`hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors ${previewFile?.id === f.id ? 'bg-brand/5 dark:bg-brand/10' : ''}`}>
+                  <tr key={f.id} className={`transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low ${previewFile?.id === f.id ? 'bg-brand/5 dark:bg-brand/10' : ''}`}>
                     <td className="px-stack-lg py-4">
                       <div className="flex items-center gap-2">
-                        <Icon name="description" className="text-brand text-lg" />
-                        <button onClick={() => setPreviewFile(previewFile?.id === f.id ? null : f)} className="text-body-md text-brand-dark dark:text-dark-brand font-semibold hover:underline text-left cursor-pointer">{f.name}</button>
+                        <Icon name="description" className="text-lg text-brand" />
+                        <button onClick={() => setPreviewFile(previewFile?.id === f.id ? null : f)} className="cursor-pointer text-left text-body-md font-semibold text-brand-dark hover:underline dark:text-dark-brand">{f.name}</button>
                       </div>
                     </td>
                     <td className="px-stack-lg py-4"><Badge className="text-label-caps">{f.category}</Badge></td>
@@ -604,7 +612,7 @@ function Files({ files }) {
                     <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedOn}</td>
                     <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedBy}</td>
                     <td className="px-stack-lg py-4">
-                      <button onClick={() => generateFilePDF(f)} className="text-brand hover:text-brand-dark cursor-pointer" title="Download PDF">
+                      <button onClick={() => generateFilePDF(f)} className="cursor-pointer text-brand hover:text-brand-dark" title="Download PDF">
                         <Icon name="download" className="text-xl" />
                       </button>
                     </td>
@@ -616,21 +624,21 @@ function Files({ files }) {
       </div>
 
       {preview && (
-        <div className="bg-white dark:bg-dark-surface border border-brand/30 rounded-lg overflow-hidden">
-          <div className="flex items-center justify-between px-stack-lg py-4 bg-brand/5 dark:bg-brand/10 border-b border-brand/20">
-            <h3 className="font-display text-headline-sm text-brand-dark dark:text-white font-bold">Document Preview</h3>
-            <button onClick={() => setPreviewFile(null)} className="text-ink-muted hover:text-ink dark:text-white/60 dark:hover:text-white transition-colors cursor-pointer">
+        <div className="overflow-hidden rounded-lg border border-brand/30 bg-white dark:bg-dark-surface">
+          <div className="flex items-center justify-between border-b border-brand/20 bg-brand/5 px-stack-lg py-4 dark:bg-brand/10">
+            <h3 className="font-display text-headline-sm font-bold text-brand-dark dark:text-white">Document Preview</h3>
+            <button onClick={() => setPreviewFile(null)} className="cursor-pointer text-ink-muted transition-colors hover:text-ink dark:text-white/60 dark:hover:text-white">
               <Icon name="close" className="text-xl" />
             </button>
           </div>
-          <div className="px-stack-lg py-stack-md space-y-stack-md">
+          <div className="space-y-stack-md px-stack-lg py-stack-md">
             {preview.sections.map((s, i) => (
               <div key={i}>
-                {s.heading && <h4 className="font-display text-body-lg text-brand-dark dark:text-white font-bold mb-2">{s.heading}</h4>}
-                {s.content && <p className="text-body-md text-ink dark:text-white/90 leading-relaxed">{s.content}</p>}
+                {s.heading && <h4 className="mb-2 font-display text-body-lg font-bold text-brand-dark dark:text-white">{s.heading}</h4>}
+                {s.content && <p className="text-body-md leading-relaxed text-ink dark:text-white/90">{s.content}</p>}
                 {s.table && (
-                  <div className="overflow-x-auto mt-2">
-                    <table className="w-full text-left text-body-sm border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+                  <div className="mt-2 overflow-x-auto">
+                    <table className="w-full overflow-hidden rounded-lg border border-outline-variant text-left text-body-sm dark:border-dark-outline-variant">
                       <thead className="bg-surface-container dark:bg-dark-surface-container">
                         <tr>
                           {s.table.headers.map((h, hi) => (
@@ -664,31 +672,31 @@ function Meetings({ meetings }) {
     <div className="space-y-stack-md">
       {meetings.length === 0 && <EmptyState icon="video_call" title="No meetings scheduled" description="Upcoming meetings will appear here." />}
       {meetings.map((m) => (
-        <div key={m.id} className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg p-stack-lg">
-          <div className="flex items-start justify-between gap-4 mb-3">
+        <div key={m.id} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div className="mb-3 flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <Icon name="video_call" className="text-brand text-2xl" />
+              <Icon name="video_call" className="text-2xl text-brand" />
               <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{m.title}</h3>
             </div>
             <div className="flex items-center gap-3">
               <StatusBadge variant={STATUS_VARIANTS[m.status] || 'neutral'}>{m.status}</StatusBadge>
               {m.status === 'upcoming' && m.meeting_link && (
                 <a href={m.meeting_link} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-1 bg-brand text-white px-3 py-1.5 rounded font-label-caps text-label-caps uppercase hover:bg-brand-dark transition-colors">
+                  className="flex items-center gap-1 rounded bg-brand px-3 py-1.5 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark">
                   <Icon name="videocam" className="text-base" /> Join
                 </a>
               )}
             </div>
           </div>
-          <div className="grid sm:grid-cols-4 gap-4 text-body-sm text-ink-muted dark:text-white">
-            <div><span className="font-label-caps text-label-caps block">Date</span>{m.date}</div>
-            <div><span className="font-label-caps text-label-caps block">Time</span>{m.time}</div>
-            <div><span className="font-label-caps text-label-caps block">Duration</span>{m.duration}</div>
-            <div><span className="font-label-caps text-label-caps block">Type</span>{m.type}</div>
+          <div className="grid gap-4 text-body-sm text-ink-muted dark:text-white sm:grid-cols-4">
+            <div><span className="block font-label-caps text-label-caps">Date</span>{m.date}</div>
+            <div><span className="block font-label-caps text-label-caps">Time</span>{m.time}</div>
+            <div><span className="block font-label-caps text-label-caps">Duration</span>{m.duration}</div>
+            <div><span className="block font-label-caps text-label-caps">Type</span>{m.type}</div>
           </div>
           <div className="mt-3">
             <span className="font-label-caps text-label-caps text-ink-muted dark:text-white">Attendees: </span>
-            <span className="text-body-sm text-ink-muted dark:text-white">{m.attendees.join(', ')}</span>
+            <span className="text-body-sm text-ink-muted dark:text-white">{(m.attendees ?? []).join(', ') || '—'}</span>
           </div>
         </div>
       ))}
@@ -698,12 +706,12 @@ function Meetings({ meetings }) {
 
 function Reports({ reports }) {
   return (
-    <div className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden">
+    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       {reports.length === 0
         ? <div className="p-stack-lg"><EmptyState icon="bar_chart" title="No reports yet" description="Generated reports will appear here." /></div>
         : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-white/70">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
               <tr>
                 <th className="px-stack-lg py-4">Report</th>
                 <th className="px-stack-lg py-4">Type</th>
@@ -715,10 +723,10 @@ function Reports({ reports }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {reports.map((r) => (
-                <tr key={r.id} className="hover:bg-surface-low dark:hover:bg-dark-surface-low transition-colors">
+                <tr key={r.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
                   <td className="px-stack-lg py-4">
                     <div className="flex items-center gap-2">
-                      <Icon name="bar_chart" className="text-brand text-lg" />
+                      <Icon name="bar_chart" className="text-lg text-brand" />
                       <span className="text-body-md text-brand-dark dark:text-dark-brand">{r.title}</span>
                     </div>
                   </td>
@@ -801,6 +809,7 @@ const normalizeReports = (arr) => (Array.isArray(arr) ? arr.map(normalizeReport)
 export default function ClientPortal() {
   useDocumentTitle('Client Portal | CoreFusion Technologies');
   const { user, accessToken, initializing, logout } = useAuth();
+  const { denied } = useRoleGuard('client', '/login');
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
@@ -839,27 +848,24 @@ export default function ClientPortal() {
 
   const handleNewTicket = async (subject, description) => {
     if (!user || !accessToken) return;
-    try {
-      const res = await createTicketApi(accessToken, { subject, description: description || subject, priority: 'medium' });
-      const d = res?.data;
-      setTickets((prev) => [normalizeTicket(d), ...prev]);
-    } catch (err) {
-      console.error('Failed to create ticket:', err);
-    }
+    const res = await createTicketApi(accessToken, { subject, description: description || subject, priority: 'medium' });
+    const d = res?.data;
+    setTickets((prev) => [normalizeTicket(d), ...prev]);
   };
 
-  if (initializing) return <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container"><LoadingSpinner /></div>;
+  if (initializing) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
   if (!user) { navigate('/login', { replace: true }); return null; }
-  if (loading) return <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container"><LoadingSpinner /></div>;
+  if (denied) { navigate('/login', { replace: true }); return null; }
+  if (loading) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
 
   return (
-    <div className="py-section-padding bg-surface-container dark:bg-dark-surface-container">
-      <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
-        <div className="flex items-center justify-between gap-4 mb-stack-lg">
+    <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container">
+      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
+        <div className="sticky top-0 z-20 mb-stack-lg flex items-center justify-between gap-4 bg-surface-container py-3 dark:bg-dark-surface-container">
           <div className="flex items-center gap-4">
             <Avatar name={profile.contact_name || 'Client'} size="lg" />
             <div>
-              <h1 className="font-display text-headline-md text-white font-bold">{profile.contact_name || 'Client'}</h1>
+              <h1 className="font-display text-headline-md font-bold text-white">{profile.contact_name || 'Client'}</h1>
               <p className="text-body-sm text-white/70">{profile.email || ''} &middot; {profile.company_name}</p>
             </div>
           </div>
@@ -869,12 +875,12 @@ export default function ClientPortal() {
         </div>
 
         <div className="flex gap-stack-lg">
-          <aside className="w-56 shrink-0 hidden md:block">
+          <aside className="hidden w-56 shrink-0 md:block">
             <nav className="flex flex-col gap-1">
               {clientPortalTabs.map((tab) => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg font-label-caps text-label-caps uppercase text-left transition-colors ${
-                    activeTab === tab.id ? 'bg-brand/10 text-white font-bold' : 'text-white/70 hover:bg-white/10 hover:text-white'
+                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
+                    activeTab === tab.id ? 'bg-brand/10 font-bold text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
                   }`}>
                   <Icon name={tab.icon} className="text-lg" />{tab.label}
                 </button>
@@ -882,18 +888,18 @@ export default function ClientPortal() {
             </nav>
           </aside>
 
-          <div className="flex md:hidden flex-wrap gap-1 mb-stack-lg border-b border-outline-variant overflow-x-auto">
+          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant md:hidden">
             {clientPortalTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-3 font-label-caps text-label-caps uppercase border-b-2 transition-colors whitespace-nowrap ${
-                  activeTab === tab.id ? 'text-white font-bold border-white' : 'text-white/70 font-semibold border-transparent hover:text-white hover:border-white/30'
+                className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
+                  activeTab === tab.id ? 'border-white font-bold text-white' : 'border-transparent font-semibold text-white/70 hover:border-white/30 hover:text-white'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>
             ))}
           </div>
 
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             {activeTab === 'overview' && <Overview profile={profile} projects={projects} invoices={invoices} tickets={tickets} />}
             {activeTab === 'projects' && <Projects projects={projects} />}
             {activeTab === 'invoices' && <Invoices invoices={invoices} />}

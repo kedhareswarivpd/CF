@@ -3,14 +3,12 @@ import LoadingSpinner from '../ui/LoadingSpinner.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Reveal from '../ui/Reveal.jsx';
 import Icon from '../ui/Icon.jsx';
+import useFocusTrap from '../../hooks/useFocusTrap.js';
 
 export default function GalleryGrid({ albums }) {
-  if (!albums) return <LoadingSpinner />;
-  if (!albums.length) return <EmptyState icon="photo_library" title="No albums available" description="Gallery is empty." />;
   const [activeAlbum, setActiveAlbum] = useState(0);
   const [lightbox, setLightbox] = useState(null);
-  const album = albums[activeAlbum];
-  const lightboxRef = useRef(null);
+  const lightboxRef = useFocusTrap(!!lightbox);
   const prevFocusRef = useRef(null);
 
   useEffect(() => {
@@ -24,7 +22,11 @@ export default function GalleryGrid({ albums }) {
       clearTimeout(timer);
       prevFocusRef.current?.focus();
     };
-  }, [lightbox]);
+  }, [lightbox, lightboxRef]);
+
+  if (!albums) return <LoadingSpinner />;
+  if (!albums.length) return <EmptyState icon="photo_library" title="No albums available" description="Gallery is empty." />;
+  const album = albums[activeAlbum];
 
   const handleLightboxKeyDown = (e) => {
     if (e.key === 'Escape') {
@@ -41,37 +43,20 @@ export default function GalleryGrid({ albums }) {
       setLightbox({ ...album.images[next], index: next });
       return;
     }
-    if (e.key === 'Tab') {
-      const focusable = lightboxRef.current?.querySelectorAll('button, [tabindex]:not([tabindex="-1"])');
-      if (!focusable || focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
-      }
-    }
   };
 
   return (
     <section className="py-section-padding">
-      <div className="max-w-container mx-auto px-margin-mobile md:px-margin-desktop">
-        <div className="flex flex-wrap gap-2 mb-stack-lg">
+      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
+        <div className="mb-stack-lg flex flex-wrap gap-2">
           {albums.map((a, i) => (
             <button
               key={a.name}
               onClick={() => { setActiveAlbum(i); setLightbox(null); }}
-              className={`px-4 py-2 rounded-full font-label-caps text-label-caps uppercase transition-all ${
+              className={`rounded-full px-4 py-2 font-label-caps text-label-caps uppercase transition-all ${
                 activeAlbum === i
                   ? 'bg-brand text-white'
-                  : 'bg-surface-container dark:bg-dark-surface-container text-ink-muted dark:text-dark-ink-muted hover:bg-outline-variant dark:hover:bg-dark-outline-variant'
+                  : 'bg-surface-container text-ink-muted hover:bg-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted dark:hover:bg-dark-outline-variant'
               }`}
             >
               {a.name}
@@ -86,24 +71,24 @@ export default function GalleryGrid({ albums }) {
                 <p className="text-body-md text-ink-muted dark:text-dark-ink-muted">{album.description}</p>
               </div>
             </Reveal>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-gutter">
+            <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
               {album.images.map((img, i) => (
                 <Reveal key={i} from="zoom" delay={i * 60}>
                   <button
                     onClick={() => setLightbox({ ...img, index: i })}
-                    className="w-full aspect-video bg-surface-container dark:bg-dark-surface-container rounded-lg border border-outline-variant dark:border-dark-outline-variant flex items-center justify-center hover:border-brand transition-colors group relative overflow-hidden"
+                    className="group relative flex aspect-video w-full items-center justify-center overflow-hidden rounded-lg border border-outline-variant bg-surface-container transition-colors hover:border-brand dark:border-dark-outline-variant dark:bg-dark-surface-container"
                   >
                     {img.src ? (
                       <>
-                        <img src={img.src} alt={img.alt} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                        <div className="absolute inset-0 bg-brand-dark/0 group-hover:bg-brand-dark/30 transition-all flex items-end">
-                          <span className="w-full text-white text-body-sm px-3 py-2 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity text-left">{img.caption}</span>
+                        <img src={img.src} alt={img.alt} className="size-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                        <div className="absolute inset-0 flex items-end bg-brand-dark/0 transition-all group-hover:bg-brand-dark/30">
+                          <span className="w-full bg-gradient-to-t from-black/60 to-transparent px-3 py-2 text-left text-body-sm text-white opacity-0 transition-opacity group-hover:opacity-100">{img.caption}</span>
                         </div>
                       </>
                     ) : (
-                      <div className="flex flex-col items-center gap-2 text-ink-muted dark:text-dark-ink-muted group-hover:text-brand dark:group-hover:text-dark-brand transition-colors">
+                      <div className="flex flex-col items-center gap-2 text-ink-muted transition-colors group-hover:text-brand dark:text-dark-ink-muted dark:group-hover:text-dark-brand">
                         <Icon name="image" className="text-4xl" />
-                        <span className="text-body-sm px-2 text-center">{img.caption}</span>
+                        <span className="px-2 text-center text-body-sm">{img.caption}</span>
                       </div>
                     )}
                   </button>
@@ -120,34 +105,34 @@ export default function GalleryGrid({ albums }) {
           role="dialog"
           aria-modal="true"
           aria-label="Image viewer"
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
           onClick={() => setLightbox(null)}
           onKeyDown={handleLightboxKeyDown}
         >
-          <div className="bg-white dark:bg-dark-surface rounded-lg max-w-3xl w-full p-stack-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-start mb-4">
+          <div className="w-full max-w-3xl rounded-lg bg-white p-stack-lg dark:bg-dark-surface" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-start justify-between">
               <div>
                 <p className="font-body text-body-sm text-ink-muted dark:text-dark-ink-muted">{lightbox.caption}</p>
               </div>
-              <button onClick={() => setLightbox(null)} className="text-ink-muted dark:text-dark-ink-muted hover:text-brand dark:hover:text-dark-brand">
+              <button onClick={() => setLightbox(null)} className="text-ink-muted hover:text-brand dark:text-dark-ink-muted dark:hover:text-dark-brand">
                 <Icon name="close" className="text-2xl" />
               </button>
             </div>
             <div
               tabIndex={0}
-              className="aspect-video bg-surface-container dark:bg-dark-surface-container rounded-lg overflow-hidden flex items-center justify-center"
+              className="flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-surface-container dark:bg-dark-surface-container"
             >
               {lightbox.src
-                ? <img src={lightbox.src} alt={lightbox.alt} className="w-full h-full object-cover" />
+                ? <img src={lightbox.src} alt={lightbox.alt} className="size-full object-cover" />
                 : <Icon name="image" className="text-6xl text-ink-muted/40" />}
             </div>
-            <div className="flex justify-between mt-4">
+            <div className="mt-4 flex justify-between">
               <button
                 onClick={() => {
                   const prev = (lightbox.index - 1 + album.images.length) % album.images.length;
                   setLightbox({ ...album.images[prev], index: prev });
                 }}
-                className="text-ink-muted dark:text-dark-ink-muted hover:text-brand dark:hover:text-dark-brand font-label-caps text-label-caps uppercase flex items-center gap-1"
+                className="flex items-center gap-1 font-label-caps text-label-caps uppercase text-ink-muted hover:text-brand dark:text-dark-ink-muted dark:hover:text-dark-brand"
               >
                 <Icon name="chevron_left" /> Previous
               </button>
@@ -159,7 +144,7 @@ export default function GalleryGrid({ albums }) {
                   const next = (lightbox.index + 1) % album.images.length;
                   setLightbox({ ...album.images[next], index: next });
                 }}
-                className="text-ink-muted dark:text-dark-ink-muted hover:text-brand dark:hover:text-dark-brand font-label-caps text-label-caps uppercase flex items-center gap-1"
+                className="flex items-center gap-1 font-label-caps text-label-caps uppercase text-ink-muted hover:text-brand dark:text-dark-ink-muted dark:hover:text-dark-brand"
               >
                 Next <Icon name="chevron_right" />
               </button>

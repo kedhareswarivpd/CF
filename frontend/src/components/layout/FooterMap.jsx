@@ -36,17 +36,17 @@ export default function FooterMap() {
   const [active, setActive] = useState(0);
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="flex w-full flex-col">
       {/* Tab bar */}
-      <div className="flex overflow-x-auto scrollbar-hide bg-slate-100 border-b border-slate-200">
+      <div className="scrollbar-hide flex overflow-x-auto border-b border-slate-200 bg-slate-100">
         {OFFICES.map((office, i) => (
           <button
             key={office.name}
             onClick={() => setActive(i)}
-            className={`flex-shrink-0 px-4 py-2.5 text-xs font-semibold tracking-wide transition-colors whitespace-nowrap border-b-2 ${
+            className={`flex-shrink-0 whitespace-nowrap border-b-2 px-4 py-2.5 text-xs font-semibold tracking-wide transition-colors ${
               active === i
-                ? 'border-brand text-brand bg-white'
-                : 'border-transparent text-slate-500 hover:text-slate-800 hover:bg-slate-50'
+                ? 'border-brand bg-white text-brand'
+                : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800'
             }`}
           >
             {office.label ? `★ ${office.name}` : office.name}
@@ -55,7 +55,7 @@ export default function FooterMap() {
       </div>
 
       {/* Map iframe */}
-      <div className="relative w-full h-64 md:h-80">
+      <div className="relative h-64 w-full md:h-80">
         {OFFICES.map((office, i) => (
           <iframe
             key={office.name}

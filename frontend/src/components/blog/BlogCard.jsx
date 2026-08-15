@@ -4,19 +4,19 @@ import Icon from '../ui/Icon.jsx';
 
 export default function BlogCard({ post }) {
   return (
-    <article className="bg-white dark:bg-dark-surface border border-outline-variant dark:border-dark-outline-variant rounded-lg overflow-hidden hover:shadow-card-hover transition-all hover:-translate-y-1 flex flex-col h-full">
-      <div className="p-stack-lg flex flex-col h-full">
-        <div className="flex items-center gap-2 mb-3">
-          <Badge className="bg-accent-cyan-pale text-brand text-label-caps">{post.category}</Badge>
+    <article className="flex h-full flex-col overflow-hidden rounded-lg border border-outline-variant bg-white transition-all hover:-translate-y-1 hover:shadow-card-hover dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="flex h-full flex-col p-stack-lg">
+        <div className="mb-3 flex items-center gap-2">
+          <Badge className="bg-accent-cyan-pale text-label-caps text-brand">{post.category}</Badge>
         </div>
-        <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-3">{post.title}</h3>
-        <p className="text-body-md text-ink-muted dark:text-dark-ink-muted mb-4 flex-1">{post.excerpt}</p>
-        <div className="flex items-center gap-4 text-body-sm text-ink-muted dark:text-dark-ink-muted pt-4 border-t border-outline-variant dark:border-dark-outline-variant">
+        <h3 className="mb-3 font-display text-headline-sm text-brand-dark dark:text-dark-brand">{post.title}</h3>
+        <p className="mb-4 flex-1 text-body-md text-ink-muted dark:text-dark-ink-muted">{post.excerpt}</p>
+        <div className="flex items-center gap-4 border-t border-outline-variant pt-4 text-body-sm text-ink-muted dark:border-dark-outline-variant dark:text-dark-ink-muted">
           <div>
             <p className="font-semibold text-ink dark:text-dark-ink">{post.author}</p>
-            <p className="text-label-caps text-label-caps">{post.role}</p>
+            <p className="text-label-caps">{post.role}</p>
           </div>
-          <div className="ml-auto flex items-center gap-3 text-label-caps text-label-caps uppercase">
+          <div className="ml-auto flex items-center gap-3 text-label-caps uppercase">
             <span className="flex items-center gap-1">
               <Icon name="calendar_today" className="text-body-md leading-none" />
               {post.publishedAt}
@@ -27,7 +27,7 @@ export default function BlogCard({ post }) {
             </span>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="mt-4 flex flex-wrap gap-2">
           {post.tags.map((t) => (
             <StatusBadge key={t} variant="neutral">{t}</StatusBadge>
           ))}

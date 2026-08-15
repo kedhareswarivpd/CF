@@ -12,18 +12,21 @@ export class ApiRequestError extends Error {
 /**
  * Low-level request helper. Returns the parsed `{ success, data, message, meta }`
  * envelope the FastAPI backend sends back (see app/utils/responses.py).
+ * When `body` is a FormData instance it is sent as-is (multipart) — the browser
+ * sets the boundary, so no Content-Type is forced.
  */
 export async function apiRequest(path, { method = 'GET', body, token, headers, signal } = {}) {
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
   let response;
   try {
     response = await fetch(`${API_URL}${path}`, {
       method,
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...headers,
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
       signal,
     });
   } catch (networkError) {

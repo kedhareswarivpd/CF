@@ -2,19 +2,19 @@ import Badge from '../ui/Badge.jsx';
 
 export default function ServicesHero() {
   return (
-    <section className="relative overflow-hidden bg-surface-white py-section-padding px-margin-mobile md:px-margin-desktop">
-      <div className="absolute -top-20 -right-20 w-80 h-80 rounded-full bg-accent-cyan/8 blur-3xl pointer-events-none animate-float-slow" />
-      <div className="max-w-container mx-auto grid md:grid-cols-2 gap-stack-lg items-center">
+    <section className="relative overflow-hidden bg-surface-white px-margin-mobile py-section-padding md:px-margin-desktop">
+      <div className="animate-float-slow pointer-events-none absolute -right-20 -top-20 size-80 rounded-full bg-accent-cyan/10 blur-3xl" />
+      <div className="mx-auto grid max-w-container items-center gap-stack-lg md:grid-cols-2">
         <div className="flex flex-col gap-stack-md">
-          <Badge className="bg-accent-cyan-pale text-brand w-fit animate-hero-1">High-Performance Engineering</Badge>
-          <h1 className="font-display text-display-lg-mobile md:text-display-lg text-ink animate-hero-2">Our Technology Offerings</h1>
-          <p className="font-body text-body-lg text-white max-w-xl animate-hero-3">
+          <Badge className="animate-hero-1 w-fit bg-accent-cyan-pale text-brand">High-Performance Engineering</Badge>
+          <h1 className="animate-hero-2 font-display text-display-lg-mobile text-ink md:text-display-lg">Our Technology Offerings</h1>
+          <p className="animate-hero-3 max-w-xl font-body text-body-lg text-white">
             Engineered for scale, security, and velocity. We bridge the gap between complex enterprise needs
             and cutting-edge digital implementation.
           </p>
         </div>
-        <div className="hidden md:block animate-hero-panel">
-          <div className="glass-panel-light p-stack-lg rounded-lg flex flex-col gap-stack-md animate-float">
+        <div className="animate-hero-panel hidden md:block">
+          <div className="glass-panel-light animate-float flex flex-col gap-stack-md rounded-lg p-stack-lg">
             <div className="flex items-center justify-between border-b border-outline-variant pb-stack-sm">
               <span className="font-label-caps text-label-caps uppercase text-white">Real-time Delivery Metrics</span>
               <span className="material-symbols-outlined text-white">bolt</span>

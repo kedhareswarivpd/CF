@@ -1,45 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import require_roles
-from app.core.errors import ApiError
 from app.core.logger import logger
 from app.models.analytics import PageView
-from app.schemas.analytics import AnalyticsSummary, PageViewCreate, PageViewStats
+from app.schemas.analytics import AnalyticsSummary, PageViewStats
 from app.utils.responses import success_response
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
-
-
-@router.post("/track", response_model=dict)
-async def track_page_view(payload: PageViewCreate, request: Request, db: AsyncSession = Depends(get_db)):
-    try:
-        if not payload.path or not payload.path.strip():
-            raise HTTPException(
-                status_code=400,
-                detail="Path is required and cannot be empty"
-            )
-        
-        view = PageView(
-            path=payload.path,
-            ip_address=payload.ip_address or request.headers.get("x-forwarded-for", request.client.host if request.client else None),
-            user_agent=payload.user_agent or request.headers.get("user-agent"),
-            referrer=payload.referrer or request.headers.get("referer"),
-            country=payload.country,
-        )
-        db.add(view)
-        await db.commit()
-        return success_response(message="Page view tracked")
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.exception(f"Failed to track page view: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to track page view: {str(e)}"
-        )
 
 
 @router.get("/summary", response_model=dict, dependencies=[Depends(require_roles("admin", "marketing"))])

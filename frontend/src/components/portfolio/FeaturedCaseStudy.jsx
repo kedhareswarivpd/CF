@@ -5,28 +5,28 @@ import Icon from '../ui/Icon.jsx';
 export default function FeaturedCaseStudy() {
   const cs = featuredCaseStudy;
   return (
-    <section className="py-stack-xl px-margin-mobile md:px-margin-desktop bg-surface dark:bg-dark-surface">
-      <div className="max-w-container mx-auto">
-        <div className="bg-white dark:bg-dark-surface rounded-lg overflow-hidden shadow-card flex flex-col lg:flex-row border border-outline-variant dark:border-dark-outline-variant">
-          <div className="lg:w-3/5 h-80 lg:h-auto relative overflow-hidden group">
-            <div className="absolute inset-0 bg-brand/40 group-hover:bg-brand/20 transition-all z-10" />
-            <img className="w-full h-full object-cover" alt="High-tech data command center" src={cs.image} />
+    <section className="bg-surface px-margin-mobile py-stack-xl dark:bg-dark-surface md:px-margin-desktop">
+      <div className="mx-auto max-w-container">
+        <div className="flex flex-col overflow-hidden rounded-lg border border-outline-variant bg-white shadow-card dark:border-dark-outline-variant dark:bg-dark-surface lg:flex-row">
+          <div className="group relative h-80 overflow-hidden lg:h-auto lg:w-3/5">
+            <div className="absolute inset-0 z-10 bg-brand/40 transition-all group-hover:bg-brand/20" />
+            <img className="size-full object-cover" alt="High-tech data command center" src={cs.image} />
             <div className="absolute bottom-8 left-8 z-20 flex gap-4">
-              <span className="bg-accent-cyan text-brand-dark font-bold px-4 py-1 rounded text-body-sm">
+              <span className="rounded bg-accent-cyan px-4 py-1 text-body-sm font-bold text-brand-dark">
                 {cs.tagPrimary}
               </span>
-              <span className="bg-white/90 backdrop-blur text-brand px-4 py-1 rounded text-body-sm">
+              <span className="rounded bg-white/90 px-4 py-1 text-body-sm text-brand backdrop-blur">
                 {cs.tagSecondary}
               </span>
             </div>
           </div>
-          <div className="lg:w-2/5 p-12 flex flex-col justify-center gap-stack-md">
+          <div className="flex flex-col justify-center gap-stack-md p-12 lg:w-2/5">
             <h2 className="font-display text-headline-md text-brand">{cs.title}</h2>
             <p className="font-body text-body-md text-ink-muted">{cs.description}</p>
-            <div className="grid grid-cols-2 gap-4 my-4">
+            <div className="my-4 grid grid-cols-2 gap-4">
               {cs.stats.map((stat) => (
                 <div key={stat.label}>
-                  <span className="font-label-caps text-label-caps uppercase text-outline block mb-1">
+                  <span className="mb-1 block font-label-caps text-label-caps uppercase text-outline">
                     {stat.label}
                   </span>
                   <span className="text-xl font-bold text-brand">{stat.value}</span>
@@ -35,10 +35,10 @@ export default function FeaturedCaseStudy() {
             </div>
             <Link
               to={`/portfolio/success/${cs.slug}`}
-              className="flex items-center gap-2 font-label-caps text-label-caps uppercase text-brand hover:text-brand-dark transition-all group w-fit"
+              className="group flex w-fit items-center gap-2 font-label-caps text-label-caps uppercase text-brand transition-all hover:text-brand-dark"
             >
               Read Full Success Story
-              <Icon name="arrow_forward" className="group-hover:translate-x-1 transition-transform" />
+              <Icon name="arrow_forward" className="transition-transform group-hover:translate-x-1" />
             </Link>
           </div>
         </div>

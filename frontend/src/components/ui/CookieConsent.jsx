@@ -1,46 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import useFocusTrap from '../../hooks/useFocusTrap.js';
 
 const STORAGE_KEY = 'corefusion.cookies';
 const DEFAULT_PREFS = { essential: true, analytics: false, marketing: false };
-
-function useFocusTrap(active) {
-  const ref = useRef(null);
-
-  useEffect(() => {
-    if (!active) return;
-
-    const trap = ref.current;
-    if (!trap) return;
-
-    const focusable = trap.querySelectorAll(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-
-    first?.focus();
-
-    function handler(e) {
-      if (e.key !== 'Tab') return;
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last?.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first?.focus();
-        }
-      }
-    }
-
-    trap.addEventListener('keydown', handler);
-    return () => trap.removeEventListener('keydown', handler);
-  }, [active]);
-
-  return ref;
-}
 
 export default function CookieConsent() {
   const [visible, setVisible] = useState(false);
@@ -87,30 +49,30 @@ export default function CookieConsent() {
   return (
     <>
       <div
-        className="fixed bottom-0 left-0 right-0 z-50 bg-brand-dark text-white px-margin-mobile md:px-margin-desktop py-stack-lg"
+        className="fixed inset-x-0 bottom-0 z-50 bg-brand-dark px-margin-mobile py-stack-lg text-white md:px-margin-desktop"
         role="region"
         aria-label="Cookie consent banner"
       >
-        <p className="text-body-sm mb-stack-md max-w-container mx-auto">
+        <p className="mx-auto mb-stack-md max-w-container text-body-sm">
           We use cookies to enhance your experience. By continuing to visit this site you agree to
           our use of cookies.
         </p>
-        <div className="flex flex-wrap gap-4 max-w-container mx-auto">
+        <div className="mx-auto flex max-w-container flex-wrap gap-4">
           <button
             onClick={acceptAll}
-            className="bg-white dark:bg-dark-surface text-brand-dark dark:text-dark-brand px-6 py-2 rounded font-label-caps text-label-caps uppercase hover:bg-accent-cyan transition-colors"
+            className="rounded bg-white px-6 py-2 font-label-caps text-label-caps uppercase text-brand-dark transition-colors hover:bg-accent-cyan dark:bg-dark-surface dark:text-dark-brand"
           >
             Accept All
           </button>
           <button
             onClick={rejectAll}
-            className="border border-white/40 text-white px-6 py-2 rounded font-label-caps text-label-caps uppercase hover:bg-white/10 transition-colors"
+            className="rounded border border-white/40 px-6 py-2 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-white/10"
           >
             Reject All
           </button>
           <button
             onClick={() => setShowSettings(true)}
-            className="text-accent-cyan underline font-label-caps text-label-caps uppercase hover:text-white transition-colors"
+            className="font-label-caps text-label-caps uppercase text-accent-cyan underline transition-colors hover:text-white"
           >
             Cookie Settings
           </button>
@@ -119,18 +81,18 @@ export default function CookieConsent() {
 
       {showSettings && (
         <div
-          className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="cookie-settings-title"
         >
           <div
             ref={modalRef}
-            className="bg-white dark:bg-dark-surface rounded-lg p-stack-lg max-w-sm w-full text-ink dark:text-dark-ink"
+            className="w-full max-w-sm rounded-lg bg-white p-stack-lg text-ink dark:bg-dark-surface dark:text-dark-ink"
           >
             <h3
               id="cookie-settings-title"
-              className="font-display text-headline-sm text-brand-dark dark:text-dark-brand mb-4"
+              className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand"
             >
               Cookie Settings
             </h3>
@@ -158,16 +120,16 @@ export default function CookieConsent() {
                 />
               </label>
             </div>
-            <div className="flex gap-3 mt-6">
+            <div className="mt-6 flex gap-3">
               <button
                 onClick={savePreferences}
-                className="flex-1 bg-brand text-white py-2.5 rounded font-label-caps text-label-caps uppercase hover:bg-brand-dark transition-colors"
+                className="flex-1 rounded bg-brand py-2.5 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark"
               >
                 Save Preferences
               </button>
               <button
                 onClick={() => setShowSettings(false)}
-                className="flex-1 border border-outline-variant dark:border-dark-outline-variant text-ink dark:text-dark-ink py-2.5 rounded font-label-caps text-label-caps uppercase hover:bg-surface-dim dark:hover:bg-dark-surface-dim transition-colors"
+                className="flex-1 rounded border border-outline-variant py-2.5 font-label-caps text-label-caps uppercase text-ink transition-colors hover:bg-surface-dim dark:border-dark-outline-variant dark:text-dark-ink dark:hover:bg-dark-surface-dim"
               >
                 Cancel
               </button>

@@ -12,7 +12,7 @@ from app.models.enums import LeadStatus, NotificationType, ProposalStatus
 from app.models.lead import Lead
 from app.models.proposal import Proposal
 from app.models.user import User
-from app.schemas.crm import ProposalCreate, ProposalOut, ProposalUpdate
+from app.schemas.crm import ProposalCreate, ProposalOut
 from app.services.notification_service import notify_roles
 from app.utils.pagination import PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
@@ -34,22 +34,10 @@ async def list_proposals(request: Request, db: AsyncSession = Depends(get_db), p
     return success_response(data=[ProposalOut.model_validate(p) for p in items], message="Proposals fetched", meta=meta)
 
 
-@router.get("/{proposal_id}", response_model=dict)
-async def get_proposal(proposal_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    proposal = await crud.get(db, proposal_id)
-    return success_response(data=ProposalOut.model_validate(proposal))
-
-
 @router.post("", response_model=dict, status_code=201)
 async def create_proposal(payload: ProposalCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     proposal = await crud.create(db, {**payload.model_dump(), "created_by": current_user.id})
     return success_response(data=ProposalOut.model_validate(proposal), message="Proposal drafted", status_code=201)
-
-
-@router.patch("/{proposal_id}", response_model=dict)
-async def update_proposal(proposal_id: uuid.UUID, payload: ProposalUpdate, db: AsyncSession = Depends(get_db)):
-    proposal = await crud.update(db, proposal_id, payload.model_dump(exclude_unset=True))
-    return success_response(data=ProposalOut.model_validate(proposal), message="Proposal updated")
 
 
 @router.post("/{proposal_id}/send", response_model=dict)

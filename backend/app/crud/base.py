@@ -65,8 +65,8 @@ class CRUDBase(Generic[ModelType]):
             result = await db.execute(query)
             total = (await db.execute(count_query)).scalar_one()
         except Exception as exc:
-            logger.warning("Database query failed for %s list; returning empty results: %s", self.model.__name__, exc)
-            return [], 0
+            logger.exception("Database query failed for %s list", self.model.__name__)
+            raise ApiError.internal(f"Failed to fetch {self.model.__name__.lower()} list") from exc
 
         return result.scalars().unique().all(), total
 
@@ -97,18 +97,15 @@ class CRUDBase(Generic[ModelType]):
             await db.commit()
             await db.refresh(obj)
             return obj
-        except Exception as e:
+        except Exception:
             await db.rollback()
-            logger.exception("Database create failed for %s: %s", self.model.__name__, e)
-            raise ApiError.internal(f"Failed to create {self.model.__name__}: {str(e)}")
-
-    _UNSET = object()
+            logger.exception("Database create failed for %s", self.model.__name__)
+            raise ApiError.internal(f"Failed to create {self.model.__name__}")
 
     async def update(self, db: AsyncSession, id: uuid.UUID, data: dict[str, Any]) -> ModelType:
         obj = await self.get(db, id)
         for field, value in data.items():
-            if value is not self._UNSET:
-                setattr(obj, field, value)
+            setattr(obj, field, value)
         await db.commit()
         await db.refresh(obj)
         return obj
@@ -118,7 +115,7 @@ class CRUDBase(Generic[ModelType]):
             obj = await self.get(db, id)
             await db.delete(obj)
             await db.commit()
-        except Exception as e:
+        except Exception:
             await db.rollback()
-            logger.exception("Database delete failed for %s: %s", self.model.__name__, e)
-            raise ApiError.internal(f"Failed to delete {self.model.__name__}: {str(e)}")
+            logger.exception("Database delete failed for %s", self.model.__name__)
+            raise ApiError.internal(f"Failed to delete {self.model.__name__}")
