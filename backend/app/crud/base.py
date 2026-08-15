@@ -1,7 +1,7 @@
 import uuid
 from typing import Any, Generic, Sequence, TypeVar
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import Boolean, Integer, Numeric, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -10,6 +10,25 @@ from app.core.logger import logger
 from app.utils.pagination import PageParams, apply_sort
 
 ModelType = TypeVar("ModelType")
+
+
+def _coerce_filter_value(column_type, value: Any) -> Any:
+    """Coerce a querystring string into the column's Python type (e.g. 'true' -> bool)."""
+    if not isinstance(value, str):
+        return value
+    if isinstance(column_type, Boolean):
+        return value.strip().lower() in {"true", "1", "yes", "on"}
+    if isinstance(column_type, Integer):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return value
+    if isinstance(column_type, Numeric):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return value
+    return value
 
 
 class CRUDBase(Generic[ModelType]):
@@ -42,7 +61,7 @@ class CRUDBase(Generic[ModelType]):
                 continue
             column = getattr(self.model, field, None)
             if column is not None:
-                conditions.append(column == value)
+                conditions.append(column == _coerce_filter_value(column.type, value))
 
         if page_params.search and self.searchable_fields:
             search_conditions = [
