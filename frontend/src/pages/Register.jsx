@@ -51,7 +51,7 @@ export default function Register() {
         <h1 className="mb-1 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Create an account</h1>
         <p className="mb-stack-md text-body-sm text-ink-muted dark:text-dark-ink-muted">
           Already have an account?{' '}
-          <button type="button" onClick={() => navigate('/')} className="font-semibold text-brand hover:underline">Sign in</button>
+          <button type="button" onClick={() => navigate('/login')} className="font-semibold text-brand hover:underline">Sign in</button>
         </p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-stack-md">
