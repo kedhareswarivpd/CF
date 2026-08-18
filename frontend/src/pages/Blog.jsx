@@ -50,7 +50,7 @@ export default function Blog() {
         title="Thought Leadership & Engineering Deep Dives"
         description="Practical knowledge and perspectives from our team of experts."
         align="center"
-        className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop"
+        className="mx-auto max-w-container px-margin-mobile pt-16 md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white"
       />
       {loading ? (
         <div className="py-8 text-center text-body-md text-ink-muted">Loading posts...</div>

@@ -39,7 +39,7 @@ export default function Products() {
         title="Platforms Built for Enterprise"
         description="Battle-tested products that power analytics, security, integration, and DevOps for global organizations."
         align="center"
-        className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white"
+        className="mx-auto max-w-container px-margin-mobile pt-16 md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white"
       />
       <ProductsGrid products={products} />
       <CtaBanner />

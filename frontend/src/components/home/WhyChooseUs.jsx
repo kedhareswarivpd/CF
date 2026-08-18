@@ -16,7 +16,7 @@ export default function WhyChooseUs() {
       <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-4">
         {whyChooseUs.map((item, i) => (
           <Reveal key={item.title} from="zoom" delay={i * 80} className="flex flex-col rounded-lg bg-white p-stack-lg transition-shadow hover:shadow-card-hover">
-            <div className="mb-stack-md flex size-12 items-center justify-center rounded-md bg-accent-cyan-pale">
+            <div className="mb-stack-md flex size-12 items-center justify-center rounded-md bg-white border border-slate-200 shadow-sm">
               <Icon name={item.icon} className="text-3xl leading-none text-brand" />
             </div>
             <h3 className="mb-2 min-h-16 font-display text-headline-sm text-brand-dark dark:text-dark-brand">{item.title}</h3>

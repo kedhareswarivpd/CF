@@ -42,7 +42,7 @@ export default function Resources() {
         title="Expert Guides & Resources"
         description="Whitepapers, templates, and guides created by our engineering teams."
         align="center"
-        className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white"
+        className="mx-auto max-w-container px-margin-mobile pt-16 md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white"
       />
       <ResourcesGrid resources={resources} typeFilters={resourceTypeFilters} />
       <CtaBanner />

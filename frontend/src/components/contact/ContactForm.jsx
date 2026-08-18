@@ -124,12 +124,12 @@ export default function ContactForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-stack-md" ref={formRef}>
       <div className="grid gap-stack-md sm:grid-cols-2">
-        <Field label="Full Name" error={fieldErrors.name} inputId="field-name" errorId="field-error-name">
+        <Field label="Full Name" error={fieldErrors.name} inputId="field-name" errorId="field-error-name" required>
           {(fieldProps) => (
             <input required value={form.name} onChange={updateName} className={inputClass} placeholder="Jane Doe" {...fieldProps} />
           )}
         </Field>
-        <Field label="Email" error={fieldErrors.email} inputId="field-email" errorId="field-error-email">
+        <Field label="Email" error={fieldErrors.email} inputId="field-email" errorId="field-error-email" required>
           {(fieldProps) => (
             <input
               required
@@ -175,7 +175,7 @@ export default function ContactForm() {
         )}
       </Field>
 
-      <Field label="Message" error={fieldErrors.message} inputId="field-message" errorId="field-error-message">
+      <Field label="Message" error={fieldErrors.message} inputId="field-message" errorId="field-error-message" required>
         {(fieldProps) => (
           <textarea
             required
@@ -207,17 +207,21 @@ export default function ContactForm() {
 const inputClass =
   'w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-ink dark:text-dark-ink focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand transition-colors';
 
-function Field({ label, error, children, inputId, errorId }) {
+function Field({ label, error, children, inputId, errorId, required }) {
   const fieldProps = {};
   if (inputId) fieldProps.id = inputId;
   if (error && errorId) fieldProps['aria-describedby'] = errorId;
+  if (error) fieldProps['data-error'] = 'true';
   const render = typeof children === 'function' ? children(fieldProps) : children;
 
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="font-label-caps text-label-caps uppercase text-ink-muted">{label}</span>
-      {render}
-      {error && errorId && <span id={errorId} className="text-xs text-status-error-text">{error}</span>}
+      <span className="font-label-caps text-label-caps uppercase text-ink-muted">
+        {label}
+        {(required || error) && <span className="ml-0.5 text-red-500">*</span>}
+      </span>
+      <div className={error ? 'ring-2 ring-red-400 rounded' : ''}>{render}</div>
+      {error && errorId && <span id={errorId} className="text-xs text-red-500">{error}</span>}
     </label>
   );
 }
