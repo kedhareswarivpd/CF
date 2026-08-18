@@ -15,10 +15,10 @@ export default function ImpactStats() {
       <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
         <Reveal from="up" className="mb-stack-xl text-center">
           <span className="mb-3 block font-label-caps text-label-caps uppercase text-brand">Our Impact</span>
-          <h2 className="font-display text-headline-md text-brand-dark dark:text-dark-brand">
+          <h2 className="font-display text-headline-md text-white">
             Numbers that define our journey
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-body-lg text-ink-muted dark:text-white">
+          <p className="mx-auto mt-4 max-w-2xl text-body-lg text-white">
             Five years of high-performance delivery for enterprises that can&apos;t afford downtime.
           </p>
         </Reveal>

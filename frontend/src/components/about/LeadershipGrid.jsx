@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { leadership } from '../../data/about.js';
 import Reveal from '../ui/Reveal.jsx';
 
@@ -30,12 +31,12 @@ export default function LeadershipGrid() {
             <span className="font-label-caps text-label-caps uppercase text-brand">Executive Leadership</span>
             <h2 className="mt-4 font-display text-headline-md text-brand-dark dark:text-dark-brand">Visionaries Steering the Ship</h2>
           </div>
-          <button className="group flex items-center gap-2 font-label-caps text-label-caps uppercase text-brand">
+          <Link to="/careers" className="group flex items-center gap-2 font-label-caps text-label-caps uppercase text-brand">
             Join our team
             <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
               arrow_forward
             </span>
-          </button>
+          </Link>
         </Reveal>
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {leadership.map((leader, i) => (
@@ -47,9 +48,9 @@ export default function LeadershipGrid() {
               <h4 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{leader.name}</h4>
               <p className="mb-4 font-label-caps text-label-caps uppercase text-ink-muted">{leader.title}</p>
               <div className="flex gap-3">
-                <span className="flex size-8 cursor-pointer items-center justify-center rounded bg-surface-container text-brand transition-colors hover:bg-brand hover:text-white dark:bg-dark-surface-container">
+                <a href={leader.linkedin} target="_blank" rel="noopener noreferrer" className="flex size-8 cursor-pointer items-center justify-center rounded bg-surface-container text-brand transition-colors hover:bg-brand hover:text-white dark:bg-dark-surface-container">
                   <LinkedInIcon />
-                </span>
+                </a>
               </div>
             </Reveal>
           ))}

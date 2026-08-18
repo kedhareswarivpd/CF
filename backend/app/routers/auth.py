@@ -71,7 +71,11 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     if session is None:
         raise ApiError.unauthorized("Invalid email or password")
 
-    claims = await decode_supabase_token(session.access_token)
+    try:
+        claims = await decode_supabase_token(session.access_token)
+    except Exception as exc:
+        raise ApiError.unauthorized("Invalid or expired token") from exc
+
     user_id = uuid.UUID(claims["sub"])
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
 
@@ -83,7 +87,11 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
         raise ApiError.forbidden("Your account has been deactivated")
 
     user.last_login_at = datetime.now(timezone.utc)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception as exc:
+        await db.rollback()
+        raise ApiError.internal("Failed to save login information") from exc
     await db.refresh(user)
 
     response = LoginResponse(

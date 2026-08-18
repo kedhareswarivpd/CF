@@ -68,21 +68,25 @@ export const leadership = [
     name: 'Dr. Vikram Nair',
     title: 'Founder & CEO',
     image: null,
+    linkedin: 'https://www.linkedin.com/',
   },
   {
     name: 'Sara Cheng',
     title: 'Chief Technology Officer',
     image: null,
+    linkedin: 'https://www.linkedin.com/',
   },
   {
     name: 'Arjun Mehta',
     title: 'COO, Global Operations',
     image: null,
+    linkedin: 'https://www.linkedin.com/',
   },
   {
     name: 'Elena Rossi',
     title: 'Chief Experience Officer',
     image: null,
+    linkedin: 'https://www.linkedin.com/',
   },
 ];
 

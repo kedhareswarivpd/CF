@@ -229,6 +229,7 @@ export default function ContentManager({ accessToken }) {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({});
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(() => {
@@ -248,6 +249,7 @@ export default function ContentManager({ accessToken }) {
     setForm(toForm({}, resource.fields));
     setEditing(null);
     setError('');
+    setFieldErrors({});
     setShowForm(true);
   };
 
@@ -255,6 +257,7 @@ export default function ContentManager({ accessToken }) {
     setForm(toForm(item, resource.fields));
     setEditing(item);
     setError('');
+    setFieldErrors({});
     setShowForm(true);
   };
 
@@ -262,6 +265,7 @@ export default function ContentManager({ accessToken }) {
     e.preventDefault();
     setSubmitting(true);
     setError('');
+    setFieldErrors({});
     try {
       const payload = toPayload(form, resource.fields);
       if (editing) {
@@ -272,7 +276,15 @@ export default function ContentManager({ accessToken }) {
       setShowForm(false);
       load();
     } catch (err) {
-      setError(err.message || 'Could not save the item.');
+      const errs = err.errors || [];
+      if (errs.length > 0) {
+        const mapped = {};
+        errs.forEach((e) => { if (e.field) mapped[e.field] = e.message; });
+        setFieldErrors(mapped);
+        setError(err.message || 'Please fix the errors below.');
+      } else {
+        setError(err.message || 'Could not save the item.');
+      }
     } finally {
       setSubmitting(false);
     }
@@ -326,11 +338,26 @@ export default function ContentManager({ accessToken }) {
             <div className="grid gap-4 sm:grid-cols-2">
               {resource.fields.map((f) => (
                 <div key={f.name} className={f.kind === 'textarea' || f.kind === 'list' ? 'sm:col-span-2' : ''}>
+                  <label className="mb-1 block text-body-sm font-medium text-ink dark:text-white">{f.label}</label>
                   <Field field={f} value={form[f.name] ?? ''} onChange={(name, value) => setForm((prev) => ({ ...prev, [name]: value }))} />
+                  {fieldErrors[f.name] && (
+                    <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors[f.name]}</p>
+                  )}
                 </div>
               ))}
             </div>
-            {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
+            {error && (
+              <div className="rounded-lg border border-status-error bg-status-error/10 px-4 py-3">
+                <p className="flex items-center gap-1 text-body-sm font-semibold text-status-error-text"><Icon name="error" className="text-base" />{error}</p>
+                {Object.keys(fieldErrors).length > 0 && (
+                  <ul className="mt-2 list-inside list-disc text-body-xs text-status-error-text">
+                    {Object.entries(fieldErrors).map(([field, msg]) => (
+                      <li key={field}><strong>{resource.fields.find((f) => f.name === field)?.label || field}:</strong> {msg}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
             <div className="flex gap-2">
               <Button type="submit" variant="primary" size="md" disabled={submitting}>
                 {submitting ? 'Saving...' : editing ? 'Update' : 'Create'}
@@ -354,7 +381,7 @@ export default function ContentManager({ accessToken }) {
               </thead>
               <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
                 {items.map((item) => (
-                  <tr key={item.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                  <tr key={item.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
                     <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{resource.title(item)}</td>
                     <td className="px-stack-lg py-4">
                       {hasPublish ? (

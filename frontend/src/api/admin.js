@@ -37,7 +37,9 @@ export const recordPayment  = (token, invoiceId, body) => apiRequest(`/finance/i
 
 // ── Testimonials (Marketing moderation) ────────────────────────────────────────
 export const fetchTestimonials = (token, p = {}) => apiRequest(`/testimonials${toQueryString(p)}`, { token });
+export const createTestimonial = (token, body)  => apiRequest('/testimonials', { method: 'POST', body, token });
 export const updateTestimonial = (token, id, b)  => apiRequest(`/testimonials/${id}`, { method: 'PUT', body: b, token });
+export const deleteTestimonial = (token, id)     => apiRequest(`/testimonials/${id}`, { method: 'DELETE', token });
 
 // ── Tasks (QA / PM) ────────────────────────────────────────────────────────────
 export const fetchTasks       = (token, p = {}) => apiRequest(`/tasks${toQueryString(p)}`, { token });

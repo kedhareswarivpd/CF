@@ -60,19 +60,19 @@ function Overview() {
   ];
   return (
     <div className="space-y-stack-lg">
-      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
         {cards.map((c) => (
-          <div key={c.label} className="rounded-lg border border-slate-200 bg-white p-stack-lg shadow-sm">
-            <div className={`mb-3 inline-flex size-10 items-center justify-center rounded-lg ${c.bg}`}>
-              <Icon name={c.icon} className={`text-xl ${c.color}`} />
+          <div key={c.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+            <div className={`mb-4 inline-flex size-11 items-center justify-center rounded-xl ${c.bg}`}>
+              <Icon name={c.icon} className={`text-2xl ${c.color}`} />
             </div>
-            <p className="font-stat text-stat-lg text-slate-900">{c.value}</p>
-            <p className="font-label-caps text-label-caps text-slate-500">{c.label}</p>
+            <p className="font-stat text-3xl font-bold text-slate-900">{c.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{c.label}</p>
           </div>
         ))}
       </div>
-      <div className="rounded-lg border border-slate-200 bg-white p-stack-lg shadow-sm">
-        <p className="text-body-sm text-slate-500">
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-body-sm text-slate-600">
           This company-wide summary plus every screen in Admin Panel is available here. The tabs on the left are exclusive to Super Admin:
           org structure, the global role/permission matrix, GDPR tooling, and the full audit trail.
         </p>
@@ -394,47 +394,47 @@ export default function SuperAdminPanel() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
-        <div className="sticky top-0 z-20 mb-stack-lg flex items-center justify-between gap-4 border-b border-slate-200 bg-white py-3">
-          <div className="flex items-center gap-4">
-            <Avatar name={currentUser?.name || 'Super Admin'} size="lg" />
-            <div>
-              <h1 className="font-display text-headline-md font-bold text-slate-900">{currentUser?.name || 'Super Admin'}</h1>
-              <p className="text-body-sm text-slate-500">{currentUser?.email || ''} &middot; super admin</p>
-            </div>
+    <div className="flex h-screen flex-col" style={{ backgroundColor: '#102C4F' }}>
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b px-margin-mobile py-3 md:px-margin-desktop" style={{ backgroundColor: '#0d2240', borderColor: '#1a3a5e' }}>
+        <div className="flex items-center gap-4">
+          <Avatar name={currentUser?.name || 'Super Admin'} size="lg" />
+          <div>
+            <h1 className="font-display text-headline-md font-bold text-white">{currentUser?.name || 'Super Admin'}</h1>
+            <p className="text-body-sm" style={{ color: '#7da0ca' }}>{currentUser?.email || ''} &middot; super admin</p>
           </div>
-          <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
-            Sign Out
-          </Button>
         </div>
+        <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
+          Sign Out
+        </Button>
+      </div>
 
-        <div className="flex gap-stack-lg">
-          <aside className="hidden w-56 shrink-0 md:block">
-            <nav className="flex flex-col gap-1">
-              {superAdminTabs.map((tab) => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left text-body-sm font-medium transition-colors ${
-                    activeTab === tab.id ? 'bg-blue-50 font-semibold text-blue-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                  }`}>
-                  <Icon name={tab.icon} className="text-lg" />{tab.label}
-                </button>
-              ))}
-            </nav>
-          </aside>
+      <div className="flex min-h-0 flex-1">
+        <aside className="hidden w-56 shrink-0 overflow-y-auto border-r md:block" style={{ backgroundColor: '#0d2240', borderColor: '#1a3a5e' }}>
+          <nav className="flex flex-col gap-1 p-3">
+            {superAdminTabs.map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left text-body-sm font-medium transition-colors ${
+                  activeTab === tab.id ? 'bg-white/20 font-semibold text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white font-medium'
+                }`}>
+                <Icon name={tab.icon} className="text-lg" />{tab.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-slate-200 md:hidden">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b px-margin-mobile py-2 md:hidden" style={{ backgroundColor: '#0d2240', borderColor: '#1a3a5e' }}>
             {superAdminTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-body-sm font-medium transition-colors ${
-                  activeTab === tab.id ? 'border-blue-600 font-semibold text-blue-700' : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                  activeTab === tab.id ? 'border-white font-semibold text-white' : 'border-transparent text-blue-200 hover:border-blue-400 hover:text-white'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>
             ))}
           </div>
 
-          <div className="min-w-0 flex-1 pb-stack-xl">
+          <div className="min-w-0 flex-1 overflow-y-auto px-margin-mobile py-stack-lg md:px-margin-desktop">
             {activeTab === 'overview' && <Overview />}
             {activeTab === 'departments' && <Departments accessToken={accessToken} />}
             {activeTab === 'roles' && <RolesPermissions accessToken={accessToken} />}

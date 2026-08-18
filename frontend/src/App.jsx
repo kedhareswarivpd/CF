@@ -10,6 +10,7 @@ import usePageViewTracker from './hooks/usePageViewTracker.js';
 // initial bundle stays small and the app paints fast.
 const Home = lazy(() => import('./pages/Home.jsx'));
 const Services = lazy(() => import('./pages/Services.jsx'));
+const ServiceDetail = lazy(() => import('./pages/ServiceDetail.jsx'));
 const Portfolio = lazy(() => import('./pages/Portfolio.jsx'));
 const SuccessStory = lazy(() => import('./pages/SuccessStory.jsx'));
 const About = lazy(() => import('./pages/About.jsx'));
@@ -58,8 +59,9 @@ export default function App() {
           <Route element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="services" element={<Services />} />
+            <Route path="services/:slug" element={<ServiceDetail />} />
             <Route path="portfolio" element={<Portfolio />} />
-            <Route path="portfolio/success/:slug" element={<SuccessStory />} />
+            <Route path="portfolio/:slug" element={<SuccessStory />} />
             <Route path="about" element={<About />} />
             <Route path="contact" element={<Contact />} />
             <Route path="solutions" element={<Solutions />} />

@@ -31,7 +31,7 @@ import {
   fetchApplications, updateApplicationStatus,
   fetchTickets, updateTicket, replyToTicket,
   fetchInvoices, createInvoice, updateInvoice, recordPayment,
-  fetchTestimonials, updateTestimonial,
+  fetchTestimonials, createTestimonial, updateTestimonial, deleteTestimonial,
   fetchTasks, createTask, updateTaskStatus,
   assignProjectTeam, fetchAdminProjects, createProject,
   fetchClients, fetchEmployees,
@@ -41,25 +41,25 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
   const pendingLeaves = leaves.filter((l) => l.status === 'pending').length;
   return (
     <div className="space-y-stack-lg">
-      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
         {[
           { label: 'Today', value: attendance.status, icon: 'clock_loader_60', sub: `${attendance.checkIn || '--'} - ${attendance.checkOut || '--'}` },
           { label: 'Hours This Week', value: `${totalHours}h`, icon: 'schedule' },
           { label: 'Pending Leaves', value: pendingLeaves, icon: 'beach_access' },
           { label: 'Latest Payslip', value: `$${payslips[0]?.netPay?.toLocaleString() || 0}`, icon: 'payments' },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
-            <div className="mb-2 flex items-center gap-3">
-              <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-white/70">{stat.label}</span>
+          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
+              <Icon name={stat.icon} className="text-2xl text-blue-600" />
             </div>
-            <p className="font-stat text-stat-lg capitalize text-white">{stat.value}</p>
-            {stat.sub && <p className="mt-1 text-body-sm text-white/70">{stat.sub}</p>}
+            <p className="font-stat text-3xl font-bold capitalize text-slate-900">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
+            {stat.sub && <p className="mt-1 text-body-sm text-slate-400">{stat.sub}</p>}
           </div>
         ))}
       </div>
-      <div className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
-        <h3 className="mb-4 font-display text-headline-sm text-white">My Profile</h3>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-4 font-display text-headline-sm text-slate-900">My Profile</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { label: 'Name', value: profile.name },
@@ -70,8 +70,8 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
             { label: 'Status', value: profile.status },
           ].map((f) => (
             <div key={f.label}>
-              <span className="font-label-caps text-label-caps text-white/70">{f.label}</span>
-              <p className="text-body-md capitalize text-white">{f.value || '—'}</p>
+              <span className="font-label-caps text-label-caps text-slate-500">{f.label}</span>
+              <p className="text-body-md capitalize text-slate-900">{f.value || '—'}</p>
             </div>
           ))}
         </div>
@@ -142,22 +142,22 @@ function Attendance({ attendance, accessToken, onChange }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
-        <h3 className="mb-6 font-display text-headline-sm text-white">Today&apos;s Attendance</h3>
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-6 font-display text-headline-sm text-slate-900">Today&apos;s Attendance</h3>
         <div className="mb-6 grid gap-gutter sm:grid-cols-3">
-          <div className="rounded-lg bg-white/10 p-stack-lg text-center">
-            <Icon name="login" className="mb-2 text-3xl text-brand" />
-            <p className="font-label-caps text-label-caps text-white">Check-In</p>
-            <p className="font-display text-headline-sm text-white">{attendance.checkIn || '--'}</p>
+          <div className="rounded-xl bg-blue-50 p-stack-lg text-center">
+            <Icon name="login" className="mb-2 text-3xl text-blue-600" />
+            <p className="font-label-caps text-label-caps text-blue-600">Check-In</p>
+            <p className="font-display text-headline-sm text-blue-600">{attendance.checkIn || '--'}</p>
           </div>
-          <div className="rounded-lg bg-white/10 p-stack-lg text-center">
-            <Icon name="logout" className="mb-2 text-3xl text-brand" />
-            <p className="font-label-caps text-label-caps text-white">Check-Out</p>
-            <p className="font-display text-headline-sm text-white">{attendance.checkOut || '--'}</p>
+          <div className="rounded-xl bg-blue-50 p-stack-lg text-center">
+            <Icon name="logout" className="mb-2 text-3xl text-blue-600" />
+            <p className="font-label-caps text-label-caps text-blue-600">Check-Out</p>
+            <p className="font-display text-headline-sm text-blue-600">{attendance.checkOut || '--'}</p>
           </div>
-          <div className="rounded-lg bg-white/10 p-stack-lg text-center">
-            <Icon name="badge" className="mb-2 text-3xl text-brand" />
-            <p className="font-label-caps text-label-caps text-white">Status</p>
+          <div className="rounded-xl bg-blue-50 p-stack-lg text-center">
+            <Icon name="badge" className="mb-2 text-3xl text-blue-600" />
+            <p className="font-label-caps text-label-caps text-blue-600">Status</p>
             <StatusBadge variant={attendance.status === 'present' ? 'success' : 'warning'} className="mt-1">
               {attendance.status || 'Not checked in'}
             </StatusBadge>
@@ -267,29 +267,29 @@ function Leaves({ leaves: initialLeaves, accessToken }) {
         <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>Apply Leave</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <select value={form.type} onChange={(e) => handleChange('type', e.target.value)}
-                className={`w-full rounded border bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:outline-none ${errors.type ? 'border-red-400 focus:border-red-500' : 'border-white/20 focus:border-brand'}`}>
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.type ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`}>
                 {LEAVE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
               {errors.type && <p className="mt-1 text-body-xs text-red-500">{errors.type}</p>}
             </div>
             <div>
               <input type="date" value={form.from} onChange={(e) => handleChange('from', e.target.value)}
-                className={`w-full rounded border bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:outline-none ${errors.from ? 'border-red-400 focus:border-red-500' : 'border-white/20 focus:border-brand'}`} />
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.from ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
               {errors.from && <p className="mt-1 text-body-xs text-red-500">{errors.from}</p>}
             </div>
             <div>
               <input type="date" value={form.to} onChange={(e) => handleChange('to', e.target.value)}
-                className={`w-full rounded border bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:outline-none ${errors.to ? 'border-red-400 focus:border-red-500' : 'border-white/20 focus:border-brand'}`} />
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.to ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
               {errors.to && <p className="mt-1 text-body-xs text-red-500">{errors.to}</p>}
             </div>
           </div>
           <div>
             <textarea placeholder="Reason for leave (min 10 characters)" value={form.reason} onChange={(e) => handleChange('reason', e.target.value)}
-              rows={2} className={`w-full rounded border bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:outline-none ${errors.reason ? 'border-red-400 focus:border-red-500' : 'border-white/20 focus:border-brand'}`} />
+              rows={2} className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.reason ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
             {errors.reason && <p className="mt-1 text-body-xs text-red-500">{errors.reason}</p>}
           </div>
           <div className="flex gap-2">
@@ -303,20 +303,20 @@ function Leaves({ leaves: initialLeaves, accessToken }) {
           toast.includes('success') ? 'border border-green-500/30 bg-green-500/10 text-green-300' : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
-      <div className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
         <table className="w-full text-left">
-          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
             <tr><th className="px-stack-lg py-4">Type</th><th className="px-stack-lg py-4">From</th><th className="px-stack-lg py-4">To</th><th className="px-stack-lg py-4">Days</th><th className="px-stack-lg py-4">Status</th></tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-slate-200">
             {allLeaves.length === 0 ? (
-              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No leave requests yet.</td></tr>
+              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No leave requests yet.</td></tr>
             ) : allLeaves.map((l) => (
-              <tr key={l.id} className="transition-colors hover:bg-white/5">
-                <td className="px-stack-lg py-4 text-body-md capitalize text-white">{l.type}</td>
-                <td className="px-stack-lg py-4 text-body-md text-white/70">{l.from}</td>
-                <td className="px-stack-lg py-4 text-body-md text-white/70">{l.to}</td>
-                <td className="px-stack-lg py-4 text-body-md text-white/70">{l.days}</td>
+              <tr key={l.id} className="transition-colors hover:bg-blue-50">
+                <td className="px-stack-lg py-4 text-body-md capitalize text-slate-900">{l.type}</td>
+                <td className="px-stack-lg py-4 text-body-md text-slate-600">{l.from}</td>
+                <td className="px-stack-lg py-4 text-body-md text-slate-600">{l.to}</td>
+                <td className="px-stack-lg py-4 text-body-md text-slate-600">{l.days}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={l.status === 'approved' ? 'success' : l.status === 'pending' ? 'warning' : 'error'}>{l.status}</StatusBadge></td>
               </tr>
             ))}
@@ -402,7 +402,7 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
   return (
     <div className="space-y-stack-md">
       <div className="flex items-center justify-between">
-        <p className="text-body-md text-white/70">Total hours logged: <span className="font-semibold text-white">{totalHours}h</span></p>
+        <p className="text-body-md text-slate-600">Total hours logged: <span className="font-semibold text-slate-900">{totalHours}h</span></p>
         <div className="flex items-center gap-3">
           <button onClick={refresh} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-light">
             <Icon name="refresh" className="text-base" /> Refresh
@@ -411,23 +411,23 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
         </div>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg backdrop-blur">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm backdrop-blur">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <input type="date" value={form.date} onChange={(e) => handleChange('date', e.target.value)}
-                className={`w-full rounded border bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:outline-none ${errors.date ? 'border-red-400 focus:border-red-500' : 'border-white/20 focus:border-brand'}`} />
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.date ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
               {errors.date && <p className="mt-1 text-body-xs text-red-400">{errors.date}</p>}
             </div>
             <input type="text" placeholder="Project name (optional)" value={form.project} onChange={(e) => handleChange('project', e.target.value)}
-              className="w-full rounded border border-white/20 bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:border-brand focus:outline-none" />
+              className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
             <div>
               <input type="number" step="0.25" min="0.25" max="24" placeholder="Hours *" value={form.hours} onChange={(e) => handleChange('hours', e.target.value)}
-                className={`w-full rounded border bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:outline-none ${errors.hours ? 'border-red-400 focus:border-red-500' : 'border-white/20 focus:border-brand'}`} />
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.hours ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
               {errors.hours && <p className="mt-1 text-body-xs text-red-400">{errors.hours}</p>}
             </div>
           </div>
           <textarea placeholder="Description" value={form.description} onChange={(e) => handleChange('description', e.target.value)}
-            rows={2} className="w-full rounded border border-white/20 bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:border-brand focus:outline-none" />
+            rows={2} className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Logging...' : 'Log'}</Button>
             <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setErrors({}); }}>Cancel</Button>
@@ -439,21 +439,21 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
           toast.includes('success') || toast.includes('refreshed') ? 'border border-green-500/30 bg-green-500/10 text-green-300' : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
-      <div className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
         <table className="w-full text-left">
-          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/50">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-400">
             <tr><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Hours</th><th className="px-stack-lg py-4">Description</th></tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-slate-200">
             {allEntries.map((e) => (
-              <tr key={e.id} className="transition-colors hover:bg-white/5">
-                <td className="px-stack-lg py-4 text-body-md text-white/70">{e.date}</td>
-                <td className="px-stack-lg py-4 text-body-md text-white">{e.project}</td>
-                <td className="px-stack-lg py-4 text-body-md text-white">{e.hours}h</td>
-                <td className="px-stack-lg py-4 text-body-md text-white/70">{e.description || '—'}</td>
+              <tr key={e.id} className="transition-colors hover:bg-blue-50">
+                <td className="px-stack-lg py-4 text-body-md text-slate-600">{e.date}</td>
+                <td className="px-stack-lg py-4 text-body-md text-slate-900">{e.project}</td>
+                <td className="px-stack-lg py-4 text-body-md text-slate-900">{e.hours}h</td>
+                <td className="px-stack-lg py-4 text-body-md text-slate-600">{e.description || '—'}</td>
               </tr>
             ))}
-            {!allEntries.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-white/40">No timesheets logged yet. Click &ldquo;Log Hours&rdquo; to get started.</td></tr>}
+            {!allEntries.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-slate-900/40">No timesheets logged yet. Click &ldquo;Log Hours&rdquo; to get started.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -463,20 +463,20 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
 
 function Payslips({ payslips }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
       <table className="w-full text-left">
-        <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+        <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
           <tr><th className="px-stack-lg py-4">Period</th><th className="px-stack-lg py-4">Gross</th><th className="px-stack-lg py-4">Deductions</th><th className="px-stack-lg py-4">Net Pay</th><th className="px-stack-lg py-4">Status</th></tr>
         </thead>
-        <tbody className="divide-y divide-white/10">
+        <tbody className="divide-y divide-slate-200">
           {payslips.length === 0 ? (
-            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No payslips available yet.</td></tr>
+            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No payslips available yet.</td></tr>
           ) : payslips.map((p) => (
-            <tr key={`${p.month}-${p.year}`} className="transition-colors hover:bg-white/5">
-              <td className="px-stack-lg py-4 text-body-md text-white">{p.month} {p.year}</td>
-              <td className="px-stack-lg py-4 text-body-md text-white/70">${p.grossPay.toLocaleString()}</td>
-              <td className="px-stack-lg py-4 text-body-md text-white/70">${p.deductions.toLocaleString()}</td>
-              <td className="px-stack-lg py-4 text-body-md font-semibold text-white">${p.netPay.toLocaleString()}</td>
+            <tr key={`${p.month}-${p.year}`} className="transition-colors hover:bg-blue-50">
+              <td className="px-stack-lg py-4 text-body-md text-slate-900">{p.month} {p.year}</td>
+              <td className="px-stack-lg py-4 text-body-md text-slate-600">${p.grossPay.toLocaleString()}</td>
+              <td className="px-stack-lg py-4 text-body-md text-slate-600">${p.deductions.toLocaleString()}</td>
+              <td className="px-stack-lg py-4 text-body-md font-semibold text-slate-900">${p.netPay.toLocaleString()}</td>
               <td className="px-stack-lg py-4"><StatusBadge variant="success">{p.status}</StatusBadge></td>
             </tr>
           ))}
@@ -490,21 +490,21 @@ function Tasks({ tasks }) {
   const priorityColor = { urgent: 'error', high: 'warning', medium: 'info', low: 'neutral' };
   const statusColor = { done: 'success', in_progress: 'info', todo: 'neutral', blocked: 'error' };
   return (
-    <div className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
+    <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
       <table className="w-full text-left">
-        <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+        <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
           <tr><th className="px-stack-lg py-4">Task</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Priority</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Due</th></tr>
         </thead>
-        <tbody className="divide-y divide-white/10">
+        <tbody className="divide-y divide-slate-200">
           {tasks.length === 0 ? (
-            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No tasks assigned yet.</td></tr>
+            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No tasks assigned yet.</td></tr>
           ) : tasks.map((t) => (
-            <tr key={t.id} className="transition-colors hover:bg-white/5">
-              <td className="px-stack-lg py-4 text-body-md text-white">{t.title}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-white/70">{t.project}</td>
+            <tr key={t.id} className="transition-colors hover:bg-blue-50">
+              <td className="px-stack-lg py-4 text-body-md text-slate-900">{t.title}</td>
+              <td className="px-stack-lg py-4 text-body-sm text-slate-600">{t.project}</td>
               <td className="px-stack-lg py-4"><StatusBadge variant={priorityColor[t.priority]}>{t.priority}</StatusBadge></td>
               <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[t.status]}>{t.status.replace('_', ' ')}</StatusBadge></td>
-              <td className="px-stack-lg py-4 text-body-sm text-white/70">{t.due}</td>
+              <td className="px-stack-lg py-4 text-body-sm text-slate-600">{t.due}</td>
             </tr>
           ))}
         </tbody>
@@ -515,57 +515,92 @@ function Tasks({ tasks }) {
 
 function Projects({ projects }) {
   const statusColor = { completed: 'success', in_progress: 'info', on_hold: 'warning', planning: 'neutral' };
+  const completed = projects.filter((p) => p.status === 'completed').length;
+  const inProgress = projects.filter((p) => p.status === 'in_progress').length;
+  const kpis = [
+    { label: 'Total Projects', value: projects.length, icon: 'folder' },
+    { label: 'In Progress', value: inProgress, icon: 'pending' },
+    { label: 'Completed', value: completed, icon: 'check_circle' },
+  ];
   return (
-    <div className="space-y-4">
-      {projects.length === 0 && <p className="py-8 text-center text-body-sm text-white/70">No projects assigned yet.</p>}
-      {projects.map((p) => (
-        <div key={p.id} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
-          <div className="mb-3 flex items-start justify-between gap-4">
-            <div>
-              <h3 className="font-display text-headline-sm text-white">{p.title}</h3>
-              <p className="text-body-sm text-white/70">Role: {p.role} &middot; Deadline: {p.deadline}</p>
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
+              <Icon name={stat.icon} className="text-2xl text-blue-600" />
             </div>
-            <StatusBadge variant={statusColor[p.status]}>{p.status.replace('_', ' ')}</StatusBadge>
+            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
-              <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress}%` }} />
+        ))}
+      </div>
+      <section>
+        <h3 className="mb-4 font-display text-headline-sm text-slate-900">Assigned Projects</h3>
+        {projects.length === 0 && <p className="py-8 text-center text-body-sm text-slate-600">No projects assigned yet.</p>}
+        <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
+          {projects.map((p) => (
+            <div key={p.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <p className="font-display text-body-md font-semibold text-slate-900">{p.title}</p>
+              <p className="mt-1 text-body-xs uppercase tracking-wide text-slate-600">Deadline: {p.deadline}</p>
+              <p className="mt-2 flex-1 text-body-sm text-slate-600">Role: {p.role}</p>
+              <div className="mt-4 flex items-center justify-between">
+                <StatusBadge variant={statusColor[p.status]}>{p.status.replace('_', ' ')}</StatusBadge>
+                <span className="text-body-sm font-semibold text-slate-900">{p.progress}%</span>
+              </div>
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress}%` }} />
+              </div>
             </div>
-            <span className="w-10 text-right text-body-sm font-semibold text-white">{p.progress}%</span>
-          </div>
+          ))}
         </div>
-      ))}
+      </section>
     </div>
   );
 }
 
 function Performance({ reviews }) {
+  const avgRating = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : 0;
+  const totalGoals = reviews.reduce((s, r) => s + r.goals, 0);
+  const totalAchieved = reviews.reduce((s, r) => s + r.achieved, 0);
+  const kpis = [
+    { label: 'Total Reviews', value: reviews.length, icon: 'reviews' },
+    { label: 'Avg Rating', value: `${avgRating}/5`, icon: 'star' },
+    { label: 'Goals Achieved', value: `${totalAchieved}/${totalGoals}`, icon: 'flag' },
+  ];
   return (
-    <div className="space-y-4">
-      {reviews.length === 0 && <p className="py-8 text-center text-body-sm text-white/70">No performance reviews yet.</p>}
-      {reviews.map((r) => (
-        <div key={r.period} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-display text-headline-sm text-white">{r.period}</h3>
-            <div className="flex items-center gap-2">
-              <Icon name="star" className="text-xl text-yellow-400" />
-              <span className="font-stat text-stat-lg text-white">{r.rating}</span>
-              <span className="text-body-sm text-white/70">/5</span>
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
+              <Icon name={stat.icon} className="text-2xl text-blue-600" />
             </div>
+            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
           </div>
-          <div className="mb-4 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg bg-white/10 p-4 text-center">
-              <p className="mb-1 font-label-caps text-label-caps text-white">Goals Set</p>
-              <p className="font-stat text-2xl text-white">{r.goals}</p>
+        ))}
+      </div>
+      <section>
+        <h3 className="mb-4 font-display text-headline-sm text-slate-900">Performance Reviews</h3>
+        {reviews.length === 0 && <p className="py-8 text-center text-body-sm text-slate-600">No performance reviews yet.</p>}
+        <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
+          {reviews.map((r) => (
+            <div key={r.period} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <p className="font-display text-body-md font-semibold text-slate-900">{r.period}</p>
+              <p className="mt-1 text-body-xs uppercase tracking-wide text-slate-600">Goals Set: {r.goals} &middot; Achieved: {r.achieved}</p>
+              <p className="mt-2 flex-1 text-body-sm text-slate-600">&ldquo;{r.feedback}&rdquo;</p>
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  <Icon name="star" className="text-xl text-yellow-400" />
+                  <span className="font-stat text-body-md font-semibold text-slate-900">{r.rating}/5</span>
+                </div>
+                <span className="text-body-sm text-slate-600">{Math.round((r.achieved / r.goals) * 100)}% achieved</span>
+              </div>
             </div>
-            <div className="rounded-lg bg-white/10 p-4 text-center">
-              <p className="mb-1 font-label-caps text-label-caps text-white">Goals Achieved</p>
-              <p className="font-stat text-2xl text-white">{r.achieved}</p>
-            </div>
-          </div>
-          <p className="text-body-sm italic text-white/70">&ldquo;{r.feedback}&rdquo;</p>
+          ))}
         </div>
-      ))}
+      </section>
     </div>
   );
 }
@@ -579,15 +614,15 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
     <div className="space-y-stack-lg">
       {available.length > 0 && (
         <section>
-          <h3 className="mb-4 font-display text-headline-sm text-white">Available Courses</h3>
+          <h3 className="mb-4 font-display text-headline-sm text-slate-900">Available Courses</h3>
           <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
             {available.map((c) => (
-              <div key={c.id} className="flex flex-col rounded-lg border border-white/10 bg-white/5 p-stack-lg">
-                <p className="font-display text-body-md font-semibold text-white">{c.title}</p>
-                <p className="mt-1 text-body-xs uppercase tracking-wide text-white/70">{c.category}</p>
-                <p className="mt-2 flex-1 text-body-sm text-white/70">{c.description || 'No description available.'}</p>
+              <div key={c.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                <p className="font-display text-body-md font-semibold text-slate-900">{c.title}</p>
+                <p className="mt-1 text-body-xs uppercase tracking-wide text-slate-600">{c.category}</p>
+                <p className="mt-2 flex-1 text-body-sm text-slate-600">{c.description || 'No description available.'}</p>
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-body-sm text-white/70">
+                  <span className="text-body-sm text-slate-600">
                     {c.duration_hours ? `${c.duration_hours}h` : 'Self-paced'}
                   </span>
                   <button
@@ -606,22 +641,22 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
         </section>
       )}
       <section>
-        <h3 className="mb-4 font-display text-headline-sm text-white">My Enrollments</h3>
-        <div className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
+        <h3 className="mb-4 font-display text-headline-sm text-slate-900">My Enrollments</h3>
+        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
           <table className="w-full text-left">
-            <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+            <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
               <tr><th className="px-stack-lg py-4">Course</th><th className="px-stack-lg py-4">Category</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Completed On</th><th className="px-stack-lg py-4">Score</th></tr>
             </thead>
-            <tbody className="divide-y divide-white/10">
+            <tbody className="divide-y divide-slate-200">
               {courses.length === 0 ? (
-                <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No enrollments yet. Browse available courses above.</td></tr>
+                <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No enrollments yet. Browse available courses above.</td></tr>
               ) : courses.map((c) => (
-                <tr key={c.id} className="transition-colors hover:bg-white/5">
-                  <td className="px-stack-lg py-4 text-body-md text-white">{c.title}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-white/70">{c.category}</td>
+                <tr key={c.id} className="transition-colors hover:bg-blue-50">
+                  <td className="px-stack-lg py-4 text-body-md text-slate-900">{c.title}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.category}</td>
                   <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[c.status]}>{c.status.replace('_', ' ')}</StatusBadge></td>
-                  <td className="px-stack-lg py-4 text-body-sm text-white/70">{c.completedOn || '—'}</td>
-                  <td className="px-stack-lg py-4 text-body-sm font-semibold text-white">{c.score || '—'}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.completedOn || '—'}</td>
+                  <td className="px-stack-lg py-4 text-body-sm font-semibold text-slate-900">{c.score || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -634,37 +669,61 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
 
 function Documents({ docs }) {
   const typeIcon = { contract: 'gavel', id_proof: 'badge', certificate: 'workspace_premium', other: 'description', resume: 'person' };
+  const contracts = docs.filter((d) => d.type === 'contract').length;
+  const certs = docs.filter((d) => d.type === 'certificate').length;
+  const kpis = [
+    { label: 'Total Documents', value: docs.length, icon: 'description' },
+    { label: 'Contracts', value: contracts, icon: 'gavel' },
+    { label: 'Certificates', value: certs, icon: 'workspace_premium' },
+  ];
 
   const handleDownload = async (d) => {
     if (d.file_url) {
       window.open(d.file_url, '_blank');
       return;
     }
-    // No file on record yet (e.g. demo data) — generate a branded PDF with content and imagery for this document.
     await downloadDocumentPdf(d);
   };
 
   return (
-    <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
-      {docs.length === 0 && <p className="col-span-full py-8 text-center text-body-sm text-white/70">No documents available yet.</p>}
-      {docs.map((d) => (
-        <div key={d.id} className="flex items-start gap-4 rounded-lg border border-brand/30 bg-brand-dark p-stack-lg">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-white/10">
-            <Icon name={typeIcon[d.type] || 'description'} className="text-xl text-white" />
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
+              <Icon name={stat.icon} className="text-2xl text-blue-600" />
+            </div>
+            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-display text-body-md font-semibold text-white">{d.name}</p>
-            <p className="text-body-sm capitalize text-white/70">{d.type.replace('_', ' ')}{d.size ? ` · ${d.size}` : ''}</p>
-            <p className="text-body-sm text-white/70">{d.uploadedOn}</p>
-          </div>
-          <button
-            onClick={() => handleDownload(d)}
-            className="shrink-0 cursor-pointer text-white transition-colors hover:text-white/70"
-            aria-label="Download">
-            <Icon name="download" className="text-xl" />
-          </button>
+        ))}
+      </div>
+      <section>
+        <h3 className="mb-4 font-display text-headline-sm text-slate-900">My Documents</h3>
+        {docs.length === 0 && <p className="py-8 text-center text-body-sm text-slate-600">No documents available yet.</p>}
+        <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
+          {docs.map((d) => (
+            <div key={d.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="mb-3 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
+                <Icon name={typeIcon[d.type] || 'description'} className="text-2xl text-blue-600" />
+              </div>
+              <p className="font-display text-body-md font-semibold text-slate-900">{d.name}</p>
+              <p className="mt-1 text-body-xs uppercase tracking-wide text-slate-600">{d.type.replace('_', ' ')}{d.size ? ` · ${d.size}` : ''}</p>
+              <p className="mt-2 flex-1 text-body-sm text-slate-600">{d.uploadedOn}</p>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-body-sm text-slate-600">Document</span>
+                <button
+                  onClick={() => handleDownload(d)}
+                  className="inline-flex items-center gap-1.5 rounded bg-brand px-4 py-2 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark disabled:opacity-60"
+                  aria-label="Download">
+                  <Icon name="download" className="text-base leading-none" />
+                  Download
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      </section>
     </div>
   );
 }
@@ -682,7 +741,7 @@ function Leads({ leads, accessToken, onRefresh }) {
   const [submitting, setSubmitting] = useState(false);
   const [savingId, setSavingId] = useState(null);
   const [toast, setToast] = useState('');
-  const inputClass = 'border border-white/20 rounded px-4 py-3 text-body-md text-white placeholder-white/40 bg-white/10 focus:outline-none focus:border-brand';
+  const inputClass = 'border border-slate-200 rounded px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 bg-white focus:outline-none focus:border-brand';
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -747,7 +806,7 @@ function Leads({ leads, accessToken, onRefresh }) {
         <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>New Lead</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <input type="text" placeholder="Company (optional)" value={form.company} onChange={(e) => handleChange('company', e.target.value)} className={inputClass} />
@@ -783,26 +842,26 @@ function Leads({ leads, accessToken, onRefresh }) {
           toast.includes('successfully') ? 'border border-green-500/30 bg-green-500/10 text-green-300' : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
-      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
         <table className="w-full text-left">
-          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
             <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Est. Value</th><th className="px-stack-lg py-4">Status</th></tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-slate-200">
             {leads.map((l) => (
-              <tr key={l.id} className="transition-colors hover:bg-white/5">
+              <tr key={l.id} className="transition-colors hover:bg-blue-50">
                 <td className="px-stack-lg py-4">
-                  <p className="text-body-md font-semibold text-white">{l.company || '—'}</p>
-                  <p className="text-body-sm text-white/70">{l.contact_name}</p>
+                  <p className="text-body-md font-semibold text-slate-900">{l.company || '—'}</p>
+                  <p className="text-body-sm text-slate-600">{l.contact_name}</p>
                 </td>
-                <td className="px-stack-lg py-4 text-body-sm text-white/70">{l.email}</td>
-                <td className="px-stack-lg py-4 text-body-sm capitalize text-white/70">{l.source?.replace('_', ' ')}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-white">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{l.email}</td>
+                <td className="px-stack-lg py-4 text-body-sm capitalize text-slate-600">{l.source?.replace('_', ' ')}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-900">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
                 <td className="px-stack-lg py-4">
                   <div className="flex items-center gap-2">
                     <StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge>
                     <select value={l.status} disabled={savingId === l.id || !accessToken} onChange={(e) => handleStatusChange(l.id, e.target.value)}
-                      className="rounded border border-white/20 bg-white/10 px-2 py-1 text-body-sm disabled:opacity-50">
+                      className="rounded border border-slate-200 bg-white px-2 py-1 text-body-sm disabled:opacity-50">
                       {LEAD_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                     </select>
                   </div>
@@ -810,7 +869,7 @@ function Leads({ leads, accessToken, onRefresh }) {
               </tr>
             ))}
             {!leads.length && (
-              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No leads yet.</td></tr>
+              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No leads yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -825,7 +884,7 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [actingId, setActingId] = useState(null);
-  const inputClass = 'border border-white/20 rounded px-4 py-3 text-body-md text-white placeholder-white/40 bg-white/10 focus:outline-none focus:border-brand';
+  const inputClass = 'border border-slate-200 rounded px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 bg-white focus:outline-none focus:border-brand';
 
   const leadLabel = (leadId) => {
     const lead = leads.find((l) => l.id === leadId);
@@ -887,7 +946,7 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
         <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>New Proposal</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <select value={form.lead_id} onChange={(e) => handleChange('lead_id', e.target.value)} className={`${inputClass} ${errors.lead_id ? 'border-red-400' : ''}`}>
@@ -914,18 +973,18 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
           </div>
         </form>
       )}
-      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
         <table className="w-full text-left">
-          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
             <tr><th className="px-stack-lg py-4">Lead</th><th className="px-stack-lg py-4">Price</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Sent</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-slate-200">
             {proposals.map((p) => (
-              <tr key={p.id} className="transition-colors hover:bg-white/5">
-                <td className="px-stack-lg py-4 text-body-md text-white">{leadLabel(p.lead_id)}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-white/70">{p.currency} {Number(p.price).toLocaleString()}</td>
+              <tr key={p.id} className="transition-colors hover:bg-blue-50">
+                <td className="px-stack-lg py-4 text-body-md text-slate-900">{leadLabel(p.lead_id)}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{p.currency} {Number(p.price).toLocaleString()}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={PROPOSAL_STATUS_COLOR[p.status]}>{p.status}</StatusBadge></td>
-                <td className="px-stack-lg py-4 text-body-sm text-white/70">{p.sent_at ? p.sent_at.slice(0, 10) : '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{p.sent_at ? p.sent_at.slice(0, 10) : '—'}</td>
                 <td className="px-stack-lg py-4">
                   <div className="flex gap-2">
                     {p.status === 'draft' && <RowAction disabled={actingId === p.id} onClick={() => runAction(sendProposal, p.id)}>Send</RowAction>}
@@ -941,7 +1000,7 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
               </tr>
             ))}
             {!proposals.length && (
-              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No proposals yet.</td></tr>
+              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No proposals yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -971,25 +1030,25 @@ function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
       <table className="w-full text-left">
-        <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+        <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
           <tr><th className="px-stack-lg py-4">Deal</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Client Signed</th><th className="px-stack-lg py-4">Company Signed</th><th className="px-stack-lg py-4">Actions</th></tr>
         </thead>
-        <tbody className="divide-y divide-white/10">
+        <tbody className="divide-y divide-slate-200">
           {contracts.map((c) => (
-            <tr key={c.id} className="transition-colors hover:bg-white/5">
-              <td className="px-stack-lg py-4 text-body-md text-white">{describe(c.proposal_id)}</td>
+            <tr key={c.id} className="transition-colors hover:bg-blue-50">
+              <td className="px-stack-lg py-4 text-body-md text-slate-900">{describe(c.proposal_id)}</td>
               <td className="px-stack-lg py-4"><StatusBadge variant={CONTRACT_STATUS_COLOR[c.status]}>{c.status}</StatusBadge></td>
-              <td className="px-stack-lg py-4 text-body-sm text-white/70">{c.signed_by_client_at ? c.signed_by_client_at.slice(0, 10) : '—'}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-white/70">{c.signed_by_company_at ? c.signed_by_company_at.slice(0, 10) : '—'}</td>
+              <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.signed_by_client_at ? c.signed_by_client_at.slice(0, 10) : '—'}</td>
+              <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.signed_by_company_at ? c.signed_by_company_at.slice(0, 10) : '—'}</td>
               <td className="px-stack-lg py-4">
                 {c.status === 'pending' && <RowAction disabled={actingId === c.id} onClick={() => handleSign(c.id)}>Mark Signed</RowAction>}
               </td>
             </tr>
           ))}
           {!contracts.length && (
-            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No contracts yet — generate one from an accepted proposal.</td></tr>
+            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No contracts yet — generate one from an accepted proposal.</td></tr>
           )}
         </tbody>
       </table>
@@ -1019,24 +1078,24 @@ function MarketingLeadsView({ accessToken }) {
 
   if (loading) return <LoadingSpinner />;
   return (
-    <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
       <table className="w-full text-left">
-        <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+        <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
           <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Est. Value</th></tr>
         </thead>
-        <tbody className="divide-y divide-white/10">
+        <tbody className="divide-y divide-slate-200">
           {leads.map((l) => (
-            <tr key={l.id} className="transition-colors hover:bg-white/5">
+            <tr key={l.id} className="transition-colors hover:bg-blue-50">
               <td className="px-stack-lg py-4">
-                <p className="text-body-md font-semibold text-white">{l.company || '—'}</p>
-                <p className="text-body-sm text-white/70">{l.contact_name}</p>
+                <p className="text-body-md font-semibold text-slate-900">{l.company || '—'}</p>
+                <p className="text-body-sm text-slate-600">{l.contact_name}</p>
               </td>
-              <td className="px-stack-lg py-4 text-body-sm capitalize text-white/70">{l.source?.replace('_', ' ')}</td>
+              <td className="px-stack-lg py-4 text-body-sm capitalize text-slate-600">{l.source?.replace('_', ' ')}</td>
               <td className="px-stack-lg py-4"><StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge></td>
-              <td className="px-stack-lg py-4 text-body-sm text-white">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
+              <td className="px-stack-lg py-4 text-body-sm text-slate-900">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
             </tr>
           ))}
-          {!leads.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No leads yet.</td></tr>}
+          {!leads.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No leads yet.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -1049,6 +1108,10 @@ function TestimonialModeration({ accessToken }) {
   const [actingId, setActingId] = useState(null);
   const [filter, setFilter] = useState('pending');
   const [toast, setToast] = useState('');
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ author_name: '', author_title: '', company_name: '', rating: 5, content: '' });
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -1063,16 +1126,64 @@ function TestimonialModeration({ accessToken }) {
 
   useEffect(() => { load(); }, [load]);
 
-  useEffect(() => {
-    const id = setInterval(load, 30000);
-    return () => clearInterval(id);
-  }, [load]);
+  const validate = () => {
+    const errs = {};
+    if (!form.author_name.trim()) errs.author_name = 'Author name is required.';
+    if (!form.content.trim()) errs.content = 'Testimonial content is required.';
+    if (form.content.trim().length < 10) errs.content = 'Content must be at least 10 characters.';
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setSubmitting(true);
+    try {
+      await createTestimonial(accessToken, { ...form, is_published: false });
+      setForm({ author_name: '', author_title: '', company_name: '', rating: 5, content: '' });
+      setErrors({});
+      setShowForm(false);
+      showToast('Testimonial created successfully.');
+      load();
+    } catch (err) {
+      showToast(err?.message || 'Failed to create testimonial.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const approve = async (id) => {
     setActingId(id);
     try {
       await updateTestimonial(accessToken, id, { is_published: true });
       showToast('Testimonial approved and published.');
+      load();
+    } catch (err) {
+      showToast(err?.message || 'Action failed.');
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const unpublish = async (id) => {
+    setActingId(id);
+    try {
+      await updateTestimonial(accessToken, id, { is_published: false });
+      showToast('Testimonial unpublished.');
+      load();
+    } catch (err) {
+      showToast(err?.message || 'Action failed.');
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const remove = async (id) => {
+    setActingId(id);
+    try {
+      await deleteTestimonial(accessToken, id);
+      showToast('Testimonial deleted.');
       load();
     } catch (err) {
       showToast(err?.message || 'Action failed.');
@@ -1100,58 +1211,111 @@ function TestimonialModeration({ accessToken }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
-            <div className="mb-2 flex items-center gap-3">
-              <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-white/70">{stat.label}</span>
+          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
+              <Icon name={stat.icon} className="text-2xl text-blue-600" />
             </div>
-            <p className="font-stat text-stat-lg text-white">{stat.value}</p>
+            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
           </div>
         ))}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="font-label-caps text-label-caps uppercase text-slate-900">Filter:</span>
           {['pending', 'published', 'all'].map((s) => (
             <button key={s} onClick={() => setFilter(s)}
               className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
-                filter === s ? 'border-brand bg-brand text-white' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
-              }`}>{s}
-            </button>
+                filter === s ? 'border-brand bg-brand text-white' : 'border-slate-300 text-slate-600 hover:border-brand hover:text-brand'
+              }`}>{s}</button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-white">
-          <Icon name="refresh" className="text-base" /> Refresh
-        </button>
+        <div className="flex items-center gap-3">
+          <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>New Testimonial</Button>
+          <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-slate-900">
+            <Icon name="refresh" className="text-base" /> Refresh
+          </button>
+        </div>
       </div>
 
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.includes('success') || toast.includes('published')
-            ? 'border border-green-500/30 bg-green-500/10 text-green-300'
-            : 'border border-red-500/30 bg-red-500/10 text-red-300'
+          toast.includes('success') || toast.includes('published') || toast.includes('deleted')
+            ? 'border border-green-200 bg-green-50 text-green-700'
+            : 'border border-red-200 bg-red-50 text-red-700'
         }`}>{toast}</p>
       )}
 
-      <div className="space-y-4">
+      {showForm && (
+        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label className="mb-1 block font-label-caps text-label-caps uppercase text-slate-600">Author Name *</label>
+              <input type="text" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })}
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.author_name ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`}
+                placeholder="John Doe" />
+              {errors.author_name && <p className="mt-1 text-body-xs text-red-500">{errors.author_name}</p>}
+            </div>
+            <div>
+              <label className="mb-1 block font-label-caps text-label-caps uppercase text-slate-600">Title / Role</label>
+              <input type="text" value={form.author_title} onChange={(e) => setForm({ ...form, author_title: e.target.value })}
+                className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none"
+                placeholder="CEO at Acme Inc." />
+            </div>
+            <div>
+              <label className="mb-1 block font-label-caps text-label-caps uppercase text-slate-600">Company</label>
+              <input type="text" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })}
+                className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none"
+                placeholder="Acme Inc." />
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block font-label-caps text-label-caps uppercase text-slate-600">Rating</label>
+            <div className="flex items-center gap-1">
+              {[1, 2, 3, 4, 5].map((r) => (
+                <button key={r} type="button" onClick={() => setForm({ ...form, rating: r })}
+                  className="cursor-pointer">
+                  <Icon name={r <= form.rating ? 'star' : 'star_outline'} className="text-2xl text-yellow-400" />
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block font-label-caps text-label-caps uppercase text-slate-600">Testimonial *</label>
+            <textarea rows={3} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })}
+              className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.content ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`}
+              placeholder="Write the testimonial content..." />
+            {errors.content && <p className="mt-1 text-body-xs text-red-500">{errors.content}</p>}
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Saving...' : 'Save Testimonial'}</Button>
+            <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setErrors({}); }}>Cancel</Button>
+          </div>
+        </form>
+      )}
+
+      <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
         {visible.map((t) => (
-          <div key={t.id} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
-            <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="font-display text-body-md font-semibold text-white">{t.author_name}</p>
-                <p className="text-body-sm text-white/70">{t.author_title}{t.company_name ? ` · ${t.company_name}` : ''}</p>
-                <div className="mt-1 flex items-center gap-0.5">{stars(t.rating)}</div>
-              </div>
-              <div className="flex items-center gap-3">
-                <StatusBadge variant={t.is_published ? 'success' : 'warning'}>{t.is_published ? 'published' : 'pending'}</StatusBadge>
-                {!t.is_published && <RowAction disabled={actingId === t.id} onClick={() => approve(t.id)}>Approve &amp; Publish</RowAction>}
+          <div key={t.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-3 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
+              <Icon name="person" className="text-2xl text-blue-600" />
+            </div>
+            <p className="font-display text-body-md font-semibold text-slate-900">{t.author_name}</p>
+            <p className="mt-1 text-body-xs uppercase tracking-wide text-slate-600">{t.author_title}{t.company_name ? ` · ${t.company_name}` : ''}</p>
+            <div className="mt-2 flex items-center gap-0.5">{stars(t.rating)}</div>
+            <p className="mt-2 flex-1 text-body-sm italic text-slate-600">&ldquo;{t.content}&rdquo;</p>
+            <div className="mt-4 flex items-center justify-between">
+              <StatusBadge variant={t.is_published ? 'success' : 'warning'}>{t.is_published ? 'published' : 'pending'}</StatusBadge>
+              <div className="flex items-center gap-2">
+                {!t.is_published && <RowAction disabled={actingId === t.id} onClick={() => approve(t.id)}>Approve</RowAction>}
+                {t.is_published && <RowAction variant="outline" disabled={actingId === t.id} onClick={() => unpublish(t.id)}>Unpublish</RowAction>}
+                <RowAction variant="outline" disabled={actingId === t.id} onClick={() => remove(t.id)}>Delete</RowAction>
               </div>
             </div>
-            <p className="text-body-sm italic text-white/70">&ldquo;{t.content}&rdquo;</p>
           </div>
         ))}
-        {!visible.length && <p className="py-8 text-center text-body-sm text-white/70">No testimonials to show.</p>}
+        {!visible.length && <p className="col-span-full py-8 text-center text-body-sm text-slate-600">No testimonials to show.</p>}
       </div>
     </div>
   );
@@ -1220,7 +1384,7 @@ function TeamProjects({ accessToken, userId }) {
         <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Project</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-2">
             <input required type="text" placeholder="Project title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={FORM_INPUT_CLASS} />
             <select value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className={FORM_INPUT_CLASS}>
@@ -1242,27 +1406,27 @@ function TeamProjects({ accessToken, userId }) {
 
       <div className="space-y-4">
         {projects.map((p) => (
-          <div key={p.id} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+          <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-3 flex items-start justify-between gap-4">
               <div>
-                <h3 className="font-display text-headline-sm text-white">{p.title}</h3>
-                <p className="text-body-sm text-white/70">Client: {clientName(p.client_id)}{p.budget ? ` · Budget: $${Number(p.budget).toLocaleString()}` : ''}</p>
+                <h3 className="font-display text-headline-sm text-slate-900">{p.title}</h3>
+                <p className="text-body-sm text-slate-600">Client: {clientName(p.client_id)}{p.budget ? ` · Budget: $${Number(p.budget).toLocaleString()}` : ''}</p>
               </div>
               <StatusBadge variant={PROJECT_STATUS_COLOR[p.status]}>{p.status?.replace('_', ' ')}</StatusBadge>
             </div>
             <div className="mb-3 flex items-center gap-3">
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
                 <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress_percent}%` }} />
               </div>
-              <span className="w-10 text-right text-body-sm font-semibold text-white">{p.progress_percent}%</span>
+              <span className="w-10 text-right text-body-sm font-semibold text-slate-900">{p.progress_percent}%</span>
             </div>
             {assigningId === p.id ? (
-              <div className="space-y-2 border-t border-white/10 pt-3">
-                <p className="font-label-caps text-label-caps uppercase text-white/70">Select team members</p>
+              <div className="space-y-2 border-t border-slate-200 pt-3">
+                <p className="font-label-caps text-label-caps uppercase text-slate-600">Select team members</p>
                 <div className="flex flex-wrap gap-2">
                   {employees.map((emp) => (
                     <button key={emp.id} type="button" onClick={() => toggleTeamMember(emp.id)}
-                      className={`rounded border px-3 py-1.5 text-body-sm transition-colors ${teamSelection.includes(emp.id) ? 'border-brand bg-brand text-white' : 'border-white/20 text-white/70 hover:border-brand'}`}>
+                      className={`rounded border px-3 py-1.5 text-body-sm transition-colors ${teamSelection.includes(emp.id) ? 'border-brand bg-brand text-white' : 'border-slate-200 text-slate-600 hover:border-brand'}`}>
                       {emp.employee_code}{emp.designation ? ` · ${emp.designation}` : ''}
                     </button>
                   ))}
@@ -1277,7 +1441,7 @@ function TeamProjects({ accessToken, userId }) {
             )}
           </div>
         ))}
-        {!projects.length && <p className="py-8 text-center text-body-sm text-white/70">No projects assigned to you yet.</p>}
+        {!projects.length && <p className="py-8 text-center text-body-sm text-slate-600">No projects assigned to you yet.</p>}
       </div>
     </div>
   );
@@ -1341,7 +1505,7 @@ function TaskBoard({ accessToken, userId }) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
             <input required type="text" placeholder="Task title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={FORM_INPUT_CLASS} />
             <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className={FORM_INPUT_CLASS}>
@@ -1359,14 +1523,14 @@ function TaskBoard({ accessToken, userId }) {
       {loading ? <LoadingSpinner /> : (
         <div className="grid gap-gutter md:grid-cols-5">
           {TASK_STATUS_COLUMNS.map((col) => (
-            <div key={col} className="space-y-2 rounded-lg bg-white/10 p-3">
-              <p className="font-label-caps text-label-caps uppercase text-white">{col.replace('_', ' ')} ({tasks.filter((t) => t.status === col).length})</p>
+            <div key={col} className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+              <p className="font-label-caps text-label-caps uppercase text-slate-900">{col.replace('_', ' ')} ({tasks.filter((t) => t.status === col).length})</p>
               {tasks.filter((t) => t.status === col).map((t) => (
-                <div key={t.id} className="space-y-2 rounded border border-white/10 bg-white/5 p-3">
-                  <p className="text-body-sm font-semibold text-white">{t.title}</p>
+                <div key={t.id} className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                  <p className="text-body-sm font-semibold text-slate-900">{t.title}</p>
                   <StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
                   <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
-                    className="w-full rounded border border-white/20 bg-white/10 px-2 py-1 text-body-sm">
+                    className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-body-sm text-slate-900">
                     {TASK_STATUS_COLUMNS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                   </select>
                 </div>
@@ -1430,28 +1594,28 @@ function Approvals({ accessToken }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-white/70">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-slate-600">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-white">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-slate-900">{stat.value}</p>
           </div>
         ))}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
+          <span className="font-label-caps text-label-caps uppercase text-slate-900">Filter:</span>
           {['submitted', 'approved', 'rejected', 'all'].map((s) => (
             <button key={s} onClick={() => setFilter(s)}
               className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
-                filter === s ? 'border-brand bg-brand text-white' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
+                filter === s ? 'border-brand bg-brand text-white' : 'border-slate-300 text-slate-600 hover:border-brand hover:text-brand'
               }`}>{s}
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-white">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-slate-900">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
@@ -1464,9 +1628,9 @@ function Approvals({ accessToken }) {
         }`}>{toast}</p>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
         <table className="w-full text-left">
-          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
             <tr>
               <th className="px-stack-lg py-4">Employee</th>
               <th className="px-stack-lg py-4">Date</th>
@@ -1476,16 +1640,16 @@ function Approvals({ accessToken }) {
               <th className="px-stack-lg py-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-slate-200">
             {visible.map((t) => (
-              <tr key={t.id} className="transition-colors hover:bg-white/5">
+              <tr key={t.id} className="transition-colors hover:bg-blue-50">
                 <td className="px-stack-lg py-4">
-                  <p className="text-body-md font-semibold text-white">{t.employee_name || t.employee_code || '—'}</p>
-                  {t.employee_code && t.employee_name && <p className="text-body-sm text-white/70">{t.employee_code}</p>}
+                  <p className="text-body-md font-semibold text-slate-900">{t.employee_name || t.employee_code || '—'}</p>
+                  {t.employee_code && t.employee_name && <p className="text-body-sm text-slate-600">{t.employee_code}</p>}
                 </td>
-                <td className="px-stack-lg py-4 text-body-sm text-white/70">{t.date}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-white">{t.hours}h</td>
-                <td className="px-stack-lg py-4 text-body-sm text-white/70">{t.description || '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{t.date}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-900">{t.hours}h</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{t.description || '—'}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={TIMESHEET_STATUS_COLOR[t.status]}>{t.status}</StatusBadge></td>
                 <td className="px-stack-lg py-4">
                   <div className="flex gap-2">
@@ -1495,7 +1659,7 @@ function Approvals({ accessToken }) {
                 </td>
               </tr>
             ))}
-            {!visible.length && <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No timesheets to show.</td></tr>}
+            {!visible.length && <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No timesheets to show.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -1557,28 +1721,28 @@ function TestQueue({ accessToken }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-white/70">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-slate-600">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-white">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-slate-900">{stat.value}</p>
           </div>
         ))}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
+          <span className="font-label-caps text-label-caps uppercase text-slate-900">Filter:</span>
           {['in_review', 'done', 'blocked', 'all'].map((s) => (
             <button key={s} onClick={() => setFilter(s)}
               className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
-                filter === s ? 'border-brand bg-brand text-white' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
+                filter === s ? 'border-brand bg-brand text-white' : 'border-slate-300 text-slate-600 hover:border-brand hover:text-brand'
               }`}>{s.replace('_', ' ')}
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-white">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-slate-900">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
@@ -1591,9 +1755,9 @@ function TestQueue({ accessToken }) {
         }`}>{toast}</p>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
         <table className="w-full text-left">
-          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
             <tr>
               <th className="px-stack-lg py-4">Task</th>
               <th className="px-stack-lg py-4">Priority</th>
@@ -1602,13 +1766,13 @@ function TestQueue({ accessToken }) {
               <th className="px-stack-lg py-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-slate-200">
             {visible.map((t) => (
-              <tr key={t.id} className="transition-colors hover:bg-white/5">
-                <td className="px-stack-lg py-4 text-body-md text-white">{t.title}</td>
+              <tr key={t.id} className="transition-colors hover:bg-blue-50">
+                <td className="px-stack-lg py-4 text-body-md text-slate-900">{t.title}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge></td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={TASK_STATUS_COLOR[t.status]}>{t.status?.replace('_', ' ')}</StatusBadge></td>
-                <td className="px-stack-lg py-4 text-body-sm text-white/70">{t.due_date || '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{t.due_date || '—'}</td>
                 <td className="px-stack-lg py-4">
                   <div className="flex gap-2">
                     <RowAction disabled={savingId === t.id} onClick={() => resolve(t.id, 'done')}>Pass</RowAction>
@@ -1617,7 +1781,7 @@ function TestQueue({ accessToken }) {
                 </td>
               </tr>
             ))}
-            {!visible.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">Nothing waiting for QA sign-off.</td></tr>}
+            {!visible.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">Nothing waiting for QA sign-off.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -1720,28 +1884,28 @@ function TicketQueue({ accessToken, userId }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-white/70">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-slate-600">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-white">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-slate-900">{stat.value}</p>
           </div>
         ))}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
+          <span className="font-label-caps text-label-caps uppercase text-slate-900">Filter:</span>
           {['all', 'open', 'in_progress', 'resolved', 'closed'].map((s) => (
             <button key={s} onClick={() => setFilter(s)}
               className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
-                filter === s ? 'border-brand bg-brand text-white' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
+                filter === s ? 'border-brand bg-brand text-white' : 'border-slate-300 text-slate-600 hover:border-brand hover:text-brand'
               }`}>{s.replace('_', ' ')}
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-white">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-slate-900">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
@@ -1756,22 +1920,22 @@ function TicketQueue({ accessToken, userId }) {
 
       <div className="space-y-4">
         {visible.map((t) => (
-          <div key={t.id} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+          <div key={t.id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="font-display text-body-md font-semibold text-white">{t.subject}</p>
-                <p className="text-body-sm text-white/70">{t.ticket_number}</p>
+                <p className="font-display text-body-md font-semibold text-slate-900">{t.subject}</p>
+                <p className="text-body-sm text-slate-600">{t.ticket_number}</p>
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge variant={TICKET_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
                 <StatusBadge variant={TICKET_STATUS_COLOR[t.status]}>{t.status.replace('_', ' ')}</StatusBadge>
               </div>
             </div>
-            <p className="mb-3 text-body-sm text-white/70">{t.description}</p>
+            <p className="mb-3 text-body-sm text-slate-600">{t.description}</p>
             <div className="flex flex-wrap items-center gap-2">
               {!t.assigned_to && <RowAction disabled={savingId === t.id} onClick={() => assignToMe(t.id)}>Assign to me</RowAction>}
               <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
-                className="rounded border border-white/20 bg-white/10 px-2 py-1.5 text-body-sm">
+                className="rounded border border-slate-200 bg-white px-2 py-1.5 text-body-sm text-slate-900">
                 {['open', 'in_progress', 'resolved', 'closed'].map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
               </select>
               <RowAction variant="outline" onClick={() => setOpenTicketId(openTicketId === t.id ? null : t.id)}>Reply</RowAction>
@@ -1779,13 +1943,13 @@ function TicketQueue({ accessToken, userId }) {
             {openTicketId === t.id && (
               <div className="mt-3 flex gap-2">
                 <textarea rows={2} value={replyDraft[t.id] || ''} onChange={(e) => setReplyDraft((prev) => ({ ...prev, [t.id]: e.target.value }))}
-                  placeholder="Type a reply..." className="flex-1 rounded border border-white/20 bg-white/10 px-3 py-2 text-body-sm focus:border-brand focus:outline-none" />
+                  placeholder="Type a reply..." className="flex-1 rounded border border-slate-200 bg-white px-3 py-2 text-body-sm text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
                 <RowAction disabled={savingId === t.id} onClick={() => sendReply(t.id)}>Send</RowAction>
               </div>
             )}
           </div>
         ))}
-        {!visible.length && <p className="py-8 text-center text-body-sm text-white/70">No tickets in the queue.</p>}
+        {!visible.length && <p className="py-8 text-center text-body-sm text-slate-600">No tickets in the queue.</p>}
       </div>
     </div>
   );
@@ -1853,7 +2017,7 @@ function Invoices({ accessToken }) {
         <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Invoice</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
             <select required value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className={FORM_INPUT_CLASS}>
               <option value="" disabled>Select client</option>
@@ -1873,18 +2037,18 @@ function Invoices({ accessToken }) {
           </div>
         </form>
       )}
-      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
         <table className="w-full text-left">
-          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
             <tr><th className="px-stack-lg py-4">Invoice</th><th className="px-stack-lg py-4">Client</th><th className="px-stack-lg py-4">Total</th><th className="px-stack-lg py-4">Due</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-slate-200">
             {invoices.map((inv) => (
-              <tr key={inv.id} className="transition-colors hover:bg-white/5">
-                <td className="px-stack-lg py-4 text-body-md text-white">{inv.invoice_number}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-white/70">{clientName(inv.client_id)}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-white">{inv.currency} {Number(inv.total_amount).toLocaleString()}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-white/70">{inv.due_date}</td>
+              <tr key={inv.id} className="transition-colors hover:bg-blue-50">
+                <td className="px-stack-lg py-4 text-body-md text-slate-900">{inv.invoice_number}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{clientName(inv.client_id)}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-900">{inv.currency} {Number(inv.total_amount).toLocaleString()}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{inv.due_date}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={INVOICE_STATUS_COLOR[inv.status]}>{inv.status}</StatusBadge></td>
                 <td className="px-stack-lg py-4">
                   <div className="flex gap-2">
@@ -1894,7 +2058,7 @@ function Invoices({ accessToken }) {
                 </td>
               </tr>
             ))}
-            {!invoices.length && <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No invoices yet.</td></tr>}
+            {!invoices.length && <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No invoices yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -1948,16 +2112,16 @@ function LeaveApprovals({ accessToken }) {
     <div className="space-y-stack-md">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
+          <span className="font-label-caps text-label-caps uppercase text-slate-900">Filter:</span>
           {['pending', 'approved', 'rejected', 'all'].map((s) => (
             <button key={s} onClick={() => setFilter(s)}
               className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
-                filter === s ? 'border-brand bg-brand text-white' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
+                filter === s ? 'border-brand bg-brand text-white' : 'border-slate-300 text-slate-600 hover:border-brand hover:text-brand'
               }`}>{s}
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-white">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-slate-900">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
@@ -1968,9 +2132,9 @@ function LeaveApprovals({ accessToken }) {
             : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
-      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
         <table className="w-full text-left">
-          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
             <tr>
               <th className="px-stack-lg py-4">Employee</th>
               <th className="px-stack-lg py-4">Type</th>
@@ -1982,22 +2146,22 @@ function LeaveApprovals({ accessToken }) {
               <th className="px-stack-lg py-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-slate-200">
             {leaves.map((l) => {
               const days = l.start_date && l.end_date
                 ? Math.ceil((new Date(l.end_date) - new Date(l.start_date)) / 86400000) + 1
                 : '—';
               return (
-                <tr key={l.id} className="transition-colors hover:bg-white/5">
+                <tr key={l.id} className="transition-colors hover:bg-blue-50">
                   <td className="px-stack-lg py-4">
-                    <p className="text-body-md font-semibold text-white">{l.employee_code || '—'}</p>
-                    {l.designation && <p className="text-body-sm text-white/70">{l.designation}</p>}
+                    <p className="text-body-md font-semibold text-slate-900">{l.employee_code || '—'}</p>
+                    {l.designation && <p className="text-body-sm text-slate-600">{l.designation}</p>}
                   </td>
-                  <td className="px-stack-lg py-4 text-body-md capitalize text-white">{l.type}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-white/70">{l.start_date}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-white/70">{l.end_date}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-white/70">{days}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-white/70">{l.reason || '—'}</td>
+                  <td className="px-stack-lg py-4 text-body-md capitalize text-slate-900">{l.type}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{l.start_date}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{l.end_date}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{days}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{l.reason || '—'}</td>
                   <td className="px-stack-lg py-4"><StatusBadge variant={LEAVE_STATUS_COLOR[l.status]}>{l.status}</StatusBadge></td>
                   <td className="px-stack-lg py-4">
                     {l.status === 'pending' && (
@@ -2010,7 +2174,7 @@ function LeaveApprovals({ accessToken }) {
                 </tr>
               );
             })}
-            {!leaves.length && <tr><td colSpan={8} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No leave requests found.</td></tr>}
+            {!leaves.length && <tr><td colSpan={8} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No leave requests found.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -2079,34 +2243,34 @@ function Recruitment({ accessToken }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-white/70">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-slate-600">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-white">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-slate-900">{stat.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="font-display text-headline-sm text-white">Open Positions</h3>
-          <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-white">
+          <h3 className="font-display text-headline-sm text-slate-900">Open Positions</h3>
+          <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-slate-900">
             <Icon name="refresh" className="text-base" /> Refresh
           </button>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {openPositions.map((p) => (
-            <div key={p.id} className="rounded-lg border border-white/10 p-4">
-              <p className="mb-1 font-display text-body-lg font-semibold text-white">{p.title}</p>
-              <p className="text-body-sm capitalize text-white/70">
+            <div key={p.id} className="rounded-lg border border-slate-200 p-4">
+              <p className="mb-1 font-display text-body-lg font-semibold text-slate-900">{p.title}</p>
+              <p className="text-body-sm capitalize text-slate-600">
                 {p.department || 'General'} · {p.location || 'Remote'} · {String(p.employment_type || 'full_time').replace('_', ' ')}
               </p>
-              <p className="mt-1 text-body-sm text-white/70">{p.experience_required ? `Experience: ${p.experience_required}` : ''}</p>
+              <p className="mt-1 text-body-sm text-slate-600">{p.experience_required ? `Experience: ${p.experience_required}` : ''}</p>
             </div>
           ))}
-          {!openPositions.length && <p className="text-body-sm text-white/70">No open positions right now.</p>}
+          {!openPositions.length && <p className="text-body-sm text-slate-600">No open positions right now.</p>}
         </div>
       </div>
 
@@ -2120,20 +2284,20 @@ function Recruitment({ accessToken }) {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-white">Filter:</span>
+          <span className="font-label-caps text-label-caps uppercase text-slate-900">Filter:</span>
           {['all', ...APPLICATION_STATUS_OPTIONS].map((s) => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
-                statusFilter === s ? 'border-brand bg-brand text-white' : 'border-white/40 text-white/70 hover:border-brand hover:text-brand'
+                statusFilter === s ? 'border-brand bg-brand text-white' : 'border-slate-300 text-slate-600 hover:border-brand hover:text-brand'
               }`}>{s}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
         <table className="w-full text-left">
-          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
             <tr>
               <th className="px-stack-lg py-4">Applicant</th>
               <th className="px-stack-lg py-4">Position</th>
@@ -2142,25 +2306,25 @@ function Recruitment({ accessToken }) {
               <th className="px-stack-lg py-4">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/10">
+          <tbody className="divide-y divide-slate-200">
             {filtered.map((a) => (
-              <tr key={a.id} className="transition-colors hover:bg-white/5">
-                <td className="px-stack-lg py-4 text-body-md text-white">{a.full_name}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-white/70">{positionTitle(a.career_id)}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-white/70">{a.email}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-white/70">{(a.created_at || '').slice(0, 10) || '—'}</td>
+              <tr key={a.id} className="transition-colors hover:bg-blue-50">
+                <td className="px-stack-lg py-4 text-body-md text-slate-900">{a.full_name}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{positionTitle(a.career_id)}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{a.email}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{(a.created_at || '').slice(0, 10) || '—'}</td>
                 <td className="px-stack-lg py-4">
                   <div className="flex items-center gap-2">
                     <StatusBadge variant={APPLICATION_STATUS_COLOR[a.status]}>{a.status}</StatusBadge>
                     <select value={a.status} disabled={savingId === a.id} onChange={(e) => changeStatus(a.id, e.target.value)}
-                      className="rounded border border-white/20 bg-white/10 px-2 py-1 text-body-sm">
+                      className="rounded border border-slate-200 bg-white px-2 py-1 text-body-sm text-slate-900">
                       {APPLICATION_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                 </td>
               </tr>
             ))}
-            {!filtered.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No applications found.</td></tr>}
+            {!filtered.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No applications found.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -2394,50 +2558,50 @@ export default function EmployeePortal() {
   if (loading) return <div className="bg-white/10 py-section-padding"><LoadingSpinner /></div>;
 
   return (
-    <div className="bg-white/10 py-section-padding">
-      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
-        <div className="sticky top-0 z-20 mb-stack-lg flex items-center justify-between gap-4 bg-white/10 py-3">
-          <div className="flex items-center gap-4">
-            <Avatar name={profile.name} size="lg" />
-            <div>
-              <p className="mb-1 font-label-caps text-body-xs uppercase tracking-widest text-white/50">{portalTitle}</p>
-              <h1 className="font-display text-headline-md font-bold text-white">{profile.name}</h1>
-              <p className="text-body-sm text-white/70">{profile.email} &middot; {profile.designation} &middot; {profile.department}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
-              Sign Out
-            </Button>
+    <div className="flex h-screen flex-col" style={{ backgroundColor: '#102C4F' }}>
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b px-margin-mobile py-3 md:px-margin-desktop" style={{ backgroundColor: '#0d2240', borderColor: '#1a3a5e' }}>
+        <div className="flex items-center gap-4">
+          <Avatar name={profile.name} size="lg" />
+          <div>
+            <p className="mb-1 font-label-caps text-body-xs uppercase tracking-widest text-blue-300">{portalTitle}</p>
+            <h1 className="font-display text-headline-md font-bold text-slate-900">{profile.name}</h1>
+            <p className="text-body-sm text-blue-200">{profile.email} &middot; {profile.designation} &middot; {profile.department}</p>
           </div>
         </div>
+        <div className="flex items-center gap-3">
+          <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
+            Sign Out
+          </Button>
+        </div>
+      </div>
 
-        <div className="flex gap-stack-lg">
-          <aside className="hidden w-56 shrink-0 md:block">
-            <nav className="sticky top-24 flex flex-col gap-1">
-              {portalTabs.map((tab) => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
-                    activeTab === tab.id ? 'bg-white/10 font-bold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
-                  }`}>
-                  <Icon name={tab.icon} className="text-lg" />{tab.label}
-                </button>
-              ))}
-            </nav>
-          </aside>
+      <div className="flex min-h-0 flex-1">
+        <aside className="hidden w-56 shrink-0 overflow-y-auto border-r md:block" style={{ backgroundColor: '#0d2240', borderColor: '#1a3a5e' }}>
+          <nav className="flex flex-col gap-1 p-3">
+            {portalTabs.map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
+                  activeTab === tab.id ? 'bg-white/20 font-bold text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white'
+                }`}>
+                <Icon name={tab.icon} className="text-lg" />{tab.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-white/10 md:hidden">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b px-margin-mobile py-2 md:hidden" style={{ backgroundColor: '#0d2240', borderColor: '#1a3a5e' }}>
             {portalTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
-                  activeTab === tab.id ? 'border-brand font-bold text-brand' : 'border-transparent font-semibold text-white/50 hover:border-white/20 hover:text-white'
+                  activeTab === tab.id ? 'border-white font-bold text-white' : 'border-transparent text-blue-200 hover:border-blue-400 hover:text-white'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>
             ))}
           </div>
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 overflow-y-auto px-margin-mobile py-stack-lg md:px-margin-desktop">
             {activeTab === 'overview' && <Overview profile={profile} attendance={attendance} leaves={leaves} timesheets={timesheets} payslips={payslips} />}
             {activeTab === 'leads' && effectiveRole === 'sales' && <Leads leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
             {activeTab === 'proposals' && effectiveRole === 'sales' && <Proposals proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}

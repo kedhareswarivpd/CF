@@ -10,7 +10,7 @@ export default function ValuesGrid() {
           <span className="font-label-caps text-label-caps uppercase tracking-widest text-brand">Principles</span>
           <h2 className="mt-4 font-display text-headline-md text-brand-dark dark:text-dark-brand">Core Values</h2>
         </div>
-        <div className="grid auto-rows-[240px] grid-cols-1 gap-6 md:grid-cols-12">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-12">
           {coreValues.map((value) => {
             const isDark = value.variant === 'dark';
             return (

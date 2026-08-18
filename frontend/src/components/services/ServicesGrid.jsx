@@ -15,7 +15,7 @@ export default function ServicesGrid() {
         <div className="h-1 w-20 rounded-full bg-brand" />
       </div>
       {isFallback && !loading && (
-        <p className="mb-6 text-center text-body-sm text-ink-muted">
+        <p className="mb-6 text-center text-body-sm text-white">
           Showing sample services — connect a live backend to see real service data here.
         </p>
       )}

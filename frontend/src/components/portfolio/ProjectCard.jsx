@@ -12,7 +12,7 @@ export default function ProjectCard({ project }) {
           <span className="font-label-caps text-outline">{project.version}</span>
         </div>
         <h3 className="font-display text-lg text-brand">{project.title}</h3>
-        <p className="font-body text-body-sm text-ink-muted">{project.description}</p>
+        <p className="font-body text-body-sm text-white">{project.description}</p>
         <div className="flex flex-wrap gap-2 pt-2">
           {project.tags.map((tag) => (
             <span key={tag} className="rounded bg-surface-container px-2 py-1 font-label-caps text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">

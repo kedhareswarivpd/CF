@@ -27,23 +27,23 @@ function Overview({ profile, projects, invoices, tickets }) {
   const activeProjects = projects.filter((p) => p.status === 'in_progress').length;
   return (
     <div className="space-y-stack-lg">
-      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
         {[
           { label: 'Active Projects', value: activeProjects, icon: 'folder' },
           { label: 'Open Invoices', value: invoices.filter((i) => i.status === 'pending' || i.status === 'overdue').length, icon: 'receipt' },
           { label: 'Open Tickets', value: tickets.filter((t) => t.status !== 'resolved' && t.status !== 'closed').length, icon: 'support' },
           { label: 'Total Spend', value: `$${(invoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0) / 1000).toFixed(0)}K`, icon: 'payments' },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
-            <div className="mb-2 flex items-center gap-3">
+          <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps font-semibold text-ink-muted dark:text-white">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg font-bold text-brand-dark dark:text-white">{stat.value}</p>
+            <p className="font-stat text-3xl font-bold text-brand-dark dark:text-white">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-white">{stat.label}</p>
           </div>
         ))}
       </div>
-      <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface">
         <h3 className="mb-4 font-display text-headline-sm font-bold text-brand-dark dark:text-white">Profile</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           {[
@@ -66,27 +66,40 @@ function Overview({ profile, projects, invoices, tickets }) {
 
 function Projects({ projects }) {
   return (
-    <div className="space-y-stack-md">
-      {projects.length === 0 && <EmptyState icon="folder" title="No projects yet" description="Your projects will appear here." />}
-      {projects.map((p) => (
-        <div key={p.id} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
-          <div className="mb-3 flex items-start justify-between gap-4">
-            <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{p.title}</h3>
-            <StatusBadge variant={STATUS_VARIANTS[p.status] || 'neutral'} className="whitespace-nowrap">{p.status.replace('_', ' ')}</StatusBadge>
-          </div>
-          <div className="mb-4 grid gap-4 text-body-sm text-ink-muted dark:text-white sm:grid-cols-3">
-            <div>
-              <span className="font-label-caps text-label-caps">Progress</span>
-              <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
-                <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress}%` }} />
-              </div>
-              <span className="text-body-sm">{p.progress}%</span>
-            </div>
-            <div><span className="font-label-caps text-label-caps">Deadline</span><p>{p.deadline}</p></div>
-            <div><span className="font-label-caps text-label-caps">Budget</span><p>{p.budget}</p></div>
-          </div>
-        </div>
-      ))}
+    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      {projects.length === 0
+        ? <div className="p-stack-lg"><EmptyState icon="folder" title="No projects yet" description="Your projects will appear here." /></div>
+        : (
+          <table className="w-full text-left">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+              <tr>
+                <th className="px-stack-lg py-4">Project</th>
+                <th className="px-stack-lg py-4">Progress</th>
+                <th className="px-stack-lg py-4">Deadline</th>
+                <th className="px-stack-lg py-4">Budget</th>
+                <th className="px-stack-lg py-4">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+              {projects.map((p) => (
+                <tr key={p.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                  <td className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{p.title}</td>
+                  <td className="px-stack-lg py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-2 w-24 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
+                        <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress}%` }} />
+                      </div>
+                      <span className="text-body-sm text-ink-muted dark:text-white">{p.progress}%</span>
+                    </div>
+                  </td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.deadline}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.budget}</td>
+                  <td className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[p.status] || 'neutral'}>{p.status.replace('_', ' ')}</StatusBadge></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
     </div>
   );
 }
@@ -669,37 +682,42 @@ function Files({ files }) {
 
 function Meetings({ meetings }) {
   return (
-    <div className="space-y-stack-md">
-      {meetings.length === 0 && <EmptyState icon="video_call" title="No meetings scheduled" description="Upcoming meetings will appear here." />}
-      {meetings.map((m) => (
-        <div key={m.id} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
-          <div className="mb-3 flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <Icon name="video_call" className="text-2xl text-brand" />
-              <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{m.title}</h3>
-            </div>
-            <div className="flex items-center gap-3">
-              <StatusBadge variant={STATUS_VARIANTS[m.status] || 'neutral'}>{m.status}</StatusBadge>
-              {m.status === 'upcoming' && m.meeting_link && (
-                <a href={m.meeting_link} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-1 rounded bg-brand px-3 py-1.5 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark">
-                  <Icon name="videocam" className="text-base" /> Join
-                </a>
-              )}
-            </div>
-          </div>
-          <div className="grid gap-4 text-body-sm text-ink-muted dark:text-white sm:grid-cols-4">
-            <div><span className="block font-label-caps text-label-caps">Date</span>{m.date}</div>
-            <div><span className="block font-label-caps text-label-caps">Time</span>{m.time}</div>
-            <div><span className="block font-label-caps text-label-caps">Duration</span>{m.duration}</div>
-            <div><span className="block font-label-caps text-label-caps">Type</span>{m.type}</div>
-          </div>
-          <div className="mt-3">
-            <span className="font-label-caps text-label-caps text-ink-muted dark:text-white">Attendees: </span>
-            <span className="text-body-sm text-ink-muted dark:text-white">{(m.attendees ?? []).join(', ') || '—'}</span>
-          </div>
-        </div>
-      ))}
+    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      {meetings.length === 0
+        ? <div className="p-stack-lg"><EmptyState icon="video_call" title="No meetings scheduled" description="Upcoming meetings will appear here." /></div>
+        : (
+          <table className="w-full text-left">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+              <tr>
+                <th className="px-stack-lg py-4">Meeting</th>
+                <th className="px-stack-lg py-4">Date & Time</th>
+                <th className="px-stack-lg py-4">Duration</th>
+                <th className="px-stack-lg py-4">Attendees</th>
+                <th className="px-stack-lg py-4">Status</th>
+                <th className="px-stack-lg py-4">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+              {meetings.map((m) => (
+                <tr key={m.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                  <td className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{m.title}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{m.date} {m.time}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{m.duration}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-white">{(m.attendees ?? []).join(', ') || '—'}</td>
+                  <td className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[m.status] || 'neutral'}>{m.status}</StatusBadge></td>
+                  <td className="px-stack-lg py-4">
+                    {m.status === 'upcoming' && m.meeting_link && (
+                      <a href={m.meeting_link} target="_blank" rel="noreferrer"
+                        className="inline-flex items-center gap-1 rounded bg-brand px-3 py-1.5 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark">
+                        <Icon name="videocam" className="text-base" /> Join
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
     </div>
   );
 }
@@ -865,47 +883,47 @@ export default function ClientPortal() {
   if (loading) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
 
   return (
-    <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container">
-      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
-        <div className="sticky top-0 z-20 mb-stack-lg flex items-center justify-between gap-4 bg-surface-container py-3 dark:bg-dark-surface-container">
-          <div className="flex items-center gap-4">
-            <Avatar name={profile.contact_name || 'Client'} size="lg" />
-            <div>
-              <h1 className="font-display text-headline-md font-bold text-white">{profile.contact_name || 'Client'}</h1>
-              <p className="text-body-sm text-white/70">{profile.email || ''} &middot; {profile.company_name}</p>
-            </div>
+    <div className="flex h-screen flex-col bg-surface-container dark:bg-dark-surface-container">
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-outline-variant bg-surface-container px-margin-mobile py-3 dark:border-dark-outline-variant dark:bg-dark-surface-container md:px-margin-desktop">
+        <div className="flex items-center gap-4">
+          <Avatar name={profile.contact_name || 'Client'} size="lg" />
+          <div>
+            <h1 className="font-display text-headline-md font-bold text-white">{profile.contact_name || 'Client'}</h1>
+            <p className="text-body-sm text-white/70">{profile.email || ''} &middot; {profile.company_name}</p>
           </div>
-          <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
-            Sign Out
-          </Button>
         </div>
+        <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
+          Sign Out
+        </Button>
+      </div>
 
-        <div className="flex gap-stack-lg">
-          <aside className="hidden w-56 shrink-0 md:block">
-            <nav className="flex flex-col gap-1">
-              {clientPortalTabs.map((tab) => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
-                    activeTab === tab.id ? 'bg-brand/10 font-bold text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
-                  }`}>
-                  <Icon name={tab.icon} className="text-lg" />{tab.label}
-                </button>
-              ))}
-            </nav>
-          </aside>
+      <div className="flex min-h-0 flex-1">
+        <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-outline-variant dark:border-dark-outline-variant md:block">
+          <nav className="flex flex-col gap-1 p-3">
+            {clientPortalTabs.map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
+                  activeTab === tab.id ? 'bg-brand/20 font-bold text-white' : 'text-white/70 hover:bg-white/15 hover:text-white'
+                }`}>
+                <Icon name={tab.icon} className="text-lg" />{tab.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant md:hidden">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant px-margin-mobile py-2 md:hidden">
             {clientPortalTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
-                  activeTab === tab.id ? 'border-white font-bold text-white' : 'border-transparent font-semibold text-white/70 hover:border-white/30 hover:text-white'
+                  activeTab === tab.id ? 'border-white font-bold text-white' : 'border-transparent font-semibold text-white/70 hover:border-white/40 hover:text-white'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>
             ))}
           </div>
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 overflow-y-auto px-margin-mobile py-stack-lg md:px-margin-desktop">
             {activeTab === 'overview' && <Overview profile={profile} projects={projects} invoices={invoices} tickets={tickets} />}
             {activeTab === 'projects' && <Projects projects={projects} />}
             {activeTab === 'invoices' && <Invoices invoices={invoices} />}

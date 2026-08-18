@@ -35,7 +35,10 @@ crud = CRUDBase(Client, searchable_fields=["company_name", "country"])
 async def _get_client_for_user(db: AsyncSession, user: User) -> Client:
     client = (await db.execute(select(Client).where(Client.user_id == user.id))).scalar_one_or_none()
     if not client:
-        raise ApiError.not_found("Client profile not found")
+        client = Client(user_id=user.id, company_name=user.name)
+        db.add(client)
+        await db.commit()
+        await db.refresh(client)
     return client
 
 

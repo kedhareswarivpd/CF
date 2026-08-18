@@ -1,5 +1,6 @@
 export const services = [
   {
+    slug: 'enterprise-software',
     icon: 'domain',
     title: 'Enterprise Software',
     description:
@@ -8,6 +9,7 @@ export const services = [
     benefit: 'Reduced technical debt and increased operational agility.',
   },
   {
+    slug: 'cloud-migration',
     icon: 'cloud_sync',
     title: 'Cloud Migration',
     description:
@@ -16,6 +18,7 @@ export const services = [
     benefit: 'Significant reduction in TCO and elastic scaling capabilities.',
   },
   {
+    slug: 'ai-data-analytics',
     icon: 'psychology',
     title: 'AI & Data Analytics',
     description:

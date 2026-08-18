@@ -23,7 +23,7 @@ export default function ServiceCard({ service }) {
       <div className="mt-auto border-t border-outline-variant pt-stack-md">
         <p className="font-body font-semibold text-white">Business Benefit</p>
         <p className="mb-stack-md text-body-md text-white">{service.benefit}</p>
-        <Link to="/services" className="flex w-fit items-center gap-1 font-label-caps text-label-caps uppercase text-brand transition-all hover:gap-2">
+        <Link to={`/services/${service.slug}`} className="flex w-fit items-center gap-1 font-label-caps text-label-caps uppercase text-brand transition-all hover:gap-2">
           Learn more <Icon name="arrow_forward" className="text-body-lg leading-none" />
         </Link>
       </div>

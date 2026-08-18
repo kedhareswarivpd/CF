@@ -77,7 +77,6 @@ export const adminPanelTabs = [
   { id: 'employees',      label: 'Employees',     icon: 'badge' },
   { id: 'clients',        label: 'Clients',       icon: 'business' },
   { id: 'roles',          label: 'Roles',         icon: 'verified_user' },
-  { id: 'analytics',      label: 'Analytics',     icon: 'bar_chart' },
   { id: 'media',          label: 'Media',         icon: 'perm_media' },
   { id: 'notifications',  label: 'Notifications', icon: 'notifications' },
   { id: 'reports',        label: 'Reports',       icon: 'assessment' },

@@ -13,7 +13,6 @@ import {
   fetchUsers, createUser, updateUser, deactivateUser,
   fetchAdminProjects, createProject, updateProject, deleteProject,
   fetchRoles, createRole, deleteRole, fetchPermissions, createPermission, deletePermission,
-  fetchAnalyticsSummary,
   fetchMedia, deleteMedia, uploadMedia,
   fetchNotifications, markNotificationRead, markAllNotificationsRead,
   fetchReports, generateReport, deleteReport,
@@ -48,20 +47,20 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken
 
   return (
     <div className="space-y-stack-lg">
-      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
         {statCards.map((s) => (
-          <div key={s.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
-            <div className="mb-2 flex items-center justify-between">
-              <Icon name={s.icon} className={`${s.color} text-2xl`} />
+          <div key={s.label} className="flex flex-col rounded-xl border border-blue-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30">
+              <Icon name={s.icon} className={`text-2xl ${s.color}`} />
             </div>
-            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{s.value}</p>
-            <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{s.label}</p>
+            <p className="font-stat text-3xl font-bold text-brand-dark dark:text-dark-brand">{s.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{s.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid gap-gutter lg:grid-cols-2">
-        <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-xl border border-blue-100 bg-white p-6 shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface">
           <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Project Status Breakdown</h3>
           <div className="space-y-4">
             {statusBreakdown.map((item) => (
@@ -82,7 +81,7 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken
           </div>
         </div>
 
-        <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="rounded-xl border border-blue-100 bg-white p-6 shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface">
           <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Quick Actions</h3>
           <div className="space-y-3">
             {[
@@ -91,7 +90,7 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken
               { icon: 'upload_file', label: 'Upload Resource', desc: 'Add a whitepaper or downloadable asset', tab: 'media' },
               { icon: 'campaign', label: 'Send Notification', desc: 'Broadcast a message to all users', tab: 'notifications' },
             ].map((action) => (
-              <div key={action.label} onClick={() => setActiveTab(action.tab)} className="flex cursor-pointer items-center gap-4 rounded-lg bg-surface-container p-3 transition-colors hover:bg-outline-variant dark:bg-dark-surface-container dark:hover:bg-dark-outline-variant">
+              <div key={action.label} onClick={() => setActiveTab(action.tab)} className="flex cursor-pointer items-center gap-4 rounded-lg bg-surface-container p-3 transition-colors hover:bg-blue-50 dark:bg-dark-surface-container dark:hover:bg-blue-900/30">
                 <Icon name={action.icon} className="text-2xl text-brand" />
                 <div>
                   <p className="text-body-md font-semibold text-white dark:text-dark-brand">{action.label}</p>
@@ -103,7 +102,7 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken
         </div>
       </div>
 
-      <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="rounded-xl border border-blue-100 bg-white p-6 shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface">
         <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Recent Activity</h3>
         {recentLogs.length === 0 ? (
           <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">No recent activity.</p>
@@ -306,7 +305,7 @@ function UserManagement({ accessToken, currentRole }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {users.map((u) => (
-                <tr key={u.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                <tr key={u.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
                   <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{u.name}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{u.email}</td>
                   <td className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{u.role?.replace('_', ' ')}</td>
@@ -351,7 +350,7 @@ function UserManagement({ accessToken, currentRole }) {
                 return <tr><td colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No roles found.</td></tr>;
               }
               return roleList.map((role) => (
-                <tr key={role} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                <tr key={role} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
                   <td className="px-stack-lg py-4 text-body-md capitalize text-brand-dark dark:text-dark-brand">{role.replace('_', ' ')}</td>
                   <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{roleCounts[role]}</td>
                   <td className="px-stack-lg py-4 text-body-md capitalize text-ink-muted dark:text-dark-ink-muted">{role === 'super_admin' ? 'Full access' : role.replace('_', ' ') + ' portal access'}</td>
@@ -389,7 +388,7 @@ function EmployeeManagement({ accessToken }) {
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {employees.map((e) => (
-              <tr key={e.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+              <tr key={e.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
                 <td className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-dark-brand">{e.name || '—'}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.employee_code || '—'}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.email || '—'}</td>
@@ -431,7 +430,7 @@ function ClientManagement({ accessToken }) {
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {clients.map((c) => (
-              <tr key={c.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+              <tr key={c.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.company_name}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.industry || '—'}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.country || '—'}</td>
@@ -624,7 +623,7 @@ function ProjectsManagement({ accessToken }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {projects.map((p) => (
-                <tr key={p.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                <tr key={p.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
                   <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.title}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.industry || '—'}</td>
                   <td className="px-stack-lg py-4"><StatusBadge variant={PROJECT_STATUS_VARIANT[p.status] || 'neutral'}>{p.status?.replace('_', ' ')}</StatusBadge></td>
@@ -783,7 +782,7 @@ function RolesManagement({ accessToken }) {
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {roles.map((r) => (
-              <tr key={r.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+              <tr key={r.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{r.name}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.slug}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.description || '—'}</td>
@@ -821,7 +820,7 @@ function RolesManagement({ accessToken }) {
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {permissions.map((p) => (
-              <tr key={p.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+              <tr key={p.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
                 <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.name}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.module}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.action}</td>
@@ -834,155 +833,6 @@ function RolesManagement({ accessToken }) {
             ))}
             {!permissions.length && (
               <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No permissions yet.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-function AnalyticsPage({ accessToken }) {
-  const [summary, setSummary] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [employees, setEmployees] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!accessToken) { setLoading(false); return; }
-    setLoading(true);
-    setError('');
-    Promise.allSettled([
-      fetchAnalyticsSummary(accessToken),
-      fetchUsers(accessToken, { limit: 200 }),
-      fetchEmployees(accessToken, { limit: 200 }),
-      fetchClients(accessToken, { limit: 200 }),
-    ]).then(([a, u, e, c]) => {
-      const errors = [];
-      if (a.status === 'fulfilled') setSummary(a.value?.data || null);
-      else errors.push('Analytics');
-      if (u.status === 'fulfilled') setUsers(u.value?.data || []);
-      else errors.push('Users');
-      if (e.status === 'fulfilled') setEmployees(e.value?.data || []);
-      else errors.push('Employees');
-      if (c.status === 'fulfilled') setClients(c.value?.data || []);
-      else errors.push('Clients');
-      if (errors.length) setError(`Failed to load: ${errors.join(', ')}. You may need to re-login.`);
-    }).finally(() => setLoading(false));
-  }, [accessToken]);
-
-  if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
-
-  const totalViews = summary?.total_views ?? 0;
-  const topPages = summary?.top_pages || [];
-  const totalUsers = users.length;
-  const activeUsers = users.filter((u) => u.is_active).length;
-  const totalEmployees = employees.length;
-  const activeEmployees = employees.filter((e) => e.status === 'active').length;
-  const totalClients = clients.length;
-  const activeClients = clients.filter((c) => c.status === 'active').length;
-
-  const roleBreakdown = users.reduce((acc, u) => {
-    const r = u.role || 'unknown';
-    acc[r] = (acc[r] || 0) + 1;
-    return acc;
-  }, {});
-
-  const deptBreakdown = employees.reduce((acc, e) => {
-    const d = e.department_name || 'Unassigned';
-    acc[d] = (acc[d] || 0) + 1;
-    return acc;
-  }, {});
-
-  const statCards = [
-    { label: 'Total Page Views', value: totalViews.toLocaleString(), icon: 'visibility', color: 'text-brand' },
-    { label: 'Unique Pages', value: (summary?.unique_paths ?? 0).toLocaleString(), icon: 'link', color: 'text-status-info-text' },
-    { label: 'Total Users', value: totalUsers, icon: 'people', color: 'text-status-success-text' },
-    { label: 'Active Users', value: activeUsers, icon: 'person', color: 'text-brand' },
-    { label: 'Employees', value: totalEmployees, icon: 'badge', color: 'text-status-warning-text' },
-    { label: 'Active Employees', value: activeEmployees, icon: 'engineering', color: 'text-status-success-text' },
-    { label: 'Clients', value: totalClients, icon: 'business', color: 'text-status-info-text' },
-    { label: 'Active Clients', value: activeClients, icon: 'corporate_fare', color: 'text-status-success-text' },
-  ];
-
-  return (
-    <div className="space-y-stack-lg">
-      {error && (
-        <div className="rounded-lg border border-status-warning bg-status-warning/10 px-stack-md py-stack-sm text-body-sm text-status-warning-text">
-          {error}
-        </div>
-      )}
-      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
-        {statCards.map((s) => (
-          <div key={s.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
-            <Icon name={s.icon} className={`mb-2 text-2xl ${s.color}`} />
-            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{s.value}</p>
-            <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid gap-gutter lg:grid-cols-2">
-        <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-          <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
-            <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Role Distribution</h3>
-          </div>
-          <div className="p-stack-lg">
-            {Object.entries(roleBreakdown).sort((a, b) => b[1] - a[1]).map(([role, count]) => (
-              <div key={role} className="mb-3">
-                <div className="mb-1 flex justify-between text-body-sm">
-                  <span className="capitalize text-brand-dark dark:text-dark-brand">{role.replace('_', ' ')}</span>
-                  <span className="text-ink-muted dark:text-dark-ink-muted">{count}</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container">
-                  <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(count / totalUsers) * 100}%` }} />
-                </div>
-              </div>
-            ))}
-            {!Object.keys(roleBreakdown).length && <p className="text-body-sm text-ink-muted">No users found.</p>}
-          </div>
-        </div>
-
-        <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-          <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
-            <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Department Distribution</h3>
-          </div>
-          <div className="p-stack-lg">
-            {Object.entries(deptBreakdown).sort((a, b) => b[1] - a[1]).map(([dept, count]) => (
-              <div key={dept} className="mb-3">
-                <div className="mb-1 flex justify-between text-body-sm">
-                  <span className="text-brand-dark dark:text-dark-brand">{dept}</span>
-                  <span className="text-ink-muted dark:text-dark-ink-muted">{count}</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container">
-                  <div className="h-full rounded-full bg-status-info-text transition-all" style={{ width: `${(count / totalEmployees) * 100}%` }} />
-                </div>
-              </div>
-            ))}
-            {!Object.keys(deptBreakdown).length && <p className="text-body-sm text-ink-muted">No employees found.</p>}
-          </div>
-        </div>
-      </div>
-
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-        <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
-          <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Top Pages</h3>
-        </div>
-        <table className="w-full text-left">
-          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
-            <tr><th className="px-stack-lg py-4">Path</th><th className="px-stack-lg py-4">Views</th></tr>
-          </thead>
-          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-            {topPages.map((row) => (
-              <tr key={row.path} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{row.path}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{row.count.toLocaleString()}</td>
-              </tr>
-            ))}
-            {!topPages.length && (
-              <tr><td colSpan={2} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No page views recorded yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -1227,7 +1077,7 @@ function ReportsManagement({ accessToken }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {reports.map((r) => (
-                <tr key={r.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                <tr key={r.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
                   <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{r.title}</td>
                   <td className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{r.report_type}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.period}</td>
@@ -1285,7 +1135,7 @@ function AuditLogsManagement({ accessToken }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {logs.map((l) => (
-                <tr key={l.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                <tr key={l.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
                   <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{l.action}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.entity_type || '—'}</td>
                   <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.ip_address || '—'}</td>
@@ -1356,52 +1206,52 @@ export default function AdminPanel() {
   }
 
   return (
-    <div className="bg-surface-container py-section-padding">
-      <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
-        <div className="sticky top-0 z-20 mb-stack-lg flex items-center justify-between gap-4 bg-surface-container py-3">
-          <div className="flex items-center gap-4">
-            <Avatar name={currentUser?.name || 'Admin'} size="lg" />
-            <div>
-              <h1 className="font-display text-headline-md font-bold text-white">{currentUser?.name || 'Admin'}</h1>
-              <p className="text-body-sm text-white/70">{currentUser?.email || ''} &middot; {(currentUser?.role || currentRole || 'admin').replace('_', ' ')}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button as={Link} to="/super-admin/login" variant="primary" size="md" icon={<Icon name="shield_person" />}>
-              Super Admin
-            </Button>
-            <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
-              Sign Out
-            </Button>
+    <div className="flex h-screen flex-col bg-surface-container dark:bg-dark-surface-container">
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-outline-variant bg-surface-container px-margin-mobile py-3 dark:border-dark-outline-variant dark:bg-dark-surface-container md:px-margin-desktop">
+        <div className="flex items-center gap-4">
+          <Avatar name={currentUser?.name || 'Admin'} size="lg" />
+          <div>
+            <h1 className="font-display text-headline-md font-bold text-white">{currentUser?.name || 'Admin'}</h1>
+            <p className="text-body-sm text-white/70">{currentUser?.email || ''} &middot; {(currentUser?.role || currentRole || 'admin').replace('_', ' ')}</p>
           </div>
         </div>
+        <div className="flex items-center gap-3">
+          <Button as={Link} to="/super-admin/login" variant="primary" size="md" icon={<Icon name="shield_person" />}>
+            Super Admin
+          </Button>
+          <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
+            Sign Out
+          </Button>
+        </div>
+      </div>
 
-        <div className="flex gap-stack-lg">
-          <aside className="hidden w-56 shrink-0 md:block">
-            <nav className="flex flex-col gap-1">
-              {adminPanelTabs.map((tab) => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
-                    activeTab === tab.id ? 'bg-white/10 font-bold text-white' : 'text-white/70 hover:bg-white/5 hover:text-white'
-                  }`}>
-                  <Icon name={tab.icon} className="text-lg" />{tab.label}
-                </button>
-              ))}
-            </nav>
-          </aside>
+      <div className="flex min-h-0 flex-1">
+        <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-outline-variant dark:border-dark-outline-variant md:block">
+          <nav className="flex flex-col gap-1 p-3">
+            {adminPanelTabs.map((tab) => (
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
+                  activeTab === tab.id ? 'bg-white/15 font-bold text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
+                }`}>
+                <Icon name={tab.icon} className="text-lg" />{tab.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant md:hidden">
+        <div className="flex min-h-0 flex-1 flex-col">
+          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant px-margin-mobile py-2 md:hidden">
             {adminPanelTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
-                  activeTab === tab.id ? 'border-brand font-bold text-brand' : 'border-transparent font-semibold text-ink-muted hover:border-outline-variant hover:text-ink'
+                  activeTab === tab.id ? 'border-brand font-bold text-brand' : 'border-transparent font-semibold text-ink-muted hover:border-brand/40 hover:text-ink'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>
             ))}
           </div>
 
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 overflow-y-auto px-margin-mobile py-stack-lg md:px-margin-desktop">
             {activeTab === 'overview' && <Dashboard kpis={kpis} statusBreakdown={statusBreakdown} accessToken={accessToken} setActiveTab={setActiveTab} />}
             {activeTab === 'content' && <ContentManagement accessToken={accessToken} />}
             {activeTab === 'projects' && <ProjectsManagement accessToken={accessToken} />}
@@ -1409,7 +1259,6 @@ export default function AdminPanel() {
             {activeTab === 'employees' && <EmployeeManagement accessToken={accessToken} />}
             {activeTab === 'clients' && <ClientManagement accessToken={accessToken} />}
             {activeTab === 'roles' && <RolesManagement accessToken={accessToken} />}
-            {activeTab === 'analytics' && <AnalyticsPage accessToken={accessToken} />}
             {activeTab === 'media' && <MediaManagement accessToken={accessToken} />}
             {activeTab === 'notifications' && <NotificationsManagement accessToken={accessToken} />}
             {activeTab === 'reports' && <ReportsManagement accessToken={accessToken} />}
