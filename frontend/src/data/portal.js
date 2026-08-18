@@ -3,7 +3,7 @@
 export const employeePortalPaths = ['employee', 'sales', 'marketing', 'developer', 'project-manager', 'qa', 'support', 'finance', 'hr'];
 
 // Every route that renders a full-screen portal (no public footer).
-export const portalPaths = ['client', ...employeePortalPaths, 'admin', 'super-admin', 'login', 'register'];
+export const portalPaths = ['client', ...employeePortalPaths, 'admin', 'super-admin', 'super-admin/login', 'login', 'register'];
 
 export const clientPortalTabs = [
   { id: 'overview', label: 'Overview', icon: 'dashboard' },

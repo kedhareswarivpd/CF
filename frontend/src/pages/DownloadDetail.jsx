@@ -89,8 +89,8 @@ export default function DownloadDetail() {
             </div>
 
             <div className="rounded-2xl bg-surface-container p-6">
-              <h2 className="mb-4 font-display text-headline-sm text-ink">Highlights</h2>
-              <ul className="space-y-3 text-ink-muted">
+              <h2 className="mb-4 font-display text-headline-sm text-white">Highlights</h2>
+              <ul className="space-y-3 text-white">
                 {item.highlights.map((line) => (
                   <li key={line} className="flex items-start gap-3"><span className="mt-2 size-2.5 rounded-full bg-accent-cyan" /><span>{line}</span></li>
                 ))}

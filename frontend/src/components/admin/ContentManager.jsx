@@ -303,7 +303,7 @@ export default function ContentManager({ accessToken }) {
             key={r.key}
             onClick={() => { setActiveKey(r.key); setShowForm(false); }}
             className={`flex items-center gap-2 rounded-full px-4 py-2 font-label-caps text-label-caps uppercase transition-all ${
-              activeKey === r.key ? 'bg-brand text-white' : 'bg-surface-container text-ink-muted hover:bg-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted'
+              activeKey === r.key ? 'bg-brand text-white' : 'bg-surface-container text-white hover:bg-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted'
             }`}
           >
             <Icon name={r.icon} className="text-lg" />{r.label}

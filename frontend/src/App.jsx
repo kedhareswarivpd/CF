@@ -4,6 +4,7 @@ import Layout from './components/layout/Layout.jsx';
 import LoadingSpinner from './components/ui/LoadingSpinner.jsx';
 import { employeePortalPaths } from './data/portal.js';
 import CookieConsent from './components/ui/CookieConsent.jsx';
+import usePageViewTracker from './hooks/usePageViewTracker.js';
 
 // Route-level code splitting — each page is fetched only when visited, so the
 // initial bundle stays small and the app paints fast.
@@ -33,6 +34,7 @@ const ClientPortal = lazy(() => import('./pages/ClientPortal.jsx'));
 const EmployeePortal = lazy(() => import('./pages/EmployeePortal.jsx'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel.jsx'));
 const SuperAdminPanel = lazy(() => import('./pages/SuperAdminPanel.jsx'));
+const SuperAdminLogin = lazy(() => import('./pages/SuperAdminLogin.jsx'));
 const NotFound = lazy(() => import('./pages/NotFound.jsx'));
 const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const Register = lazy(() => import('./pages/Register.jsx'));
@@ -48,6 +50,7 @@ function PageFallback() {
 }
 
 export default function App() {
+  usePageViewTracker();
   return (
     <>
       <Suspense fallback={<PageFallback />}>
@@ -81,6 +84,7 @@ export default function App() {
             ))}
             <Route path="admin" element={<AdminPanel />} />
             <Route path="super-admin" element={<SuperAdminPanel />} />
+            <Route path="super-admin/login" element={<SuperAdminLogin />} />
             <Route path="login" element={<LoginPage />} />
             <Route path="register" element={<Register />} />
             <Route path="brochure" element={<BrochurePage />} />

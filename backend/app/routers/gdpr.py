@@ -12,7 +12,7 @@ from app.models.client import Client
 from app.models.user import User
 from app.utils.responses import success_response
 
-router = APIRouter(prefix="/users", tags=["GDPR"], dependencies=[Depends(require_roles("super_admin"))])
+router = APIRouter(prefix="/users", tags=["GDPR"])
 
 
 def _iso(value) -> str | None:
@@ -200,13 +200,13 @@ async def _anonymize_user(db: AsyncSession, user_id: uuid.UUID) -> None:
 
 
 # ---------- Super Admin: act on behalf of another user (GDPR requests) ----------
-@router.get("/{user_id}/export", response_model=dict)
+@router.get("/{user_id}/export", response_model=dict, dependencies=[Depends(require_roles("super_admin"))])
 async def export_user_data(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     data = await _export_user_data(db, user_id)
     return success_response(data=data, message="User data exported")
 
 
-@router.post("/{user_id}/anonymize", response_model=dict)
+@router.post("/{user_id}/anonymize", response_model=dict, dependencies=[Depends(require_roles("super_admin"))])
 async def anonymize_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     await _anonymize_user(db, user_id)
     return success_response(message="User data has been anonymized")

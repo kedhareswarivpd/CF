@@ -13,7 +13,7 @@ export default function JobCard({ job }) {
         <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{job.title}</h3>
         <Badge className="whitespace-nowrap bg-accent-cyan-pale text-label-caps text-brand">{job.department}</Badge>
       </div>
-      <div className="mb-4 flex flex-wrap gap-4 text-body-sm text-white">
+      <div className="mb-4 flex flex-wrap gap-4 text-body-sm text-black">
         <span className="flex items-center gap-1.5">
           <Icon name="location_on" className="text-body-md leading-none" />
           {job.location}
@@ -27,7 +27,7 @@ export default function JobCard({ job }) {
           {job.experience}
         </span>
       </div>
-      <p className="mb-4 text-body-md text-white">{job.description}</p>
+      <p className="mb-4 text-body-md text-black">{job.description}</p>
       <details className="group" aria-label={job.title}>
         <summary className="flex cursor-pointer list-none items-center gap-2 font-label-caps text-label-caps uppercase text-brand transition-colors hover:text-brand-dark">
           <span>View Details</span>
@@ -35,10 +35,10 @@ export default function JobCard({ job }) {
         </summary>
         <div className="mt-4 space-y-4">
           <div>
-            <h4 className="mb-2 font-label-caps text-label-caps uppercase text-ink-muted">Responsibilities</h4>
+            <h4 className="mb-2 font-label-caps text-label-caps uppercase text-black">Responsibilities</h4>
             <ul className="space-y-1.5">
               {job.responsibilities.map((r) => (
-                <li key={r} className="flex items-start gap-2 text-body-sm text-ink-muted">
+                <li key={r} className="flex items-start gap-2 text-body-sm text-black">
                   <Icon name="check_circle" className="mt-0.5 flex-shrink-0 text-lg text-brand" />
                   <span>{r}</span>
                 </li>
@@ -46,10 +46,10 @@ export default function JobCard({ job }) {
             </ul>
           </div>
           <div>
-            <h4 className="mb-2 font-label-caps text-label-caps uppercase text-ink-muted">Requirements</h4>
+            <h4 className="mb-2 font-label-caps text-label-caps uppercase text-black">Requirements</h4>
             <ul className="space-y-1.5">
               {job.requirements.map((r) => (
-                <li key={r} className="flex items-start gap-2 text-body-sm text-ink-muted">
+                <li key={r} className="flex items-start gap-2 text-body-sm text-black">
                   <Icon name="chevron_right" className="mt-0.5 flex-shrink-0 text-lg text-brand" />
                   <span>{r}</span>
                 </li>

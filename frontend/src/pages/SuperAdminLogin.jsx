@@ -6,23 +6,8 @@ import { fetchCurrentUser } from '../api/auth.js';
 import Icon from '../components/ui/Icon.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 
-const ROLE_PORTAL_MAP = {
-  client: '/client',
-  employee: '/employee',
-  developer: '/developer',
-  sales: '/sales',
-  marketing: '/marketing',
-  project_manager: '/project-manager',
-  qa: '/qa',
-  support: '/support',
-  finance: '/finance',
-  hr: '/hr',
-  admin: '/admin',
-  super_admin: '/super-admin',
-};
-
-export default function LoginPage() {
-  useDocumentTitle('Sign In | CoreFusion Technologies');
+export default function SuperAdminLogin() {
+  useDocumentTitle('Super Admin Verification | CoreFusion Technologies');
   const { login } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -50,17 +35,15 @@ export default function LoginPage() {
         throw new Error('Could not verify this account.');
       }
 
-      const target = ROLE_PORTAL_MAP[role];
-      if (!target) {
+      if (role !== 'super_admin') {
         await supabase.auth.signOut();
-        throw new Error('Your account does not have access to any portal.');
+        throw new Error('Access denied. Only Super Admin accounts are allowed.');
       }
 
       await supabase.auth.updateUser({ data: { role } });
-
-      navigate(target, { replace: true });
+      navigate('/super-admin', { replace: true });
     } catch (err) {
-      setError(err.message || 'Invalid email or password.');
+      setError(err.message || 'Invalid credentials.');
     } finally {
       setSubmitting(false);
     }
@@ -73,11 +56,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm rounded-lg bg-white p-stack-lg shadow-card-hover dark:bg-dark-surface">
         <div className="mb-6 flex items-center gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand">
-            <Icon name="login" className="text-[18px] leading-none text-white" />
+            <Icon name="shield_person" className="text-[18px] leading-none text-white" />
           </div>
           <div>
-            <h1 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Sign In</h1>
-            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Access your portal</p>
+            <h1 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Super Admin Verification</h1>
+            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Re-enter credentials to access the Super Admin portal</p>
           </div>
         </div>
 
@@ -89,7 +72,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@corefusiontech.com"
+              placeholder="superadmin@corefusiontech.com"
               className={inputClass}
             />
           </label>
@@ -126,12 +109,11 @@ export default function LoginPage() {
             disabled={submitting}
             className="h-11 rounded bg-brand font-label-caps text-label-caps uppercase text-white transition-all hover:bg-brand-dark active:scale-95 disabled:opacity-60"
           >
-            {submitting ? 'Signing in...' : 'Sign In'}
+            {submitting ? 'Verifying...' : 'Verify & Access'}
           </button>
 
           <p className="text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">
-            Don&apos;t have an account?{' '}
-            <a href="/register" className="font-semibold text-brand hover:underline">Create account</a>
+            <a href="/admin" className="font-semibold text-brand hover:underline">Back to Admin Panel</a>
           </p>
         </form>
       </div>

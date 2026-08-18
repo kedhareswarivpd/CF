@@ -26,7 +26,7 @@ export default function ResourcesGrid({ resources, typeFilters }) {
               className={`rounded-full px-4 py-2 font-label-caps text-label-caps uppercase transition-all ${
                 activeType === t
                   ? 'bg-brand text-white'
-                  : 'bg-surface-container text-ink-muted hover:bg-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted dark:hover:bg-dark-outline-variant'
+                  : 'bg-surface-container text-white hover:bg-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted dark:hover:bg-dark-outline-variant'
               }`}
             >
               {t}

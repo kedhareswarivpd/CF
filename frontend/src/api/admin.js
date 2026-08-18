@@ -75,6 +75,7 @@ export const deletePermission = (token, id)     => apiRequest(`/access-control/p
 
 // ── Analytics ──────────────────────────────────────────────────────────────
 export const fetchAnalyticsSummary = (token) => apiRequest('/analytics/summary', { token });
+export const trackPageView = (data) => apiRequest('/analytics/track', { method: 'POST', body: data });
 
 // ── Media ──────────────────────────────────────────────────────────────────
 export const fetchMedia       = (token, p = {}) => apiRequest(`/media${toQueryString(p)}`, { token });

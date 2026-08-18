@@ -76,7 +76,7 @@ export default function Register() {
           </label>
 
           <div className="rounded-lg bg-surface-container p-stack-md dark:bg-dark-surface-container">
-            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
+            <p className="text-body-sm text-white dark:text-dark-ink-muted">
               Self-serve registration creates a Client account. Employee, Admin, and Partner accounts must be provisioned by your Admin/HR team.
             </p>
           </div>

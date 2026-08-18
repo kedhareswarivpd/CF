@@ -13,9 +13,11 @@ export default function Portfolio() {
   const [activeServices, setActiveServices] = useState([]);
 
   const toggleService = (service) => {
-    setActiveServices((prev) =>
-      prev.includes(service) ? prev.filter((s) => s !== service) : [...prev, service]
-    );
+    setActiveServices((prev) => {
+      if (prev.includes(service)) return prev.filter((s) => s !== service);
+      if (prev.length >= 2) return prev;
+      return [...prev, service];
+    });
   };
 
   return (

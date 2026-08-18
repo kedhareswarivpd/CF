@@ -13,8 +13,8 @@ const ROLE_SETS = {
  * Client-side role guard for portal routes. The backend remains the source of
  * truth (every protected endpoint re-checks the role via `require_roles`);
  * this hook only improves UX by redirecting clearly-wrong roles immediately.
- * If role metadata is absent (e.g. legacy accounts), the page is allowed to
- * render and the backend enforces access.
+ * Missing or null roles are denied — the backend must confirm the role before
+ * the portal renders.
  */
 export function useRoleGuard(portalKey, redirectTo = '/login') {
   const { user, initializing } = useAuth();
@@ -22,7 +22,7 @@ export function useRoleGuard(portalKey, redirectTo = '/login') {
 
   const role = user?.user_metadata?.role ?? user?.app_metadata?.role ?? null;
   const allowed = ROLE_SETS[portalKey] || [];
-  const denied = Boolean(!initializing && user && role && !allowed.includes(role));
+  const denied = Boolean(!initializing && user && !allowed.includes(role));
 
   useEffect(() => {
     if (denied) {

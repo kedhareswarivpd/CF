@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../components/ui/Icon.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
@@ -12,11 +12,6 @@ import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
   employeeTabsForRole,
-  demoLeads, demoProposals, demoContracts, demoPayslips,
-  demoTasks, demoQaTasks, demoEmployeeProjects, demoPerformance, demoTraining, demoDocuments,
-  demoTimesheets, demoApprovalTimesheets,
-  demoTickets,
-  demoCareers, demoApplications, demoTestimonials,
 } from '../data/portal.js';
 import { downloadDocumentPdf } from '../utils/documentPdf.js';
 import {
@@ -53,18 +48,18 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
           { label: 'Pending Leaves', value: pendingLeaves, icon: 'beach_access' },
           { label: 'Latest Payslip', value: `$${payslips[0]?.netPay?.toLocaleString() || 0}`, icon: 'payments' },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-white/70">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg capitalize text-brand-dark dark:text-dark-brand">{stat.value}</p>
-            {stat.sub && <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{stat.sub}</p>}
+            <p className="font-stat text-stat-lg capitalize text-white">{stat.value}</p>
+            {stat.sub && <p className="mt-1 text-body-sm text-white/70">{stat.sub}</p>}
           </div>
         ))}
       </div>
-      <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
-        <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">My Profile</h3>
+      <div className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+        <h3 className="mb-4 font-display text-headline-sm text-white">My Profile</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { label: 'Name', value: profile.name },
@@ -75,8 +70,8 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
             { label: 'Status', value: profile.status },
           ].map((f) => (
             <div key={f.label}>
-              <span className="font-label-caps text-label-caps text-ink-muted">{f.label}</span>
-              <p className="text-body-md capitalize text-brand-dark dark:text-dark-brand">{f.value}</p>
+              <span className="font-label-caps text-label-caps text-white/70">{f.label}</span>
+              <p className="text-body-md capitalize text-white">{f.value || '—'}</p>
             </div>
           ))}
         </div>
@@ -92,6 +87,13 @@ function Attendance({ attendance, accessToken, onChange }) {
   const [checkedOut, setCheckedOut] = useState(isToday && Boolean(attendance.checkOut));
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState('');
+
+  useEffect(() => {
+    const t = new Date().toISOString().slice(0, 10);
+    const dayMatch = attendance.date === t;
+    setCheckedIn(dayMatch && Boolean(attendance.checkIn));
+    setCheckedOut(dayMatch && Boolean(attendance.checkOut));
+  }, [attendance.date, attendance.checkIn, attendance.checkOut]);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -140,20 +142,20 @@ function Attendance({ attendance, accessToken, onChange }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
-        <h3 className="mb-6 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Today&apos;s Attendance</h3>
+      <div className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+        <h3 className="mb-6 font-display text-headline-sm text-white">Today&apos;s Attendance</h3>
         <div className="mb-6 grid gap-gutter sm:grid-cols-3">
-          <div className="rounded-lg bg-surface-container p-stack-lg text-center dark:bg-dark-surface-container">
+          <div className="rounded-lg bg-white/10 p-stack-lg text-center">
             <Icon name="login" className="mb-2 text-3xl text-brand" />
             <p className="font-label-caps text-label-caps text-white">Check-In</p>
             <p className="font-display text-headline-sm text-white">{attendance.checkIn || '--'}</p>
           </div>
-          <div className="rounded-lg bg-surface-container p-stack-lg text-center dark:bg-dark-surface-container">
+          <div className="rounded-lg bg-white/10 p-stack-lg text-center">
             <Icon name="logout" className="mb-2 text-3xl text-brand" />
             <p className="font-label-caps text-label-caps text-white">Check-Out</p>
             <p className="font-display text-headline-sm text-white">{attendance.checkOut || '--'}</p>
           </div>
-          <div className="rounded-lg bg-surface-container p-stack-lg text-center dark:bg-dark-surface-container">
+          <div className="rounded-lg bg-white/10 p-stack-lg text-center">
             <Icon name="badge" className="mb-2 text-3xl text-brand" />
             <p className="font-label-caps text-label-caps text-white">Status</p>
             <StatusBadge variant={attendance.status === 'present' ? 'success' : 'warning'} className="mt-1">
@@ -190,15 +192,46 @@ function Leaves({ leaves: initialLeaves, accessToken }) {
     { label: 'Paternity', value: 'paternity' },
   ];
   const [form, setForm] = useState({ type: 'earned', from: '', to: '', reason: '' });
+  const [errors, setErrors] = useState({});
   const [allLeaves, setAllLeaves] = useState(initialLeaves);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState('');
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
+  const validate = () => {
+    const errs = {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (!form.type) errs.type = 'Leave type is required.';
+    if (!form.from) {
+      errs.from = 'Start date is required.';
+    } else if (new Date(form.from) < today) {
+      errs.from = 'Start date cannot be in the past.';
+    }
+    if (!form.to) {
+      errs.to = 'End date is required.';
+    } else if (form.from && new Date(form.to) < new Date(form.from)) {
+      errs.to = 'End date cannot be before start date.';
+    }
+    if (!form.reason || !form.reason.trim()) {
+      errs.reason = 'Reason is required.';
+    } else if (form.reason.trim().length < 10) {
+      errs.reason = 'Reason must be at least 10 characters.';
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.from || !form.to) return;
+    if (!validate()) return;
     setSubmitting(true);
     try {
       let newLeave;
@@ -218,6 +251,7 @@ function Leaves({ leaves: initialLeaves, accessToken }) {
       }
       setAllLeaves((prev) => [newLeave, ...prev]);
       setForm({ type: 'earned', from: '', to: '', reason: '' });
+      setErrors({});
       setShowForm(false);
       showToast('Leave request submitted successfully.');
     } catch (err) {
@@ -230,45 +264,59 @@ function Leaves({ leaves: initialLeaves, accessToken }) {
   return (
     <div className="space-y-stack-md">
       <div className="flex justify-end">
-        <Button onClick={() => setShowForm(!showForm)} variant="primary" size="md" icon={<Icon name="add" />}>Apply Leave</Button>
+        <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>Apply Leave</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg">
           <div className="grid gap-4 sm:grid-cols-3">
-            <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}
-              className="rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink">
-              {LEAVE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-            <input type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })}
-              className="rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
-            <input type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })}
-              className="rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
+            <div>
+              <select value={form.type} onChange={(e) => handleChange('type', e.target.value)}
+                className={`w-full rounded border bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:outline-none ${errors.type ? 'border-red-400 focus:border-red-500' : 'border-white/20 focus:border-brand'}`}>
+                {LEAVE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+              {errors.type && <p className="mt-1 text-body-xs text-red-500">{errors.type}</p>}
+            </div>
+            <div>
+              <input type="date" value={form.from} onChange={(e) => handleChange('from', e.target.value)}
+                className={`w-full rounded border bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:outline-none ${errors.from ? 'border-red-400 focus:border-red-500' : 'border-white/20 focus:border-brand'}`} />
+              {errors.from && <p className="mt-1 text-body-xs text-red-500">{errors.from}</p>}
+            </div>
+            <div>
+              <input type="date" value={form.to} onChange={(e) => handleChange('to', e.target.value)}
+                className={`w-full rounded border bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:outline-none ${errors.to ? 'border-red-400 focus:border-red-500' : 'border-white/20 focus:border-brand'}`} />
+              {errors.to && <p className="mt-1 text-body-xs text-red-500">{errors.to}</p>}
+            </div>
           </div>
-          <textarea placeholder="Reason" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })}
-            rows={2} className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
+          <div>
+            <textarea placeholder="Reason for leave (min 10 characters)" value={form.reason} onChange={(e) => handleChange('reason', e.target.value)}
+              rows={2} className={`w-full rounded border bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:outline-none ${errors.reason ? 'border-red-400 focus:border-red-500' : 'border-white/20 focus:border-brand'}`} />
+            {errors.reason && <p className="mt-1 text-body-xs text-red-500">{errors.reason}</p>}
+          </div>
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit'}</Button>
-            <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setErrors({}); }}>Cancel</Button>
           </div>
         </form>
       )}
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.includes('success') ? 'border border-green-200 bg-green-50 text-green-600' : 'border border-red-200 bg-red-50 text-red-600'
+          toast.includes('success') ? 'border border-green-500/30 bg-green-500/10 text-green-300' : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
         <table className="w-full text-left">
-          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Type</th><th className="px-stack-lg py-4">From</th><th className="px-stack-lg py-4">To</th><th className="px-stack-lg py-4">Days</th><th className="px-stack-lg py-4">Status</th></tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-            {allLeaves.map((l) => (
-              <tr key={l.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                <td className="px-stack-lg py-4 text-body-md capitalize text-brand-dark dark:text-dark-brand">{l.type}</td>
-                <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{l.from}</td>
-                <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{l.to}</td>
-                <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{l.days}</td>
+          <tbody className="divide-y divide-white/10">
+            {allLeaves.length === 0 ? (
+              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No leave requests yet.</td></tr>
+            ) : allLeaves.map((l) => (
+              <tr key={l.id} className="transition-colors hover:bg-white/5">
+                <td className="px-stack-lg py-4 text-body-md capitalize text-white">{l.type}</td>
+                <td className="px-stack-lg py-4 text-body-md text-white/70">{l.from}</td>
+                <td className="px-stack-lg py-4 text-body-md text-white/70">{l.to}</td>
+                <td className="px-stack-lg py-4 text-body-md text-white/70">{l.days}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={l.status === 'approved' ? 'success' : l.status === 'pending' ? 'warning' : 'error'}>{l.status}</StatusBadge></td>
               </tr>
             ))}
@@ -282,18 +330,44 @@ function Leaves({ leaves: initialLeaves, accessToken }) {
 function Timesheets({ timesheets: initialTimesheets, accessToken }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ date: '', project: '', hours: '', description: '' });
+  const [errors, setErrors] = useState({});
   const [allEntries, setAllEntries] = useState(initialTimesheets);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState('');
-  const totalHours = allEntries.reduce((s, e) => s + e.hours, 0);
+  const totalHours = allEntries.reduce((s, e) => s + (Number(e.hours) || 0), 0);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const validate = () => {
+    const errs = {};
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    if (!form.date) {
+      errs.date = 'Date is required.';
+    } else if (new Date(form.date) > today) {
+      errs.date = 'Date cannot be in the future.';
+    }
+    if (!form.hours) {
+      errs.hours = 'Hours are required.';
+    } else if (isNaN(Number(form.hours)) || Number(form.hours) <= 0) {
+      errs.hours = 'Hours must be a positive number.';
+    } else if (Number(form.hours) > 24) {
+      errs.hours = 'Cannot log more than 24 hours per entry.';
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
 
   const refresh = async () => {
     if (!accessToken) return;
     try {
       const res = await apiRequest('/employees/me/timesheets', { token: accessToken });
-      if (res?.data?.length) setAllEntries(normalizeTimesheets(res.data));
+      setAllEntries(normalizeTimesheets(res?.data));
       showToast('Timesheets refreshed.');
     } catch (err) {
       showToast(err?.message || 'Refresh failed.');
@@ -302,23 +376,20 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.date || !form.hours) return;
+    if (!validate()) return;
     setSubmitting(true);
     try {
-      let entry;
-      if (accessToken) {
-        const res = await submitTimesheet(accessToken, {
-          date: form.date,
-          hours: parseFloat(form.hours),
-          description: form.description || null,
-        });
-        const d = res?.data;
-        entry = { id: d.id, date: d.date, project: form.project || 'General', hours: Number(d.hours), description: d.description };
-      } else {
-        entry = { id: `TS-${Date.now()}`, date: form.date, project: form.project || 'General', hours: parseFloat(form.hours), description: form.description };
-      }
+      const payload = {
+        date: form.date,
+        hours: parseFloat(form.hours),
+        description: form.description || null,
+      };
+      const res = await submitTimesheet(accessToken, payload);
+      const d = res?.data;
+      const entry = { id: d.id, date: d.date, project: form.project || 'General', hours: Number(d.hours), description: d.description };
       setAllEntries((prev) => [entry, ...prev]);
       setForm({ date: '', project: '', hours: '', description: '' });
+      setErrors({});
       setShowForm(false);
       showToast('Hours logged successfully.');
     } catch (err) {
@@ -331,52 +402,58 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
   return (
     <div className="space-y-stack-md">
       <div className="flex items-center justify-between">
-        <p className="text-body-md text-ink-muted">Total hours logged: <span className="font-semibold text-brand-dark dark:text-dark-brand">{totalHours}h</span></p>
+        <p className="text-body-md text-white/70">Total hours logged: <span className="font-semibold text-white">{totalHours}h</span></p>
         <div className="flex items-center gap-3">
-          <button onClick={refresh} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+          <button onClick={refresh} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-light">
             <Icon name="refresh" className="text-base" /> Refresh
           </button>
-          <Button onClick={() => setShowForm(!showForm)} variant="primary" size="md" icon={<Icon name="add" />}>Log Hours</Button>
+          <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>Log Hours</Button>
         </div>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg backdrop-blur">
           <div className="grid gap-4 sm:grid-cols-3">
-            <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })}
-              className="rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
-            <input type="text" placeholder="Project name" value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })}
-              className="rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
-            <input type="number" step="0.5" placeholder="Hours" value={form.hours} onChange={(e) => setForm({ ...form, hours: e.target.value })}
-              className="rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
+            <div>
+              <input type="date" value={form.date} onChange={(e) => handleChange('date', e.target.value)}
+                className={`w-full rounded border bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:outline-none ${errors.date ? 'border-red-400 focus:border-red-500' : 'border-white/20 focus:border-brand'}`} />
+              {errors.date && <p className="mt-1 text-body-xs text-red-400">{errors.date}</p>}
+            </div>
+            <input type="text" placeholder="Project name (optional)" value={form.project} onChange={(e) => handleChange('project', e.target.value)}
+              className="w-full rounded border border-white/20 bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:border-brand focus:outline-none" />
+            <div>
+              <input type="number" step="0.25" min="0.25" max="24" placeholder="Hours *" value={form.hours} onChange={(e) => handleChange('hours', e.target.value)}
+                className={`w-full rounded border bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:outline-none ${errors.hours ? 'border-red-400 focus:border-red-500' : 'border-white/20 focus:border-brand'}`} />
+              {errors.hours && <p className="mt-1 text-body-xs text-red-400">{errors.hours}</p>}
+            </div>
           </div>
-          <textarea placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })}
-            rows={2} className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
+          <textarea placeholder="Description" value={form.description} onChange={(e) => handleChange('description', e.target.value)}
+            rows={2} className="w-full rounded border border-white/20 bg-white/10 px-4 py-3 text-body-md text-white placeholder-white/40 focus:border-brand focus:outline-none" />
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Logging...' : 'Log'}</Button>
-            <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setErrors({}); }}>Cancel</Button>
           </div>
         </form>
       )}
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.includes('success') ? 'border border-green-200 bg-green-50 text-green-600' : 'border border-red-200 bg-red-50 text-red-600'
+          toast.includes('success') || toast.includes('refreshed') ? 'border border-green-500/30 bg-green-500/10 text-green-300' : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
         <table className="w-full text-left">
-          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/50">
             <tr><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Hours</th><th className="px-stack-lg py-4">Description</th></tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+          <tbody className="divide-y divide-white/10">
             {allEntries.map((e) => (
-              <tr key={e.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{e.date}</td>
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{e.project}</td>
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{e.hours}h</td>
-                <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{e.description}</td>
+              <tr key={e.id} className="transition-colors hover:bg-white/5">
+                <td className="px-stack-lg py-4 text-body-md text-white/70">{e.date}</td>
+                <td className="px-stack-lg py-4 text-body-md text-white">{e.project}</td>
+                <td className="px-stack-lg py-4 text-body-md text-white">{e.hours}h</td>
+                <td className="px-stack-lg py-4 text-body-md text-white/70">{e.description || '—'}</td>
               </tr>
             ))}
-            {!allEntries.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No timesheets logged yet. Click &ldquo;Log Hours&rdquo; to get started.</td></tr>}
+            {!allEntries.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-white/40">No timesheets logged yet. Click &ldquo;Log Hours&rdquo; to get started.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -386,18 +463,20 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
 
 function Payslips({ payslips }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
       <table className="w-full text-left">
-        <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+        <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Period</th><th className="px-stack-lg py-4">Gross</th><th className="px-stack-lg py-4">Deductions</th><th className="px-stack-lg py-4">Net Pay</th><th className="px-stack-lg py-4">Status</th></tr>
         </thead>
-        <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-          {payslips.map((p) => (
-            <tr key={`${p.month}-${p.year}`} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-              <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.month} {p.year}</td>
-              <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">${p.grossPay.toLocaleString()}</td>
-              <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">${p.deductions.toLocaleString()}</td>
-              <td className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-dark-brand">${p.netPay.toLocaleString()}</td>
+        <tbody className="divide-y divide-white/10">
+          {payslips.length === 0 ? (
+            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No payslips available yet.</td></tr>
+          ) : payslips.map((p) => (
+            <tr key={`${p.month}-${p.year}`} className="transition-colors hover:bg-white/5">
+              <td className="px-stack-lg py-4 text-body-md text-white">{p.month} {p.year}</td>
+              <td className="px-stack-lg py-4 text-body-md text-white/70">${p.grossPay.toLocaleString()}</td>
+              <td className="px-stack-lg py-4 text-body-md text-white/70">${p.deductions.toLocaleString()}</td>
+              <td className="px-stack-lg py-4 text-body-md font-semibold text-white">${p.netPay.toLocaleString()}</td>
               <td className="px-stack-lg py-4"><StatusBadge variant="success">{p.status}</StatusBadge></td>
             </tr>
           ))}
@@ -411,19 +490,21 @@ function Tasks({ tasks }) {
   const priorityColor = { urgent: 'error', high: 'warning', medium: 'info', low: 'neutral' };
   const statusColor = { done: 'success', in_progress: 'info', todo: 'neutral', blocked: 'error' };
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
       <table className="w-full text-left">
-        <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+        <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Task</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Priority</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Due</th></tr>
         </thead>
-        <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-          {tasks.map((t) => (
-            <tr key={t.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-              <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.title}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.project}</td>
+        <tbody className="divide-y divide-white/10">
+          {tasks.length === 0 ? (
+            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No tasks assigned yet.</td></tr>
+          ) : tasks.map((t) => (
+            <tr key={t.id} className="transition-colors hover:bg-white/5">
+              <td className="px-stack-lg py-4 text-body-md text-white">{t.title}</td>
+              <td className="px-stack-lg py-4 text-body-sm text-white/70">{t.project}</td>
               <td className="px-stack-lg py-4"><StatusBadge variant={priorityColor[t.priority]}>{t.priority}</StatusBadge></td>
               <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[t.status]}>{t.status.replace('_', ' ')}</StatusBadge></td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.due}</td>
+              <td className="px-stack-lg py-4 text-body-sm text-white/70">{t.due}</td>
             </tr>
           ))}
         </tbody>
@@ -436,20 +517,21 @@ function Projects({ projects }) {
   const statusColor = { completed: 'success', in_progress: 'info', on_hold: 'warning', planning: 'neutral' };
   return (
     <div className="space-y-4">
+      {projects.length === 0 && <p className="py-8 text-center text-body-sm text-white/70">No projects assigned yet.</p>}
       {projects.map((p) => (
-        <div key={p.id} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div key={p.id} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
           <div className="mb-3 flex items-start justify-between gap-4">
             <div>
-              <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{p.title}</h3>
-              <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Role: {p.role} &middot; Deadline: {p.deadline}</p>
+              <h3 className="font-display text-headline-sm text-white">{p.title}</h3>
+              <p className="text-body-sm text-white/70">Role: {p.role} &middot; Deadline: {p.deadline}</p>
             </div>
             <StatusBadge variant={statusColor[p.status]}>{p.status.replace('_', ' ')}</StatusBadge>
           </div>
           <div className="flex items-center gap-3">
-            <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
               <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress}%` }} />
             </div>
-            <span className="w-10 text-right text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{p.progress}%</span>
+            <span className="w-10 text-right text-body-sm font-semibold text-white">{p.progress}%</span>
           </div>
         </div>
       ))}
@@ -460,27 +542,28 @@ function Projects({ projects }) {
 function Performance({ reviews }) {
   return (
     <div className="space-y-4">
+      {reviews.length === 0 && <p className="py-8 text-center text-body-sm text-white/70">No performance reviews yet.</p>}
       {reviews.map((r) => (
-        <div key={r.period} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div key={r.period} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{r.period}</h3>
+            <h3 className="font-display text-headline-sm text-white">{r.period}</h3>
             <div className="flex items-center gap-2">
               <Icon name="star" className="text-xl text-yellow-400" />
-              <span className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{r.rating}</span>
-              <span className="text-body-sm text-ink-muted">/5</span>
+              <span className="font-stat text-stat-lg text-white">{r.rating}</span>
+              <span className="text-body-sm text-white/70">/5</span>
             </div>
           </div>
           <div className="mb-4 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-lg bg-surface-container p-4 text-center dark:bg-dark-surface-container">
+            <div className="rounded-lg bg-white/10 p-4 text-center">
               <p className="mb-1 font-label-caps text-label-caps text-white">Goals Set</p>
               <p className="font-stat text-2xl text-white">{r.goals}</p>
             </div>
-            <div className="rounded-lg bg-surface-container p-4 text-center dark:bg-dark-surface-container">
+            <div className="rounded-lg bg-white/10 p-4 text-center">
               <p className="mb-1 font-label-caps text-label-caps text-white">Goals Achieved</p>
               <p className="font-stat text-2xl text-white">{r.achieved}</p>
             </div>
           </div>
-          <p className="text-body-sm italic text-ink-muted dark:text-dark-ink-muted">&ldquo;{r.feedback}&rdquo;</p>
+          <p className="text-body-sm italic text-white/70">&ldquo;{r.feedback}&rdquo;</p>
         </div>
       ))}
     </div>
@@ -496,15 +579,15 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
     <div className="space-y-stack-lg">
       {available.length > 0 && (
         <section>
-          <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Available Courses</h3>
+          <h3 className="mb-4 font-display text-headline-sm text-white">Available Courses</h3>
           <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
             {available.map((c) => (
-              <div key={c.id} className="flex flex-col rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
-                <p className="font-display text-body-md font-semibold text-brand-dark dark:text-dark-brand">{c.title}</p>
-                <p className="mt-1 text-body-xs uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">{c.category}</p>
-                <p className="mt-2 flex-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.description || 'No description available.'}</p>
+              <div key={c.id} className="flex flex-col rounded-lg border border-white/10 bg-white/5 p-stack-lg">
+                <p className="font-display text-body-md font-semibold text-white">{c.title}</p>
+                <p className="mt-1 text-body-xs uppercase tracking-wide text-white/70">{c.category}</p>
+                <p className="mt-2 flex-1 text-body-sm text-white/70">{c.description || 'No description available.'}</p>
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
+                  <span className="text-body-sm text-white/70">
                     {c.duration_hours ? `${c.duration_hours}h` : 'Self-paced'}
                   </span>
                   <button
@@ -523,20 +606,22 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
         </section>
       )}
       <section>
-        <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">My Enrollments</h3>
-        <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <h3 className="mb-4 font-display text-headline-sm text-white">My Enrollments</h3>
+        <div className="overflow-hidden rounded-lg border border-white/10 bg-white/5">
           <table className="w-full text-left">
-            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+            <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
               <tr><th className="px-stack-lg py-4">Course</th><th className="px-stack-lg py-4">Category</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Completed On</th><th className="px-stack-lg py-4">Score</th></tr>
             </thead>
-            <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-              {courses.map((c) => (
-                <tr key={c.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.title}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.category}</td>
+            <tbody className="divide-y divide-white/10">
+              {courses.length === 0 ? (
+                <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No enrollments yet. Browse available courses above.</td></tr>
+              ) : courses.map((c) => (
+                <tr key={c.id} className="transition-colors hover:bg-white/5">
+                  <td className="px-stack-lg py-4 text-body-md text-white">{c.title}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-white/70">{c.category}</td>
                   <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[c.status]}>{c.status.replace('_', ' ')}</StatusBadge></td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.completedOn || '—'}</td>
-                  <td className="px-stack-lg py-4 text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{c.score || '—'}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-white/70">{c.completedOn || '—'}</td>
+                  <td className="px-stack-lg py-4 text-body-sm font-semibold text-white">{c.score || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -561,8 +646,9 @@ function Documents({ docs }) {
 
   return (
     <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
+      {docs.length === 0 && <p className="col-span-full py-8 text-center text-body-sm text-white/70">No documents available yet.</p>}
       {docs.map((d) => (
-        <div key={d.id} className="flex items-start gap-4 rounded-lg border border-brand/30 bg-brand-dark p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div key={d.id} className="flex items-start gap-4 rounded-lg border border-brand/30 bg-brand-dark p-stack-lg">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-white/10">
             <Icon name={typeIcon[d.type] || 'description'} className="text-xl text-white" />
           </div>
@@ -592,20 +678,49 @@ const CONTRACT_STATUS_COLOR = { pending: 'warning', signed: 'success', void: 'er
 function Leads({ leads, accessToken, onRefresh }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ company: '', contact_name: '', email: '', phone: '', source: 'website', estimated_value: '' });
+  const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [savingId, setSavingId] = useState(null);
   const [toast, setToast] = useState('');
-  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
+  const inputClass = 'border border-white/20 rounded px-4 py-3 text-body-md text-white placeholder-white/40 bg-white/10 focus:outline-none focus:border-brand';
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
+  const validate = () => {
+    const errs = {};
+    if (!form.contact_name || !form.contact_name.trim()) {
+      errs.contact_name = 'Contact name is required.';
+    } else if (form.contact_name.trim().length < 2) {
+      errs.contact_name = 'Contact name must be at least 2 characters.';
+    }
+    if (!form.email || !form.email.trim()) {
+      errs.email = 'Email is required.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      errs.email = 'Enter a valid email address.';
+    }
+    if (form.phone && !/^[+]?[\d\s\-()]{7,20}$/.test(form.phone.trim())) {
+      errs.phone = 'Enter a valid phone number.';
+    }
+    if (form.estimated_value && (isNaN(Number(form.estimated_value)) || Number(form.estimated_value) < 0)) {
+      errs.estimated_value = 'Enter a valid amount.';
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.contact_name || !form.email) return;
+    if (!validate()) return;
     setSubmitting(true);
     try {
       await createLead(accessToken, { ...form, estimated_value: form.estimated_value ? Number(form.estimated_value) : null });
       setForm({ company: '', contact_name: '', email: '', phone: '', source: 'website', estimated_value: '' });
+      setErrors({});
       setShowForm(false);
       onRefresh();
       showToast('Lead saved successfully.');
@@ -629,51 +744,65 @@ function Leads({ leads, accessToken, onRefresh }) {
   return (
     <div className="space-y-stack-md">
       <div className="flex justify-end">
-        <Button onClick={() => setShowForm(!showForm)} variant="primary" size="md" icon={<Icon name="add" />}>New Lead</Button>
+        <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>New Lead</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg">
           <div className="grid gap-4 sm:grid-cols-2">
-            <input type="text" placeholder="Company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className={inputClass} />
-            <input required type="text" placeholder="Contact name" value={form.contact_name} onChange={(e) => setForm({ ...form, contact_name: e.target.value })} className={inputClass} />
-            <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputClass} />
-            <input type="text" placeholder="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} />
-            <select value={form.source} onChange={(e) => setForm({ ...form, source: e.target.value })} className={inputClass}>
+            <div>
+              <input type="text" placeholder="Company (optional)" value={form.company} onChange={(e) => handleChange('company', e.target.value)} className={inputClass} />
+            </div>
+            <div>
+              <input type="text" placeholder="Contact name *" value={form.contact_name} onChange={(e) => handleChange('contact_name', e.target.value)} className={`${inputClass} ${errors.contact_name ? 'border-red-400' : ''}`} />
+              {errors.contact_name && <p className="mt-1 text-body-xs text-red-500">{errors.contact_name}</p>}
+            </div>
+            <div>
+              <input type="email" placeholder="Email *" value={form.email} onChange={(e) => handleChange('email', e.target.value)} className={`${inputClass} ${errors.email ? 'border-red-400' : ''}`} />
+              {errors.email && <p className="mt-1 text-body-xs text-red-500">{errors.email}</p>}
+            </div>
+            <div>
+              <input type="text" placeholder="Phone (optional)" value={form.phone} onChange={(e) => handleChange('phone', e.target.value)} className={`${inputClass} ${errors.phone ? 'border-red-400' : ''}`} />
+              {errors.phone && <p className="mt-1 text-body-xs text-red-500">{errors.phone}</p>}
+            </div>
+            <select value={form.source} onChange={(e) => handleChange('source', e.target.value)} className={inputClass}>
               {LEAD_SOURCE_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
             </select>
-            <input type="number" min="0" placeholder="Estimated value ($)" value={form.estimated_value} onChange={(e) => setForm({ ...form, estimated_value: e.target.value })} className={inputClass} />
+            <div>
+              <input type="number" min="0" placeholder="Estimated value ($)" value={form.estimated_value} onChange={(e) => handleChange('estimated_value', e.target.value)} className={`${inputClass} ${errors.estimated_value ? 'border-red-400' : ''}`} />
+              {errors.estimated_value && <p className="mt-1 text-body-xs text-red-500">{errors.estimated_value}</p>}
+            </div>
           </div>
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Saving...' : 'Save Lead'}</Button>
-            <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setErrors({}); }}>Cancel</Button>
           </div>
         </form>
       )}
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.includes('successfully') ? 'border border-green-200 bg-green-50 text-green-600' : 'border border-red-200 bg-red-50 text-red-600'
+          toast.includes('successfully') ? 'border border-green-500/30 bg-green-500/10 text-green-300' : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
-      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
         <table className="w-full text-left">
-          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Est. Value</th><th className="px-stack-lg py-4">Status</th></tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+          <tbody className="divide-y divide-white/10">
             {leads.map((l) => (
-              <tr key={l.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+              <tr key={l.id} className="transition-colors hover:bg-white/5">
                 <td className="px-stack-lg py-4">
-                  <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{l.company || '—'}</p>
-                  <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.contact_name}</p>
+                  <p className="text-body-md font-semibold text-white">{l.company || '—'}</p>
+                  <p className="text-body-sm text-white/70">{l.contact_name}</p>
                 </td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.email}</td>
-                <td className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{l.source?.replace('_', ' ')}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-dark-brand">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white/70">{l.email}</td>
+                <td className="px-stack-lg py-4 text-body-sm capitalize text-white/70">{l.source?.replace('_', ' ')}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
                 <td className="px-stack-lg py-4">
                   <div className="flex items-center gap-2">
                     <StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge>
                     <select value={l.status} disabled={savingId === l.id || !accessToken} onChange={(e) => handleStatusChange(l.id, e.target.value)}
-                      className="rounded border border-outline-variant bg-white px-2 py-1 text-body-sm disabled:opacity-50 dark:border-dark-outline-variant dark:bg-dark-surface">
+                      className="rounded border border-white/20 bg-white/10 px-2 py-1 text-body-sm disabled:opacity-50">
                       {LEAD_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                     </select>
                   </div>
@@ -681,7 +810,7 @@ function Leads({ leads, accessToken, onRefresh }) {
               </tr>
             ))}
             {!leads.length && (
-              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No leads yet.</td></tr>
+              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No leads yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -693,22 +822,48 @@ function Leads({ leads, accessToken, onRefresh }) {
 function Proposals({ proposals, leads, accessToken, onRefresh }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ lead_id: '', scope_summary: '', price: '', currency: 'USD' });
+  const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [actingId, setActingId] = useState(null);
-  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
+  const inputClass = 'border border-white/20 rounded px-4 py-3 text-body-md text-white placeholder-white/40 bg-white/10 focus:outline-none focus:border-brand';
 
   const leadLabel = (leadId) => {
     const lead = leads.find((l) => l.id === leadId);
     return lead ? (lead.company || lead.contact_name) : 'Unknown lead';
   };
 
+  const validate = () => {
+    const errs = {};
+    if (!form.lead_id) {
+      errs.lead_id = 'Please select a lead.';
+    }
+    if (!form.scope_summary || !form.scope_summary.trim()) {
+      errs.scope_summary = 'Scope summary is required.';
+    } else if (form.scope_summary.trim().length < 10) {
+      errs.scope_summary = 'Scope summary must be at least 10 characters.';
+    }
+    if (!form.price) {
+      errs.price = 'Price is required.';
+    } else if (isNaN(Number(form.price)) || Number(form.price) <= 0) {
+      errs.price = 'Price must be a positive number.';
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.lead_id || !form.scope_summary || !form.price) return;
+    if (!validate()) return;
     setSubmitting(true);
     try {
       await createProposal(accessToken, { ...form, price: Number(form.price) });
       setForm({ lead_id: '', scope_summary: '', price: '', currency: 'USD' });
+      setErrors({});
       setShowForm(false);
       onRefresh();
     } finally {
@@ -729,39 +884,48 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
   return (
     <div className="space-y-stack-md">
       <div className="flex justify-end">
-        <Button onClick={() => setShowForm(!showForm)} variant="primary" size="md" icon={<Icon name="add" />}>New Proposal</Button>
+        <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>New Proposal</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg">
           <div className="grid gap-4 sm:grid-cols-3">
-            <select required value={form.lead_id} onChange={(e) => setForm({ ...form, lead_id: e.target.value })} className={inputClass}>
-              <option value="" disabled>Select lead</option>
-              {leads.map((l) => <option key={l.id} value={l.id}>{l.company || l.contact_name}</option>)}
-            </select>
-            <input required type="number" min="0" placeholder="Price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className={inputClass} />
-            <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className={inputClass}>
+            <div>
+              <select value={form.lead_id} onChange={(e) => handleChange('lead_id', e.target.value)} className={`${inputClass} ${errors.lead_id ? 'border-red-400' : ''}`}>
+                <option value="" disabled>Select lead *</option>
+                {leads.map((l) => <option key={l.id} value={l.id}>{l.company || l.contact_name}</option>)}
+              </select>
+              {errors.lead_id && <p className="mt-1 text-body-xs text-red-500">{errors.lead_id}</p>}
+            </div>
+            <div>
+              <input type="number" min="0" placeholder="Price *" value={form.price} onChange={(e) => handleChange('price', e.target.value)} className={`${inputClass} ${errors.price ? 'border-red-400' : ''}`} />
+              {errors.price && <p className="mt-1 text-body-xs text-red-500">{errors.price}</p>}
+            </div>
+            <select value={form.currency} onChange={(e) => handleChange('currency', e.target.value)} className={inputClass}>
               {['USD', 'EUR', 'GBP', 'INR'].map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
-          <textarea required placeholder="Scope summary" value={form.scope_summary} onChange={(e) => setForm({ ...form, scope_summary: e.target.value })} rows={3} className={`w-full ${inputClass}`} />
+          <div>
+            <textarea placeholder="Scope summary *" value={form.scope_summary} onChange={(e) => handleChange('scope_summary', e.target.value)} rows={3} className={`w-full ${inputClass} ${errors.scope_summary ? 'border-red-400' : ''}`} />
+            {errors.scope_summary && <p className="mt-1 text-body-xs text-red-500">{errors.scope_summary}</p>}
+          </div>
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Saving...' : 'Save Draft'}</Button>
-            <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
+            <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setErrors({}); }}>Cancel</Button>
           </div>
         </form>
       )}
-      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
         <table className="w-full text-left">
-          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Lead</th><th className="px-stack-lg py-4">Price</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Sent</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+          <tbody className="divide-y divide-white/10">
             {proposals.map((p) => (
-              <tr key={p.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{leadLabel(p.lead_id)}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.currency} {Number(p.price).toLocaleString()}</td>
+              <tr key={p.id} className="transition-colors hover:bg-white/5">
+                <td className="px-stack-lg py-4 text-body-md text-white">{leadLabel(p.lead_id)}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white/70">{p.currency} {Number(p.price).toLocaleString()}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={PROPOSAL_STATUS_COLOR[p.status]}>{p.status}</StatusBadge></td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.sent_at ? p.sent_at.slice(0, 10) : '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white/70">{p.sent_at ? p.sent_at.slice(0, 10) : '—'}</td>
                 <td className="px-stack-lg py-4">
                   <div className="flex gap-2">
                     {p.status === 'draft' && <RowAction disabled={actingId === p.id} onClick={() => runAction(sendProposal, p.id)}>Send</RowAction>}
@@ -777,7 +941,7 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
               </tr>
             ))}
             {!proposals.length && (
-              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No proposals yet.</td></tr>
+              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No proposals yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -807,25 +971,25 @@ function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
       <table className="w-full text-left">
-        <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+        <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Deal</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Client Signed</th><th className="px-stack-lg py-4">Company Signed</th><th className="px-stack-lg py-4">Actions</th></tr>
         </thead>
-        <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+        <tbody className="divide-y divide-white/10">
           {contracts.map((c) => (
-            <tr key={c.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-              <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{describe(c.proposal_id)}</td>
+            <tr key={c.id} className="transition-colors hover:bg-white/5">
+              <td className="px-stack-lg py-4 text-body-md text-white">{describe(c.proposal_id)}</td>
               <td className="px-stack-lg py-4"><StatusBadge variant={CONTRACT_STATUS_COLOR[c.status]}>{c.status}</StatusBadge></td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.signed_by_client_at ? c.signed_by_client_at.slice(0, 10) : '—'}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.signed_by_company_at ? c.signed_by_company_at.slice(0, 10) : '—'}</td>
+              <td className="px-stack-lg py-4 text-body-sm text-white/70">{c.signed_by_client_at ? c.signed_by_client_at.slice(0, 10) : '—'}</td>
+              <td className="px-stack-lg py-4 text-body-sm text-white/70">{c.signed_by_company_at ? c.signed_by_company_at.slice(0, 10) : '—'}</td>
               <td className="px-stack-lg py-4">
                 {c.status === 'pending' && <RowAction disabled={actingId === c.id} onClick={() => handleSign(c.id)}>Mark Signed</RowAction>}
               </td>
             </tr>
           ))}
           {!contracts.length && (
-            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No contracts yet — generate one from an accepted proposal.</td></tr>
+            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No contracts yet — generate one from an accepted proposal.</td></tr>
           )}
         </tbody>
       </table>
@@ -855,24 +1019,24 @@ function MarketingLeadsView({ accessToken }) {
 
   if (loading) return <LoadingSpinner />;
   return (
-    <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
       <table className="w-full text-left">
-        <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+        <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
           <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Est. Value</th></tr>
         </thead>
-        <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+        <tbody className="divide-y divide-white/10">
           {leads.map((l) => (
-            <tr key={l.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+            <tr key={l.id} className="transition-colors hover:bg-white/5">
               <td className="px-stack-lg py-4">
-                <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{l.company || '—'}</p>
-                <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.contact_name}</p>
+                <p className="text-body-md font-semibold text-white">{l.company || '—'}</p>
+                <p className="text-body-sm text-white/70">{l.contact_name}</p>
               </td>
-              <td className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{l.source?.replace('_', ' ')}</td>
+              <td className="px-stack-lg py-4 text-body-sm capitalize text-white/70">{l.source?.replace('_', ' ')}</td>
               <td className="px-stack-lg py-4"><StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge></td>
-              <td className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-dark-brand">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
+              <td className="px-stack-lg py-4 text-body-sm text-white">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
             </tr>
           ))}
-          {!leads.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No leads yet.</td></tr>}
+          {!leads.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No leads yet.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -880,7 +1044,7 @@ function MarketingLeadsView({ accessToken }) {
 }
 
 function TestimonialModeration({ accessToken }) {
-  const [items, setItems] = useState(demoTestimonials);
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState(null);
   const [filter, setFilter] = useState('pending');
@@ -892,7 +1056,7 @@ function TestimonialModeration({ accessToken }) {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     fetchTestimonials(accessToken, { limit: 100 })
-      .then((r) => { if (r?.data?.length) setItems(r.data); })
+      .then((r) => { setItems(r?.data || []); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [accessToken]);
@@ -936,12 +1100,12 @@ function TestimonialModeration({ accessToken }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-white/70">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-white">{stat.value}</p>
           </div>
         ))}
       </div>
@@ -957,7 +1121,7 @@ function TestimonialModeration({ accessToken }) {
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-white">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
@@ -965,18 +1129,18 @@ function TestimonialModeration({ accessToken }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('published')
-            ? 'border border-green-200 bg-green-50 text-green-600'
-            : 'border border-red-200 bg-red-50 text-red-600'
+            ? 'border border-green-500/30 bg-green-500/10 text-green-300'
+            : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
 
       <div className="space-y-4">
         {visible.map((t) => (
-          <div key={t.id} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div key={t.id} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
             <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="font-display text-body-md font-semibold text-brand-dark dark:text-dark-brand">{t.author_name}</p>
-                <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.author_title}{t.company_name ? ` · ${t.company_name}` : ''}</p>
+                <p className="font-display text-body-md font-semibold text-white">{t.author_name}</p>
+                <p className="text-body-sm text-white/70">{t.author_title}{t.company_name ? ` · ${t.company_name}` : ''}</p>
                 <div className="mt-1 flex items-center gap-0.5">{stars(t.rating)}</div>
               </div>
               <div className="flex items-center gap-3">
@@ -984,10 +1148,10 @@ function TestimonialModeration({ accessToken }) {
                 {!t.is_published && <RowAction disabled={actingId === t.id} onClick={() => approve(t.id)}>Approve &amp; Publish</RowAction>}
               </div>
             </div>
-            <p className="text-body-sm italic text-ink-muted dark:text-dark-ink-muted">&ldquo;{t.content}&rdquo;</p>
+            <p className="text-body-sm italic text-white/70">&ldquo;{t.content}&rdquo;</p>
           </div>
         ))}
-        {!visible.length && <p className="py-8 text-center text-body-sm text-ink-muted">No testimonials to show.</p>}
+        {!visible.length && <p className="py-8 text-center text-body-sm text-white/70">No testimonials to show.</p>}
       </div>
     </div>
   );
@@ -1056,7 +1220,7 @@ function TeamProjects({ accessToken, userId }) {
         <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Project</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg">
           <div className="grid gap-4 sm:grid-cols-2">
             <input required type="text" placeholder="Project title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={FORM_INPUT_CLASS} />
             <select value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className={FORM_INPUT_CLASS}>
@@ -1078,27 +1242,27 @@ function TeamProjects({ accessToken, userId }) {
 
       <div className="space-y-4">
         {projects.map((p) => (
-          <div key={p.id} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div key={p.id} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
             <div className="mb-3 flex items-start justify-between gap-4">
               <div>
-                <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{p.title}</h3>
-                <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Client: {clientName(p.client_id)}{p.budget ? ` · Budget: $${Number(p.budget).toLocaleString()}` : ''}</p>
+                <h3 className="font-display text-headline-sm text-white">{p.title}</h3>
+                <p className="text-body-sm text-white/70">Client: {clientName(p.client_id)}{p.budget ? ` · Budget: $${Number(p.budget).toLocaleString()}` : ''}</p>
               </div>
               <StatusBadge variant={PROJECT_STATUS_COLOR[p.status]}>{p.status?.replace('_', ' ')}</StatusBadge>
             </div>
             <div className="mb-3 flex items-center gap-3">
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
                 <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress_percent}%` }} />
               </div>
-              <span className="w-10 text-right text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{p.progress_percent}%</span>
+              <span className="w-10 text-right text-body-sm font-semibold text-white">{p.progress_percent}%</span>
             </div>
             {assigningId === p.id ? (
-              <div className="space-y-2 border-t border-outline-variant pt-3 dark:border-dark-outline-variant">
-                <p className="font-label-caps text-label-caps uppercase text-ink-muted">Select team members</p>
+              <div className="space-y-2 border-t border-white/10 pt-3">
+                <p className="font-label-caps text-label-caps uppercase text-white/70">Select team members</p>
                 <div className="flex flex-wrap gap-2">
                   {employees.map((emp) => (
                     <button key={emp.id} type="button" onClick={() => toggleTeamMember(emp.id)}
-                      className={`rounded border px-3 py-1.5 text-body-sm transition-colors ${teamSelection.includes(emp.id) ? 'border-brand bg-brand text-white' : 'border-outline-variant text-ink-muted hover:border-brand dark:border-dark-outline-variant dark:text-dark-ink-muted'}`}>
+                      className={`rounded border px-3 py-1.5 text-body-sm transition-colors ${teamSelection.includes(emp.id) ? 'border-brand bg-brand text-white' : 'border-white/20 text-white/70 hover:border-brand'}`}>
                       {emp.employee_code}{emp.designation ? ` · ${emp.designation}` : ''}
                     </button>
                   ))}
@@ -1177,7 +1341,7 @@ function TaskBoard({ accessToken, userId }) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg">
           <div className="grid gap-4 sm:grid-cols-3">
             <input required type="text" placeholder="Task title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={FORM_INPUT_CLASS} />
             <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className={FORM_INPUT_CLASS}>
@@ -1195,14 +1359,14 @@ function TaskBoard({ accessToken, userId }) {
       {loading ? <LoadingSpinner /> : (
         <div className="grid gap-gutter md:grid-cols-5">
           {TASK_STATUS_COLUMNS.map((col) => (
-            <div key={col} className="space-y-2 rounded-lg bg-surface-container p-3 dark:bg-dark-surface-container">
+            <div key={col} className="space-y-2 rounded-lg bg-white/10 p-3">
               <p className="font-label-caps text-label-caps uppercase text-white">{col.replace('_', ' ')} ({tasks.filter((t) => t.status === col).length})</p>
               {tasks.filter((t) => t.status === col).map((t) => (
-                <div key={t.id} className="space-y-2 rounded border border-outline-variant bg-white p-3 dark:border-dark-outline-variant dark:bg-dark-surface">
-                  <p className="text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{t.title}</p>
+                <div key={t.id} className="space-y-2 rounded border border-white/10 bg-white/5 p-3">
+                  <p className="text-body-sm font-semibold text-white">{t.title}</p>
                   <StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
                   <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
-                    className="w-full rounded border border-outline-variant bg-white px-2 py-1 text-body-sm dark:border-dark-outline-variant dark:bg-dark-surface">
+                    className="w-full rounded border border-white/20 bg-white/10 px-2 py-1 text-body-sm">
                     {TASK_STATUS_COLUMNS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                   </select>
                 </div>
@@ -1216,7 +1380,7 @@ function TaskBoard({ accessToken, userId }) {
 }
 
 function Approvals({ accessToken }) {
-  const [timesheets, setTimesheets] = useState(demoApprovalTimesheets);
+  const [timesheets, setTimesheets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actingId, setActingId] = useState(null);
   const [filter, setFilter] = useState('submitted');
@@ -1228,7 +1392,7 @@ function Approvals({ accessToken }) {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     fetchAllTimesheets(accessToken, { limit: 100 })
-      .then((r) => { if (r?.data?.length) setTimesheets(r.data); })
+      .then((r) => { setTimesheets(r?.data || []); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [accessToken]);
@@ -1266,12 +1430,12 @@ function Approvals({ accessToken }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-white/70">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-white">{stat.value}</p>
           </div>
         ))}
       </div>
@@ -1287,7 +1451,7 @@ function Approvals({ accessToken }) {
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-white">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
@@ -1295,14 +1459,14 @@ function Approvals({ accessToken }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('approved') || toast.includes('rejected')
-            ? 'border border-green-200 bg-green-50 text-green-600'
-            : 'border border-red-200 bg-red-50 text-red-600'
+            ? 'border border-green-500/30 bg-green-500/10 text-green-300'
+            : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
         <table className="w-full text-left">
-          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
             <tr>
               <th className="px-stack-lg py-4">Employee</th>
               <th className="px-stack-lg py-4">Date</th>
@@ -1312,16 +1476,16 @@ function Approvals({ accessToken }) {
               <th className="px-stack-lg py-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+          <tbody className="divide-y divide-white/10">
             {visible.map((t) => (
-              <tr key={t.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+              <tr key={t.id} className="transition-colors hover:bg-white/5">
                 <td className="px-stack-lg py-4">
-                  <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{t.employee_name || t.employee_code || '—'}</p>
-                  {t.employee_code && t.employee_name && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.employee_code}</p>}
+                  <p className="text-body-md font-semibold text-white">{t.employee_name || t.employee_code || '—'}</p>
+                  {t.employee_code && t.employee_name && <p className="text-body-sm text-white/70">{t.employee_code}</p>}
                 </td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.date}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-dark-brand">{t.hours}h</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.description || '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white/70">{t.date}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white">{t.hours}h</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white/70">{t.description || '—'}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={TIMESHEET_STATUS_COLOR[t.status]}>{t.status}</StatusBadge></td>
                 <td className="px-stack-lg py-4">
                   <div className="flex gap-2">
@@ -1331,7 +1495,7 @@ function Approvals({ accessToken }) {
                 </td>
               </tr>
             ))}
-            {!visible.length && <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No timesheets to show.</td></tr>}
+            {!visible.length && <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No timesheets to show.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -1341,7 +1505,7 @@ function Approvals({ accessToken }) {
 
 // ---------- QA ----------
 function TestQueue({ accessToken }) {
-  const [tasks, setTasks] = useState(demoQaTasks);
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
   const [filter, setFilter] = useState('in_review');
@@ -1353,7 +1517,7 @@ function TestQueue({ accessToken }) {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     fetchTasks(accessToken, { limit: 100 })
-      .then((r) => { if (r?.data?.length) setTasks(r.data); })
+      .then((r) => { setTasks(r?.data || []); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [accessToken]);
@@ -1393,12 +1557,12 @@ function TestQueue({ accessToken }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-white/70">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-white">{stat.value}</p>
           </div>
         ))}
       </div>
@@ -1414,7 +1578,7 @@ function TestQueue({ accessToken }) {
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-white">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
@@ -1422,14 +1586,14 @@ function TestQueue({ accessToken }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('passed') || toast.includes('success')
-            ? 'border border-green-200 bg-green-50 text-green-600'
-            : 'border border-red-200 bg-red-50 text-red-600'
+            ? 'border border-green-500/30 bg-green-500/10 text-green-300'
+            : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
         <table className="w-full text-left">
-          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
             <tr>
               <th className="px-stack-lg py-4">Task</th>
               <th className="px-stack-lg py-4">Priority</th>
@@ -1438,13 +1602,13 @@ function TestQueue({ accessToken }) {
               <th className="px-stack-lg py-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+          <tbody className="divide-y divide-white/10">
             {visible.map((t) => (
-              <tr key={t.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.title}</td>
+              <tr key={t.id} className="transition-colors hover:bg-white/5">
+                <td className="px-stack-lg py-4 text-body-md text-white">{t.title}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge></td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={TASK_STATUS_COLOR[t.status]}>{t.status?.replace('_', ' ')}</StatusBadge></td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.due_date || '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white/70">{t.due_date || '—'}</td>
                 <td className="px-stack-lg py-4">
                   <div className="flex gap-2">
                     <RowAction disabled={savingId === t.id} onClick={() => resolve(t.id, 'done')}>Pass</RowAction>
@@ -1453,7 +1617,7 @@ function TestQueue({ accessToken }) {
                 </td>
               </tr>
             ))}
-            {!visible.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">Nothing waiting for QA sign-off.</td></tr>}
+            {!visible.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">Nothing waiting for QA sign-off.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -1463,7 +1627,7 @@ function TestQueue({ accessToken }) {
 
 // ---------- Support ----------
 function TicketQueue({ accessToken, userId }) {
-  const [tickets, setTickets] = useState(demoTickets);
+  const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
   const [replyDraft, setReplyDraft] = useState({});
@@ -1479,7 +1643,7 @@ function TicketQueue({ accessToken, userId }) {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
     fetchTickets(accessToken, { limit: 100 })
-      .then((r) => { if (r?.data?.length) setTickets(r.data); })
+      .then((r) => { setTickets(r?.data || []); })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [accessToken]);
@@ -1556,12 +1720,12 @@ function TicketQueue({ accessToken, userId }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-white/70">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-white">{stat.value}</p>
           </div>
         ))}
       </div>
@@ -1577,7 +1741,7 @@ function TicketQueue({ accessToken, userId }) {
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-white">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
@@ -1585,29 +1749,29 @@ function TicketQueue({ accessToken, userId }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('sent') || toast.includes('assigned') || toast.includes('resolved') || toast.includes('closed')
-            ? 'border border-green-200 bg-green-50 text-green-600'
-            : 'border border-red-200 bg-red-50 text-red-600'
+            ? 'border border-green-500/30 bg-green-500/10 text-green-300'
+            : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
 
       <div className="space-y-4">
         {visible.map((t) => (
-          <div key={t.id} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div key={t.id} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
             <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="font-display text-body-md font-semibold text-brand-dark dark:text-dark-brand">{t.subject}</p>
-                <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.ticket_number}</p>
+                <p className="font-display text-body-md font-semibold text-white">{t.subject}</p>
+                <p className="text-body-sm text-white/70">{t.ticket_number}</p>
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge variant={TICKET_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
                 <StatusBadge variant={TICKET_STATUS_COLOR[t.status]}>{t.status.replace('_', ' ')}</StatusBadge>
               </div>
             </div>
-            <p className="mb-3 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.description}</p>
+            <p className="mb-3 text-body-sm text-white/70">{t.description}</p>
             <div className="flex flex-wrap items-center gap-2">
               {!t.assigned_to && <RowAction disabled={savingId === t.id} onClick={() => assignToMe(t.id)}>Assign to me</RowAction>}
               <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
-                className="rounded border border-outline-variant bg-white px-2 py-1.5 text-body-sm dark:border-dark-outline-variant dark:bg-dark-surface">
+                className="rounded border border-white/20 bg-white/10 px-2 py-1.5 text-body-sm">
                 {['open', 'in_progress', 'resolved', 'closed'].map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
               </select>
               <RowAction variant="outline" onClick={() => setOpenTicketId(openTicketId === t.id ? null : t.id)}>Reply</RowAction>
@@ -1615,7 +1779,7 @@ function TicketQueue({ accessToken, userId }) {
             {openTicketId === t.id && (
               <div className="mt-3 flex gap-2">
                 <textarea rows={2} value={replyDraft[t.id] || ''} onChange={(e) => setReplyDraft((prev) => ({ ...prev, [t.id]: e.target.value }))}
-                  placeholder="Type a reply..." className="flex-1 rounded border border-outline-variant bg-white px-3 py-2 text-body-sm focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface" />
+                  placeholder="Type a reply..." className="flex-1 rounded border border-white/20 bg-white/10 px-3 py-2 text-body-sm focus:border-brand focus:outline-none" />
                 <RowAction disabled={savingId === t.id} onClick={() => sendReply(t.id)}>Send</RowAction>
               </div>
             )}
@@ -1689,7 +1853,7 @@ function Invoices({ accessToken }) {
         <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Invoice</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-white/10 bg-white/5 p-stack-lg">
           <div className="grid gap-4 sm:grid-cols-3">
             <select required value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className={FORM_INPUT_CLASS}>
               <option value="" disabled>Select client</option>
@@ -1709,18 +1873,18 @@ function Invoices({ accessToken }) {
           </div>
         </form>
       )}
-      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
         <table className="w-full text-left">
-          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
             <tr><th className="px-stack-lg py-4">Invoice</th><th className="px-stack-lg py-4">Client</th><th className="px-stack-lg py-4">Total</th><th className="px-stack-lg py-4">Due</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+          <tbody className="divide-y divide-white/10">
             {invoices.map((inv) => (
-              <tr key={inv.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{inv.invoice_number}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{clientName(inv.client_id)}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-dark-brand">{inv.currency} {Number(inv.total_amount).toLocaleString()}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{inv.due_date}</td>
+              <tr key={inv.id} className="transition-colors hover:bg-white/5">
+                <td className="px-stack-lg py-4 text-body-md text-white">{inv.invoice_number}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white/70">{clientName(inv.client_id)}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white">{inv.currency} {Number(inv.total_amount).toLocaleString()}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white/70">{inv.due_date}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={INVOICE_STATUS_COLOR[inv.status]}>{inv.status}</StatusBadge></td>
                 <td className="px-stack-lg py-4">
                   <div className="flex gap-2">
@@ -1730,7 +1894,7 @@ function Invoices({ accessToken }) {
                 </td>
               </tr>
             ))}
-            {!invoices.length && <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No invoices yet.</td></tr>}
+            {!invoices.length && <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No invoices yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -1793,20 +1957,20 @@ function LeaveApprovals({ accessToken }) {
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-white">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('approved') || toast.includes('rejected')
-            ? 'border border-green-200 bg-green-50 text-green-600'
-            : 'border border-red-200 bg-red-50 text-red-600'
+            ? 'border border-green-500/30 bg-green-500/10 text-green-300'
+            : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
-      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
         <table className="w-full text-left">
-          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
             <tr>
               <th className="px-stack-lg py-4">Employee</th>
               <th className="px-stack-lg py-4">Type</th>
@@ -1818,22 +1982,22 @@ function LeaveApprovals({ accessToken }) {
               <th className="px-stack-lg py-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+          <tbody className="divide-y divide-white/10">
             {leaves.map((l) => {
               const days = l.start_date && l.end_date
                 ? Math.ceil((new Date(l.end_date) - new Date(l.start_date)) / 86400000) + 1
                 : '—';
               return (
-                <tr key={l.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                <tr key={l.id} className="transition-colors hover:bg-white/5">
                   <td className="px-stack-lg py-4">
-                    <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{l.employee_code || '—'}</p>
-                    {l.designation && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.designation}</p>}
+                    <p className="text-body-md font-semibold text-white">{l.employee_code || '—'}</p>
+                    {l.designation && <p className="text-body-sm text-white/70">{l.designation}</p>}
                   </td>
-                  <td className="px-stack-lg py-4 text-body-md capitalize text-brand-dark dark:text-dark-brand">{l.type}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.start_date}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.end_date}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{days}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.reason || '—'}</td>
+                  <td className="px-stack-lg py-4 text-body-md capitalize text-white">{l.type}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-white/70">{l.start_date}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-white/70">{l.end_date}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-white/70">{days}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-white/70">{l.reason || '—'}</td>
                   <td className="px-stack-lg py-4"><StatusBadge variant={LEAVE_STATUS_COLOR[l.status]}>{l.status}</StatusBadge></td>
                   <td className="px-stack-lg py-4">
                     {l.status === 'pending' && (
@@ -1846,7 +2010,7 @@ function LeaveApprovals({ accessToken }) {
                 </tr>
               );
             })}
-            {!leaves.length && <tr><td colSpan={8} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No leave requests found.</td></tr>}
+            {!leaves.length && <tr><td colSpan={8} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No leave requests found.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -1855,8 +2019,8 @@ function LeaveApprovals({ accessToken }) {
 }
 
 function Recruitment({ accessToken }) {
-  const [positions, setPositions] = useState(demoCareers);
-  const [applications, setApplications] = useState(demoApplications);
+  const [positions, setPositions] = useState([]);
+  const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState(null);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -1871,8 +2035,8 @@ function Recruitment({ accessToken }) {
       apiRequest('/careers?limit=50', { token: accessToken }),
       fetchApplications(accessToken, { limit: 100 }),
     ]).then(([positionsRes, appsRes]) => {
-      if (positionsRes.status === 'fulfilled' && positionsRes.value?.data?.length) setPositions(positionsRes.value.data);
-      if (appsRes.status === 'fulfilled' && appsRes.value?.data?.length) setApplications(appsRes.value.data);
+      if (positionsRes.status === 'fulfilled') setPositions(positionsRes.value?.data || []);
+      if (appsRes.status === 'fulfilled') setApplications(appsRes.value?.data || []);
     }).finally(() => setLoading(false));
   }, [accessToken]);
 
@@ -1915,42 +2079,42 @@ function Recruitment({ accessToken }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div key={stat.label} className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-ink-muted">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-white/70">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-white">{stat.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="rounded-lg border border-white/10 bg-white/5 p-stack-lg">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Open Positions</h3>
-          <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark">
+          <h3 className="font-display text-headline-sm text-white">Open Positions</h3>
+          <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-white">
             <Icon name="refresh" className="text-base" /> Refresh
           </button>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {openPositions.map((p) => (
-            <div key={p.id} className="rounded-lg border border-outline-variant p-4 dark:border-dark-outline-variant">
-              <p className="mb-1 font-display text-body-lg font-semibold text-brand-dark dark:text-dark-brand">{p.title}</p>
-              <p className="text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">
+            <div key={p.id} className="rounded-lg border border-white/10 p-4">
+              <p className="mb-1 font-display text-body-lg font-semibold text-white">{p.title}</p>
+              <p className="text-body-sm capitalize text-white/70">
                 {p.department || 'General'} · {p.location || 'Remote'} · {String(p.employment_type || 'full_time').replace('_', ' ')}
               </p>
-              <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.experience_required ? `Experience: ${p.experience_required}` : ''}</p>
+              <p className="mt-1 text-body-sm text-white/70">{p.experience_required ? `Experience: ${p.experience_required}` : ''}</p>
             </div>
           ))}
-          {!openPositions.length && <p className="text-body-sm text-ink-muted">No open positions right now.</p>}
+          {!openPositions.length && <p className="text-body-sm text-white/70">No open positions right now.</p>}
         </div>
       </div>
 
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('updated')
-            ? 'border border-green-200 bg-green-50 text-green-600'
-            : 'border border-red-200 bg-red-50 text-red-600'
+            ? 'border border-green-500/30 bg-green-500/10 text-green-300'
+            : 'border border-red-500/30 bg-red-500/10 text-red-300'
         }`}>{toast}</p>
       )}
 
@@ -1967,9 +2131,9 @@ function Recruitment({ accessToken }) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="overflow-x-auto rounded-lg border border-white/10 bg-white/5">
         <table className="w-full text-left">
-          <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+          <thead className="bg-white/10 font-label-caps text-label-caps uppercase text-white/70">
             <tr>
               <th className="px-stack-lg py-4">Applicant</th>
               <th className="px-stack-lg py-4">Position</th>
@@ -1978,25 +2142,25 @@ function Recruitment({ accessToken }) {
               <th className="px-stack-lg py-4">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+          <tbody className="divide-y divide-white/10">
             {filtered.map((a) => (
-              <tr key={a.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{a.full_name}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{positionTitle(a.career_id)}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{a.email}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{(a.created_at || '').slice(0, 10) || '—'}</td>
+              <tr key={a.id} className="transition-colors hover:bg-white/5">
+                <td className="px-stack-lg py-4 text-body-md text-white">{a.full_name}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white/70">{positionTitle(a.career_id)}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white/70">{a.email}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-white/70">{(a.created_at || '').slice(0, 10) || '—'}</td>
                 <td className="px-stack-lg py-4">
                   <div className="flex items-center gap-2">
                     <StatusBadge variant={APPLICATION_STATUS_COLOR[a.status]}>{a.status}</StatusBadge>
                     <select value={a.status} disabled={savingId === a.id} onChange={(e) => changeStatus(a.id, e.target.value)}
-                      className="rounded border border-outline-variant bg-white px-2 py-1 text-body-sm dark:border-dark-outline-variant dark:bg-dark-surface">
+                      className="rounded border border-white/20 bg-white/10 px-2 py-1 text-body-sm">
                       {APPLICATION_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                 </td>
               </tr>
             ))}
-            {!filtered.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No applications found.</td></tr>}
+            {!filtered.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-white/70">No applications found.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -2110,21 +2274,22 @@ export default function EmployeePortal() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const initialLoadDone = useRef(false);
   const [profile, setProfile] = useState({ name: '', email: '', role: 'employee', designation: '', department: '', status: 'active', employee_code: '' });
   const [attendance, setAttendance] = useState({ date: new Date().toISOString().slice(0, 10), checkIn: null, checkOut: null, status: 'absent' });
   const [leaves, setLeaves] = useState([]);
-  const [timesheets, setTimesheets] = useState(demoTimesheets);
-  const [payslips, setPayslips] = useState(demoPayslips);
-  const [tasks, setTasks] = useState(demoTasks);
-  const [projects, setProjects] = useState(demoEmployeeProjects);
-  const [performance, setPerformance] = useState(demoPerformance);
-  const [training, setTraining] = useState(demoTraining);
+  const [timesheets, setTimesheets] = useState([]);
+  const [payslips, setPayslips] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [performance, setPerformance] = useState([]);
+  const [training, setTraining] = useState([]);
   const [catalog, setCatalog] = useState([]);
   const [enrollingId, setEnrollingId] = useState(null);
-  const [documents, setDocuments] = useState(demoDocuments);
-  const [leadsData, setLeadsData] = useState(demoLeads);
-  const [proposalsData, setProposalsData] = useState(demoProposals);
-  const [contractsData, setContractsData] = useState(demoContracts);
+  const [documents, setDocuments] = useState([]);
+  const [leadsData, setLeadsData] = useState([]);
+  const [proposalsData, setProposalsData] = useState([]);
+  const [contractsData, setContractsData] = useState([]);
   // The portal always uses the role the backend authenticated for this session.
   // No client-side role override is possible — tabs and permissions reflect the
   // real role returned by `/employees/me/profile`.
@@ -2135,9 +2300,9 @@ export default function EmployeePortal() {
     if (!accessToken) return;
     Promise.allSettled([fetchLeads(accessToken), fetchProposals(accessToken), fetchContracts(accessToken)])
       .then(([l, p, c]) => {
-        if (l.status === 'fulfilled' && l.value?.data?.length) setLeadsData(l.value.data);
-        if (p.status === 'fulfilled' && p.value?.data?.length) setProposalsData(p.value.data);
-        if (c.status === 'fulfilled' && c.value?.data?.length) setContractsData(c.value.data);
+        if (l.status === 'fulfilled') setLeadsData(l.value?.data || []);
+        if (p.status === 'fulfilled') setProposalsData(p.value?.data || []);
+        if (c.status === 'fulfilled') setContractsData(c.value?.data || []);
       });
   }, [accessToken]);
 
@@ -2147,7 +2312,7 @@ export default function EmployeePortal() {
     enrollInCourse(accessToken, courseId)
       .then(() => fetchMyTrainingEnrollments(accessToken))
       .then((res) => {
-        if (res?.data?.length) setTraining(normalizeTraining(res.data));
+        setTraining(normalizeTraining(res?.data));
       })
       .catch(() => {})
       .finally(() => setEnrollingId(null));
@@ -2155,7 +2320,7 @@ export default function EmployeePortal() {
 
   useEffect(() => {
     if (!user || !accessToken) { setLoading(false); return; }
-    setLoading(true);
+    if (!initialLoadDone.current) setLoading(true);
 
     Promise.allSettled([
       fetchMyProfile(accessToken),
@@ -2180,7 +2345,6 @@ export default function EmployeePortal() {
             department: p.department_name || p.department_id,
             status: p.status,
           });
-          // fetch attendance, leaves, timesheets, tasks, projects scoped to this employee
           Promise.allSettled([
             apiRequest(`/employees/me/attendance/today`, { token: accessToken }),
             apiRequest(`/employees/me/leaves`, { token: accessToken }),
@@ -2194,17 +2358,17 @@ export default function EmployeePortal() {
             }
             if (lvRes.status === 'fulfilled') setLeaves(normalizeLeaves(lvRes.value?.data));
             if (tsRes.status === 'fulfilled') setTimesheets(normalizeTimesheets(tsRes.value?.data));
-            if (taskRes.status === 'fulfilled' && taskRes.value?.data?.length) setTasks(normalizeTasks(taskRes.value.data));
-            if (projRes.status === 'fulfilled' && projRes.value?.data?.length) setProjects(normalizeEmpProjects(projRes.value.data));
+            if (taskRes.status === 'fulfilled') setTasks(normalizeTasks(taskRes.value?.data));
+            if (projRes.status === 'fulfilled') setProjects(normalizeEmpProjects(projRes.value?.data));
           });
         }
       }
-      if (psRes.status === 'fulfilled' && psRes.value?.data?.length) setPayslips(normalizePayslips(psRes.value.data));
-      if (perfRes.status === 'fulfilled' && perfRes.value?.data?.length) setPerformance(normalizePerformance(perfRes.value.data));
-      if (trainRes.status === 'fulfilled' && trainRes.value?.data?.length) setTraining(normalizeTraining(trainRes.value.data));
-      if (catRes.status === 'fulfilled' && catRes.value?.data?.length) setCatalog(normalizeCatalog(catRes.value.data));
-      if (docsRes.status === 'fulfilled' && docsRes.value?.data?.length) setDocuments(normalizeDocs(docsRes.value.data));
-    }).finally(() => setLoading(false));
+      if (psRes.status === 'fulfilled') setPayslips(normalizePayslips(psRes.value?.data));
+      if (perfRes.status === 'fulfilled') setPerformance(normalizePerformance(perfRes.value?.data));
+      if (trainRes.status === 'fulfilled') setTraining(normalizeTraining(trainRes.value?.data));
+      if (catRes.status === 'fulfilled') setCatalog(normalizeCatalog(catRes.value?.data));
+      if (docsRes.status === 'fulfilled') setDocuments(normalizeDocs(docsRes.value?.data));
+    }).finally(() => { initialLoadDone.current = true; setLoading(false); });
   }, [user, accessToken]);
 
   useEffect(() => {
@@ -2218,18 +2382,21 @@ export default function EmployeePortal() {
     setActiveTab('overview');
   }, [effectiveRole]);
 
-  if (initializing) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
-  if (!user) { navigate('/login', { replace: true }); return null; }
-  if (denied) {
-    navigate(profile.role === 'client' ? '/client' : '/login', { replace: true });
-    return null;
-  }
-  if (loading) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
+  useEffect(() => {
+    if (!initializing && !user) navigate('/login', { replace: true });
+  }, [initializing, user, navigate]);
+
+  useEffect(() => {
+    if (denied) navigate(profile.role === 'client' ? '/client' : '/login', { replace: true });
+  }, [denied, profile.role, navigate]);
+
+  if (initializing || !user || denied) return <div className="bg-white/10 py-section-padding"><LoadingSpinner /></div>;
+  if (loading) return <div className="bg-white/10 py-section-padding"><LoadingSpinner /></div>;
 
   return (
-    <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container">
+    <div className="bg-white/10 py-section-padding">
       <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
-        <div className="sticky top-0 z-20 mb-stack-lg flex items-center justify-between gap-4 bg-surface-container py-3 dark:bg-dark-surface-container">
+        <div className="sticky top-0 z-20 mb-stack-lg flex items-center justify-between gap-4 bg-white/10 py-3">
           <div className="flex items-center gap-4">
             <Avatar name={profile.name} size="lg" />
             <div>
@@ -2259,11 +2426,11 @@ export default function EmployeePortal() {
             </nav>
           </aside>
 
-          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant md:hidden">
+          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-white/10 md:hidden">
             {portalTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
-                  activeTab === tab.id ? 'border-brand font-bold text-brand' : 'border-transparent font-semibold text-ink-muted hover:border-outline-variant hover:text-ink'
+                  activeTab === tab.id ? 'border-brand font-bold text-brand' : 'border-transparent font-semibold text-white/50 hover:border-white/20 hover:text-white'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>

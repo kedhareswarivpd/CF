@@ -1,5 +1,7 @@
 import asyncio
 import uuid
+import random
+from datetime import datetime, timedelta
 
 from sqlalchemy import select
 
@@ -8,6 +10,7 @@ from app.models.department import Department
 from app.models.employee import Employee
 from app.models.setting import Setting
 from app.models.user import User
+from app.models.analytics import PageView
 from app.services.supabase_client import get_admin_client
 
 SUPER_ADMIN_EMAIL = "superadmin@corefusiontech.com"
@@ -433,6 +436,36 @@ async def run():
             if not exists:
                 db.add(Setting(key=key, value=value, group=group))
         print("Default settings seeded")
+
+        existing_views = (await db.execute(select(PageView.id).limit(1))).scalar_one_or_none()
+        if not existing_views:
+            paths = [
+                "/", "/services", "/about", "/portfolio", "/contact",
+                "/careers", "/blog", "/solutions", "/products",
+                "/technologies", "/industries", "/case-studies",
+                "/downloads", "/resources", "/events", "/gallery",
+                "/awards", "/faq", "/privacy", "/terms",
+                "/login", "/admin", "/client",
+            ]
+            agents = [
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/125.0",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) Safari/17.4",
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) Mobile/15E148",
+                "Mozilla/5.0 (Linux; Android 14) Chrome/125.0 Mobile",
+            ]
+            now = datetime.utcnow()
+            views = []
+            for _ in range(200):
+                days_ago = random.randint(0, 30)
+                hours_ago = random.randint(0, 23)
+                views.append(PageView(
+                    path=random.choice(paths),
+                    ip_address=f"{random.randint(10,220)}.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}",
+                    user_agent=random.choice(agents),
+                    viewed_at=now - timedelta(days=days_ago, hours=hours_ago),
+                ))
+            db.add_all(views)
+            print(f"Seeded {len(views)} page views")
 
         await db.commit()
         print("Seeding complete.")

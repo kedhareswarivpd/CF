@@ -16,7 +16,7 @@ export default function Contact() {
     <section className="mx-auto max-w-container px-margin-mobile py-section-padding md:px-margin-desktop">
       <Reveal className="mx-auto mb-stack-xl max-w-2xl text-center">
         <span className="font-label-caps text-label-caps uppercase text-brand">Get in Touch</span>
-        <h1 className="my-4 font-display text-headline-md text-brand-dark dark:text-dark-brand">Let&apos;s Build Something Resilient</h1>
+        <h1 className="my-4 font-display text-headline-md text-white dark:text-dark-brand">Let&apos;s Build Something Resilient</h1>
         <p className="text-body-lg text-white">
           Tell us about your next technical initiative — a Solution Architect will follow up within one
           business day.

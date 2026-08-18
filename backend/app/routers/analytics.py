@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,10 +6,32 @@ from app.core.database import get_db
 from app.core.dependencies import require_roles
 from app.core.logger import logger
 from app.models.analytics import PageView
-from app.schemas.analytics import AnalyticsSummary, PageViewStats
+from app.schemas.analytics import AnalyticsSummary, PageViewCreate, PageViewStats
 from app.utils.responses import success_response
 
 router = APIRouter(prefix="/analytics", tags=["Analytics"])
+
+
+@router.post("/track")
+async def track_page_view(payload: PageViewCreate, request: Request, db: AsyncSession = Depends(get_db)):
+    try:
+        ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or request.client.host if request.client else None
+        ua = request.headers.get("user-agent", "")
+        referrer = request.headers.get("referer", "")
+        view = PageView(
+            path=payload.path,
+            ip_address=payload.ip_address or ip,
+            user_agent=payload.user_agent or ua,
+            referrer=payload.referrer or referrer,
+            country=payload.country,
+        )
+        db.add(view)
+        await db.commit()
+        return success_response(data={"id": view.id}, message="Page view recorded")
+    except Exception as e:
+        logger.exception(f"Failed to record page view: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to record page view")
 
 
 @router.get("/summary", response_model=dict, dependencies=[Depends(require_roles("admin", "marketing"))])

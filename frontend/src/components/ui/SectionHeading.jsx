@@ -3,8 +3,8 @@ export default function SectionHeading({ eyebrow, title, description, align = 'l
   return (
     <div className={`flex flex-col gap-stack-sm ${alignment} ${className}`}>
       {eyebrow && <span className="font-label-caps text-label-caps uppercase tracking-widest text-brand">{eyebrow}</span>}
-      <h2 className="font-display text-headline-md text-brand-dark dark:text-dark-brand">{title}</h2>
-      {description && <p className="max-w-2xl font-body text-body-md text-ink-muted dark:text-white">{description}</p>}
+      <h2 className="font-display text-headline-md text-white dark:text-dark-brand">{title}</h2>
+      {description && <p className="max-w-2xl font-body text-body-md text-white dark:text-white">{description}</p>}
     </div>
   );
 }

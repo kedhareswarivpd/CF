@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Icon from '../components/ui/Icon.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
@@ -7,7 +7,7 @@ import StatusBadge from '../components/ui/StatusBadge.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
-import { adminPanelTabs, demoDashboard, demoProjectStatusBreakdown } from '../data/portal.js';
+import { adminPanelTabs } from '../data/portal.js';
 import { PORTAL_ROLE_OPTIONS } from '../data/roles.js';
 import {
   fetchUsers, createUser, updateUser, deactivateUser,
@@ -26,9 +26,14 @@ import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import ContentManager from '../components/admin/ContentManager.jsx';
 import { FORM_INPUT_CLASS } from '../components/ui/formClasses.js';
 
-function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown }) {
-  const kpis = propKpis || demoDashboard;
-  const statusBreakdown = propBreakdown || demoProjectStatusBreakdown;
+function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken, setActiveTab }) {
+  const kpis = propKpis || { total_employees: 0, total_clients: 0, total_projects: 0, active_projects: 0, open_tasks: 0, total_revenue: 0, open_tickets: 0, new_applications: 0, unresolved_contacts: 0, published_blogs: 0 };
+  const statusBreakdown = propBreakdown || [];
+  const [recentLogs, setRecentLogs] = useState([]);
+  useEffect(() => {
+    if (!accessToken) return;
+    fetchAuditLogs(accessToken, { limit: 5 }).then((res) => setRecentLogs(res?.data || res || [])).catch(() => {});
+  }, [accessToken]);
 
   const statCards = [
     { label: 'Employees', value: kpis.total_employees, icon: 'badge', color: 'text-status-info-text' },
@@ -81,16 +86,16 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown }) {
           <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Quick Actions</h3>
           <div className="space-y-3">
             {[
-              { icon: 'add_circle', label: 'Create User', desc: 'Add a new employee, client, or partner account' },
-              { icon: 'post_add', label: 'New Blog Post', desc: 'Draft and publish a blog article' },
-              { icon: 'upload_file', label: 'Upload Resource', desc: 'Add a whitepaper or downloadable asset' },
-              { icon: 'campaign', label: 'Send Notification', desc: 'Broadcast a message to all users' },
+              { icon: 'add_circle', label: 'Create User', desc: 'Add a new employee, client, or partner account', tab: 'users' },
+              { icon: 'post_add', label: 'New Blog Post', desc: 'Draft and publish a blog article', tab: 'content' },
+              { icon: 'upload_file', label: 'Upload Resource', desc: 'Add a whitepaper or downloadable asset', tab: 'media' },
+              { icon: 'campaign', label: 'Send Notification', desc: 'Broadcast a message to all users', tab: 'notifications' },
             ].map((action) => (
-              <div key={action.label} className="flex cursor-pointer items-center gap-4 rounded-lg bg-surface-container p-3 transition-colors hover:bg-outline-variant dark:bg-dark-surface-container dark:hover:bg-dark-outline-variant">
+              <div key={action.label} onClick={() => setActiveTab(action.tab)} className="flex cursor-pointer items-center gap-4 rounded-lg bg-surface-container p-3 transition-colors hover:bg-outline-variant dark:bg-dark-surface-container dark:hover:bg-dark-outline-variant">
                 <Icon name={action.icon} className="text-2xl text-brand" />
                 <div>
-                  <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{action.label}</p>
-                  <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{action.desc}</p>
+                  <p className="text-body-md font-semibold text-white dark:text-dark-brand">{action.label}</p>
+                  <p className="text-body-sm text-white/70 dark:text-dark-ink-muted">{action.desc}</p>
                 </div>
               </div>
             ))}
@@ -99,11 +104,22 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown }) {
       </div>
 
       <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
-        <h3 className="mb-2 font-display text-headline-sm text-brand-dark">Recent Activity</h3>
-        <p className="mb-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">Unresolved contacts: {kpis.unresolved_contacts} | Published blogs: {kpis.published_blogs}</p>
-        <div className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
-          Last refreshed: {new Date().toLocaleString()}
-        </div>
+        <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Recent Activity</h3>
+        {recentLogs.length === 0 ? (
+          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">No recent activity.</p>
+        ) : (
+          <div className="space-y-3">
+            {recentLogs.map((log, i) => (
+              <div key={log.id || i} className="flex items-start gap-3">
+                <Icon name="circle" className="mt-1 shrink-0 text-xs text-brand" />
+                <div>
+                  <p className="text-body-sm text-brand-dark dark:text-dark-brand">{log.action || log.event || 'Activity'}</p>
+                  <p className="text-body-xs text-ink-muted dark:text-dark-ink-muted">{log.details || log.description || ''}{log.created_at ? ` · ${new Date(log.created_at).toLocaleString()}` : ''}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -233,6 +249,7 @@ function UserManagement({ accessToken, currentRole }) {
 
   const [submittingUser, setSubmittingUser] = useState(false);
   const [userError, setUserError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   return (
     <div className="space-y-stack-lg">
@@ -269,10 +286,15 @@ function UserManagement({ accessToken, currentRole }) {
               <AddUserForm
                 accessToken={accessToken}
                 currentRole={currentRole}
-                onCreated={() => { setShowAddForm(false); loadUsers(); }}
+                onCreated={() => { setShowAddForm(false); loadUsers(); setSuccessMsg('User created successfully!'); setTimeout(() => setSuccessMsg(''), 3000); }}
                 onCancel={() => setShowAddForm(false)}
               />
             )}
+          </div>
+        )}
+        {successMsg && (
+          <div className="mx-stack-lg mt-4 flex items-center gap-2 rounded-lg bg-status-success-bg p-stack-md text-body-sm text-status-success-text dark:bg-status-success-bg/20">
+            <Icon name="check_circle" className="text-lg" />{successMsg}
           </div>
         )}
         {loadingUsers ? (
@@ -318,23 +340,24 @@ function UserManagement({ accessToken, currentRole }) {
             <tr><th className="px-stack-lg py-4">Role</th><th className="px-stack-lg py-4">Users</th><th className="px-stack-lg py-4">Permissions</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant">
-            {[
-              { role: 'Super Admin', users: 2, permissions: 'Full access' },
-              { role: 'Admin', users: 8, permissions: 'All except system settings' },
-              { role: 'HR', users: 5, permissions: 'Employee management, payroll' },
-              { role: 'Marketing', users: 6, permissions: 'Content management, campaigns' },
-              { role: 'Sales', users: 12, permissions: 'Client management, opportunities' },
-              { role: 'Project Manager', users: 15, permissions: 'Projects, tasks, team' },
-              { role: 'Developer', users: 120, permissions: 'Tasks, timesheets, repos' },
-              { role: 'Client', users: 85, permissions: 'Client portal access' },
-              { role: 'Employee', users: 150, permissions: 'Employee portal access' },
-            ].map((r) => (
-              <tr key={r.role} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{r.role}</td>
-                <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{r.users}</td>
-                <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{r.permissions}</td>
-              </tr>
-            ))}
+            {(() => {
+              const roleCounts = {};
+              users.forEach((u) => {
+                const r = u.role || 'unknown';
+                roleCounts[r] = (roleCounts[r] || 0) + 1;
+              });
+              const roleList = Object.keys(roleCounts).sort((a, b) => roleCounts[b] - roleCounts[a]);
+              if (!roleList.length) {
+                return <tr><td colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No roles found.</td></tr>;
+              }
+              return roleList.map((role) => (
+                <tr key={role} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                  <td className="px-stack-lg py-4 text-body-md capitalize text-brand-dark dark:text-dark-brand">{role.replace('_', ' ')}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{roleCounts[role]}</td>
+                  <td className="px-stack-lg py-4 text-body-md capitalize text-ink-muted dark:text-dark-ink-muted">{role === 'super_admin' ? 'Full access' : role.replace('_', ' ') + ' portal access'}</td>
+                </tr>
+              ));
+            })()}
           </tbody>
         </table>
       </div>
@@ -357,23 +380,26 @@ function EmployeeManagement({ accessToken }) {
   return (
     <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
-        <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Employees</h3>
+        <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Employees ({employees.length})</h3>
       </div>
       {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
         <table className="w-full text-left">
           <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
-            <tr><th className="px-stack-lg py-4">Code</th><th className="px-stack-lg py-4">Designation</th><th className="px-stack-lg py-4">Department</th><th className="px-stack-lg py-4">Status</th></tr>
+            <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Code</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Designation</th><th className="px-stack-lg py-4">Department</th><th className="px-stack-lg py-4">Employment</th><th className="px-stack-lg py-4">Status</th></tr>
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {employees.map((e) => (
               <tr key={e.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{e.employee_code}</td>
+                <td className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-dark-brand">{e.name || '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.employee_code || '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.email || '—'}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.designation || '—'}</td>
                 <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.department_name || '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{(e.employment_type || '—').replace('_', ' ')}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant={e.status === 'active' ? 'success' : 'neutral'}>{e.status}</StatusBadge></td>
               </tr>
             ))}
-            {!employees.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No employees found.</td></tr>}
+            {!employees.length && <tr><td colSpan={7} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No employees found.</td></tr>}
           </tbody>
         </table>
       )}
@@ -818,32 +844,125 @@ function RolesManagement({ accessToken }) {
 
 function AnalyticsPage({ accessToken }) {
   const [summary, setSummary] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!accessToken) { setLoading(false); return; }
     setLoading(true);
-    fetchAnalyticsSummary(accessToken).then((res) => setSummary(res?.data || null)).catch(() => {}).finally(() => setLoading(false));
-     
+    setError('');
+    Promise.allSettled([
+      fetchAnalyticsSummary(accessToken),
+      fetchUsers(accessToken, { limit: 200 }),
+      fetchEmployees(accessToken, { limit: 200 }),
+      fetchClients(accessToken, { limit: 200 }),
+    ]).then(([a, u, e, c]) => {
+      const errors = [];
+      if (a.status === 'fulfilled') setSummary(a.value?.data || null);
+      else errors.push('Analytics');
+      if (u.status === 'fulfilled') setUsers(u.value?.data || []);
+      else errors.push('Users');
+      if (e.status === 'fulfilled') setEmployees(e.value?.data || []);
+      else errors.push('Employees');
+      if (c.status === 'fulfilled') setClients(c.value?.data || []);
+      else errors.push('Clients');
+      if (errors.length) setError(`Failed to load: ${errors.join(', ')}. You may need to re-login.`);
+    }).finally(() => setLoading(false));
   }, [accessToken]);
 
   if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
 
   const totalViews = summary?.total_views ?? 0;
   const topPages = summary?.top_pages || [];
+  const totalUsers = users.length;
+  const activeUsers = users.filter((u) => u.is_active).length;
+  const totalEmployees = employees.length;
+  const activeEmployees = employees.filter((e) => e.status === 'active').length;
+  const totalClients = clients.length;
+  const activeClients = clients.filter((c) => c.status === 'active').length;
+
+  const roleBreakdown = users.reduce((acc, u) => {
+    const r = u.role || 'unknown';
+    acc[r] = (acc[r] || 0) + 1;
+    return acc;
+  }, {});
+
+  const deptBreakdown = employees.reduce((acc, e) => {
+    const d = e.department_name || 'Unassigned';
+    acc[d] = (acc[d] || 0) + 1;
+    return acc;
+  }, {});
+
+  const statCards = [
+    { label: 'Total Page Views', value: totalViews.toLocaleString(), icon: 'visibility', color: 'text-brand' },
+    { label: 'Unique Pages', value: (summary?.unique_paths ?? 0).toLocaleString(), icon: 'link', color: 'text-status-info-text' },
+    { label: 'Total Users', value: totalUsers, icon: 'people', color: 'text-status-success-text' },
+    { label: 'Active Users', value: activeUsers, icon: 'person', color: 'text-brand' },
+    { label: 'Employees', value: totalEmployees, icon: 'badge', color: 'text-status-warning-text' },
+    { label: 'Active Employees', value: activeEmployees, icon: 'engineering', color: 'text-status-success-text' },
+    { label: 'Clients', value: totalClients, icon: 'business', color: 'text-status-info-text' },
+    { label: 'Active Clients', value: activeClients, icon: 'corporate_fare', color: 'text-status-success-text' },
+  ];
 
   return (
     <div className="space-y-stack-lg">
-      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-2">
-        <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
-          <Icon name="visibility" className="mb-2 text-2xl text-brand" />
-          <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{totalViews.toLocaleString()}</p>
-          <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">Total Page Views</p>
+      {error && (
+        <div className="rounded-lg border border-status-warning bg-status-warning/10 px-stack-md py-stack-sm text-body-sm text-status-warning-text">
+          {error}
         </div>
-        <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
-          <Icon name="link" className="mb-2 text-2xl text-status-info-text" />
-          <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{(summary?.unique_paths ?? 0).toLocaleString()}</p>
-          <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">Unique Pages</p>
+      )}
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
+        {statCards.map((s) => (
+          <div key={s.label} className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+            <Icon name={s.icon} className={`mb-2 text-2xl ${s.color}`} />
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{s.value}</p>
+            <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-gutter lg:grid-cols-2">
+        <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+            <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Role Distribution</h3>
+          </div>
+          <div className="p-stack-lg">
+            {Object.entries(roleBreakdown).sort((a, b) => b[1] - a[1]).map(([role, count]) => (
+              <div key={role} className="mb-3">
+                <div className="mb-1 flex justify-between text-body-sm">
+                  <span className="capitalize text-brand-dark dark:text-dark-brand">{role.replace('_', ' ')}</span>
+                  <span className="text-ink-muted dark:text-dark-ink-muted">{count}</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container">
+                  <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${(count / totalUsers) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+            {!Object.keys(roleBreakdown).length && <p className="text-body-sm text-ink-muted">No users found.</p>}
+          </div>
+        </div>
+
+        <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+          <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+            <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Department Distribution</h3>
+          </div>
+          <div className="p-stack-lg">
+            {Object.entries(deptBreakdown).sort((a, b) => b[1] - a[1]).map(([dept, count]) => (
+              <div key={dept} className="mb-3">
+                <div className="mb-1 flex justify-between text-body-sm">
+                  <span className="text-brand-dark dark:text-dark-brand">{dept}</span>
+                  <span className="text-ink-muted dark:text-dark-ink-muted">{count}</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container">
+                  <div className="h-full rounded-full bg-status-info-text transition-all" style={{ width: `${(count / totalEmployees) * 100}%` }} />
+                </div>
+              </div>
+            ))}
+            {!Object.keys(deptBreakdown).length && <p className="text-body-sm text-ink-muted">No employees found.</p>}
+          </div>
         </div>
       </div>
 
@@ -1191,6 +1310,7 @@ export default function AdminPanel() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const initialLoadDone = useRef(false);
   const [kpis, setKpis] = useState(null);
   const [statusBreakdown, setStatusBreakdown] = useState(null);
   const [currentRole, setCurrentRole] = useState(null);
@@ -1198,7 +1318,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (!user || !accessToken) { setLoading(false); return; }
-    setLoading(true);
+    if (!initialLoadDone.current) setLoading(true);
     Promise.allSettled([
       fetchDashboardOverview(accessToken),
       fetchProjectStatusBreakdownApi(accessToken),
@@ -1210,18 +1330,25 @@ export default function AdminPanel() {
         setCurrentRole(me.value?.data?.role || null);
         setCurrentUser(me.value?.data || null);
       }
-    }).finally(() => setLoading(false));
+    }).finally(() => { initialLoadDone.current = true; setLoading(false); });
   }, [user, accessToken]);
+
+  useEffect(() => {
+    if (!initializing && !user) navigate('/login', { replace: true });
+  }, [initializing, user, navigate]);
+
+  useEffect(() => {
+    if (!loading && (denied || (currentRole && !['admin', 'super_admin'].includes(currentRole)))) {
+      navigate('/login', { replace: true });
+    }
+  }, [loading, denied, currentRole, navigate]);
 
   if (initializing) {
     return <div className="bg-surface-container py-section-padding"><LoadingSpinner /></div>;
   }
 
-  if (!user) { navigate('/login', { replace: true }); return null; }
-
-  if (denied || (currentRole && !['admin', 'super_admin'].includes(currentRole))) {
-    navigate('/login', { replace: true });
-    return null;
+  if (!user || denied || (!loading && currentRole && !['admin', 'super_admin'].includes(currentRole))) {
+    return <div className="bg-surface-container py-section-padding"><LoadingSpinner /></div>;
   }
 
   if (loading) {
@@ -1240,7 +1367,7 @@ export default function AdminPanel() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button as={Link} to="/super-admin" variant="primary" size="md" icon={<Icon name="shield_person" />}>
+            <Button as={Link} to="/super-admin/login" variant="primary" size="md" icon={<Icon name="shield_person" />}>
               Super Admin
             </Button>
             <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
@@ -1275,7 +1402,7 @@ export default function AdminPanel() {
           </div>
 
           <div className="min-w-0 flex-1">
-            {activeTab === 'overview' && <Dashboard kpis={kpis} statusBreakdown={statusBreakdown} />}
+            {activeTab === 'overview' && <Dashboard kpis={kpis} statusBreakdown={statusBreakdown} accessToken={accessToken} setActiveTab={setActiveTab} />}
             {activeTab === 'content' && <ContentManagement accessToken={accessToken} />}
             {activeTab === 'projects' && <ProjectsManagement accessToken={accessToken} />}
             {activeTab === 'users' && <UserManagement accessToken={accessToken} currentRole={currentRole} />}

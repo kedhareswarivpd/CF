@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Icon from '../components/ui/Icon.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
@@ -55,7 +55,7 @@ function Overview({ profile, projects, invoices, tickets }) {
           ].map((f) => (
             <div key={f.label}>
               <span className="font-label-caps text-label-caps font-semibold text-ink-muted dark:text-white">{f.label}</span>
-              <p className="text-body-md font-semibold text-brand-dark dark:text-white">{f.value}</p>
+              <p className="text-body-md font-semibold text-brand-dark dark:text-white">{f.value || '—'}</p>
             </div>
           ))}
         </div>
@@ -813,6 +813,7 @@ export default function ClientPortal() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
+  const initialLoadDone = useRef(false);
   const [profile, setProfile] = useState({ contact_name: '', email: '', company_name: '', industry: '', country: '' });
   const [projects, setProjects] = useState([]);
   const [invoices, setInvoices] = useState([]);
@@ -824,7 +825,7 @@ export default function ClientPortal() {
 
   useEffect(() => {
     if (!user || !accessToken) { setLoading(false); return; }
-    setLoading(true);
+    if (!initialLoadDone.current) setLoading(true);
     Promise.allSettled([
       fetchMyProfile(accessToken).then((res) => res?.data),
       fetchMyProjects(accessToken).then((res) => res?.data),
@@ -843,7 +844,7 @@ export default function ClientPortal() {
       if (mtg.status === 'fulfilled' && mtg.value) setMeetings(normalizeMeetings(mtg.value));
       if (fil.status === 'fulfilled' && fil.value) setFiles(normalizeFiles(fil.value));
       if (rep.status === 'fulfilled' && rep.value) setReports(normalizeReports(rep.value));
-    }).finally(() => setLoading(false));
+    }).finally(() => { initialLoadDone.current = true; setLoading(false); });
   }, [user, accessToken]);
 
   const handleNewTicket = async (subject, description) => {
@@ -853,9 +854,14 @@ export default function ClientPortal() {
     setTickets((prev) => [normalizeTicket(d), ...prev]);
   };
 
-  if (initializing) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
-  if (!user) { navigate('/login', { replace: true }); return null; }
-  if (denied) { navigate('/login', { replace: true }); return null; }
+  useEffect(() => {
+    if (!initializing && !user) navigate('/login', { replace: true });
+  }, [initializing, user, navigate]);
+  useEffect(() => {
+    if (!initializing && user && denied) navigate('/login', { replace: true });
+  }, [initializing, user, denied, navigate]);
+
+  if (initializing || !user || denied) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
   if (loading) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
 
   return (
