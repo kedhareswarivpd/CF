@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { supabase } from '../lib/supabase.js';
-import { fetchCurrentUser } from '../api/auth.js';
 import Icon from '../components/ui/Icon.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 
@@ -21,26 +19,13 @@ export default function SuperAdminLogin() {
     setSubmitting(true);
     setError('');
     try {
-      await login(email, password);
-
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('Login failed. Please try again.');
-
-      let role;
-      try {
-        const me = await fetchCurrentUser(session.access_token);
-        role = me?.data?.role;
-      } catch {
-        await supabase.auth.signOut();
-        throw new Error('Could not verify this account.');
-      }
+      const userData = await login(email, password);
+      const role = userData?.role;
 
       if (role !== 'super_admin') {
-        await supabase.auth.signOut();
         throw new Error('Access denied. Only Super Admin accounts are allowed.');
       }
 
-      await supabase.auth.updateUser({ data: { role } });
       navigate('/super-admin', { replace: true });
     } catch (err) {
       setError(err.message || 'Invalid credentials.');

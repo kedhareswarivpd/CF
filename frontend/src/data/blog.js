@@ -77,6 +77,19 @@ export const posts = [
     image: '',
     content: '',
   },
+  {
+    slug: 'ci-cd-pipeline-enterprise',
+    title: 'Building Enterprise-Grade CI/CD Pipelines with DevOps Best Practices',
+    excerpt: 'How we design, implement, and scale continuous integration and delivery pipelines that reduce deployment risk and accelerate release velocity across distributed teams. We walk through pipeline architecture, automated testing gates, infrastructure-as-code integration, secrets management, canary deployments, and rollback strategies — drawing on real-world examples from our production environments serving millions of users.',
+    author: 'Rahul Sharma',
+    role: 'Principal Architect',
+    category: 'DevOps',
+    publishedAt: '2026-04-15',
+    readTime: '10 min read',
+    tags: ['DevOps', 'CI/CD', 'Automation', 'Infrastructure'],
+    image: '',
+    content: '',
+  },
 ];
 
-export const categories = ['All', 'Engineering', 'AI & Data', 'Security', 'Cloud', 'Data'];
+export const categories = ['All', 'Engineering', 'AI & Data', 'Security', 'Cloud', 'Data', 'DevOps'];
