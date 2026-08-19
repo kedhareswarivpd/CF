@@ -34,7 +34,7 @@ export default function FeaturedCaseStudy() {
               ))}
             </div>
             <Link
-              to={`/portfolio/${cs.slug}`}
+              to={`/portfolio/success/${cs.slug}`}
               className="group flex w-fit items-center gap-2 font-label-caps text-label-caps uppercase text-brand transition-all hover:text-brand-dark"
             >
               Read Full Success Story

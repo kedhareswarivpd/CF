@@ -46,3 +46,20 @@ export function createContract(token, proposalId) {
 export function signContract(token, contractId, payload = {}) {
   return apiRequest(`/contracts/${contractId}/sign`, { method: 'POST', token, body: payload });
 }
+
+// ---------- Meetings ----------
+export function fetchMeetings(token, params = {}) {
+  return apiRequest(`/meetings${toQueryString(params)}`, { token });
+}
+
+export function createMeeting(token, payload) {
+  return apiRequest('/meetings', { method: 'POST', token, body: payload });
+}
+
+export function updateMeeting(token, meetingId, payload) {
+  return apiRequest(`/meetings/${meetingId}`, { method: 'PATCH', token, body: payload });
+}
+
+export function deleteMeeting(token, meetingId) {
+  return apiRequest(`/meetings/${meetingId}`, { method: 'DELETE', token });
+}

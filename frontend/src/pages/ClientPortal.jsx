@@ -849,21 +849,29 @@ export default function ClientPortal() {
       fetchMyProjects(accessToken).then((res) => res?.data),
       fetchMyInvoices(accessToken).then((res) => res?.data),
       fetchMyTickets(accessToken).then((res) => res?.data),
-      fetchMyPayments(accessToken).then((res) => res?.data),
-      fetchMyMeetings(accessToken).then((res) => res?.data),
-      fetchMyFiles(accessToken).then((res) => res?.data),
-      fetchMyReports(accessToken).then((res) => res?.data),
-    ]).then(([p, pr, inv, t, pay, mtg, fil, rep]) => {
+    ]).then(([p, pr, inv, t]) => {
       if (p.status === 'fulfilled' && p.value) setProfile(p.value);
       if (pr.status === 'fulfilled' && pr.value) setProjects(normalizeProjects(pr.value));
       if (inv.status === 'fulfilled' && inv.value) setInvoices(normalizeInvoices(inv.value));
       if (t.status === 'fulfilled' && t.value) setTickets(normalizeTickets(t.value));
-      if (pay.status === 'fulfilled' && pay.value) setPayments(normalizePayments(pay.value));
-      if (mtg.status === 'fulfilled' && mtg.value) setMeetings(normalizeMeetings(mtg.value));
-      if (fil.status === 'fulfilled' && fil.value) setFiles(normalizeFiles(fil.value));
-      if (rep.status === 'fulfilled' && rep.value) setReports(normalizeReports(rep.value));
     }).finally(() => { initialLoadDone.current = true; setLoading(false); });
   }, [user, accessToken]);
+
+  const fetchTab = async (tabId) => {
+    if (!accessToken) return;
+    const fetchers = {
+      payments: () => fetchMyPayments(accessToken).then((res) => { if (res?.data) setPayments(normalizePayments(res.data)); }),
+      files: () => fetchMyFiles(accessToken).then((res) => { if (res?.data) setFiles(normalizeFiles(res.data)); }),
+      meetings: () => fetchMyMeetings(accessToken).then((res) => { if (res?.data) setMeetings(normalizeMeetings(res.data)); }),
+      reports: () => fetchMyReports(accessToken).then((res) => { if (res?.data) setReports(normalizeReports(res.data)); }),
+    };
+    if (fetchers[tabId]) await fetchers[tabId]();
+  };
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    fetchTab(tabId);
+  };
 
   const handleNewTicket = async (subject, description) => {
     if (!user || !accessToken) return;
@@ -901,7 +909,7 @@ export default function ClientPortal() {
         <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-outline-variant dark:border-dark-outline-variant md:block">
           <nav className="flex flex-col gap-1 p-3">
             {clientPortalTabs.map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              <button key={tab.id} onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
                   activeTab === tab.id ? 'bg-brand/20 font-bold text-white' : 'text-white/70 hover:bg-white/15 hover:text-white'
                 }`}>
@@ -914,7 +922,7 @@ export default function ClientPortal() {
         <div className="flex min-h-0 flex-1 flex-col">
           <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant px-margin-mobile py-2 md:hidden">
             {clientPortalTabs.map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              <button key={tab.id} onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
                   activeTab === tab.id ? 'border-white font-bold text-white' : 'border-transparent font-semibold text-white/70 hover:border-white/40 hover:text-white'
                 }`}>

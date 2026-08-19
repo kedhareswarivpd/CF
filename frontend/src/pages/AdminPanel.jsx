@@ -20,7 +20,7 @@ import {
   fetchEmployees, fetchClients,
   fetchDashboardOverview, fetchProjectStatusBreakdown as fetchProjectStatusBreakdownApi,
 } from '../api/admin.js';
-import { fetchCurrentUser } from '../api/auth.js';
+
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import ContentManager from '../components/admin/ContentManager.jsx';
 import { FORM_INPUT_CLASS } from '../components/ui/formClasses.js';
@@ -1169,17 +1169,15 @@ export default function AdminPanel() {
   useEffect(() => {
     if (!user || !accessToken) { setLoading(false); return; }
     if (!initialLoadDone.current) setLoading(true);
+    const userRole = user?.user_metadata?.role || 'admin';
+    setCurrentRole(userRole);
+    setCurrentUser({ name: user?.user_metadata?.name || user?.email, email: user?.email, role: userRole });
     Promise.allSettled([
       fetchDashboardOverview(accessToken),
       fetchProjectStatusBreakdownApi(accessToken),
-      fetchCurrentUser(accessToken),
-    ]).then(([d, sb, me]) => {
+    ]).then(([d, sb]) => {
       if (d.status === 'fulfilled') setKpis(d.value?.data || null);
       if (sb.status === 'fulfilled') setStatusBreakdown(sb.value?.data || null);
-      if (me.status === 'fulfilled') {
-        setCurrentRole(me.value?.data?.role || null);
-        setCurrentUser(me.value?.data || null);
-      }
     }).finally(() => { initialLoadDone.current = true; setLoading(false); });
   }, [user, accessToken]);
 

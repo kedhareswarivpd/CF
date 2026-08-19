@@ -22,18 +22,13 @@ export default function Layout() {
     }
   }, []);
 
-  // Fade-in on every route change
+  // Instant page switch — no fade delay
   useEffect(() => {
     const el = mainRef.current;
-    if (!el) return;
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(12px)';
-    const raf = requestAnimationFrame(() => {
-      el.style.transition = 'opacity 0.2s cubic-bezier(0.22,1,0.36,1), transform 0.2s cubic-bezier(0.22,1,0.36,1)';
+    if (el) {
       el.style.opacity = '1';
       el.style.transform = 'translateY(0)';
-    });
-    return () => cancelAnimationFrame(raf);
+    }
   }, [pathname]);
 
   const isPortal = portalPaths.some((p) => pathname.startsWith(`/${p}`));

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Fragment } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import Icon from '../components/ui/Icon.jsx';
 import Avatar from '../components/ui/Avatar.jsx';
@@ -21,10 +21,12 @@ import {
   fetchTrainingCatalog, enrollInCourse,
 } from '../api/employees.js';
 import { apiRequest } from '../api/client.js';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import {
   fetchProposals, createProposal, sendProposal, acceptProposal, rejectProposal,
   fetchContracts, createContract, signContract,
   fetchLeads, createLead, updateLead,
+  fetchMeetings, createMeeting, updateMeeting,
 } from '../api/crm.js';
 import {
   fetchLeaves, reviewLeave, fetchAllTimesheets, reviewTimesheet,
@@ -300,7 +302,7 @@ function Leaves({ leaves: initialLeaves, accessToken }) {
       )}
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.includes('success') ? 'border border-green-500/30 bg-green-500/10 text-green-300' : 'border border-red-500/30 bg-red-500/10 text-red-300'
+          toast.includes('success') ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
@@ -415,7 +417,7 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <input type="date" value={form.date} onChange={(e) => handleChange('date', e.target.value)}
-                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.date ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
+                className={`w-full rounded border bg-brand px-4 py-3 text-body-md text-white placeholder-slate-300 focus:outline-none ${errors.date ? 'border-red-400 focus:border-red-500' : 'border-blue-700 focus:border-brand'}`} />
               {errors.date && <p className="mt-1 text-body-xs text-red-400">{errors.date}</p>}
             </div>
             <input type="text" placeholder="Project name (optional)" value={form.project} onChange={(e) => handleChange('project', e.target.value)}
@@ -436,7 +438,7 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
       )}
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.includes('success') || toast.includes('refreshed') ? 'border border-green-500/30 bg-green-500/10 text-green-300' : 'border border-red-500/30 bg-red-500/10 text-red-300'
+          toast.includes('success') || toast.includes('refreshed') ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
       <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
@@ -536,7 +538,7 @@ function Projects({ projects }) {
         ))}
       </div>
       <section>
-        <h3 className="mb-4 font-display text-headline-sm text-slate-900">Assigned Projects</h3>
+        <h3 className="mb-4 font-display text-headline-sm text-white">Assigned Projects</h3>
         {projects.length === 0 && <p className="py-8 text-center text-body-sm text-slate-600">No projects assigned yet.</p>}
         <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
@@ -582,7 +584,7 @@ function Performance({ reviews }) {
         ))}
       </div>
       <section>
-        <h3 className="mb-4 font-display text-headline-sm text-slate-900">Performance Reviews</h3>
+        <h3 className="mb-4 font-display text-headline-sm text-white">Performance Reviews</h3>
         {reviews.length === 0 && <p className="py-8 text-center text-body-sm text-slate-600">No performance reviews yet.</p>}
         <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
           {reviews.map((r) => (
@@ -641,7 +643,7 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
         </section>
       )}
       <section>
-        <h3 className="mb-4 font-display text-headline-sm text-slate-900">My Enrollments</h3>
+        <h3 className="mb-4 font-display text-headline-sm text-white">My Enrollments</h3>
         <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
           <table className="w-full text-left">
             <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
@@ -699,7 +701,7 @@ function Documents({ docs }) {
         ))}
       </div>
       <section>
-        <h3 className="mb-4 font-display text-headline-sm text-slate-900">My Documents</h3>
+        <h3 className="mb-4 font-display text-headline-sm text-white">My Documents</h3>
         {docs.length === 0 && <p className="py-8 text-center text-body-sm text-slate-600">No documents available yet.</p>}
         <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
           {docs.map((d) => (
@@ -740,6 +742,11 @@ function Leads({ leads, accessToken, onRefresh }) {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [savingId, setSavingId] = useState(null);
+  const [expandedLeadId, setExpandedLeadId] = useState(null);
+  const [activeAction, setActiveAction] = useState(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [proposalForm, setProposalForm] = useState({ scope_summary: '', price: '' });
+  const [demoForm, setDemoForm] = useState({ scheduled_at: '', duration_minutes: 30, meeting_link: '' });
   const [toast, setToast] = useState('');
   const inputClass = 'border border-slate-200 rounded px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 bg-white focus:outline-none focus:border-brand';
 
@@ -800,6 +807,77 @@ function Leads({ leads, accessToken, onRefresh }) {
     }
   };
 
+  const openQuickAction = (leadId, action) => {
+    setExpandedLeadId(leadId);
+    setActiveAction(action);
+    setNoteDraft('');
+    setProposalForm({ scope_summary: '', price: '' });
+    setDemoForm({ scheduled_at: '', duration_minutes: 30, meeting_link: '' });
+  };
+
+  const closeQuickAction = () => {
+    setExpandedLeadId(null);
+    setActiveAction(null);
+  };
+
+  const handleLogCall = async (leadId) => {
+    if (!noteDraft.trim()) { showToast('Please enter a note.'); return; }
+    setSavingId(leadId);
+    try {
+      const lead = leads.find((l) => l.id === leadId);
+      const existingNote = lead?.notes ? `${lead.notes}\n` : '';
+      await updateLead(accessToken, leadId, { notes: `${existingNote}[Call Log] ${new Date().toLocaleString()}: ${noteDraft}` });
+      onRefresh();
+      showToast('Call logged successfully.');
+    } catch (err) {
+      showToast(err?.message || 'Failed to log call.');
+    } finally {
+      setSavingId(null);
+      closeQuickAction();
+    }
+  };
+
+  const handleSendProposal = async (leadId) => {
+    if (!proposalForm.scope_summary.trim() || !proposalForm.price) { showToast('Please enter scope and price.'); return; }
+    setSavingId(leadId);
+    try {
+      await createProposal(accessToken, {
+        lead_id: leadId,
+        scope_summary: proposalForm.scope_summary,
+        price: Number(proposalForm.price),
+        currency: 'USD',
+      });
+      onRefresh();
+      showToast('Proposal sent successfully.');
+    } catch (err) {
+      showToast(err?.message || 'Failed to send proposal.');
+    } finally {
+      setSavingId(null);
+      closeQuickAction();
+    }
+  };
+
+  const handleScheduleDemo = async (leadId) => {
+    if (!demoForm.scheduled_at) { showToast('Please select a date and time.'); return; }
+    setSavingId(leadId);
+    try {
+      const lead = leads.find((l) => l.id === leadId);
+      await createMeeting(accessToken, {
+        title: `Demo: ${lead?.company || lead?.contact_name || 'Lead'}`,
+        scheduled_at: demoForm.scheduled_at,
+        duration_minutes: Number(demoForm.duration_minutes) || 30,
+        meeting_link: demoForm.meeting_link || undefined,
+      });
+      onRefresh();
+      showToast('Demo scheduled successfully.');
+    } catch (err) {
+      showToast(err?.message || 'Failed to schedule demo.');
+    } finally {
+      setSavingId(null);
+      closeQuickAction();
+    }
+  };
+
   return (
     <div className="space-y-stack-md">
       <div className="flex justify-end">
@@ -839,37 +917,98 @@ function Leads({ leads, accessToken, onRefresh }) {
       )}
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.includes('successfully') ? 'border border-green-500/30 bg-green-500/10 text-green-300' : 'border border-red-500/30 bg-red-500/10 text-red-300'
+          toast.includes('successfully') ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
         <table className="w-full text-left">
           <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
-            <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Est. Value</th><th className="px-stack-lg py-4">Status</th></tr>
+            <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Est. Value</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Quick Actions</th></tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
             {leads.map((l) => (
-              <tr key={l.id} className="transition-colors hover:bg-blue-50">
-                <td className="px-stack-lg py-4">
-                  <p className="text-body-md font-semibold text-slate-900">{l.company || '—'}</p>
-                  <p className="text-body-sm text-slate-600">{l.contact_name}</p>
-                </td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{l.email}</td>
-                <td className="px-stack-lg py-4 text-body-sm capitalize text-slate-600">{l.source?.replace('_', ' ')}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-900">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
-                <td className="px-stack-lg py-4">
-                  <div className="flex items-center gap-2">
-                    <StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge>
-                    <select value={l.status} disabled={savingId === l.id || !accessToken} onChange={(e) => handleStatusChange(l.id, e.target.value)}
-                      className="rounded border border-slate-200 bg-white px-2 py-1 text-body-sm disabled:opacity-50">
-                      {LEAD_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                    </select>
-                  </div>
-                </td>
-              </tr>
+              <Fragment key={l.id}>
+                <tr className="transition-colors hover:bg-blue-50">
+                   <td className="px-stack-lg py-4">
+                    <p className="text-body-md font-semibold text-slate-900">{l.company || '—'}</p>
+                    <p className="text-body-sm text-slate-600">{l.contact_name}</p>
+                  </td>
+                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{l.email}</td>
+                  <td className="px-stack-lg py-4 text-body-sm capitalize text-slate-600">{l.source?.replace('_', ' ')}</td>
+                  <td className="px-stack-lg py-4 text-body-sm text-slate-900">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
+                  <td className="px-stack-lg py-4">
+                    <div className="flex items-center gap-2">
+                      <StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge>
+                      <select value={l.status} disabled={savingId === l.id || !accessToken} onChange={(e) => handleStatusChange(l.id, e.target.value)}
+                        className="rounded border border-slate-200 bg-white px-2 py-1 text-body-sm disabled:opacity-50">
+                        {LEAD_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+                      </select>
+                    </div>
+                  </td>
+                  <td className="px-stack-lg py-4">
+                    {PIPELINE_ACTIVE_STATUSES.includes(l.status) && accessToken && (
+                      <div className="flex flex-col gap-1">
+                        <RowAction disabled={savingId === l.id} onClick={() => openQuickAction(l.id, 'log_call')}>Log Call</RowAction>
+                        <RowAction variant="outline" disabled={savingId === l.id} onClick={() => openQuickAction(l.id, 'send_proposal')}>Send Proposal</RowAction>
+                        <RowAction variant="outline" disabled={savingId === l.id} onClick={() => openQuickAction(l.id, 'schedule_demo')}>Schedule Demo</RowAction>
+                      </div>
+                    )}
+                    {!accessToken && l.status !== 'disqualified' && l.status !== 'converted' && (
+                      <span className="text-body-xs text-slate-400">Login to use quick actions</span>
+                    )}
+                  </td>
+                </tr>
+                {expandedLeadId === l.id && (
+                  <tr className="bg-blue-50/30">
+                    <td colSpan={6} className="px-stack-lg py-4">
+                      {activeAction === 'log_call' && (
+                        <div className="space-y-3">
+                          <p className="font-label-caps text-label-caps uppercase text-slate-600">Log Call — {l.company || l.contact_name}</p>
+                          <textarea placeholder="Enter call notes..." value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} rows={3}
+                            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                          <div className="flex gap-2">
+                            <Button type="button" variant="primary" size="md" disabled={savingId === l.id} onClick={() => handleLogCall(l.id)}>Save Note</Button>
+                            <Button type="button" variant="outline" size="md" onClick={closeQuickAction}>Cancel</Button>
+                          </div>
+                        </div>
+                      )}
+                      {activeAction === 'send_proposal' && (
+                        <div className="space-y-3">
+                          <p className="font-label-caps text-label-caps uppercase text-slate-600">Send Proposal — {l.company || l.contact_name}</p>
+                          <textarea placeholder="Scope summary *" value={proposalForm.scope_summary} onChange={(e) => setProposalForm({ ...proposalForm, scope_summary: e.target.value })} rows={3}
+                            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                          <input type="number" min="0" placeholder="Price ($) *" value={proposalForm.price} onChange={(e) => setProposalForm({ ...proposalForm, price: e.target.value })}
+                            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                          <div className="flex gap-2">
+                            <Button type="button" variant="primary" size="md" disabled={savingId === l.id} onClick={() => handleSendProposal(l.id)}>Create & Send</Button>
+                            <Button type="button" variant="outline" size="md" onClick={closeQuickAction}>Cancel</Button>
+                          </div>
+                        </div>
+                      )}
+                      {activeAction === 'schedule_demo' && (
+                        <div className="space-y-3">
+                          <p className="font-label-caps text-label-caps uppercase text-slate-600">Schedule Demo — {l.company || l.contact_name}</p>
+                          <input type="datetime-local" value={demoForm.scheduled_at} onChange={(e) => setDemoForm({ ...demoForm, scheduled_at: e.target.value })}
+                            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                          <input type="number" min="15" max="240" step="15" placeholder="Duration (minutes)" value={demoForm.duration_minutes}
+                            onChange={(e) => setDemoForm({ ...demoForm, duration_minutes: e.target.value })}
+                            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                          <input type="url" placeholder="Meeting link (optional)" value={demoForm.meeting_link}
+                            onChange={(e) => setDemoForm({ ...demoForm, meeting_link: e.target.value })}
+                            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                          <div className="flex gap-2">
+                            <Button type="button" variant="primary" size="md" disabled={savingId === l.id} onClick={() => handleScheduleDemo(l.id)}>Schedule</Button>
+                            <Button type="button" variant="outline" size="md" onClick={closeQuickAction}>Cancel</Button>
+                          </div>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
             {!leads.length && (
-              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No leads yet.</td></tr>
+              <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No leads yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -1052,6 +1191,487 @@ function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
           )}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+const LEAD_FUNNEL_STAGES = [
+  { label: 'New', value: 'new', color: '#6366f1' },
+  { label: 'Contacted', value: 'contacted', color: '#8b5cf6' },
+  { label: 'Qualified', value: 'requirement_gathering', color: '#3b82f6' },
+  { label: 'Proposal Sent', value: 'proposal_sent', color: '#f59e0b' },
+  { label: 'Proposal Approved', value: 'proposal_approved', color: '#10b981' },
+  { label: 'Won', value: 'converted', color: '#059669' },
+  { label: 'Lost', value: 'disqualified', color: '#ef4444' },
+];
+
+const PIPELINE_ACTIVE_STATUSES = ['new', 'contacted', 'requirement_gathering', 'proposal_sent', 'proposal_approved'];
+
+function CrmDashboard({ leads, proposals, contracts }) {
+  const openLeads = leads.filter((l) => PIPELINE_ACTIVE_STATUSES.includes(l.status)).length;
+  const proposalsSent = proposals.filter((p) => ['sent', 'viewed'].includes(p.status)).length;
+  const pipelineValue = leads
+    .filter((l) => PIPELINE_ACTIVE_STATUSES.includes(l.status))
+    .reduce((sum, l) => sum + Number(l.estimated_value || 0), 0);
+  const signedContracts = contracts.filter((c) => c.status === 'signed').length;
+  const winRate = proposals.length ? Math.round((signedContracts / proposals.length) * 100) : 0;
+
+  const funnelData = LEAD_FUNNEL_STAGES.map((stage) => ({
+    stage: stage.label,
+    count: leads.filter((l) => l.status === stage.value).length,
+    fill: stage.color,
+  }));
+
+  const recentActivity = (() => {
+    const items = [];
+    leads.forEach((l) => {
+      if (l.status === 'proposal_sent' && l.converted_client_id) return;
+      if (PIPELINE_ACTIVE_STATUSES.includes(l.status)) {
+        items.push({
+          type: 'lead',
+          text: `Lead "${l.company || l.contact_name}" is in ${l.status.replace('_', ' ')} stage`,
+          time: l.created_at,
+        });
+      }
+    });
+    proposals.forEach((p) => {
+      if (p.status === 'accepted') {
+        const lead = leads.find((l) => l.id === p.lead_id);
+        items.push({
+          type: 'proposal',
+          text: `Proposal accepted by ${lead ? (lead.company || lead.contact_name) : 'unknown'}`,
+          time: p.sent_at || p.created_at,
+        });
+      }
+    });
+    contracts.forEach((c) => {
+      if (c.status === 'signed') {
+        items.push({
+          type: 'contract',
+          text: `Contract signed (proposal ${c.proposal_id})`,
+          time: c.signed_by_company_at || c.signed_by_client_at,
+        });
+      }
+    });
+    return items
+      .filter((i) => i.time)
+      .sort((a, b) => new Date(b.time) - new Date(a.time))
+      .slice(0, 8);
+  })();
+
+  const timeAgo = (ts) => {
+    const mins = Math.floor((Date.now() - new Date(ts)) / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
+  const kpis = [
+    { label: 'Open Leads', value: openLeads, icon: 'person_search' },
+    { label: 'Proposals Sent', value: proposalsSent, icon: 'request_quote' },
+    { label: 'Pipeline Value', value: `$${pipelineValue.toLocaleString()}`, icon: 'attach_money' },
+    { label: 'Win Rate', value: `${winRate}%`, icon: 'trending_up' },
+  ];
+
+  return (
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
+              <Icon name={stat.icon} className="text-2xl text-blue-600" />
+            </div>
+            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-4 font-display text-headline-sm text-slate-900">Pipeline Funnel</h3>
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart layout="vertical" data={funnelData} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis type="number" tick={{ fontSize: 12, fill: '#64748b' }} />
+              <YAxis dataKey="stage" type="category" tick={{ fontSize: 12, fill: '#64748b' }} />
+              <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0' }} />
+              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                {funnelData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-4 font-display text-headline-sm text-slate-900">Recent Activity</h3>
+        {recentActivity.length === 0 ? (
+          <p className="text-body-sm text-slate-500">No recent activity to show.</p>
+        ) : (
+          <ul className="space-y-3">
+            {recentActivity.map((activity, i) => (
+              <li key={i} className="flex items-start gap-3 border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+                <div className="mt-0.5 flex-shrink-0">
+                  <Icon name={activity.type === 'lead' ? 'person_search' : activity.type === 'proposal' ? 'request_quote' : 'gavel'}
+                    className="text-lg text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-body-sm text-slate-900">{activity.text}</p>
+                  <p className="text-body-xs text-slate-500">{timeAgo(activity.time)}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SalesClients({ clients }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [industryFilter, setIndustryFilter] = useState('');
+
+  const industries = [...new Set(clients.map((c) => c.industry).filter(Boolean))];
+  const filtered = clients.filter((c) => {
+    const matchesSearch = !searchTerm ||
+      (c.company_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (c.contact_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesIndustry = !industryFilter || c.industry === industryFilter;
+    return matchesSearch && matchesIndustry;
+  });
+
+  const statusColor = { active: 'success', inactive: 'neutral', on_hold: 'warning' };
+
+  return (
+    <div className="space-y-stack-md">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <input type="text" placeholder="Search clients..." value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full rounded border border-slate-200 bg-white px-4 py-2.5 pl-10 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-base text-slate-400" />
+        </div>
+        <select value={industryFilter} onChange={(e) => setIndustryFilter(e.target.value)}
+          className="rounded border border-slate-200 bg-white px-4 py-2.5 text-body-md text-slate-900 focus:border-brand focus:outline-none">
+          <option value="">All Industries</option>
+          {industries.map((ind) => <option key={ind} value={ind}>{ind}</option>)}
+        </select>
+      </div>
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+        <table className="w-full text-left">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+            <tr>
+              <th className="px-stack-lg py-4">Company</th>
+              <th className="px-stack-lg py-4">Contact</th>
+              <th className="px-stack-lg py-4">Industry</th>
+              <th className="px-stack-lg py-4">Account Manager</th>
+              <th className="px-stack-lg py-4">Status</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {filtered.map((c) => (
+              <tr key={c.id} className="transition-colors hover:bg-blue-50">
+                <td className="px-stack-lg py-4 text-body-md font-semibold text-slate-900">{c.company_name || '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.contact_name || c.company_name || '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm capitalize text-slate-600">{c.industry?.replace('_', ' ') || '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.account_manager_id ? c.account_manager_id : 'Unassigned'}</td>
+                <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[c.status] || 'neutral'}>{c.status || 'active'}</StatusBadge></td>
+              </tr>
+            ))}
+            {!filtered.length && (
+              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No clients found.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+const MEETING_STATUS_COLOR = { scheduled: 'info', completed: 'success', cancelled: 'error' };
+
+function SalesMeetings({ meetings, clients, accessToken, onRefresh }) {
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ title: '', client_id: '', scheduled_at: '', duration_minutes: 30, meeting_link: '' });
+  const [errors, setErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [actingId, setActingId] = useState(null);
+  const [toast, setToast] = useState('');
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+  const clientName = (id) => {
+    if (!id) return '—';
+    const client = clients.find((c) => c.id === id);
+    return client ? (client.company_name || '—') : id;
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!form.title.trim()) errs.title = 'Title is required.';
+    if (!form.scheduled_at) errs.scheduled_at = 'Date and time are required.';
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setSubmitting(true);
+    try {
+      const payload = {
+        ...form,
+        scheduled_at: form.scheduled_at,
+        duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : 30,
+        client_id: form.client_id || undefined,
+      };
+      await createMeeting(accessToken, payload);
+      setForm({ title: '', client_id: '', scheduled_at: '', duration_minutes: 30, meeting_link: '' });
+      setErrors({});
+      setShowForm(false);
+      onRefresh();
+      showToast('Meeting scheduled successfully.');
+    } catch (err) {
+      showToast(err?.message || 'Failed to schedule meeting.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleComplete = async (meetingId) => {
+    setActingId(meetingId);
+    try {
+      await updateMeeting(accessToken, meetingId, { status: 'completed' });
+      onRefresh();
+    } catch (err) {
+      showToast(err?.message || 'Action failed.');
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const handleCancel = async (meetingId) => {
+    setActingId(meetingId);
+    try {
+      await updateMeeting(accessToken, meetingId, { status: 'cancelled' });
+      onRefresh();
+    } catch (err) {
+      showToast(err?.message || 'Action failed.');
+    } finally {
+      setActingId(null);
+    }
+  };
+
+  const now = new Date().toISOString().slice(0, 16);
+  const upcoming = meetings.filter((m) => m.status === 'scheduled' && new Date(m.scheduled_at) >= new Date(now));
+
+  return (
+    <div className="space-y-stack-md">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-display text-headline-sm text-slate-900">Meetings & Demos</h3>
+          <p className="text-body-sm text-slate-500">{upcoming.length} upcoming</p>
+        </div>
+        <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>
+          New Meeting
+        </Button>
+      </div>
+
+      {toast && (
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.includes('success') || toast.includes('scheduled')
+            ? 'border border-green-500/30 bg-green-500/10 text-green-800'
+            : 'border border-red-500/30 bg-red-500/10 text-red-800'
+        }`}>{toast}</p>
+      )}
+
+      {showForm && (
+        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <input type="text" placeholder="Title *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.title ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
+              {errors.title && <p className="mt-1 text-body-xs text-red-500">{errors.title}</p>}
+            </div>
+            <select value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })}
+              className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 focus:border-brand focus:outline-none">
+              <option value="">Select client (optional)</option>
+              {clients.map((c) => <option key={c.id} value={c.id}>{c.company_name || c.id}</option>)}
+            </select>
+            <div>
+              <input type="datetime-local" value={form.scheduled_at} onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.scheduled_at ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
+              {errors.scheduled_at && <p className="mt-1 text-body-xs text-red-500">{errors.scheduled_at}</p>}
+            </div>
+            <input type="number" min="15" max="240" step="15" placeholder="Duration (minutes)" value={form.duration_minutes}
+              onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })}
+              className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+          </div>
+          <input type="url" placeholder="Meeting link / location" value={form.meeting_link} onChange={(e) => setForm({ ...form, meeting_link: e.target.value })}
+            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+          <div className="flex gap-2">
+            <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Scheduling...' : 'Schedule'}</Button>
+            <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setErrors({}); }}>Cancel</Button>
+          </div>
+        </form>
+      )}
+
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+        <table className="w-full text-left">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+            <tr>
+              <th className="px-stack-lg py-4">Title</th>
+              <th className="px-stack-lg py-4">Client / Lead</th>
+              <th className="px-stack-lg py-4">Date & Time</th>
+              <th className="px-stack-lg py-4">Duration</th>
+              <th className="px-stack-lg py-4">Status</th>
+              <th className="px-stack-lg py-4">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {meetings.map((m) => (
+              <tr key={m.id} className="transition-colors hover:bg-blue-50">
+                <td className="px-stack-lg py-4 text-body-md font-semibold text-slate-900">{m.title}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{m.client_id ? clientName(m.client_id) : '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{m.scheduled_at ? new Date(m.scheduled_at).toLocaleString() : '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{m.duration_minutes}m</td>
+                <td className="px-stack-lg py-4"><StatusBadge variant={MEETING_STATUS_COLOR[m.status]}>{m.status}</StatusBadge></td>
+                <td className="px-stack-lg py-4">
+                  <div className="flex gap-2">
+                    {m.status === 'scheduled' && new Date(m.scheduled_at) >= new Date(now) && (
+                      <>
+                        <RowAction disabled={actingId === m.id || !accessToken} onClick={() => handleComplete(m.id)}>Complete</RowAction>
+                        <RowAction variant="outline" disabled={actingId === m.id || !accessToken} onClick={() => handleCancel(m.id)}>Cancel</RowAction>
+                      </>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {!meetings.length && (
+              <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No meetings scheduled yet.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function SalesReports({ leads, proposals, contracts }) {
+  const PIPELINE_STAGES = ['new', 'contacted', 'requirement_gathering', 'proposal_sent', 'proposal_approved', 'converted', 'disqualified'];
+
+  const pipelineValueData = PIPELINE_STAGES.filter((s) => s !== 'disqualified').map((stage) => {
+    const stageLeads = leads.filter((l) => l.status === stage);
+    const value = stageLeads.reduce((sum, l) => sum + Number(l.estimated_value || 0), 0);
+    return {
+      stage: stage.replace('_', ' '),
+      value: value,
+      count: stageLeads.length,
+      fill: stage === 'converted' ? '#10b981' : stage === 'disqualified' ? '#ef4444' : stage === 'proposal_sent' ? '#f59e0b' : stage === 'proposal_approved' ? '#3b82f6' : '#6366f1',
+    };
+  }).filter((s) => s.count > 0);
+
+  const sourceCounts = {};
+  leads.forEach((l) => {
+    const src = l.source || 'other';
+    sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+  });
+  const sourceData = Object.entries(sourceCounts).map(([name, value]) => ({
+    name: name.replace('_', ' '),
+    value,
+  }));
+
+  const SOURCES_COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1'];
+  const funnelData = [
+    { stage: 'Leads', count: leads.length },
+    { stage: 'Proposals', count: proposals.length },
+    { stage: 'Contracts', count: contracts.length },
+    { stage: 'Won', count: contracts.filter((c) => c.status === 'signed').length },
+  ];
+
+  const totalValue = pipelineValueData.reduce((sum, s) => sum + s.value, 0);
+  const conversionRate = leads.length ? Math.round((contracts.filter((c) => c.status === 'signed').length / leads.length) * 100) : 0;
+
+  return (
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+        {[
+          { label: 'Total Leads', value: leads.length, icon: 'person_search' },
+          { label: 'Total Proposals', value: proposals.length, icon: 'request_quote' },
+          { label: 'Signed Contracts', value: contracts.filter((c) => c.status === 'signed').length, icon: 'gavel' },
+          { label: 'Conversion Rate', value: `${conversionRate}%`, icon: 'trending_up' },
+        ].map((stat) => (
+          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-2 flex items-center gap-3">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
+              <span className="font-label-caps text-label-caps text-slate-600">{stat.label}</span>
+            </div>
+            <p className="font-stat text-stat-lg text-slate-900">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-2 font-display text-headline-sm text-slate-900">Pipeline Value by Stage</h3>
+        <p className="mb-4 text-body-sm text-slate-500">Total pipeline: ${totalValue.toLocaleString()}</p>
+        {pipelineValueData.length === 0 ? (
+          <p className="text-body-sm text-slate-500">No pipeline data available.</p>
+        ) : (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={pipelineValueData} margin={{ top: 5, right: 30, left: 20, bottom: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                <XAxis dataKey="stage" tick={{ fontSize: 11, fill: '#64748b' }} angle={-45} textAnchor="end" height={70} />
+                <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
+                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0' }} formatter={(value) => [`$${value}`, 'Value']} />
+                <Bar dataKey="value" name="Pipeline Value" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-2 font-display text-headline-sm text-slate-900">Lead Source Attribution</h3>
+        {sourceData.length === 0 ? (
+          <p className="text-body-sm text-slate-500">No source data available.</p>
+        ) : (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={sourceData} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={90} innerRadius={50} label>
+                  {sourceData.map((_, i) => <Cell key={`cell-${i}`} fill={SOURCES_COLORS[i % SOURCES_COLORS.length]} />)}
+                </Pie>
+                <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0' }} />
+                <Legend layout="horizontal" verticalAlign="bottom" align="middle" iconSize={10} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-2 font-display text-headline-sm text-slate-900">Conversion Funnel</h3>
+        <p className="mb-4 text-body-sm text-slate-500">Leads → Proposals → Contracts → Won</p>
+        <div className="h-52">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={funnelData} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+              <XAxis type="number" tick={{ fontSize: 12, fill: '#64748b' }} />
+              <YAxis dataKey="stage" type="category" tick={{ fontSize: 12, fill: '#64748b' }} />
+              <Tooltip contentStyle={{ backgroundColor: '#fff', border: '1px solid #e2e8f0' }} />
+              <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1623,8 +2243,8 @@ function Approvals({ accessToken }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('approved') || toast.includes('rejected')
-            ? 'border border-green-500/30 bg-green-500/10 text-green-300'
-            : 'border border-red-500/30 bg-red-500/10 text-red-300'
+            ? 'border border-green-500/30 bg-green-500/10 text-green-800'
+            : 'border border-red-500/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
 
@@ -1750,8 +2370,8 @@ function TestQueue({ accessToken }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('passed') || toast.includes('success')
-            ? 'border border-green-500/30 bg-green-500/10 text-green-300'
-            : 'border border-red-500/30 bg-red-500/10 text-red-300'
+            ? 'border border-green-500/30 bg-green-500/10 text-green-800'
+            : 'border border-red-500/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
 
@@ -1913,8 +2533,8 @@ function TicketQueue({ accessToken, userId }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('sent') || toast.includes('assigned') || toast.includes('resolved') || toast.includes('closed')
-            ? 'border border-green-500/30 bg-green-500/10 text-green-300'
-            : 'border border-red-500/30 bg-red-500/10 text-red-300'
+            ? 'border border-green-500/30 bg-green-500/10 text-green-800'
+            : 'border border-red-500/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
 
@@ -2128,8 +2748,8 @@ function LeaveApprovals({ accessToken }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('approved') || toast.includes('rejected')
-            ? 'border border-green-500/30 bg-green-500/10 text-green-300'
-            : 'border border-red-500/30 bg-red-500/10 text-red-300'
+            ? 'border border-green-500/30 bg-green-500/10 text-green-800'
+            : 'border border-red-500/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
       <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
@@ -2277,8 +2897,8 @@ function Recruitment({ accessToken }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('updated')
-            ? 'border border-green-500/30 bg-green-500/10 text-green-300'
-            : 'border border-red-500/30 bg-red-500/10 text-red-300'
+            ? 'border border-green-500/30 bg-green-500/10 text-green-800'
+            : 'border border-red-500/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
 
@@ -2454,6 +3074,8 @@ export default function EmployeePortal() {
   const [leadsData, setLeadsData] = useState([]);
   const [proposalsData, setProposalsData] = useState([]);
   const [contractsData, setContractsData] = useState([]);
+  const [meetingsData, setMeetingsData] = useState([]);
+  const [clientsData, setClientsData] = useState([]);
   // The portal always uses the role the backend authenticated for this session.
   // No client-side role override is possible — tabs and permissions reflect the
   // real role returned by `/employees/me/profile`.
@@ -2462,12 +3084,19 @@ export default function EmployeePortal() {
 
   const refreshCrm = useCallback(() => {
     if (!accessToken) return;
-    Promise.allSettled([fetchLeads(accessToken), fetchProposals(accessToken), fetchContracts(accessToken)])
-      .then(([l, p, c]) => {
-        if (l.status === 'fulfilled') setLeadsData(l.value?.data || []);
-        if (p.status === 'fulfilled') setProposalsData(p.value?.data || []);
-        if (c.status === 'fulfilled') setContractsData(c.value?.data || []);
-      });
+    Promise.allSettled([
+      fetchLeads(accessToken),
+      fetchProposals(accessToken),
+      fetchContracts(accessToken),
+      fetchMeetings(accessToken),
+      fetchClients(accessToken, { limit: 100 }),
+    ]).then(([l, p, c, m, cl]) => {
+      if (l.status === 'fulfilled') setLeadsData(l.value?.data || []);
+      if (p.status === 'fulfilled') setProposalsData(p.value?.data || []);
+      if (c.status === 'fulfilled') setContractsData(c.value?.data || []);
+      if (m.status === 'fulfilled') setMeetingsData(m.value?.data || []);
+      if (cl.status === 'fulfilled') setClientsData(cl.value?.data || []);
+    });
   }, [accessToken]);
 
   const handleEnroll = (courseId) => {
@@ -2486,47 +3115,51 @@ export default function EmployeePortal() {
     if (!user || !accessToken) { setLoading(false); return; }
     if (!initialLoadDone.current) setLoading(true);
 
+    const handleProfile = (profileData) => {
+      if (!profileData) return;
+      const p = profileData;
+      const realRole = p.role || 'employee';
+      setProfile({
+        _employeeId: p.id,
+        _userId: p.user_id,
+        employee_code: p.employee_code,
+        name: p.name || user.email,
+        email: p.email || user.email,
+        role: realRole,
+        designation: p.designation,
+        department: p.department_name || p.department_id,
+        status: p.status,
+      });
+      Promise.allSettled([
+        apiRequest(`/employees/me/attendance/today`, { token: accessToken }),
+        apiRequest(`/employees/me/leaves`, { token: accessToken }),
+        apiRequest(`/employees/me/timesheets`, { token: accessToken }),
+        apiRequest(`/tasks?assigned_to=${p.user_id}&limit=50`, { token: accessToken }),
+        apiRequest(`/projects?employee_id=${p.id}&limit=50`, { token: accessToken }),
+      ]).then(([attRes, lvRes, tsRes, taskRes, projRes]) => {
+        if (attRes.status === 'fulfilled' && attRes.value?.data) {
+          const a = attRes.value.data;
+          setAttendance({ date: a.date, checkIn: toLocalTime(a.check_in), checkOut: toLocalTime(a.check_out), status: a.status });
+        }
+        if (lvRes.status === 'fulfilled') setLeaves(normalizeLeaves(lvRes.value?.data));
+        if (tsRes.status === 'fulfilled') setTimesheets(normalizeTimesheets(tsRes.value?.data));
+        if (taskRes.status === 'fulfilled') setTasks(normalizeTasks(taskRes.value?.data));
+        if (projRes.status === 'fulfilled') setProjects(normalizeEmpProjects(projRes.value?.data));
+      });
+    };
+
     Promise.allSettled([
-      fetchMyProfile(accessToken),
+      fetchMyProfile(accessToken).then((res) => {
+        const p = res?.data;
+        if (p) handleProfile(p);
+        return res;
+      }),
       fetchMyPayslips(accessToken),
       fetchMyPerformanceReviews(accessToken),
       fetchMyTrainingEnrollments(accessToken),
       fetchMyDocuments(accessToken),
       fetchTrainingCatalog(accessToken),
-    ]).then(([profileRes, psRes, perfRes, trainRes, docsRes, catRes]) => {
-      if (profileRes.status === 'fulfilled') {
-        const p = profileRes.value?.data;
-        if (p) {
-          const realRole = p.role || 'employee';
-          setProfile({
-            _employeeId: p.id,
-            _userId: p.user_id,
-            employee_code: p.employee_code,
-            name: p.name || user.email,
-            email: p.email || user.email,
-            role: realRole,
-            designation: p.designation,
-            department: p.department_name || p.department_id,
-            status: p.status,
-          });
-          Promise.allSettled([
-            apiRequest(`/employees/me/attendance/today`, { token: accessToken }),
-            apiRequest(`/employees/me/leaves`, { token: accessToken }),
-            apiRequest(`/employees/me/timesheets`, { token: accessToken }),
-            apiRequest(`/tasks?assigned_to=${p.user_id}&limit=50`, { token: accessToken }),
-            apiRequest(`/projects?employee_id=${p.id}&limit=50`, { token: accessToken }),
-          ]).then(([attRes, lvRes, tsRes, taskRes, projRes]) => {
-            if (attRes.status === 'fulfilled' && attRes.value?.data) {
-              const a = attRes.value.data;
-              setAttendance({ date: a.date, checkIn: toLocalTime(a.check_in), checkOut: toLocalTime(a.check_out), status: a.status });
-            }
-            if (lvRes.status === 'fulfilled') setLeaves(normalizeLeaves(lvRes.value?.data));
-            if (tsRes.status === 'fulfilled') setTimesheets(normalizeTimesheets(tsRes.value?.data));
-            if (taskRes.status === 'fulfilled') setTasks(normalizeTasks(taskRes.value?.data));
-            if (projRes.status === 'fulfilled') setProjects(normalizeEmpProjects(projRes.value?.data));
-          });
-        }
-      }
+    ]).then(([, psRes, perfRes, trainRes, docsRes, catRes]) => {
       if (psRes.status === 'fulfilled') setPayslips(normalizePayslips(psRes.value?.data));
       if (perfRes.status === 'fulfilled') setPerformance(normalizePerformance(perfRes.value?.data));
       if (trainRes.status === 'fulfilled') setTraining(normalizeTraining(trainRes.value?.data));
@@ -2603,9 +3236,13 @@ export default function EmployeePortal() {
 
           <div className="min-w-0 flex-1 overflow-y-auto px-margin-mobile py-stack-lg md:px-margin-desktop">
             {activeTab === 'overview' && <Overview profile={profile} attendance={attendance} leaves={leaves} timesheets={timesheets} payslips={payslips} />}
-            {activeTab === 'leads' && effectiveRole === 'sales' && <Leads leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-            {activeTab === 'proposals' && effectiveRole === 'sales' && <Proposals proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-            {activeTab === 'contracts' && effectiveRole === 'sales' && <Contracts contracts={contractsData} proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+             {activeTab === 'crm-dashboard' && effectiveRole === 'sales' && <CrmDashboard leads={leadsData} proposals={proposalsData} contracts={contractsData} />}
+             {activeTab === 'leads' && effectiveRole === 'sales' && <Leads leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+             {activeTab === 'clients' && effectiveRole === 'sales' && <SalesClients clients={clientsData} />}
+             {activeTab === 'proposals' && effectiveRole === 'sales' && <Proposals proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+             {activeTab === 'contracts' && effectiveRole === 'sales' && <Contracts contracts={contractsData} proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+             {activeTab === 'meetings' && effectiveRole === 'sales' && <SalesMeetings meetings={meetingsData} clients={clientsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+             {activeTab === 'reports' && effectiveRole === 'sales' && <SalesReports leads={leadsData} proposals={proposalsData} contracts={contractsData} />}
             {activeTab === 'marketing-leads' && effectiveRole === 'marketing' && <MarketingLeadsView accessToken={accessToken} />}
             {activeTab === 'testimonials' && effectiveRole === 'marketing' && <TestimonialModeration accessToken={accessToken} />}
             {activeTab === 'team-projects' && effectiveRole === 'project_manager' && <TeamProjects accessToken={accessToken} userId={user?.id} />}

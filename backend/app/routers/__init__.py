@@ -11,8 +11,8 @@ from app.routers import (
     analytics,
     solution, training,
     # Phase 3 �?" Sales CRM
-    contracts, leads, proposals,
-    # Phase 4 �?" Super Admin
+    contracts, leads, meetings, proposals,
+    # Phase 4 🡺 Super Admin
     department,
 )
 
@@ -62,6 +62,7 @@ api_router.include_router(reports.router)
 api_router.include_router(leads.router)
 api_router.include_router(proposals.router)
 api_router.include_router(contracts.router)
+api_router.include_router(meetings.router)
 
 # Phase 4 — Super Admin
 api_router.include_router(department.router)

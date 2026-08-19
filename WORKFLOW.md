@@ -122,7 +122,7 @@ super_admin > admin > hr, project_manager > employee roles > client
 | `PUT /{id}` | Update | write_roles | Partial update |
 | `DELETE /{id}` | Delete | write_roles | Hard delete |
 
-### API Router Map (42 routers)
+### API Router Map (43 routers)
 
 | Module | Prefix | Purpose |
 |--------|--------|---------|
@@ -137,7 +137,7 @@ super_admin > admin > hr, project_manager > employee roles > client
 | `proposals` | `/proposals` | CRM proposals (versioned) |
 | `contracts` | `/contracts` | CRM contracts (dual-signature) |
 | `tickets` | `/tickets` | Support tickets + replies |
-| `meetings` | (via clients) | Client meetings |
+| `meetings` | `/meetings` | Sales/Admin/PM meeting management |
 | `notifications` | `/notifications` | In-app notifications |
 | `media` | `/media` | File uploads |
 | `blogs` | `/blogs` | Blog posts + comments |
@@ -543,7 +543,7 @@ super_admin > admin > hr, project_manager > employee roles > client
 ### Employee Portal — Role-Specific Tabs
 | Role | Additional Tabs |
 |------|-----------------|
-| Sales | Leads, Proposals, Contracts |
+| Sales | Leads, Proposals, Contracts, Dashboard, Clients, Meetings, Reports |
 | Marketing | Leads Handoff, Testimonials |
 | Project Manager | Team Projects, Task Board, Approvals |
 | QA | Test Queue |
@@ -675,7 +675,7 @@ CF/
 │   │   │   └── responses.py  # Uniform response envelope
 │   │   ├── crud/             # Generic CRUD base class
 │   │   ├── models/           # 45 SQLAlchemy models
-│   │   ├── routers/          # 42 FastAPI routers
+│   │   ├── routers/          # 43 FastAPI routers
 │   │   ├── schemas/          # Pydantic schemas (~28 files)
 │   │   └── utils/            # Router factory, pagination, notifications
 │   ├── alembic/              # Database migrations (5 versions)

@@ -12,7 +12,7 @@ import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import { useAuth } from '../context/AuthContext.jsx';
 // demo data removed — all data now fetched from API
 import { fetchAdminKPIs } from '../lib/db.js';
-import { fetchCurrentUser } from '../api/auth.js';
+
 import {
   fetchDepartments, createDepartment, deleteDepartment,
   fetchRoles, createRole, deleteRole, fetchPermissions, createPermission, deletePermission,
@@ -376,9 +376,10 @@ export default function SuperAdminPanel() {
   const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    if (!accessToken) return;
-    fetchCurrentUser(accessToken).then((res) => setCurrentUser(res?.data || null)).catch(() => {});
-  }, [accessToken]);
+    if (user) {
+      setCurrentUser({ name: user?.user_metadata?.name || user?.email, email: user?.email, role: user?.user_metadata?.role || 'super_admin' });
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!initializing && !user) navigate('/login', { replace: true });

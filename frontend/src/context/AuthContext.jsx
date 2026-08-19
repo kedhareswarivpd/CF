@@ -10,16 +10,17 @@ export function AuthProvider({ children }) {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       setInitializing(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
-    });
+      setInitializing(false);
+    }).catch(() => setInitializing(false));
 
     return () => subscription?.unsubscribe();
   }, []);
@@ -59,13 +60,15 @@ export function AuthProvider({ children }) {
       throw new Error('Login failed. Please try again.');
     }
 
-    const { data: sessionData, error } = await supabase.auth.setSession({
+    // Set session state immediately so portal has access_token without waiting
+    setSession({ access_token: tokenData.access_token, refresh_token: tokenData.refresh_token });
+    setUser({ id: tokenData.user?.id, email: tokenData.user?.email, user_metadata: tokenData.user });
+
+    // Sync with Supabase in background (non-blocking)
+    supabase.auth.setSession({
       access_token: tokenData.access_token,
       refresh_token: tokenData.refresh_token,
-    });
-
-    if (error) throw new Error(error.message);
-    if (!sessionData.session) throw new Error('Login failed to initialize session.');
+    }).catch(() => {});
 
     return tokenData.user;
   }, []);

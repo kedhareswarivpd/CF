@@ -34,9 +34,13 @@ export const employeePortalTabs = [
 // docs/ROLE_WORKFLOW.md §2 for the full per-role navigation spec.
 export const rolePortalTabs = {
   sales: [
+    { id: 'crm-dashboard', label: 'Dashboard', icon: 'analytics' },
     { id: 'leads', label: 'Leads', icon: 'person_search' },
+    { id: 'clients', label: 'Clients', icon: 'business' },
     { id: 'proposals', label: 'Proposals', icon: 'request_quote' },
     { id: 'contracts', label: 'Contracts', icon: 'gavel' },
+    { id: 'meetings', label: 'Meetings', icon: 'video_call' },
+    { id: 'reports', label: 'Reports', icon: 'assessment' },
   ],
   marketing: [
     { id: 'marketing-leads', label: 'Leads Handoff', icon: 'campaign' },
