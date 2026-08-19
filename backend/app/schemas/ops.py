@@ -27,8 +27,18 @@ class TicketOut(TimestampedRead):
 
 
 class TicketReplyCreate(BaseModel):
-    message: str
+    message: str | None = None
+    content: str | None = None
     attachment_url: str | None = None
+
+    def model_dump(self, **kwargs):
+        d = super().model_dump(**kwargs)
+        if not d.get("message") and d.get("content"):
+            d["message"] = d.pop("content")
+        else:
+            d.pop("content", None)
+        return d
+
 
 
 class TicketReplyOut(TimestampedRead):

@@ -13,7 +13,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import {
   employeeTabsForRole,
 } from '../data/portal.js';
-import { downloadDocumentPdf } from '../utils/documentPdf.js';
+import { downloadDocumentPdf, downloadPayslipPdf } from '../utils/documentPdf.js';
 import {
   fetchMyProfile, applyLeave as applyLeaveApi, submitTimesheet, fetchMyDocuments,
   checkIn as checkInApi, checkOut as checkOutApi,
@@ -463,27 +463,71 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
   );
 }
 
-function Payslips({ payslips }) {
+function Payslips({ payslips, profile }) {
+  const totalNet = payslips.reduce((s, p) => s + (p.netPay || 0), 0);
+  const latestPay = payslips.length ? payslips[0].netPay : 0;
+  const kpis = [
+    { label: 'Total Net Received', value: `$${totalNet.toLocaleString()}`, icon: 'payments' },
+    { label: 'Latest Net Pay', value: `$${latestPay.toLocaleString()}`, icon: 'account_balance_wallet' },
+    { label: 'Available Payslips', value: payslips.length, icon: 'receipt_long' },
+  ];
+
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-      <table className="w-full text-left">
-        <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
-          <tr><th className="px-stack-lg py-4">Period</th><th className="px-stack-lg py-4">Gross</th><th className="px-stack-lg py-4">Deductions</th><th className="px-stack-lg py-4">Net Pay</th><th className="px-stack-lg py-4">Status</th></tr>
-        </thead>
-        <tbody className="divide-y divide-slate-200">
-          {payslips.length === 0 ? (
-            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No payslips available yet.</td></tr>
-          ) : payslips.map((p) => (
-            <tr key={`${p.month}-${p.year}`} className="transition-colors hover:bg-blue-50">
-              <td className="px-stack-lg py-4 text-body-md text-slate-900">{p.month} {p.year}</td>
-              <td className="px-stack-lg py-4 text-body-md text-slate-600">${p.grossPay.toLocaleString()}</td>
-              <td className="px-stack-lg py-4 text-body-md text-slate-600">${p.deductions.toLocaleString()}</td>
-              <td className="px-stack-lg py-4 text-body-md font-semibold text-slate-900">${p.netPay.toLocaleString()}</td>
-              <td className="px-stack-lg py-4"><StatusBadge variant="success">{p.status}</StatusBadge></td>
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
+              <Icon name={stat.icon} className="text-2xl text-blue-600" />
+            </div>
+            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+          <h3 className="font-display text-body-md font-bold text-slate-900">Monthly Compensation History</h3>
+        </div>
+        <table className="w-full text-left">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+            <tr>
+              <th className="px-stack-lg py-4">Period</th>
+              <th className="px-stack-lg py-4">Gross Earnings</th>
+              <th className="px-stack-lg py-4">Deductions</th>
+              <th className="px-stack-lg py-4">Net Payout</th>
+              <th className="px-stack-lg py-4">Status</th>
+              <th className="px-stack-lg py-4 text-right">Action</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {payslips.length === 0 ? (
+              <tr><td colSpan={6} className="px-stack-lg py-12 text-center text-body-sm text-slate-500">No payslips available yet.</td></tr>
+            ) : payslips.map((p) => (
+              <tr key={`${p.month}-${p.year}`} className="transition-colors hover:bg-blue-50/50">
+                <td className="px-stack-lg py-4 font-semibold text-slate-900">
+                  <div className="flex items-center gap-2">
+                    <Icon name="calendar_month" className="text-base text-blue-600" />
+                    <span>{p.month} {p.year}</span>
+                  </div>
+                </td>
+                <td className="px-stack-lg py-4 text-body-md text-slate-600">${p.grossPay.toLocaleString()}</td>
+                <td className="px-stack-lg py-4 text-body-md text-red-500">-${p.deductions.toLocaleString()}</td>
+                <td className="px-stack-lg py-4 text-body-md font-bold text-emerald-600">${p.netPay.toLocaleString()}</td>
+                <td className="px-stack-lg py-4"><StatusBadge variant="success">{p.status}</StatusBadge></td>
+                <td className="px-stack-lg py-4 text-right">
+                  <button
+                    onClick={() => downloadPayslipPdf(p, profile)}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-body-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-500 hover:text-blue-600 active:scale-95">
+                    <Icon name="download" className="text-sm" /> Slip
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -491,26 +535,65 @@ function Payslips({ payslips }) {
 function Tasks({ tasks }) {
   const priorityColor = { urgent: 'error', high: 'warning', medium: 'info', low: 'neutral' };
   const statusColor = { done: 'success', in_progress: 'info', todo: 'neutral', blocked: 'error' };
+
+  const inProgress = tasks.filter((t) => t.status === 'in_progress').length;
+  const completed = tasks.filter((t) => t.status === 'done').length;
+  const pending = tasks.filter((t) => t.status === 'todo' || t.status === 'blocked').length;
+
+  const kpis = [
+    { label: 'Total Assigned Tasks', value: tasks.length, icon: 'assignment' },
+    { label: 'In Progress', value: inProgress, icon: 'pending' },
+    { label: 'Completed Tasks', value: completed, icon: 'check_circle' },
+  ];
+
   return (
-    <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
-      <table className="w-full text-left">
-        <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
-          <tr><th className="px-stack-lg py-4">Task</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Priority</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Due</th></tr>
-        </thead>
-        <tbody className="divide-y divide-slate-200">
-          {tasks.length === 0 ? (
-            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No tasks assigned yet.</td></tr>
-          ) : tasks.map((t) => (
-            <tr key={t.id} className="transition-colors hover:bg-blue-50">
-              <td className="px-stack-lg py-4 text-body-md text-slate-900">{t.title}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-slate-600">{t.project}</td>
-              <td className="px-stack-lg py-4"><StatusBadge variant={priorityColor[t.priority]}>{t.priority}</StatusBadge></td>
-              <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[t.status]}>{t.status.replace('_', ' ')}</StatusBadge></td>
-              <td className="px-stack-lg py-4 text-body-sm text-slate-600">{t.due}</td>
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
+              <Icon name={stat.icon} className="text-2xl text-blue-600" />
+            </div>
+            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+          <h3 className="font-display text-body-md font-bold text-slate-900">Task Assignments & Milestones</h3>
+        </div>
+        <table className="w-full text-left">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+            <tr>
+              <th className="px-stack-lg py-4">Task Deliverable</th>
+              <th className="px-stack-lg py-4">Project</th>
+              <th className="px-stack-lg py-4">Priority</th>
+              <th className="px-stack-lg py-4">Status</th>
+              <th className="px-stack-lg py-4">Due Date</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {tasks.length === 0 ? (
+              <tr><td colSpan={5} className="px-stack-lg py-12 text-center text-body-sm text-slate-500">No tasks assigned yet.</td></tr>
+            ) : tasks.map((t) => (
+              <tr key={t.id} className="transition-colors hover:bg-blue-50/50">
+                <td className="px-stack-lg py-4 font-semibold text-slate-900">{t.title}</td>
+                <td className="px-stack-lg py-4">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-body-xs font-semibold text-slate-700">
+                    <Icon name="folder" className="text-xs text-blue-500" />
+                    {t.project}
+                  </span>
+                </td>
+                <td className="px-stack-lg py-4"><StatusBadge variant={priorityColor[t.priority] || 'neutral'}>{t.priority}</StatusBadge></td>
+                <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[t.status] || 'neutral'}>{t.status.replace('_', ' ')}</StatusBadge></td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{t.due}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -518,7 +601,7 @@ function Tasks({ tasks }) {
 function Projects({ projects }) {
   const statusColor = { completed: 'success', in_progress: 'info', on_hold: 'warning', planning: 'neutral' };
   const completed = projects.filter((p) => p.status === 'completed').length;
-  const inProgress = projects.filter((p) => p.status === 'in_progress').length;
+  const inProgress = projects.filter((p) => p.status === 'in_progress' || p.status === 'planning').length;
   const kpis = [
     { label: 'Total Projects', value: projects.length, icon: 'folder' },
     { label: 'In Progress', value: inProgress, icon: 'pending' },
@@ -608,30 +691,30 @@ function Performance({ reviews }) {
 }
 
 function Training({ courses, catalog, onEnroll, enrollingId }) {
-  const statusColor = { completed: 'success', in_progress: 'info', pending: 'neutral' };
+  const statusColor = { completed: 'success', in_progress: 'info', pending: 'neutral', enrolled: 'info' };
   const enrolledIds = new Set(courses.map((c) => c.courseId ?? c.id));
   const available = (catalog || []).filter((c) => !enrolledIds.has(c.id));
 
   return (
     <div className="space-y-stack-lg">
-      {available.length > 0 && (
-        <section>
-          <h3 className="mb-4 font-display text-headline-sm text-slate-900">Available Courses</h3>
+      <section>
+        <h3 className="mb-4 font-display text-headline-sm text-white">Available Courses</h3>
+        {available.length > 0 ? (
           <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
             {available.map((c) => (
-              <div key={c.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div key={c.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
                 <p className="font-display text-body-md font-semibold text-slate-900">{c.title}</p>
-                <p className="mt-1 text-body-xs uppercase tracking-wide text-slate-600">{c.category}</p>
+                <p className="mt-1 font-label-caps text-body-xs uppercase tracking-wide text-blue-600">{c.category}</p>
                 <p className="mt-2 flex-1 text-body-sm text-slate-600">{c.description || 'No description available.'}</p>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-body-sm text-slate-600">
-                    {c.duration_hours ? `${c.duration_hours}h` : 'Self-paced'}
+                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                  <span className="text-body-sm font-medium text-slate-500">
+                    {c.duration_hours ? `${c.duration_hours} hrs` : 'Self-paced'}
                   </span>
                   <button
                     type="button"
                     onClick={() => onEnroll(c.id)}
                     disabled={enrollingId === c.id}
-                    className="inline-flex items-center gap-1.5 rounded bg-brand px-4 py-2 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark disabled:opacity-60"
                   >
                     <Icon name="school" className="text-base leading-none" />
                     {enrollingId === c.id ? 'Enrolling...' : 'Enroll'}
@@ -640,25 +723,36 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
               </div>
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-body-sm text-slate-500 shadow-sm">
+            You are enrolled in all available courses, or no new courses are listed.
+          </div>
+        )}
+      </section>
+
       <section>
         <h3 className="mb-4 font-display text-headline-sm text-white">My Enrollments</h3>
-        <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
-              <tr><th className="px-stack-lg py-4">Course</th><th className="px-stack-lg py-4">Category</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Completed On</th><th className="px-stack-lg py-4">Score</th></tr>
+            <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500 border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-4">Course</th>
+                <th className="px-6 py-4">Category</th>
+                <th className="px-6 py-4">Status</th>
+                <th className="px-6 py-4">Completed On</th>
+                <th className="px-6 py-4">Score</th>
+              </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {courses.length === 0 ? (
-                <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No enrollments yet. Browse available courses above.</td></tr>
+                <tr><td colSpan={5} className="px-6 py-8 text-center text-body-sm text-slate-500">No enrollments yet. Browse available courses above and click Enroll!</td></tr>
               ) : courses.map((c) => (
-                <tr key={c.id} className="transition-colors hover:bg-blue-50">
-                  <td className="px-stack-lg py-4 text-body-md text-slate-900">{c.title}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.category}</td>
-                  <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[c.status]}>{c.status.replace('_', ' ')}</StatusBadge></td>
-                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.completedOn || '—'}</td>
-                  <td className="px-stack-lg py-4 text-body-sm font-semibold text-slate-900">{c.score || '—'}</td>
+                <tr key={c.id} className="transition-colors hover:bg-slate-50">
+                  <td className="px-6 py-4 font-medium text-slate-900">{c.title}</td>
+                  <td className="px-6 py-4 text-body-sm text-slate-600">{c.category}</td>
+                  <td className="px-6 py-4"><StatusBadge variant={statusColor[c.status] || 'neutral'}>{c.status?.replace('_', ' ')}</StatusBadge></td>
+                  <td className="px-6 py-4 text-body-sm text-slate-600">{c.completedOn || '—'}</td>
+                  <td className="px-6 py-4 text-body-sm font-semibold text-slate-900">{c.score || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -669,7 +763,7 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
   );
 }
 
-function Documents({ docs }) {
+function Documents({ docs, profile }) {
   const typeIcon = { contract: 'gavel', id_proof: 'badge', certificate: 'workspace_premium', other: 'description', resume: 'person' };
   const contracts = docs.filter((d) => d.type === 'contract').length;
   const certs = docs.filter((d) => d.type === 'certificate').length;
@@ -680,11 +774,11 @@ function Documents({ docs }) {
   ];
 
   const handleDownload = async (d) => {
-    if (d.file_url) {
-      window.open(d.file_url, '_blank');
-      return;
+    try {
+      await downloadDocumentPdf(d, profile);
+    } catch (e) {
+      console.error('Failed to generate document PDF:', e);
     }
-    await downloadDocumentPdf(d);
   };
 
   return (
@@ -1017,12 +1111,178 @@ function Leads({ leads, accessToken, onRefresh }) {
   );
 }
 
-function Proposals({ proposals, leads, accessToken, onRefresh }) {
+// ---------- Sales: Contact Submissions view (mirrors marketing's view but for sales) ----------
+function ContactSubmissionsView({ accessToken, onLeadCreated }) {
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [convertTarget, setConvertTarget] = useState(null);
+  const [toast, setToast] = useState({ msg: '', type: 'success' });
+  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 3500); };
+
+  const load = useCallback(() => {
+    if (!accessToken) { setLoading(false); return; }
+    setLoading(true);
+    apiRequest('/contact?limit=100', { token: accessToken })
+      .then((r) => setSubmissions(r?.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [accessToken]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const updateStatus = async (id, status) => {
+    try {
+      await apiRequest(`/contact/${id}`, { method: 'PATCH', body: { status }, token: accessToken });
+      showToast(`Marked as ${status.replace('_', ' ')}`);
+      load();
+    } catch { showToast('Failed to update status', 'error'); }
+  };
+
+  const handleConverted = async (sub) => {
+    setConvertTarget(null);
+    showToast(`${sub.name} converted to lead!`);
+    try { await apiRequest(`/contact/${sub.id}`, { method: 'PATCH', body: { status: 'in_progress' }, token: accessToken }); } catch { /* non-critical */ }
+    load();
+    onLeadCreated?.();
+  };
+
+  const statusColor = { new: 'neutral', in_progress: 'info', resolved: 'success', spam: 'error' };
+
+  if (loading) return <LoadingSpinner />;
+  return (
+    <div className="space-y-stack-md">
+      {toast.msg && (
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.type === 'success' ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+        }`}>{toast.msg}</p>
+      )}
+      {convertTarget && (
+        <SalesConvertModal
+          submission={convertTarget}
+          accessToken={accessToken}
+          onClose={() => setConvertTarget(null)}
+          onSuccess={() => handleConverted(convertTarget)}
+        />
+      )}
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+        <table className="w-full text-left">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+            <tr><th className="px-stack-lg py-4">Contact</th><th className="px-stack-lg py-4">Subject</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Actions</th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {submissions.map((s) => (
+              <tr key={s.id} className="transition-colors hover:bg-blue-50">
+                <td className="px-stack-lg py-4">
+                  <p className="text-body-md font-semibold text-slate-900">{s.name}</p>
+                  <p className="text-body-sm text-slate-600">{s.email}</p>
+                  {s.company && <p className="text-body-sm text-slate-400">{s.company}</p>}
+                </td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{s.subject || '—'}</td>
+                <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[s.status] || 'neutral'}>{s.status?.replace('_', ' ')}</StatusBadge></td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{s.created_at?.slice(0, 10) || '—'}</td>
+                <td className="px-stack-lg py-4">
+                  <div className="flex flex-col gap-1">
+                    {s.status !== 'spam' && s.status !== 'resolved' && (
+                      <RowAction onClick={() => setConvertTarget(s)}>Convert to Lead</RowAction>
+                    )}
+                    {s.status === 'new' && (
+                      <RowAction variant="outline" onClick={() => updateStatus(s.id, 'in_progress')}>Mark In Progress</RowAction>
+                    )}
+                    {s.status !== 'resolved' && s.status !== 'spam' && (
+                      <RowAction variant="outline" onClick={() => updateStatus(s.id, 'resolved')}>Resolve</RowAction>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {!submissions.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No contact submissions yet.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// Reusable Convert-to-Lead modal (shared by Sales and Marketing views)
+function SalesConvertModal({ submission, accessToken, onClose, onSuccess }) {
+  const [estimatedValue, setEstimatedValue] = useState('');
+  const [notes, setNotes] = useState(submission.message || '');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const inputClass = 'w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none';
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      await createLead(accessToken, {
+        contact_name: submission.name,
+        email: submission.email,
+        phone: submission.phone || null,
+        company: submission.company || null,
+        source: 'contact_form',
+        contact_submission_id: submission.id,
+        estimated_value: estimatedValue ? Number(estimatedValue) : null,
+        notes: notes || null,
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err.message || 'Could not convert to lead. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+        <div className="mb-5 flex items-start justify-between">
+          <div>
+            <h2 className="font-display text-headline-sm font-bold text-slate-900">Convert to Lead</h2>
+            <p className="mt-1 text-body-sm text-slate-500">Create a CRM lead from this contact submission</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><Icon name="close" className="text-xl" /></button>
+        </div>
+        <div className="mb-5 rounded-lg bg-slate-50 p-4 space-y-1">
+          <p className="text-body-sm font-semibold text-slate-900">{submission.name}</p>
+          <p className="text-body-sm text-slate-600">{submission.email}</p>
+          {submission.phone && <p className="text-body-sm text-slate-500">{submission.phone}</p>}
+          {submission.company && <p className="text-body-sm text-slate-500">{submission.company}</p>}
+          {submission.subject && <p className="text-body-sm italic text-slate-400">{submission.subject}</p>}
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-body-sm font-medium text-slate-700">Estimated Value (USD)</label>
+            <input type="number" min="0" step="0.01" placeholder="e.g. 5000" value={estimatedValue}
+              onChange={(e) => setEstimatedValue(e.target.value)} className={inputClass} />
+          </div>
+          <div>
+            <label className="mb-1 block text-body-sm font-medium text-slate-700">Notes</label>
+            <textarea rows={3} placeholder="Internal notes about this lead..." value={notes}
+              onChange={(e) => setNotes(e.target.value)} className={`${inputClass} resize-none`} />
+          </div>
+          {error && <p className="text-body-sm text-red-600">{error}</p>}
+          <div className="flex gap-3 pt-1">
+            <Button type="submit" variant="primary" size="md" disabled={submitting} className="flex-1">
+              {submitting ? 'Converting...' : 'Convert to Lead'}
+            </Button>
+            <Button type="button" variant="outline" size="md" onClick={onClose}>Cancel</Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function Proposals({ proposals, leads, contracts = [], accessToken, onRefresh, onNavigateTab }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ lead_id: '', scope_summary: '', price: '', currency: 'USD' });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [actingId, setActingId] = useState(null);
+  const [toast, setToast] = useState({ msg: '', type: 'success' });
+  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 3500); };
   const inputClass = 'border border-slate-200 rounded px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 bg-white focus:outline-none focus:border-brand';
 
   const leadLabel = (leadId) => {
@@ -1069,11 +1329,14 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
     }
   };
 
-  const runAction = async (action, proposalId) => {
+  const runAction = async (action, proposalId, successMsg) => {
     setActingId(proposalId);
     try {
       await action(accessToken, proposalId);
+      showToast(successMsg || 'Done!');
       onRefresh();
+    } catch (err) {
+      showToast(err?.message || 'Action failed. Please try again.', 'error');
     } finally {
       setActingId(null);
     }
@@ -1081,6 +1344,7 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
 
   return (
     <div className="space-y-stack-md">
+      {toast.msg && <p className={`rounded-lg px-4 py-2 text-body-sm ${toast.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{toast.msg}</p>}
       <div className="flex justify-end">
         <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>New Proposal</Button>
       </div>
@@ -1126,14 +1390,24 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
                 <td className="px-stack-lg py-4 text-body-sm text-slate-600">{p.sent_at ? p.sent_at.slice(0, 10) : '—'}</td>
                 <td className="px-stack-lg py-4">
                   <div className="flex gap-2">
-                    {p.status === 'draft' && <RowAction disabled={actingId === p.id} onClick={() => runAction(sendProposal, p.id)}>Send</RowAction>}
+                    {p.status === 'draft' && <RowAction disabled={actingId === p.id} onClick={() => runAction(sendProposal, p.id, 'Proposal sent to client!')}>Send</RowAction>}
                     {(p.status === 'sent' || p.status === 'viewed') && (
                       <>
-                        <RowAction disabled={actingId === p.id} onClick={() => runAction(acceptProposal, p.id)}>Accept</RowAction>
-                        <RowAction variant="outline" disabled={actingId === p.id} onClick={() => runAction(rejectProposal, p.id)}>Reject</RowAction>
+                        <RowAction disabled={actingId === p.id} onClick={() => runAction(acceptProposal, p.id, 'Proposal accepted — generate a contract!')}>Accept</RowAction>
+                        <RowAction variant="outline" disabled={actingId === p.id} onClick={() => runAction(rejectProposal, p.id, 'Proposal marked as rejected.')}>Reject</RowAction>
                       </>
                     )}
-                    {p.status === 'accepted' && <RowAction disabled={actingId === p.id} onClick={() => runAction(createContract, p.id)}>Generate Contract</RowAction>}
+                    {p.status === 'accepted' && (
+                      contracts.some((c) => c.proposal_id === p.id) ? (
+                        <RowAction variant="outline" onClick={() => onNavigateTab?.('contracts')}>
+                          View in Contracts →
+                        </RowAction>
+                      ) : (
+                        <RowAction disabled={actingId === p.id} onClick={() => runAction(createContract, p.id, 'Contract generated — go to Contracts tab to sign!')}>
+                          Generate Contract
+                        </RowAction>
+                      )
+                    )}
                   </div>
                 </td>
               </tr>
@@ -1150,6 +1424,9 @@ function Proposals({ proposals, leads, accessToken, onRefresh }) {
 
 function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
   const [actingId, setActingId] = useState(null);
+  const [confirmId, setConfirmId] = useState(null);
+  const [toast, setToast] = useState({ msg: '', type: 'success' });
+  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 4000); };
 
   const describe = (proposalId) => {
     const proposal = proposals.find((p) => p.id === proposalId);
@@ -1159,38 +1436,75 @@ function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
   };
 
   const handleSign = async (contractId) => {
+    setConfirmId(null);
     setActingId(contractId);
     try {
       await signContract(accessToken, contractId, { client_signed: true, company_signed: true, provision_client_account: true });
+      showToast('Contract signed! Client account has been provisioned and a welcome email was sent.');
       onRefresh();
+    } catch (err) {
+      showToast(err?.message || 'Signing failed. Please try again.', 'error');
     } finally {
       setActingId(null);
     }
   };
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
-      <table className="w-full text-left">
-        <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
-          <tr><th className="px-stack-lg py-4">Deal</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Client Signed</th><th className="px-stack-lg py-4">Company Signed</th><th className="px-stack-lg py-4">Actions</th></tr>
-        </thead>
-        <tbody className="divide-y divide-slate-200">
-          {contracts.map((c) => (
-            <tr key={c.id} className="transition-colors hover:bg-blue-50">
-              <td className="px-stack-lg py-4 text-body-md text-slate-900">{describe(c.proposal_id)}</td>
-              <td className="px-stack-lg py-4"><StatusBadge variant={CONTRACT_STATUS_COLOR[c.status]}>{c.status}</StatusBadge></td>
-              <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.signed_by_client_at ? c.signed_by_client_at.slice(0, 10) : '—'}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.signed_by_company_at ? c.signed_by_company_at.slice(0, 10) : '—'}</td>
-              <td className="px-stack-lg py-4">
-                {c.status === 'pending' && <RowAction disabled={actingId === c.id} onClick={() => handleSign(c.id)}>Mark Signed</RowAction>}
-              </td>
-            </tr>
-          ))}
-          {!contracts.length && (
-            <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No contracts yet — generate one from an accepted proposal.</td></tr>
-          )}
-        </tbody>
-      </table>
+    <div className="space-y-stack-md">
+      {toast.msg && (
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.type === 'success' ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+        }`}>{toast.msg}</p>
+      )}
+
+      {/* Sign confirmation dialog */}
+      {confirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="mb-2 font-display text-headline-sm font-bold text-slate-900">Confirm Contract Signing</h3>
+            <p className="mb-1 text-body-sm text-slate-700">This will:</p>
+            <ul className="mb-5 ml-4 list-disc space-y-1 text-body-sm text-slate-600">
+              <li>Mark the contract as fully signed</li>
+              <li>Set the lead status to <strong>Converted</strong></li>
+              <li>Provision a client portal account (sends welcome email)</li>
+              <li>Notify the project manager to start onboarding</li>
+            </ul>
+            <div className="flex gap-3">
+              <Button variant="primary" size="md" onClick={() => handleSign(confirmId)} className="flex-1">Yes, Sign &amp; Provision</Button>
+              <Button variant="outline" size="md" onClick={() => setConfirmId(null)}>Cancel</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+        <table className="w-full text-left">
+          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+            <tr><th className="px-stack-lg py-4">Deal</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Client Signed</th><th className="px-stack-lg py-4">Company Signed</th><th className="px-stack-lg py-4">Actions</th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {contracts.map((c) => (
+              <tr key={c.id} className="transition-colors hover:bg-blue-50">
+                <td className="px-stack-lg py-4 text-body-md text-slate-900">{describe(c.proposal_id)}</td>
+                <td className="px-stack-lg py-4"><StatusBadge variant={CONTRACT_STATUS_COLOR[c.status]}>{c.status}</StatusBadge></td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.signed_by_client_at ? c.signed_by_client_at.slice(0, 10) : '—'}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.signed_by_company_at ? c.signed_by_company_at.slice(0, 10) : '—'}</td>
+                <td className="px-stack-lg py-4">
+                  {c.status === 'pending' && (
+                    <RowAction disabled={actingId === c.id} onClick={() => setConfirmId(c.id)}>
+                      {actingId === c.id ? 'Signing...' : 'Mark Signed'}
+                    </RowAction>
+                  )}
+                  {c.status === 'signed' && <span className="text-body-sm text-green-600 font-medium">✓ Signed</span>}
+                </td>
+              </tr>
+            ))}
+            {!contracts.length && (
+              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No contracts yet — generate one from an accepted proposal.</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -1688,36 +2002,133 @@ const APPLICATION_STATUS_COLOR = { applied: 'neutral', shortlisted: 'info', inte
 
 // ---------- Marketing ----------
 function MarketingLeadsView({ accessToken }) {
+  const [contacts, setContacts] = useState([]);
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [convertTarget, setConvertTarget] = useState(null);
+  const [toast, setToast] = useState({ msg: '', type: 'success' });
+  const [activeTab, setActiveTab] = useState('contacts'); // 'contacts' | 'leads'
+  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 3500); };
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!accessToken) { setLoading(false); return; }
-    fetchLeads(accessToken).then((r) => setLeads(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
+    setLoading(true);
+    Promise.allSettled([
+      apiRequest('/contact?status=in_progress&limit=100', { token: accessToken }),
+      fetchLeads(accessToken, { limit: 100 }),
+    ]).then(([cRes, lRes]) => {
+      if (cRes.status === 'fulfilled') setContacts(cRes.value?.data || []);
+      if (lRes.status === 'fulfilled') setLeads(lRes.value?.data || []);
+    }).finally(() => setLoading(false));
   }, [accessToken]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleConverted = async (sub) => {
+    setConvertTarget(null);
+    showToast(`${sub.name} successfully converted to a CRM lead!`);
+    load();
+  };
+
+  const statusColor = { new: 'neutral', in_progress: 'info', resolved: 'success', spam: 'error' };
+  const inProgressContacts = contacts.filter((c) => c.status === 'in_progress');
 
   if (loading) return <LoadingSpinner />;
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
-      <table className="w-full text-left">
-        <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
-          <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Est. Value</th></tr>
-        </thead>
-        <tbody className="divide-y divide-slate-200">
-          {leads.map((l) => (
-            <tr key={l.id} className="transition-colors hover:bg-blue-50">
-              <td className="px-stack-lg py-4">
-                <p className="text-body-md font-semibold text-slate-900">{l.company || '—'}</p>
-                <p className="text-body-sm text-slate-600">{l.contact_name}</p>
-              </td>
-              <td className="px-stack-lg py-4 text-body-sm capitalize text-slate-600">{l.source?.replace('_', ' ')}</td>
-              <td className="px-stack-lg py-4"><StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge></td>
-              <td className="px-stack-lg py-4 text-body-sm text-slate-900">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
-            </tr>
-          ))}
-          {!leads.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No leads yet.</td></tr>}
-        </tbody>
-      </table>
+    <div className="space-y-stack-md">
+      {toast.msg && (
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.type === 'success' ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+        }`}>{toast.msg}</p>
+      )}
+
+      {convertTarget && (
+        <SalesConvertModal
+          submission={convertTarget}
+          accessToken={accessToken}
+          onClose={() => setConvertTarget(null)}
+          onSuccess={() => handleConverted(convertTarget)}
+        />
+      )}
+
+      {/* Tab switcher */}
+      <div className="flex gap-1 border-b border-slate-200">
+        {[
+          { id: 'contacts', label: `Ready to Convert (${inProgressContacts.length})`, icon: 'person_add' },
+          { id: 'leads', label: `All Leads (${leads.length})`, icon: 'person_search' },
+        ].map((t) => (
+          <button key={t.id} onClick={() => setActiveTab(t.id)}
+            className={`flex items-center gap-2 border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
+              activeTab === t.id ? 'border-brand text-brand' : 'border-transparent text-slate-500 hover:text-slate-900'
+            }`}>
+            <Icon name={t.icon} className="text-base" />{t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'contacts' && (
+        <>
+          {!inProgressContacts.length ? (
+            <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+              <Icon name="inbox" className="mx-auto mb-3 text-4xl text-slate-300" />
+              <p className="text-body-md font-semibold text-slate-700">No contacts ready yet</p>
+              <p className="mt-1 text-body-sm text-slate-500">When admin marks a contact submission as &ldquo;In Progress&rdquo;, it will appear here for you to convert to a lead.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+              <table className="w-full text-left">
+                <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+                  <tr><th className="px-stack-lg py-4">Contact</th><th className="px-stack-lg py-4">Subject / Message</th><th className="px-stack-lg py-4">Company</th><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Action</th></tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {inProgressContacts.map((s) => (
+                    <tr key={s.id} className="transition-colors hover:bg-blue-50">
+                      <td className="px-stack-lg py-4">
+                        <p className="text-body-md font-semibold text-slate-900">{s.name}</p>
+                        <p className="text-body-sm text-slate-600">{s.email}</p>
+                        {s.phone && <p className="text-body-sm text-slate-400">{s.phone}</p>}
+                      </td>
+                      <td className="px-stack-lg py-4 max-w-xs">
+                        {s.subject && <p className="text-body-sm font-medium text-slate-700">{s.subject}</p>}
+                        <p className="line-clamp-2 text-body-sm text-slate-500">{s.message}</p>
+                      </td>
+                      <td className="px-stack-lg py-4 text-body-sm text-slate-600">{s.company || '—'}</td>
+                      <td className="px-stack-lg py-4 text-body-sm text-slate-500">{s.created_at?.slice(0, 10) || '—'}</td>
+                      <td className="px-stack-lg py-4">
+                        <RowAction onClick={() => setConvertTarget(s)}>Convert to Lead</RowAction>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+
+      {activeTab === 'leads' && (
+        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+          <table className="w-full text-left">
+            <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+              <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Est. Value</th></tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200">
+              {leads.map((l) => (
+                <tr key={l.id} className="transition-colors hover:bg-blue-50">
+                  <td className="px-stack-lg py-4">
+                    <p className="text-body-md font-semibold text-slate-900">{l.company || '—'}</p>
+                    <p className="text-body-sm text-slate-600">{l.contact_name}</p>
+                  </td>
+                  <td className="px-stack-lg py-4 text-body-sm capitalize text-slate-600">{l.source?.replace('_', ' ')}</td>
+                  <td className="px-stack-lg py-4"><StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge></td>
+                  <td className="px-stack-lg py-4 text-body-sm text-slate-900">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
+                </tr>
+              ))}
+              {!leads.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No leads yet — convert a contact to create the first one.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -1952,6 +2363,12 @@ function TeamProjects({ accessToken, userId }) {
   const [submitting, setSubmitting] = useState(false);
   const [assigningId, setAssigningId] = useState(null);
   const [teamSelection, setTeamSelection] = useState([]);
+  const [toast, setToast] = useState({ msg: '', type: 'success' });
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: '', type: 'success' }), 3500);
+  };
 
   const load = useCallback(() => {
     if (!accessToken || !userId) { setLoading(false); return; }
@@ -1986,20 +2403,44 @@ function TeamProjects({ accessToken, userId }) {
       });
       setForm({ title: '', client_id: '', budget: '', start_date: '', end_date: '' });
       setShowForm(false);
+      showToast('Project created successfully');
       load();
+    } catch (err) {
+      showToast(err?.message || 'Failed to create project', 'error');
     } finally {
       setSubmitting(false);
     }
   };
 
-  const startAssign = (project) => { setAssigningId(project.id); setTeamSelection([]); };
+  const startAssign = (project) => {
+    setAssigningId(project.id);
+    const currentMemberIds = (project.team || []).map((m) => m.id);
+    setTeamSelection(currentMemberIds);
+  };
+
   const toggleTeamMember = (id) => setTeamSelection((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  const submitAssign = async () => { await assignProjectTeam(accessToken, assigningId, teamSelection); setAssigningId(null); load(); };
+
+  const submitAssign = async () => {
+    try {
+      await assignProjectTeam(accessToken, assigningId, teamSelection);
+      showToast('Team is assigned');
+      setAssigningId(null);
+      load();
+    } catch (err) {
+      showToast(err?.message || 'Failed to assign team', 'error');
+    }
+  };
 
   if (loading) return <LoadingSpinner />;
 
   return (
     <div className="space-y-stack-md">
+      {toast.msg && (
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.type === 'success' ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+        }`}>{toast.msg}</p>
+      )}
+
       <div className="flex justify-end">
         <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Project</Button>
       </div>
@@ -2040,13 +2481,26 @@ function TeamProjects({ accessToken, userId }) {
               </div>
               <span className="w-10 text-right text-body-sm font-semibold text-slate-900">{p.progress_percent}%</span>
             </div>
+
+            {/* Display assigned team members if any */}
+            {(p.team && p.team.length > 0 && assigningId !== p.id) && (
+              <div className="mb-3 flex flex-wrap items-center gap-1.5">
+                <span className="font-label-caps text-body-xs uppercase text-slate-500 mr-1">Team:</span>
+                {p.team.map((m) => (
+                  <span key={m.id} className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-body-xs font-medium text-blue-700 border border-blue-200">
+                    {m.employee_code || 'EMP'}{m.designation ? ` · ${m.designation}` : ''}
+                  </span>
+                ))}
+              </div>
+            )}
+
             {assigningId === p.id ? (
-              <div className="space-y-2 border-t border-slate-200 pt-3">
+              <div className="space-y-3 border-t border-slate-200 pt-3">
                 <p className="font-label-caps text-label-caps uppercase text-slate-600">Select team members</p>
                 <div className="flex flex-wrap gap-2">
                   {employees.map((emp) => (
                     <button key={emp.id} type="button" onClick={() => toggleTeamMember(emp.id)}
-                      className={`rounded border px-3 py-1.5 text-body-sm transition-colors ${teamSelection.includes(emp.id) ? 'border-brand bg-brand text-white' : 'border-slate-200 text-slate-600 hover:border-brand'}`}>
+                      className={`rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${teamSelection.includes(emp.id) ? 'border-brand bg-brand text-white shadow-sm' : 'border-slate-200 bg-white text-slate-700 hover:border-brand'}`}>
                       {emp.employee_code}{emp.designation ? ` · ${emp.designation}` : ''}
                     </button>
                   ))}
@@ -2057,7 +2511,9 @@ function TeamProjects({ accessToken, userId }) {
                 </div>
               </div>
             ) : (
-              <RowAction onClick={() => startAssign(p)}>Assign Team</RowAction>
+              <RowAction onClick={() => startAssign(p)}>
+                {p.team && p.team.length > 0 ? 'Edit Team' : 'Assign Team'}
+              </RowAction>
             )}
           </div>
         ))}
@@ -2069,41 +2525,64 @@ function TeamProjects({ accessToken, userId }) {
 
 function TaskBoard({ accessToken, userId }) {
   const [projects, setProjects] = useState([]);
+  const [employees, setEmployees] = useState([]);
   const [selectedProject, setSelectedProject] = useState('');
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: '', priority: 'medium', due_date: '' });
+  const [form, setForm] = useState({ title: '', priority: 'medium', due_date: '', assigned_to: '' });
   const [submitting, setSubmitting] = useState(false);
   const [savingId, setSavingId] = useState(null);
+  const [toast, setToast] = useState({ msg: '', type: 'success' });
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: '', type: 'success' }), 3500);
+  };
 
   useEffect(() => {
     if (!accessToken || !userId) { setLoading(false); return; }
-    fetchAdminProjects(accessToken, { project_manager_id: userId }).then((r) => {
-      const items = r?.data || [];
-      setProjects(items);
-      setSelectedProject((prev) => prev || items[0]?.id || '');
+    Promise.allSettled([
+      fetchAdminProjects(accessToken, { project_manager_id: userId }),
+      fetchEmployees(accessToken, { limit: 100 }),
+    ]).then(([pRes, eRes]) => {
+      const pItems = pRes.status === 'fulfilled' ? pRes.value?.data || [] : [];
+      const eItems = eRes.status === 'fulfilled' ? eRes.value?.data || [] : [];
+      setProjects(pItems);
+      setEmployees(eItems);
+      setSelectedProject((prev) => prev || pItems[0]?.id || '');
     }).catch(() => {});
-     
   }, [accessToken, userId]);
 
   const loadTasks = useCallback(() => {
     if (!accessToken || !selectedProject) { setLoading(false); return; }
     setLoading(true);
-    fetchTasks(accessToken, { project_id: selectedProject, limit: 100 }).then((r) => setTasks(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
+    fetchTasks(accessToken, { project_id: selectedProject, limit: 100 })
+      .then((r) => setTasks(r?.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [accessToken, selectedProject]);
 
-  useEffect(() => { loadTasks();   }, [loadTasks]);
+  useEffect(() => { loadTasks(); }, [loadTasks]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
     if (!form.title || !selectedProject) return;
     setSubmitting(true);
     try {
-      await createTask(accessToken, { project_id: selectedProject, title: form.title, priority: form.priority, due_date: form.due_date || null });
-      setForm({ title: '', priority: 'medium', due_date: '' });
+      await createTask(accessToken, {
+        project_id: selectedProject,
+        title: form.title,
+        priority: form.priority,
+        assigned_to: form.assigned_to || null,
+        due_date: form.due_date || null,
+      });
+      setForm({ title: '', priority: 'medium', due_date: '', assigned_to: '' });
       setShowForm(false);
+      showToast('Task created successfully');
       loadTasks();
+    } catch (err) {
+      showToast(err?.message || 'Failed to create task', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -2111,25 +2590,61 @@ function TaskBoard({ accessToken, userId }) {
 
   const changeStatus = async (taskId, status) => {
     setSavingId(taskId);
-    try { await updateTaskStatus(accessToken, taskId, status); loadTasks(); } finally { setSavingId(null); }
+    try {
+      await updateTaskStatus(accessToken, taskId, status);
+      showToast(`Task moved to ${status.replace('_', ' ')}`);
+      loadTasks();
+    } catch (err) {
+      showToast(err?.message || 'Failed to update task', 'error');
+    } finally {
+      setSavingId(null);
+    }
   };
+
+  const assigneeLabel = (assignedUserId) => {
+    if (!assignedUserId) return null;
+    const emp = employees.find((e) => e.user_id === assignedUserId);
+    return emp ? `${emp.employee_code}${emp.designation ? ` · ${emp.designation}` : ''}` : 'Assigned';
+  };
+
+  const activeProjectTitle = projects.find((p) => p.id === selectedProject)?.title || 'Project';
 
   return (
     <div className="space-y-stack-md">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className={FORM_INPUT_CLASS}>
-          {!projects.length && <option value="">No projects</option>}
-          {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
-        </select>
-        <Button variant="primary" size="md" icon={<Icon name="add" />} disabled={!selectedProject} onClick={() => setShowForm((v) => !v)}>New Task</Button>
+      {toast.msg && (
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.type === 'success' ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+        }`}>{toast.msg}</p>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <span className="font-label-caps text-label-caps uppercase text-slate-500">Project:</span>
+          <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-body-md font-semibold text-slate-900 focus:border-brand focus:outline-none">
+            {!projects.length && <option value="">No projects</option>}
+            {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+          </select>
+        </div>
+        <Button variant="primary" size="md" icon={<Icon name="add" />} disabled={!selectedProject} onClick={() => setShowForm((v) => !v)}>
+          New Task
+        </Button>
       </div>
 
       {showForm && (
         <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <input required type="text" placeholder="Task title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={FORM_INPUT_CLASS} />
+          <h4 className="font-display text-body-lg font-bold text-slate-900">Add Task to {activeProjectTitle}</h4>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="sm:col-span-2">
+              <input required type="text" placeholder="Task title *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={FORM_INPUT_CLASS} />
+            </div>
+            <select value={form.assigned_to} onChange={(e) => setForm({ ...form, assigned_to: e.target.value })} className={FORM_INPUT_CLASS}>
+              <option value="">Unassigned</option>
+              {employees.filter((e) => e.user_id).map((e) => (
+                <option key={e.id} value={e.user_id}>{e.employee_code} — {e.designation || 'Team Member'}</option>
+              ))}
+            </select>
             <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className={FORM_INPUT_CLASS}>
-              {['low', 'medium', 'high', 'urgent'].map((p) => <option key={p} value={p}>{p}</option>)}
+              {['low', 'medium', 'high', 'urgent'].map((p) => <option key={p} value={p}>Priority: {p.toUpperCase()}</option>)}
             </select>
             <input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className={FORM_INPUT_CLASS} />
           </div>
@@ -2141,22 +2656,55 @@ function TaskBoard({ accessToken, userId }) {
       )}
 
       {loading ? <LoadingSpinner /> : (
-        <div className="grid gap-gutter md:grid-cols-5">
-          {TASK_STATUS_COLUMNS.map((col) => (
-            <div key={col} className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-              <p className="font-label-caps text-label-caps uppercase text-slate-900">{col.replace('_', ' ')} ({tasks.filter((t) => t.status === col).length})</p>
-              {tasks.filter((t) => t.status === col).map((t) => (
-                <div key={t.id} className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <p className="text-body-sm font-semibold text-slate-900">{t.title}</p>
-                  <StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
-                  <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
-                    className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-body-sm text-slate-900">
-                    {TASK_STATUS_COLUMNS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                  </select>
+        <div className="grid gap-gutter md:grid-cols-4">
+          {TASK_STATUS_COLUMNS.filter((c) => c !== 'blocked').map((col) => {
+            const colTasks = tasks.filter((t) => t.status === col);
+            return (
+              <div key={col} className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <p className="font-label-caps text-label-caps font-bold uppercase text-slate-800">
+                    {col.replace('_', ' ')}
+                  </p>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-body-xs font-semibold text-slate-600">{colTasks.length}</span>
                 </div>
-              ))}
-            </div>
-          ))}
+                <div className="space-y-2.5">
+                  {colTasks.map((t) => (
+                    <div key={t.id} className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3.5 shadow-sm transition-all hover:border-slate-300 hover:shadow">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-body-sm font-semibold text-slate-900 leading-snug">{t.title}</p>
+                        <StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
+                      </div>
+                      {assigneeLabel(t.assigned_to) && (
+                        <p className="flex items-center gap-1 text-body-xs text-slate-500">
+                          <Icon name="person" className="text-xs text-slate-400" />
+                          <span>{assigneeLabel(t.assigned_to)}</span>
+                        </p>
+                      )}
+                      {t.due_date && (
+                        <p className="flex items-center gap-1 text-body-xs text-slate-400">
+                          <Icon name="event" className="text-xs" />
+                          <span>Due: {t.due_date}</span>
+                        </p>
+                      )}
+                      <div className="pt-1">
+                        <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
+                          className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-body-xs font-medium text-slate-700 focus:border-brand focus:outline-none">
+                          {TASK_STATUS_COLUMNS.filter((c) => c !== 'blocked').map((s) => (
+                            <option key={s} value={s}>Move to: {s.replace('_', ' ').toUpperCase()}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                  {!colTasks.length && (
+                    <div className="rounded-lg border border-dashed border-slate-200 py-6 text-center text-body-xs text-slate-400">
+                      No tasks
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -3005,9 +3553,10 @@ const normalizeTasks = (arr) => (arr || []).map((t) => ({
   priority: t.priority, status: t.status, due: t.due_date ?? t.due ?? '—',
 }));
 
-const normalizeEmpProjects = (arr) => (arr || []).map((p) => ({
+const normalizeEmpProjects = (arr, pmUserId) => (arr || []).map((p) => ({
   id: p.id, title: p.title,
-  role: p.role ?? 'Member', status: p.status,
+  role: p.project_manager_id === pmUserId ? 'Project Manager' : (p.role ?? 'Team Member'),
+  status: p.status,
   progress: p.progress_percent ?? p.progress ?? 0,
   deadline: p.end_date ?? p.deadline ?? '—',
 }));
@@ -3130,12 +3679,13 @@ export default function EmployeePortal() {
         department: p.department_name || p.department_id,
         status: p.status,
       });
+      const isPM = realRole === 'project_manager' || realRole === 'admin';
       Promise.allSettled([
         apiRequest(`/employees/me/attendance/today`, { token: accessToken }),
         apiRequest(`/employees/me/leaves`, { token: accessToken }),
         apiRequest(`/employees/me/timesheets`, { token: accessToken }),
         apiRequest(`/tasks?assigned_to=${p.user_id}&limit=50`, { token: accessToken }),
-        apiRequest(`/projects?employee_id=${p.id}&limit=50`, { token: accessToken }),
+        apiRequest(isPM ? `/projects?project_manager_id=${p.user_id}&limit=50` : `/projects?employee_id=${p.id}&limit=50`, { token: accessToken }),
       ]).then(([attRes, lvRes, tsRes, taskRes, projRes]) => {
         if (attRes.status === 'fulfilled' && attRes.value?.data) {
           const a = attRes.value.data;
@@ -3144,7 +3694,7 @@ export default function EmployeePortal() {
         if (lvRes.status === 'fulfilled') setLeaves(normalizeLeaves(lvRes.value?.data));
         if (tsRes.status === 'fulfilled') setTimesheets(normalizeTimesheets(tsRes.value?.data));
         if (taskRes.status === 'fulfilled') setTasks(normalizeTasks(taskRes.value?.data));
-        if (projRes.status === 'fulfilled') setProjects(normalizeEmpProjects(projRes.value?.data));
+        if (projRes.status === 'fulfilled') setProjects(normalizeEmpProjects(projRes.value?.data, p.user_id));
       });
     };
 
@@ -3236,13 +3786,14 @@ export default function EmployeePortal() {
 
           <div className="min-w-0 flex-1 overflow-y-auto px-margin-mobile py-stack-lg md:px-margin-desktop">
             {activeTab === 'overview' && <Overview profile={profile} attendance={attendance} leaves={leaves} timesheets={timesheets} payslips={payslips} />}
-             {activeTab === 'crm-dashboard' && effectiveRole === 'sales' && <CrmDashboard leads={leadsData} proposals={proposalsData} contracts={contractsData} />}
-             {activeTab === 'leads' && effectiveRole === 'sales' && <Leads leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-             {activeTab === 'clients' && effectiveRole === 'sales' && <SalesClients clients={clientsData} />}
-             {activeTab === 'proposals' && effectiveRole === 'sales' && <Proposals proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-             {activeTab === 'contracts' && effectiveRole === 'sales' && <Contracts contracts={contractsData} proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-             {activeTab === 'meetings' && effectiveRole === 'sales' && <SalesMeetings meetings={meetingsData} clients={clientsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-             {activeTab === 'reports' && effectiveRole === 'sales' && <SalesReports leads={leadsData} proposals={proposalsData} contracts={contractsData} />}
+            {activeTab === 'crm-dashboard' && effectiveRole === 'sales' && <CrmDashboard leads={leadsData} proposals={proposalsData} contracts={contractsData} />}
+            {activeTab === 'contact-submissions' && effectiveRole === 'sales' && <ContactSubmissionsView accessToken={accessToken} onLeadCreated={refreshCrm} />}
+            {activeTab === 'leads' && effectiveRole === 'sales' && <Leads leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+            {activeTab === 'clients' && effectiveRole === 'sales' && <SalesClients clients={clientsData} />}
+            {activeTab === 'proposals' && effectiveRole === 'sales' && <Proposals proposals={proposalsData} leads={leadsData} contracts={contractsData} accessToken={accessToken} onRefresh={refreshCrm} onNavigateTab={setActiveTab} />}
+            {activeTab === 'contracts' && effectiveRole === 'sales' && <Contracts contracts={contractsData} proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+            {activeTab === 'meetings' && effectiveRole === 'sales' && <SalesMeetings meetings={meetingsData} clients={clientsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+            {activeTab === 'reports' && effectiveRole === 'sales' && <SalesReports leads={leadsData} proposals={proposalsData} contracts={contractsData} />}
             {activeTab === 'marketing-leads' && effectiveRole === 'marketing' && <MarketingLeadsView accessToken={accessToken} />}
             {activeTab === 'testimonials' && effectiveRole === 'marketing' && <TestimonialModeration accessToken={accessToken} />}
             {activeTab === 'team-projects' && effectiveRole === 'project_manager' && <TeamProjects accessToken={accessToken} userId={user?.id} />}
@@ -3256,12 +3807,13 @@ export default function EmployeePortal() {
             {activeTab === 'attendance' && <Attendance attendance={attendance} accessToken={accessToken} onChange={setAttendance} />}
             {activeTab === 'leaves' && <Leaves leaves={leaves} accessToken={accessToken} />}
             {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} accessToken={accessToken} />}
-            {activeTab === 'payslips' && <Payslips payslips={payslips} />}
+            {activeTab === 'payslips' && <Payslips payslips={payslips} profile={profile} />}
             {activeTab === 'tasks' && <Tasks tasks={tasks} />}
             {activeTab === 'projects' && <Projects projects={projects} />}
             {activeTab === 'performance' && <Performance reviews={performance} />}
             {activeTab === 'training' && <Training courses={training} catalog={catalog} onEnroll={handleEnroll} enrollingId={enrollingId} />}
-            {activeTab === 'documents' && <Documents docs={documents} />}
+            {activeTab === 'documents' && <Documents docs={documents} profile={profile} />}
+
           </div>
         </div>
       </div>

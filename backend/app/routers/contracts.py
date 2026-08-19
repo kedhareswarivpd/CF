@@ -25,7 +25,7 @@ from app.services.supabase_client import get_admin_client, get_anon_client
 from app.utils.pagination import PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
-router = APIRouter(prefix="/contracts", tags=["CRM — Contracts"], dependencies=[Depends(require_roles("sales", "admin"))])
+router = APIRouter(prefix="/contracts", tags=["CRM — Contracts"], dependencies=[Depends(require_roles("sales", "admin", "project_manager", "marketing"))])
 
 crud = CRUDBase(Contract)
 lead_crud = CRUDBase(Lead)
@@ -47,17 +47,34 @@ async def create_contract(payload: ContractCreate, db: AsyncSession = Depends(ge
     if proposal.status != ProposalStatus.accepted:
         raise ApiError.bad_request("A contract can only be generated from an accepted proposal")
 
-    contract = await crud.create(db, payload.model_dump())
+    # Check if a contract for this proposal already exists — return it gracefully (idempotent)
+    existing = (await db.execute(select(Contract).where(Contract.proposal_id == payload.proposal_id))).scalar_one_or_none()
+    if existing:
+        return success_response(
+            data=ContractOut.model_validate(existing),
+            message="Contract already exists for this proposal",
+            status_code=200,
+        )
+
+    try:
+        contract = await crud.create(db, payload.model_dump())
+    except Exception as exc:
+        logger.exception("Failed to create contract for proposal %s: %s", payload.proposal_id, exc)
+        raise ApiError.bad_request("Could not draft contract. Please verify proposal details and try again.") from exc
+
     return success_response(data=ContractOut.model_validate(contract), message="Contract drafted", status_code=201)
 
 
-async def _provision_client_account(db: AsyncSession, lead: Lead) -> Client:
+async def _provision_client_account(db: AsyncSession, lead: Lead) -> Client | None:
     """Creates the Supabase auth user + local User/Client rows for a newly-won lead, or reuses an existing account with that email."""
+    from app.models.employee import Employee
+
     existing_user = (await db.execute(select(User).where(User.email == lead.email))).scalar_one_or_none()
 
     if existing_user is None:
         admin = get_admin_client()
         temp_password = secrets.token_urlsafe(18)
+        supabase_user_id = None
         try:
             auth_response = await run_in_threadpool(
                 admin.auth.admin.create_user,
@@ -68,38 +85,57 @@ async def _provision_client_account(db: AsyncSession, lead: Lead) -> Client:
                     "user_metadata": {"name": lead.contact_name, "role": "client"},
                 },
             )
+            supabase_user_id = uuid.UUID(auth_response.user.id)
         except Exception as exc:  # noqa: BLE001
-            raise ApiError.bad_request(f"Could not provision the client's Supabase account: {exc}") from exc
+            # If user already registered in Supabase auth, find their ID
+            try:
+                users_list = await run_in_threadpool(admin.auth.admin.list_users)
+                matching = [u for u in (users_list or []) if u.email == lead.email]
+                if matching:
+                    supabase_user_id = uuid.UUID(matching[0].id)
+                else:
+                    logger.warning("Could not create or find Supabase auth user for %s: %s", lead.email, exc)
+            except Exception:
+                logger.warning("Failed to lookup existing Supabase user for %s", lead.email)
 
-        existing_user = User(
-            id=uuid.UUID(auth_response.user.id),
-            name=lead.contact_name,
-            email=lead.email,
-            phone=lead.phone,
-            role="client",
-            is_active=True,
-            is_email_verified=True,
-        )
-        db.add(existing_user)
-        await db.commit()
-        await db.refresh(existing_user)
+        if supabase_user_id:
+            existing_user = User(
+                id=supabase_user_id,
+                name=lead.contact_name,
+                email=lead.email,
+                phone=lead.phone,
+                role="client",
+                is_active=True,
+                is_email_verified=True,
+            )
+            db.add(existing_user)
+            await db.commit()
+            await db.refresh(existing_user)
 
-        anon = get_anon_client()
-        try:
-            await run_in_threadpool(anon.auth.reset_password_for_email, lead.email, {})
-        except Exception:  # noqa: BLE001 — account is already usable via admin reset if this fails
-            pass
-        try:
-            await send_welcome_email(lead.contact_name, lead.email)
-        except Exception:  # noqa: BLE001
-            pass
+            anon = get_anon_client()
+            try:
+                await run_in_threadpool(anon.auth.reset_password_for_email, lead.email, {})
+            except Exception:  # noqa: BLE001 — account is already usable via admin reset if this fails
+                pass
+            try:
+                await send_welcome_email(lead.contact_name, lead.email)
+            except Exception:  # noqa: BLE001
+                pass
+
+    if existing_user is None:
+        return None
+
+    # Map lead.owner_id (User.id) to Employee.id because Client.account_manager_id references employees.id
+    account_mgr_employee = None
+    if lead.owner_id:
+        account_mgr_employee = (await db.execute(select(Employee).where(Employee.user_id == lead.owner_id))).scalar_one_or_none()
 
     client = (await db.execute(select(Client).where(Client.user_id == existing_user.id))).scalar_one_or_none()
     if client is None:
         client = Client(
             user_id=existing_user.id,
             company_name=lead.company,
-            account_manager_id=lead.owner_id,
+            account_manager_id=account_mgr_employee.id if account_mgr_employee else None,
         )
         db.add(client)
         await db.commit()
@@ -112,7 +148,7 @@ async def _provision_client_account(db: AsyncSession, lead: Lead) -> Client:
 async def sign_contract(contract_id: uuid.UUID, payload: ContractSign, db: AsyncSession = Depends(get_db)):
     contract = await crud.get(db, contract_id)
     if contract.status == ContractStatus.signed:
-        raise ApiError.bad_request("Contract is already signed")
+        return success_response(data=ContractOut.model_validate(contract), message="Contract is already signed")
 
     now = datetime.now(timezone.utc)
     update_data = {}
@@ -134,8 +170,6 @@ async def sign_contract(contract_id: uuid.UUID, payload: ContractSign, db: Async
             if payload.provision_client_account:
                 try:
                     client = await _provision_client_account(db, lead)
-                except ApiError:
-                    raise
                 except Exception as exc:  # noqa: BLE001 — contract stays signed even if account provisioning has an issue
                     logger.error(f"Client account provisioning failed for lead {lead.id}: {exc}")
 

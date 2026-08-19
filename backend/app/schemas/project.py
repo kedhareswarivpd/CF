@@ -47,6 +47,16 @@ class ProjectUpdate(BaseModel):
     is_published: bool | None = None
 
 
+class ProjectMemberOut(BaseModel):
+    id: uuid.UUID
+    employee_code: str | None = None
+    designation: str | None = None
+    user_id: uuid.UUID | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class ProjectOut(TimestampedRead):
     title: str
     slug: str
@@ -66,7 +76,9 @@ class ProjectOut(TimestampedRead):
     video_url: str | None = None
     is_featured: bool
     is_published: bool
+    team: list[ProjectMemberOut] = []
 
 
 class AssignTeamRequest(BaseModel):
     employee_ids: list[uuid.UUID] = []
+

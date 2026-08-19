@@ -849,11 +849,19 @@ export default function ClientPortal() {
       fetchMyProjects(accessToken).then((res) => res?.data),
       fetchMyInvoices(accessToken).then((res) => res?.data),
       fetchMyTickets(accessToken).then((res) => res?.data),
-    ]).then(([p, pr, inv, t]) => {
+      fetchMyPayments(accessToken).then((res) => res?.data),
+      fetchMyMeetings(accessToken).then((res) => res?.data),
+      fetchMyFiles(accessToken).then((res) => res?.data),
+      fetchMyReports(accessToken).then((res) => res?.data),
+    ]).then(([p, pr, inv, t, pay, m, f, r]) => {
       if (p.status === 'fulfilled' && p.value) setProfile(p.value);
       if (pr.status === 'fulfilled' && pr.value) setProjects(normalizeProjects(pr.value));
       if (inv.status === 'fulfilled' && inv.value) setInvoices(normalizeInvoices(inv.value));
       if (t.status === 'fulfilled' && t.value) setTickets(normalizeTickets(t.value));
+      if (pay.status === 'fulfilled' && pay.value) setPayments(normalizePayments(pay.value));
+      if (m.status === 'fulfilled' && m.value) setMeetings(normalizeMeetings(m.value));
+      if (f.status === 'fulfilled' && f.value) setFiles(normalizeFiles(f.value));
+      if (r.status === 'fulfilled' && r.value) setReports(normalizeReports(r.value));
     }).finally(() => { initialLoadDone.current = true; setLoading(false); });
   }, [user, accessToken]);
 

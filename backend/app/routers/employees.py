@@ -276,5 +276,16 @@ async def list_employees(request: Request, db: AsyncSession = Depends(get_db), p
 
 @router.post("", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr"))])
 async def create_employee(payload: EmployeeCreate, db: AsyncSession = Depends(get_db)):
-    employee = await crud.create(db, payload.model_dump())
+    data = payload.model_dump(exclude_unset=True)
+    user_id = data.get("user_id")
+    if user_id:
+        existing = (await db.execute(select(Employee).where(Employee.user_id == user_id))).scalar_one_or_none()
+        if existing:
+            for k, v in data.items():
+                setattr(existing, k, v)
+            await db.commit()
+            await db.refresh(existing)
+            return success_response(data=EmployeeOut.model_validate(existing), message="Employee profile updated successfully", status_code=201)
+    employee = await crud.create(db, data)
     return success_response(data=EmployeeOut.model_validate(employee), message="Employee created successfully", status_code=201)
+

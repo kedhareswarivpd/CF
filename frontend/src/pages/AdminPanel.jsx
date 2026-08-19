@@ -19,11 +19,120 @@ import {
   fetchAuditLogs,
   fetchEmployees, fetchClients,
   fetchDashboardOverview, fetchProjectStatusBreakdown as fetchProjectStatusBreakdownApi,
+  fetchContactSubmissions, updateContactStatus,
 } from '../api/admin.js';
+import { createLead } from '../api/crm.js';
 
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import ContentManager from '../components/admin/ContentManager.jsx';
 import { FORM_INPUT_CLASS } from '../components/ui/formClasses.js';
+
+// ── Toast notification system ────────────────────────────────────────────────
+function Toast({ toasts }) {
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className={`flex items-center gap-3 rounded-xl px-4 py-3 shadow-lg text-body-sm font-medium animate-fade-in pointer-events-auto
+            ${t.type === 'success' ? 'bg-status-success-bg text-status-success-text' : 'bg-status-error-bg text-status-error-text'}`}
+        >
+          <Icon name={t.type === 'success' ? 'check_circle' : 'error'} className="text-lg flex-shrink-0" />
+          {t.message}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function useToast() {
+  const [toasts, setToasts] = useState([]);
+  const add = (message, type = 'success') => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
+  };
+  return { toasts, toast: add };
+}
+
+// ── Convert-to-Lead modal ────────────────────────────────────────────────────
+function ConvertToLeadModal({ submission, accessToken, onClose, onSuccess }) {
+  const [estimatedValue, setEstimatedValue] = useState('');
+  const [notes, setNotes] = useState(submission.message || '');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleConvert = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      await createLead(accessToken, {
+        contact_name: submission.name,
+        email: submission.email,
+        phone: submission.phone || null,
+        company: submission.company || null,
+        source: 'contact_form',
+        contact_submission_id: submission.id,
+        estimated_value: estimatedValue ? Number(estimatedValue) : null,
+        notes: notes || null,
+      });
+      onSuccess();
+    } catch (err) {
+      setError(err.message || 'Could not convert to lead.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="w-full max-w-md rounded-2xl border border-outline-variant bg-white p-6 shadow-2xl dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="mb-5 flex items-start justify-between">
+          <div>
+            <h2 className="font-display text-headline-sm font-bold text-brand-dark dark:text-dark-brand">Convert to Lead</h2>
+            <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">Create a CRM lead from this contact submission</p>
+          </div>
+          <button onClick={onClose} className="text-ink-muted hover:text-ink dark:text-dark-ink-muted"><Icon name="close" className="text-xl" /></button>
+        </div>
+
+        {/* Pre-filled read-only summary */}
+        <div className="mb-5 rounded-lg bg-surface-container p-4 space-y-1 dark:bg-dark-surface-container">
+          <p className="text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{submission.name}</p>
+          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{submission.email}</p>
+          {submission.phone && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{submission.phone}</p>}
+          {submission.company && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{submission.company}</p>}
+        </div>
+
+        <form onSubmit={handleConvert} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-body-sm font-medium text-ink dark:text-dark-ink">Estimated Value (USD)</label>
+            <input
+              type="number" min="0" step="0.01" placeholder="e.g. 5000"
+              value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)}
+              className={FORM_INPUT_CLASS + ' w-full'}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-body-sm font-medium text-ink dark:text-dark-ink">Notes</label>
+            <textarea
+              rows={3} placeholder="Internal notes about this lead..."
+              value={notes} onChange={(e) => setNotes(e.target.value)}
+              className={FORM_INPUT_CLASS + ' w-full resize-none'}
+            />
+          </div>
+          {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
+          <div className="flex gap-3 pt-1">
+            <Button type="submit" variant="primary" size="md" disabled={submitting} className="flex-1">
+              {submitting ? 'Converting...' : 'Convert to Lead'}
+            </Button>
+            <Button type="button" variant="outline" size="md" onClick={onClose}>Cancel</Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken, setActiveTab }) {
   const kpis = propKpis || { total_employees: 0, total_clients: 0, total_projects: 0, active_projects: 0, open_tasks: 0, total_revenue: 0, open_tickets: 0, new_applications: 0, unresolved_contacts: 0, published_blogs: 0 };
@@ -1104,6 +1213,213 @@ function ReportsManagement({ accessToken }) {
   );
 }
 
+// ── Contact Submissions ─────────────────────────────────────────────────────
+
+const CONTACT_STATUS_OPTIONS = [
+  { value: 'new', label: 'New', variant: 'info' },
+  { value: 'in_progress', label: 'In Progress', variant: 'warning' },
+  { value: 'resolved', label: 'Resolved', variant: 'success' },
+  { value: 'spam', label: 'Spam', variant: 'error' },
+];
+
+function ContactsManagement({ accessToken }) {
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [convertTarget, setConvertTarget] = useState(null);
+  const { toasts, toast } = useToast();
+
+  const load = useCallback(() => {
+    if (!accessToken) { setLoading(false); return; }
+    setLoading(true);
+    const start = Date.now();
+    const params = { limit: 100 };
+    if (statusFilter !== 'all') params.status = statusFilter;
+    fetchContactSubmissions(accessToken, params)
+      .then((res) => setSubmissions(res?.data || []))
+      .catch(() => setSubmissions([]))
+      .finally(() => {
+        const elapsed = Date.now() - start;
+        const remaining = 500 - elapsed;
+        if (remaining > 0) {
+          setTimeout(() => setLoading(false), remaining);
+        } else {
+          setLoading(false);
+        }
+      });
+  }, [accessToken, statusFilter]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const markAsResolved = async (submission) => {
+    try {
+      await updateContactStatus(accessToken, submission.id, 'resolved');
+      toast('Marked as resolved');
+      load();
+    } catch { toast('Failed to update status', 'error'); }
+  };
+
+  const markAsInProgress = async (submission) => {
+    try {
+      await updateContactStatus(accessToken, submission.id, 'in_progress');
+      toast('Marked as in progress');
+      load();
+    } catch { toast('Failed to update status', 'error'); }
+  };
+
+  const markAsSpam = async (submission) => {
+    try {
+      await updateContactStatus(accessToken, submission.id, 'spam');
+      toast('Marked as spam');
+      load();
+    } catch { toast('Failed to update status', 'error'); }
+  };
+
+  const handleLeadConverted = async (submission) => {
+    setConvertTarget(null);
+    toast(`${submission.name} converted to lead successfully!`);
+    // Also mark as in_progress so the contact shows follow-up is happening
+    try { await updateContactStatus(accessToken, submission.id, 'in_progress'); } catch { /* non-critical */ }
+    load();
+  };
+
+  const newCount = submissions.filter((s) => s.status === 'new').length;
+
+  return (
+    <div className="space-y-stack-lg">
+      <Toast toasts={toasts} />
+      {convertTarget && (
+        <ConvertToLeadModal
+          submission={convertTarget}
+          accessToken={accessToken}
+          onClose={() => setConvertTarget(null)}
+          onSuccess={() => handleLeadConverted(convertTarget)}
+        />
+      )}
+      <div className="rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+          <div className="flex items-center gap-4">
+            <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Contact Submissions</h3>
+            {newCount > 0 && (
+              <span className="rounded-full bg-status-info-text/10 px-2.5 py-0.5 text-xs font-medium text-status-info-text">
+                {newCount} new
+              </span>
+            )}
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded border border-outline-variant dark:border-dark-outline-variant bg-white dark:bg-dark-surface px-3 py-1.5 text-body-sm text-ink dark:text-dark-ink focus:outline-none focus:ring-2 focus:ring-brand/40"
+          >
+            <option value="all">All Statuses</option>
+            <option value="new">New</option>
+            <option value="in_progress">In Progress</option>
+            <option value="resolved">Resolved</option>
+            <option value="spam">Spam</option>
+          </select>
+        </div>
+
+        {loading ? (
+          <div className="p-stack-lg"><LoadingSpinner /></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+                <tr>
+                  <th className="px-stack-lg py-4">Name</th>
+                  <th className="px-stack-lg py-4">Email</th>
+                  <th className="px-stack-lg py-4">Phone</th>
+                  <th className="px-stack-lg py-4">Company</th>
+                  <th className="px-stack-lg py-4">Department</th>
+                  <th className="px-stack-lg py-4">Subject</th>
+                  <th className="px-stack-lg py-4">Message</th>
+                  <th className="px-stack-lg py-4">Status</th>
+                  <th className="px-stack-lg py-4">Submitted</th>
+                  <th className="px-stack-lg py-4">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+                {submissions.map((s) => (
+                  <tr key={s.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
+                    <td className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-dark-brand">{s.name}</td>
+                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.email}</td>
+                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.phone || '—'}</td>
+                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.company || '—'}</td>
+                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.department?.replace('_', ' ') || '—'}</td>
+                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.subject || '—'}</td>
+                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted max-w-xs truncate">{s.message}</td>
+                    <td className="px-stack-lg py-4">
+                      <StatusBadge variant={CONTACT_STATUS_OPTIONS.find((o) => o.value === s.status)?.variant || 'neutral'}>
+                        {s.status?.replace('_', ' ') || 'new'}
+                      </StatusBadge>
+                    </td>
+                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">
+                      {s.created_at ? new Date(s.created_at).toLocaleString() : '—'}
+                    </td>
+                    <td className="px-stack-lg py-4">
+                      <div className="flex items-center gap-1">
+                        {/* Convert to Lead */}
+                        {s.status !== 'spam' && (
+                          <button
+                            onClick={() => setConvertTarget(s)}
+                            className="rounded p-1 text-ink-muted transition-colors hover:bg-blue-50 hover:text-brand dark:text-dark-ink-muted dark:hover:bg-blue-900/30"
+                            title="Convert to Lead"
+                          >
+                            <Icon name="person_add" />
+                          </button>
+                        )}
+                        {/* Mark in progress */}
+                        {s.status !== 'in_progress' && s.status !== 'resolved' && (
+                          <button
+                            onClick={() => markAsInProgress(s)}
+                            className="rounded p-1 text-ink-muted transition-colors hover:bg-surface-container hover:text-status-info-text dark:text-dark-ink-muted"
+                            title="Mark in progress"
+                          >
+                            <Icon name="schedule" />
+                          </button>
+                        )}
+                        {/* Mark resolved */}
+                        {s.status !== 'resolved' && s.status !== 'spam' && (
+                          <button
+                            onClick={() => markAsResolved(s)}
+                            className="rounded p-1 text-ink-muted transition-colors hover:bg-surface-container hover:text-status-success-text dark:text-dark-ink-muted"
+                            title="Mark resolved"
+                          >
+                            <Icon name="check_circle" />
+                          </button>
+                        )}
+                        {/* Mark spam */}
+                        {s.status !== 'spam' && (
+                          <button
+                            onClick={() => markAsSpam(s)}
+                            className="rounded p-1 text-ink-muted transition-colors hover:bg-surface-container hover:text-status-error-text dark:text-dark-ink-muted"
+                            title="Mark as spam"
+                          >
+                            <Icon name="report" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {!submissions.length && (
+                  <tr>
+                    <td colSpan={10} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">
+                      No contact submissions found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function AuditLogsManagement({ accessToken }) {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1249,9 +1565,10 @@ export default function AdminPanel() {
             ))}
           </div>
 
-          <div className="min-w-0 flex-1 overflow-y-auto px-margin-mobile py-stack-lg md:px-margin-desktop">
+          <div className="min-w-0 flex-1 overflow-auto px-margin-mobile py-stack-lg md:px-margin-desktop">
             {activeTab === 'overview' && <Dashboard kpis={kpis} statusBreakdown={statusBreakdown} accessToken={accessToken} setActiveTab={setActiveTab} />}
             {activeTab === 'content' && <ContentManagement accessToken={accessToken} />}
+            {activeTab === 'contacts' && <ContactsManagement accessToken={accessToken} />}
             {activeTab === 'projects' && <ProjectsManagement accessToken={accessToken} />}
             {activeTab === 'users' && <UserManagement accessToken={accessToken} currentRole={currentRole} />}
             {activeTab === 'employees' && <EmployeeManagement accessToken={accessToken} />}

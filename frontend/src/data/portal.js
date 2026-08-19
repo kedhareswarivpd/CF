@@ -35,6 +35,7 @@ export const employeePortalTabs = [
 export const rolePortalTabs = {
   sales: [
     { id: 'crm-dashboard', label: 'Dashboard', icon: 'analytics' },
+    { id: 'contact-submissions', label: 'Contact Submissions', icon: 'mail' },
     { id: 'leads', label: 'Leads', icon: 'person_search' },
     { id: 'clients', label: 'Clients', icon: 'business' },
     { id: 'proposals', label: 'Proposals', icon: 'request_quote' },
@@ -76,6 +77,7 @@ export function employeeTabsForRole(role) {
 export const adminPanelTabs = [
   { id: 'overview',       label: 'Dashboard',    icon: 'dashboard' },
   { id: 'content',        label: 'Content',       icon: 'article' },
+  { id: 'contacts',       label: 'Contact Submissions', icon: 'mail' },
   { id: 'projects',       label: 'Projects',      icon: 'folder' },
   { id: 'users',          label: 'Users',         icon: 'people' },
   { id: 'employees',      label: 'Employees',     icon: 'badge' },

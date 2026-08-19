@@ -63,3 +63,12 @@ export function updateMeeting(token, meetingId, payload) {
 export function deleteMeeting(token, meetingId) {
   return apiRequest(`/meetings/${meetingId}`, { method: 'DELETE', token });
 }
+
+// ---------- Contact Submissions ----------
+export function fetchContactSubmissions(token, params = {}) {
+  return apiRequest(`/contact${toQueryString(params)}`, { token });
+}
+
+export function updateContactStatus(token, id, status) {
+  return apiRequest(`/contact/${id}`, { method: 'PATCH', token, body: { status } });
+}

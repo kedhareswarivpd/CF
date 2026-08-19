@@ -1,17 +1,17 @@
 import uuid
 
-from fastapi import APIRouter, Depends
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, Request
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, require_roles
 from app.core.errors import ApiError
 from app.crud.base import CRUDBase
 from app.models.training import Course, TrainingEnrollment
 from app.models.user import User
-from app.schemas.training import CourseOut, TrainingEnrollmentOut
+from app.schemas.training import CourseCreate, CourseOut, TrainingEnrollmentOut
 from app.utils.pagination import PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
@@ -74,3 +74,46 @@ async def my_enrollments(db: AsyncSession = Depends(get_db), current_user: User 
         .order_by(TrainingEnrollment.enrolled_at.desc())
     )
     return success_response(data=[TrainingEnrollmentOut.model_validate(e) for e in result.scalars().all()])
+
+
+# ---------- Admin course creation & enrollment management ----------
+@router.post("", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr"))])
+@router.post("/courses", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr"))])
+async def create_course(payload: CourseCreate, db: AsyncSession = Depends(get_db)):
+    from slugify import slugify
+    data = payload.model_dump()
+    if not data.get("slug"):
+        data["slug"] = slugify(payload.title)
+    if "is_published" not in data or data["is_published"] is None:
+        data["is_published"] = True
+    course = await course_crud.create(db, data)
+    return success_response(data=CourseOut.model_validate(course), message="Course created successfully", status_code=201)
+
+
+
+@router.get("/enrollments", response_model=dict, dependencies=[Depends(require_roles("admin", "hr"))])
+async def list_enrollments(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    page: PageParams = Depends(page_params),
+):
+    filters = {}
+    emp_id = request.query_params.get("employee_id")
+    if emp_id:
+        try:
+            filters["employee_id"] = uuid.UUID(emp_id)
+        except ValueError:
+            pass
+    stmt = select(TrainingEnrollment).options(selectinload(TrainingEnrollment.course))
+    for k, v in filters.items():
+        stmt = stmt.where(getattr(TrainingEnrollment, k) == v)
+    stmt = stmt.order_by(TrainingEnrollment.enrolled_at.desc()).offset((page.page - 1) * page.limit).limit(page.limit)
+    result = await db.execute(stmt)
+    items = result.scalars().all()
+    count_stmt = select(func.count()).select_from(TrainingEnrollment)
+    for k, v in filters.items():
+        count_stmt = count_stmt.where(getattr(TrainingEnrollment, k) == v)
+    total = (await db.execute(count_stmt)).scalar_one()
+    meta = build_pagination_meta(total, page.page, page.limit)
+    return success_response(data=[TrainingEnrollmentOut.model_validate(e) for e in items], message="Enrollments fetched", meta=meta)
+

@@ -17,7 +17,7 @@ from app.services.notification_service import notify_roles
 from app.utils.pagination import PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
-router = APIRouter(prefix="/proposals", tags=["CRM — Proposals"], dependencies=[Depends(require_roles("sales", "admin"))])
+router = APIRouter(prefix="/proposals", tags=["CRM — Proposals"], dependencies=[Depends(require_roles("sales", "admin", "project_manager", "marketing"))])
 
 crud = CRUDBase(Proposal, searchable_fields=["scope_summary"])
 lead_crud = CRUDBase(Lead)

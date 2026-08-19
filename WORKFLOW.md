@@ -122,7 +122,7 @@ super_admin > admin > hr, project_manager > employee roles > client
 | `PUT /{id}` | Update | write_roles | Partial update |
 | `DELETE /{id}` | Delete | write_roles | Hard delete |
 
-### API Router Map (43 routers)
+### API Router Map (42 routers)
 
 | Module | Prefix | Purpose |
 |--------|--------|---------|
@@ -675,7 +675,7 @@ CF/
 │   │   │   └── responses.py  # Uniform response envelope
 │   │   ├── crud/             # Generic CRUD base class
 │   │   ├── models/           # 45 SQLAlchemy models
-│   │   ├── routers/          # 43 FastAPI routers
+│   │   ├── routers/          # 42 FastAPI routers
 │   │   ├── schemas/          # Pydantic schemas (~28 files)
 │   │   └── utils/            # Router factory, pagination, notifications
 │   ├── alembic/              # Database migrations (5 versions)
@@ -684,5 +684,608 @@ CF/
 │   └── requirements.txt
 │
 ├── WORKFLOW.md               # This document
+├── ROLE_WORKFLOW.md          # Role-specific tab definitions
 └── .git/
 ```
+
+---
+
+## 15. Workflow Flowcharts
+
+### 15.1 Authentication Flow
+
+```mermaid
+flowchart TD
+    A[User visits /login] --> B{Has Supabase session?}
+    B -->|No| C[Enter email + password]
+    C --> D[Supabase JS signUp/signIn]
+    D --> E[Server: POST /auth/login]
+    E --> F[Backend calls Supabase auth.sign_in_with_password]
+    F --> G[Backend verifies JWKS<br/>audience: "authenticated"<br/>cache TTL: 1hr]
+    G --> H[Backend finds/creates local User row]
+    H --> I[Returns access_token + refresh_token + user]
+    I --> J[Frontend: supabase.auth.setSession]
+    J --> K[sessionStorage with tokens]
+    
+    B -->|Yes| K
+    
+    K --> L[Access protected route]
+    L --> M[Frontend useRoleGuard]
+    M --> N{Role allowed?}
+    N -->|No| O[Redirect to /login]
+    N -->|Yes| P[Backend require_roles]
+    P --> Q{Role allowed?}
+    Q -->|No| R[403 Forbidden]
+    Q -->|Yes| S[Render page content]
+
+    style A fill:#e0f2fe
+    style K fill:#dcfce8
+    style L fill:#f0fdf4
+```
+
+### 15.2 CRM Pipeline (Lead → Proposal → Contract → Client)
+
+```mermaid
+flowchart TD
+    A[Sales creates Lead<br/>POST /leads] --> B[Lead auto-assigned as owner]
+    B --> C[Lead status: new]
+    
+    C --> D[Sales creates Proposal<br/>POST /proposals]
+    D --> E[Proposal version auto-increments]
+    E --> F[Proposal status: draft]
+    
+    F --> G[Sales sends Proposal<br/>PUT /proposals/{id}<br/>status: sent]
+    G --> H{Client views proposal?}
+    H -->|Yes| I[status: viewed]
+    H -->|No| G
+    
+    I --> J{Client accepts?}
+    J -->|Yes| K[POST /contracts/{id}/sign<br/>client_signed: true]
+    J -->|No| G
+    
+    K --> L[Company signs contract<br/>POST /contracts/{id}/sign<br/>company_signed: true]
+    L --> M[Contract status: signed]
+    
+    M --> N{provision_client_account?}
+    N -->|true| O[Creates Client user account]
+    N -->|false| P[No client provisioning]
+    O --> Q[Client receives welcome email]
+    
+    subgraph "Sales Workspace Tabs"
+        S1[CRM Dashboard]
+        S2[Leads]
+        S3[Proposals]
+        S4[Contracts]
+        S5[Meetings]
+        S6[Clients]
+        S7[Reports]
+    end
+    
+    A -.-> S2
+    D -.-> S3
+    K -.-> S4
+    
+    style A fill:#dbeafe
+    style O fill:#dcfce8
+```
+
+### 15.3 Employee Lifecycle (HR + Self-Service)
+
+```mermaid
+flowchart LR
+    subgraph "HR Admin Flow"
+        A1[Admin creates User<br/>POST /users] --> A2[Admin creates Employee<br/>POST /employees]
+    end
+    
+    subgraph "Employee Self-Service"
+        B1[Check in/out<br/>GET/POST /employees/me/attendance]
+        B2[Apply leave<br/>POST /employees/me/leaves]
+        B3[Log timesheet<br/>POST /employees/me/timesheets]
+        B4[View payslips<br/>GET /employees/me/payslips]
+        B5[View documents<br/>GET /employees/me/documents]
+        B6[View reviews<br/>GET /employees/me/performance-reviews]
+    end
+    
+    subgraph "HR Actions"
+        C1[Approve leaves<br/>PATCH /employees/leaves/{id}/approve]
+        C2[Approve timesheets<br/>PATCH /employees/timesheets/{id}/approve]
+    end
+    
+    A2 --> B1
+    A2 --> B2
+    A2 --> B3
+    A2 --> B4
+    A2 --> B5
+    A2 --> B6
+    
+    B2 --> C1
+    B3 --> C2
+    
+    style A1 fill:#fef3c7
+    style B1 fill:#e0f2fe
+```
+
+### 15.4 Client Portal Access
+
+```mermaid
+flowchart TD
+    A[Client visits /register] --> B[Fill form: name, email, password]
+    B --> C[Supabase signUp<br/>role: "client" in metadata]
+    C --> D[Backend POST /auth/register<br/>best-effort User row sync]
+    D --> E[Login]
+    E --> F[POST /auth/login]
+    F --> G[Backend decodes JWT<br/>creates local User row if missing]
+    G --> H[First access to<br/>/clients/me/profile]
+    H --> I{Client record exists?}
+    
+    I -->|No| J[Auto-create Client profile<br/>Company = placeholder from email]
+    I -->|Yes| K[Load existing Client]
+    
+    J --> L[Redirect to /client]
+    K --> L
+    
+    L --> M[Dashboard: KPI cards]
+    L --> N[Projects: GET /clients/me/projects]
+    L --> O[Invoices: GET /clients/me/invoices]
+    L --> P[Payments: GET /clients/me/payments]
+    L --> Q[Meetings: GET /clients/me/meetings]
+    L --> R[Files: GET /clients/me/files]
+    L --> S[Reports: GET /clients/me/reports]
+    L --> T[Tickets: GET /clients/me/tickets]
+    
+    T --> U[Create support ticket<br/>POST /clients/me/tickets]
+    U --> V[Ticket auto-numbered<br/>TCK-{timestamp}]
+    
+    style A fill:#fef3c7
+    style J fill:#dcfce8
+```
+
+### 15.5 Support Ticket Flow
+
+```mermaid
+flowchart TD
+    A[Client creates ticket<br/>POST /clients/me/tickets] --> B[Ticket auto-numbered TCK-{ts}]
+    B --> C[Ticket status: open]
+    
+    C --> D[Ticket appears in<br/>Support's Ticket Queue]
+    D --> E[Support claims/assigns<br/>PATCH /tickets/{id}<br/>assigned_to: user_id]
+    
+    E --> F[Support changes status<br/>PATCH /tickets/{id}<br/>status: in_progress]
+    
+    F --> G[Support replies<br/>POST /tickets/{id}/replies]
+    G --> H[Reply saved + Client notified]
+    H --> I{Issue resolved?}
+    I -->|No| F
+    I -->|Yes| J[Support marks resolved<br/>PATCH /tickets/{id}<br/>status: resolved]
+    J --> K[Client sees resolution<br/>in Client Portal]
+    
+    style A fill:#dbeafe
+    J ~~~ L{Closed by client?}
+    L -->|Yes| M[status: closed]
+    L -->|No| N[status stays resolved]
+    
+    style J fill:#dcfce8
+```
+
+### 15.6 Finance Workflow (Invoicing + Auto-Payment)
+
+```mermaid
+flowchart TD
+    A[Admin/Finance creates invoice<br/>POST /finance/invoices] --> B[Auto-generates INV-{timestamp}]
+    B --> C[Computes total_amount = amount + tax]
+    C --> D[Invoice status: draft]
+    
+    D --> E[Finance sends invoice<br/>PATCH /finance/invoices/{id}<br/>status: sent]
+    E --> F[Client sees invoice<br/>in /client portal]
+    
+    F --> G[Client records payment<br/>POST /finance/invoices/{id}/payments]
+    G --> H[Cumulative payments += amount]
+    
+    H --> I[cumulative >= total_amount?}
+    I -->|Yes| J[Auto-mark status: paid]
+    I -->|No| K[Status stays: sent]
+    
+    J --> L[Client sees paid status]
+    K --> M[Client can pay more]
+    M --> G
+    
+    style A fill:#fef3c7
+    style J fill:#dcfce8
+```
+
+### 15.7 Project Management
+
+```mermaid
+flowchart TD
+    A[Admin/PM creates project<br/>POST /projects] --> B[Status: planning]
+    
+    B --> C[PM assigns team<br/>PATCH /projects/{id}/team<br/>employee_ids: [...]]
+    C --> D[project_members association table updated]
+    
+    B --> E[PM creates tasks<br/>POST /tasks]
+    E --> F[Tasks assigned to employees]
+    
+    F --> G[Employee updates task<br/>PATCH /tasks/{id}/status]
+    G --> H{Status = done?}
+    H -->|Yes| I[Task completed]
+    H -->|No| J[Continue work]
+    
+    I --> K[PM updates progress<br/>PUT /projects/{id}<br/>progress_percent: +25%]
+    K --> L[Progress auto-tracked]
+    
+    L --> M{progress = 100?}
+    M -->|Yes| N[Project status: completed]
+    M -->|No| K
+    
+    N --> O[Notify stakeholders]
+    
+    style A fill:#dbeafe
+    style N fill:#dcfce8
+```
+
+### 15.8 Employee Portal Tab Mapping
+
+```mermaid
+flowchart TD
+    subgraph "Employee Portal Structure"
+        EP1[Employee Portal<br/>Route: /employee]
+        
+        subgraph "Base Tabs (all roles)"
+            BT1[Overview]
+            BT2[Attendance]
+            BT3[Leaves]
+            BT4[Timesheets]
+            BT5[Payslips]
+            BT6[Tasks]
+            BT7[Projects]
+            BT8[Performance]
+            BT9[Training]
+            BT10[Documents]
+        end
+        
+        EP1 --> BT1
+        EP1 --> BT2
+        EP1 --> BT3
+        EP1 --> BT4
+        EP1 --> BT5
+        EP1 --> BT6
+        EP1 --> BT7
+        EP1 --> BT8
+        EP1 --> BT9
+        EP1 --> BT10
+    end
+    
+    subgraph "Role-Specific Tabs"
+        R1[Sales: Leads, Proposals,<br/>Contracts, Dashboard,<br/>Clients, Meetings, Reports]
+        R2[Marketing: Leads Handoff,<br/>Testimonials]
+        R3[PM: Team Projects,<br/>Task Board, Approvals]
+        R4[QA: Test Queue]
+        R5[Support: Ticket Queue]
+        R6[Finance: Invoices]
+        R7[HR: Leave Approvals,<br/>Recruitment]
+    end
+    
+    style EP1 fill:#eff6ff
+    style R1 fill:#dcfce8
+```
+
+---
+
+## 16. Appendix: Key Configuration Values
+
+### Backend (`settings.py`)
+| Setting | Source |
+|---------|--------|
+| `SUPABASE_URL` | Environment |
+| `SUPABASE_JWT_SECRET` | Environment (HS256 fallback) |
+| `DATABASE_URL` | Environment (`.env`) |
+| `DB_USE_PGBOUNCER` | `true` in production |
+| `CORS_ORIGINS` | `localhost:5173`, `vercel.app` |
+
+### Frontend (`.env`)
+| Variable | Default |
+|----------|---------|
+| `VITE_API_URL` | `/api/v1` |
+| `VITE_SUPABASE_URL` | — |
+| `VITE_SUPABASE_ANON_KEY` | — |
+
+---
+
+## 15. Workflow Flowcharts
+
+### 15.1 Authentication Flow
+
+```mermaid
+flowchart TD
+    A[User visits /login] --> B{Has Supabase session?}
+    B -->|No| C[Enter email + password]
+    C --> D[Supabase JS signUp/signIn]
+    D --> E[Server: POST /auth/login]
+    E --> F[Backend calls Supabase auth.sign_in_with_password]
+    F --> G[Backend verifies JWKS<br/>audience: "authenticated"<br/>cache TTL: 1hr]
+    G --> H[Backend finds/creates local User row]
+    H --> I[Returns access_token + refresh_token + user]
+    I --> J[Frontend: supabase.auth.setSession]
+    J --> K[sessionStorage with tokens]
+    
+    B -->|Yes| K
+    
+    K --> L[Access protected route]
+    L --> M[Frontend useRoleGuard]
+    M --> N{Role allowed?}
+    N -->|No| O[Redirect to /login]
+    N -->|Yes| P[Backend require_roles]
+    P --> Q{Role allowed?}
+    Q -->|No| R[403 Forbidden]
+    Q -->|Yes| S[Render page content]
+
+    style A fill:#e0f2fe
+    style K fill:#dcfce8
+    style L fill:#f0fdf4
+```
+
+### 15.2 CRM Pipeline (Lead → Proposal → Contract → Client)
+
+```mermaid
+flowchart TD
+    A[Sales creates Lead<br/>POST /leads] --> B[Lead auto-assigned as owner]
+    B --> C[Lead status: new]
+    
+    C --> D[Sales creates Proposal<br/>POST /proposals]
+    D --> E[Proposal version auto-increments]
+    E --> F[Proposal status: draft]
+    
+    F --> G[Sales sends Proposal<br/>PUT /proposals/{id}<br/>status: sent]
+    G --> H{Client views proposal?}
+    H -->|Yes| I[status: viewed]
+    H -->|No| G
+    
+    I --> J{Client accepts?}
+    J -->|Yes| K[POST /contracts/{id}/sign<br/>client_signed: true]
+    J -->|No| G
+    
+    K --> L[Company signs contract<br/>POST /contracts/{id}/sign<br/>company_signed: true]
+    L --> M[Contract status: signed]
+    
+    M --> N{provision_client_account?}
+    N -->|true| O[Creates Client user account]
+    N -->|false| P[No client provisioning]
+    O --> Q[Client receives welcome email]
+    
+    subgraph "Sales Workspace Tabs"
+        S1[CRM Dashboard]
+        S2[Leads]
+        S3[Proposals]
+        S4[Contracts]
+        S5[Meetings]
+        S6[Clients]
+        S7[Reports]
+    end
+    
+    A -.-> S2
+    D -.-> S3
+    K -.-> S4
+    
+    style A fill:#dbeafe
+    style O fill:#dcfce8
+```
+
+### 15.3 Employee Lifecycle (HR + Self-Service)
+
+```mermaid
+flowchart LR
+    subgraph "HR Admin Flow"
+        A1[Admin creates User<br/>POST /users] --> A2[Admin creates Employee<br/>POST /employees]
+    end
+    
+    subgraph "Employee Self-Service"
+        B1[Check in/out<br/>GET/POST /employees/me/attendance]
+        B2[Apply leave<br/>POST /employees/me/leaves]
+        B3[Log timesheet<br/>POST /employees/me/timesheets]
+        B4[View payslips<br/>GET /employees/me/payslips]
+        B5[View documents<br/>GET /employees/me/documents]
+        B6[View reviews<br/>GET /employees/me/performance-reviews]
+    end
+    
+    subgraph "HR Actions"
+        C1[Approve leaves<br/>PATCH /employees/leaves/{id}/approve]
+        C2[Approve timesheets<br/>PATCH /employees/timesheets/{id}/approve]
+    end
+    
+    A2 --> B1
+    A2 --> B2
+    A2 --> B3
+    A2 --> B4
+    A2 --> B5
+    A2 --> B6
+    
+    B2 --> C1
+    B3 --> C2
+    
+    style A1 fill:#fef3c7
+    style B1 fill:#e0f2fe
+```
+
+### 15.4 Client Portal Access
+
+```mermaid
+flowchart TD
+    A[Client visits /register] --> B[Fill form: name, email, password]
+    B --> C[Supabase signUp<br/>role: "client" in metadata]
+    C --> D[Backend POST /auth/register<br/>best-effort User row sync]
+    D --> E[Login]
+    E --> F[POST /auth/login]
+    F --> G[Backend decodes JWT<br/>creates local User row if missing]
+    G --> H[First access to<br/>/clients/me/profile]
+    H --> I{Client record exists?}
+    
+    I -->|No| J[Auto-create Client profile<br/>Company = placeholder from email]
+    I -->|Yes| K[Load existing Client]
+    
+    J --> L[Redirect to /client]
+    K --> L
+    
+    L --> M[Dashboard: KPI cards]
+    L --> N[Projects: GET /clients/me/projects]
+    L --> O[Invoices: GET /clients/me/invoices]
+    L --> P[Payments: GET /clients/me/payments]
+    L --> Q[Meetings: GET /clients/me/meetings]
+    L --> R[Files: GET /clients/me/files]
+    L --> S[Reports: GET /clients/me/reports]
+    L --> T[Tickets: GET /clients/me/tickets]
+    
+    T --> U[Create support ticket<br/>POST /clients/me/tickets]
+    U --> V[Ticket auto-numbered<br/>TCK-{timestamp}]
+    
+    style A fill:#fef3c7
+    style J fill:#dcfce8
+```
+
+### 15.5 Support Ticket Flow
+
+```mermaid
+flowchart TD
+    A[Client creates ticket<br/>POST /clients/me/tickets] --> B[Ticket auto-numbered TCK-{ts}]
+    B --> C[Ticket status: open]
+    
+    C --> D[Ticket appears in<br/>Support's Ticket Queue]
+    D --> E[Support claims/assigns<br/>PATCH /tickets/{id}<br/>assigned_to: user_id]
+    
+    E --> F[Support changes status<br/>PATCH /tickets/{id}<br/>status: in_progress]
+    
+    F --> G[Support replies<br/>POST /tickets/{id}/replies]
+    G --> H[Reply saved + Client notified]
+    H --> I{Issue resolved?}
+    I -->|No| F
+    I -->|Yes| J[Support marks resolved<br/>PATCH /tickets/{id}<br/>status: resolved]
+    J --> K[Client sees resolution<br/>in Client Portal]
+    
+    style A fill:#dbeafe
+    J ~~~ L{Closed by client?}
+    L -->|Yes| M[status: closed]
+    L -->|No| N[status stays resolved]
+    
+    style J fill:#dcfce8
+```
+
+### 15.6 Finance Workflow (Invoicing + Auto-Payment)
+
+```mermaid
+flowchart TD
+    A[Admin/Finance creates invoice<br/>POST /finance/invoices] --> B[Auto-generates INV-{timestamp}]
+    B --> C[Computes total_amount = amount + tax]
+    C --> D[Invoice status: draft]
+    
+    D --> E[Finance sends invoice<br/>PATCH /finance/invoices/{id}<br/>status: sent]
+    E --> F[Client sees invoice<br/>in /client portal]
+    
+    F --> G[Client records payment<br/>POST /finance/invoices/{id}/payments]
+    G --> H[Cumulative payments += amount]
+    
+    H --> I[cumulative >= total_amount?]
+    I -->|Yes| J[Auto-mark status: paid]
+    I -->|No| K[Status stays: sent/sent]
+    
+    J --> L[Client sees paid status]
+    K --> M[Client can pay more]
+    M --> G
+    
+    style A fill:#fef3c7
+    style J fill:#dcfce8
+```
+
+### 15.7 Project Management
+
+```mermaid
+flowchart TD
+    A[Admin/PM creates project<br/>POST /projects] --> B[Status: planning]
+    
+    B --> C[PM assigns team<br/>PATCH /projects/{id}/team<br/>employee_ids: [...]]
+    C --> D[project_members association table updated]
+    
+    B --> E[PM creates tasks<br/>POST /tasks]
+    E --> F[Tasks assigned to employees]
+    
+    F --> G[Employee updates task<br/>PATCH /tasks/{id}/status]
+    G --> H{Status = done?}
+    H -->|Yes| I[Task completed]
+    H -->|No| J[Continue work]
+    
+    I --> K[PM updates progress<br/>PUT /projects/{id}<br/>progress_percent: +25%]
+    K --> L[Progress auto-tracked]
+    
+    L --> M{progress = 100?}
+    M -->|Yes| N[Project status: completed]
+    M -->|No| K
+    
+    N --> O[Notify stakeholders]
+    
+    style A fill:#dbeafe
+    style N fill:#dcfce8
+```
+
+### 15.8 Employee Portal Tab Mapping
+
+```mermaid
+flowchart TD
+    subgraph "Employee Portal Structure"
+        EP1[Employee Portal<br/>Route: /employee]
+        
+        subgraph "Base Tabs (all roles)"
+            BT1[Overview]
+            BT2[Attendance]
+            BT3[Leaves]
+            BT4[Timesheets]
+            BT5[Payslips]
+            BT6[Tasks]
+            BT7[Projects]
+            BT8[Performance]
+            BT9[Training]
+            BT10[Documents]
+        end
+        
+        EP1 --> BT1
+        EP1 --> BT2
+        EP1 --> BT3
+        EP1 --> BT4
+        EP1 --> BT5
+        EP1 --> BT6
+        EP1 --> BT7
+        EP1 --> BT8
+        EP1 --> BT9
+        EP1 --> BT10
+    end
+    
+    subgraph "Role-Specific Tabs"
+        R1[Sales: Leads, Proposals,<br/>Contracts, Dashboard,<br/>Clients, Meetings, Reports]
+        R2[Marketing: Leads Handoff,<br/>Testimonials]
+        R3[PM: Team Projects,<br/>Task Board, Approvals]
+        R4[QA: Test Queue]
+        R5[Support: Ticket Queue]
+        R6[Finance: Invoices]
+        R7[HR: Leave Approvals,<br/>Recruitment]
+    end
+    
+    style EP1 fill:#eff6ff
+    style R1 fill:#dcfce8
+```
+
+---
+
+## 16. Appendix: Key Configuration Values
+
+### Backend (`settings.py`)
+| Setting | Source |
+|---------|--------|
+| `SUPABASE_URL` | Environment |
+| `SUPABASE_JWT_SECRET` | Environment (HS256 fallback) |
+| `DATABASE_URL` | Environment (`.env`) |
+| `DB_USE_PGBOUNCER` | `true` in production |
+| `CORS_ORIGINS` | `localhost:5173`, `vercel.app` |
+
+### Frontend (`.env`)
+| Variable | Default |
+|----------|---------|
+| `VITE_API_URL` | `/api/v1` |
+| `VITE_SUPABASE_URL` | — |
+| `VITE_SUPABASE_ANON_KEY` | — |

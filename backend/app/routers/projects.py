@@ -19,7 +19,8 @@ from app.utils.responses import build_pagination_meta, success_response
 
 router = APIRouter(prefix="/projects", tags=["Projects"])
 
-crud = CRUDBase(Project, searchable_fields=["title", "industry"])
+crud = CRUDBase(Project, searchable_fields=["title", "industry"], relationships=["team"])
+
 
 
 @router.get("", response_model=dict)
@@ -39,16 +40,33 @@ async def list_projects(
 
     employee_filter = request.query_params.get("employee_id")
     if employee_filter:
-        # Restrict to projects where the employee is a team member.
-        query = select(Project).join(project_members, project_members.c.project_id == Project.id).where(project_members.c.employee_id == employee_filter)
+        from app.models.employee import Employee
+        try:
+            emp_uuid = uuid.UUID(employee_filter)
+            emp = await db.get(Employee, emp_uuid)
+            emp_user_id = emp.user_id if emp else None
+        except (ValueError, TypeError):
+            emp_user_id = None
+
+        if emp_user_id:
+            query = select(Project).outerjoin(project_members, project_members.c.project_id == Project.id).where(
+                (project_members.c.employee_id == emp_uuid) | (Project.project_manager_id == emp_user_id)
+            )
+            count_query = select(func.count(func.distinct(Project.id))).outerjoin(project_members, project_members.c.project_id == Project.id).where(
+                (project_members.c.employee_id == emp_uuid) | (Project.project_manager_id == emp_user_id)
+            )
+        else:
+            query = select(Project).join(project_members, project_members.c.project_id == Project.id).where(project_members.c.employee_id == employee_filter)
+            count_query = select(func.count()).select_from(project_members).where(project_members.c.employee_id == employee_filter)
+
         query = crud._with_relationships(query)
         query = apply_sort(query, Project, page.sort)
         query = query.limit(page.limit).offset(page.offset)
         result = await db.execute(query)
-        count_query = select(func.count()).select_from(project_members).where(project_members.c.employee_id == employee_filter)
         total = (await db.execute(count_query)).scalar_one()
         meta = build_pagination_meta(total, page.page, page.limit)
         return success_response(data=[ProjectOut.model_validate(p) for p in result.scalars().unique().all()], message="Projects fetched", meta=meta)
+
 
     items, total = await crud.list(db, page, filters)
     meta = build_pagination_meta(total, page.page, page.limit)
@@ -76,16 +94,22 @@ async def get_project(identifier: str, db: AsyncSession = Depends(get_db), curre
 
 @router.post("", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "project_manager"))])
 async def create_project(payload: ProjectCreate, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy.orm import selectinload
     data = payload.model_dump()
     data["slug"] = data.get("slug") or slugify(data["title"])
     project = await crud.create(db, data)
-    return success_response(data=ProjectOut.model_validate(project), message="Project created successfully", status_code=201)
+    res = await db.execute(select(Project).options(selectinload(Project.team)).where(Project.id == project.id))
+    loaded = res.scalar_one()
+    return success_response(data=ProjectOut.model_validate(loaded), message="Project created successfully", status_code=201)
 
 
 @router.put("/{project_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "project_manager"))])
 async def update_project(project_id: uuid.UUID, payload: ProjectUpdate, db: AsyncSession = Depends(get_db)):
+    from sqlalchemy.orm import selectinload
     project = await crud.update(db, project_id, payload.model_dump(exclude_unset=True))
-    return success_response(data=ProjectOut.model_validate(project), message="Project updated successfully")
+    res = await db.execute(select(Project).options(selectinload(Project.team)).where(Project.id == project.id))
+    loaded = res.scalar_one()
+    return success_response(data=ProjectOut.model_validate(loaded), message="Project updated successfully")
 
 
 @router.patch("/{project_id}/team", response_model=dict, dependencies=[Depends(require_roles("admin", "project_manager"))])
@@ -98,10 +122,13 @@ async def assign_team(project_id: uuid.UUID, payload: AssignTeamRequest, db: Asy
     if not project:
         raise ApiError.not_found("Project not found")
 
-    employees = (await db.execute(select(Employee).where(Employee.id.in_(payload.employee_ids)))).scalars().all()
+    employees = (await db.execute(
+        select(Employee).where((Employee.id.in_(payload.employee_ids)) | (Employee.user_id.in_(payload.employee_ids)))
+    )).scalars().all()
     project.team = list(employees)
     await db.commit()
     return success_response(message="Project team updated")
+
 
 
 @router.delete("/{project_id}", response_model=dict, dependencies=[Depends(require_roles("admin"))])

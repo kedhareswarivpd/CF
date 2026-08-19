@@ -117,5 +117,9 @@ export const fetchReports  = (token, p = {}) => apiRequest(`/reports${toQueryStr
 export const generateReport = (token, body)  => apiRequest('/reports/generate', { method: 'POST', body, token });
 export const deleteReport  = (token, id)     => apiRequest(`/reports/${id}`, { method: 'DELETE', token });
 
+// ── Contact Submissions ──────────────────────────────────────────────────────
+export const fetchContactSubmissions = (token, p = {}) => apiRequest(`/contact${toQueryString(p)}`, { token });
+export const updateContactStatus = (token, id, status) => apiRequest(`/contact/${id}`, { method: 'PATCH', body: { status }, token });
+
 // ── Audit Logs ─────────────────────────────────────────────────────────────
 export const fetchAuditLogs = (token, p = {}) => apiRequest(`/audit-logs${toQueryString(p)}`, { token });

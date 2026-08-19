@@ -23,6 +23,15 @@ async def list_notifications(db: AsyncSession = Depends(get_db), current_user: U
     return success_response(data=[NotificationOut.model_validate(n) for n in result.scalars().all()])
 
 
+@router.patch("/read-all", response_model=dict)
+async def mark_all_read(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    await db.execute(
+        sa_update(Notification).where(Notification.user_id == current_user.id, Notification.is_read.is_(False)).values(is_read=True)
+    )
+    await db.commit()
+    return success_response(message="All notifications marked as read")
+
+
 @router.patch("/{notification_id}/read", response_model=dict)
 async def mark_read(notification_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     await db.execute(
@@ -32,15 +41,6 @@ async def mark_read(notification_id: uuid.UUID, db: AsyncSession = Depends(get_d
     )
     await db.commit()
     return success_response(message="Marked as read")
-
-
-@router.patch("/read-all", response_model=dict)
-async def mark_all_read(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    await db.execute(
-        sa_update(Notification).where(Notification.user_id == current_user.id, Notification.is_read.is_(False)).values(is_read=True)
-    )
-    await db.commit()
-    return success_response(message="All notifications marked as read")
 
 
 @router.post("", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr", "marketing"))])
