@@ -1,7 +1,10 @@
 import asyncio
 import random
+
 from starlette.concurrency import run_in_threadpool
+
 from app.services.supabase_client import get_admin_client, get_anon_client
+
 
 async def main():
     admin = get_admin_client()

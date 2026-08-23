@@ -1,50 +1,68 @@
 import asyncio
-import uuid
+import json
+import os
 import random
-from datetime import datetime, timedelta
+import secrets
+import uuid
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
+from app.core.config import settings
 from app.core.database import AsyncSessionLocal
+from app.core.password import hash_password
+from app.models.analytics import PageView
 from app.models.department import Department
 from app.models.employee import Employee
 from app.models.setting import Setting
 from app.models.user import User
-from app.models.analytics import PageView
-from app.services.supabase_client import get_admin_client
+
+# Seed passwords are generated fresh on every run (never hardcoded/guessable)
+# and written once to a local, gitignored file — never printed to stdout,
+# which may end up in CI logs. See CF-AUD-007.
+_CREDENTIALS_OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".seed_credentials.local.json")
+_generated_credentials: dict[str, str] = {}
+
+
+def _seed_password(email_env_override: str) -> str:
+    """Use an explicit env override if provided (e.g. for CI fixtures),
+    otherwise generate a fresh random password for this seed run."""
+    override = os.environ.get(email_env_override)
+    return override if override else secrets.token_urlsafe(16)
+
 
 SUPER_ADMIN_EMAIL = "superadmin@corefusiontech.com"
-SUPER_ADMIN_PASSWORD = "SuperAdmin@123"
+SUPER_ADMIN_PASSWORD = _seed_password("SEED_SUPER_ADMIN_PASSWORD")
 
 ADMIN_EMAIL = "admin@corefusiontech.com"
-ADMIN_PASSWORD = "Admin@123"
+ADMIN_PASSWORD = _seed_password("SEED_ADMIN_PASSWORD")
 
 EMPLOYEE_EMAIL = "john.doe@corefusiontech.com"
-EMPLOYEE_PASSWORD = "Employee@123"
+EMPLOYEE_PASSWORD = _seed_password("SEED_EMPLOYEE_PASSWORD")
 
 SALES_EMAIL = "sales@corefusiontech.com"
-SALES_PASSWORD = "Sales@123"
+SALES_PASSWORD = _seed_password("SEED_SALES_PASSWORD")
 
 HR_EMAIL = "hr@corefusiontech.com"
-HR_PASSWORD = "Hr@123"
+HR_PASSWORD = _seed_password("SEED_HR_PASSWORD")
 
 MARKETING_EMAIL = "marketing@corefusiontech.com"
-MARKETING_PASSWORD = "Marketing@123"
+MARKETING_PASSWORD = _seed_password("SEED_MARKETING_PASSWORD")
 
 PM_EMAIL = "pm@corefusiontech.com"
-PM_PASSWORD = "ProjectManager@123"
+PM_PASSWORD = _seed_password("SEED_PM_PASSWORD")
 
 DEVELOPER_EMAIL = "developer@corefusiontech.com"
-DEVELOPER_PASSWORD = "Developer@123"
+DEVELOPER_PASSWORD = _seed_password("SEED_DEVELOPER_PASSWORD")
 
 QA_EMAIL = "qa@corefusiontech.com"
-QA_PASSWORD = "Qa@123"
+QA_PASSWORD = _seed_password("SEED_QA_PASSWORD")
 
 SUPPORT_EMAIL = "support@corefusiontech.com"
-SUPPORT_PASSWORD = "Support@123"
+SUPPORT_PASSWORD = _seed_password("SEED_SUPPORT_PASSWORD")
 
 FINANCE_EMAIL = "finance@corefusiontech.com"
-FINANCE_PASSWORD = "Finance@123"
+FINANCE_PASSWORD = _seed_password("SEED_FINANCE_PASSWORD")
 
 
 async def seed_super_admin(db):
@@ -53,26 +71,19 @@ async def seed_super_admin(db):
         print("i  Super admin already exists")
         return
 
-    admin_client = get_admin_client()
-    auth_response = admin_client.auth.admin.create_user(
-        {
-            "email": SUPER_ADMIN_EMAIL,
-            "password": SUPER_ADMIN_PASSWORD,
-            "email_confirm": True,
-            "user_metadata": {"name": "CoreFusion Super Admin"},
-        }
-    )
-
     admin = User(
-        id=uuid.UUID(auth_response.user.id),
+        id=uuid.uuid4(),
+        password_hash=hash_password(SUPER_ADMIN_PASSWORD),
         name="CoreFusion Super Admin",
         email=SUPER_ADMIN_EMAIL,
         role="super_admin",
         is_active=True,
         is_email_verified=True,
+        email_verified_at=datetime.now(UTC),
     )
     db.add(admin)
-    print(f"Super admin created in Supabase + local profile: {SUPER_ADMIN_EMAIL} / {SUPER_ADMIN_PASSWORD}")
+    _generated_credentials[SUPER_ADMIN_EMAIL] = SUPER_ADMIN_PASSWORD
+    print(f"Super admin created: {SUPER_ADMIN_EMAIL}")
 
 
 async def seed_admin(db):
@@ -81,26 +92,19 @@ async def seed_admin(db):
         print("i  Admin already exists")
         return
 
-    admin_client = get_admin_client()
-    auth_response = admin_client.auth.admin.create_user(
-        {
-            "email": ADMIN_EMAIL,
-            "password": ADMIN_PASSWORD,
-            "email_confirm": True,
-            "user_metadata": {"name": "CoreFusion Admin"},
-        }
-    )
-
     admin = User(
-        id=uuid.UUID(auth_response.user.id),
+        id=uuid.uuid4(),
+        password_hash=hash_password(ADMIN_PASSWORD),
         name="CoreFusion Admin",
         email=ADMIN_EMAIL,
         role="admin",
         is_active=True,
         is_email_verified=True,
+        email_verified_at=datetime.now(UTC),
     )
     db.add(admin)
-    print(f"Admin created in Supabase + local profile: {ADMIN_EMAIL} / {ADMIN_PASSWORD}")
+    _generated_credentials[ADMIN_EMAIL] = ADMIN_PASSWORD
+    print(f"Admin created: {ADMIN_EMAIL}")
 
 
 async def seed_employee(db):
@@ -109,27 +113,20 @@ async def seed_employee(db):
         print("i  Employee already exists")
         return
 
-    admin_client = get_admin_client()
-    auth_response = admin_client.auth.admin.create_user(
-        {
-            "email": EMPLOYEE_EMAIL,
-            "password": EMPLOYEE_PASSWORD,
-            "email_confirm": True,
-            "user_metadata": {"name": "John Doe"},
-        }
-    )
-
     employee = User(
-        id=uuid.UUID(auth_response.user.id),
+        id=uuid.uuid4(),
+        password_hash=hash_password(EMPLOYEE_PASSWORD),
         name="John Doe",
         email=EMPLOYEE_EMAIL,
         role="employee",
         phone="+91-98765-43210",
         is_active=True,
         is_email_verified=True,
+        email_verified_at=datetime.now(UTC),
     )
     db.add(employee)
-    print(f"Employee created: {EMPLOYEE_EMAIL} / {EMPLOYEE_PASSWORD}")
+    _generated_credentials[EMPLOYEE_EMAIL] = EMPLOYEE_PASSWORD
+    print(f"Employee created: {EMPLOYEE_EMAIL}")
 
 
 async def seed_sales(db):
@@ -138,27 +135,20 @@ async def seed_sales(db):
         print("i  Sales user already exists")
         return
 
-    admin_client = get_admin_client()
-    auth_response = admin_client.auth.admin.create_user(
-        {
-            "email": SALES_EMAIL,
-            "password": SALES_PASSWORD,
-            "email_confirm": True,
-            "user_metadata": {"name": "Sales Representative"},
-        }
-    )
-
     sales = User(
-        id=uuid.UUID(auth_response.user.id),
+        id=uuid.uuid4(),
+        password_hash=hash_password(SALES_PASSWORD),
         name="Sales Representative",
         email=SALES_EMAIL,
         role="sales",
         phone="+91-98765-43211",
         is_active=True,
         is_email_verified=True,
+        email_verified_at=datetime.now(UTC),
     )
     db.add(sales)
-    print(f"Sales user created: {SALES_EMAIL} / {SALES_PASSWORD}")
+    _generated_credentials[SALES_EMAIL] = SALES_PASSWORD
+    print(f"Sales user created: {SALES_EMAIL}")
 
 
 async def seed_hr(db):
@@ -167,27 +157,20 @@ async def seed_hr(db):
         print("i  HR user already exists")
         return
 
-    admin_client = get_admin_client()
-    auth_response = admin_client.auth.admin.create_user(
-        {
-            "email": HR_EMAIL,
-            "password": HR_PASSWORD,
-            "email_confirm": True,
-            "user_metadata": {"name": "HR Manager"},
-        }
-    )
-
     hr = User(
-        id=uuid.UUID(auth_response.user.id),
+        id=uuid.uuid4(),
+        password_hash=hash_password(HR_PASSWORD),
         name="HR Manager",
         email=HR_EMAIL,
         role="hr",
         phone="+91-98765-43212",
         is_active=True,
         is_email_verified=True,
+        email_verified_at=datetime.now(UTC),
     )
     db.add(hr)
-    print(f"HR user created: {HR_EMAIL} / {HR_PASSWORD}")
+    _generated_credentials[HR_EMAIL] = HR_PASSWORD
+    print(f"HR user created: {HR_EMAIL}")
 
 
 async def seed_marketing(db):
@@ -196,27 +179,20 @@ async def seed_marketing(db):
         print("i  Marketing user already exists")
         return
 
-    admin_client = get_admin_client()
-    auth_response = admin_client.auth.admin.create_user(
-        {
-            "email": MARKETING_EMAIL,
-            "password": MARKETING_PASSWORD,
-            "email_confirm": True,
-            "user_metadata": {"name": "Marketing Manager"},
-        }
-    )
-
     user = User(
-        id=uuid.UUID(auth_response.user.id),
+        id=uuid.uuid4(),
+        password_hash=hash_password(MARKETING_PASSWORD),
         name="Marketing Manager",
         email=MARKETING_EMAIL,
         role="marketing",
         phone="+91-98765-43213",
         is_active=True,
         is_email_verified=True,
+        email_verified_at=datetime.now(UTC),
     )
     db.add(user)
-    print(f"Marketing user created: {MARKETING_EMAIL} / {MARKETING_PASSWORD}")
+    _generated_credentials[MARKETING_EMAIL] = MARKETING_PASSWORD
+    print(f"Marketing user created: {MARKETING_EMAIL}")
 
 
 async def seed_project_manager(db):
@@ -225,27 +201,20 @@ async def seed_project_manager(db):
         print("i  Project Manager user already exists")
         return
 
-    admin_client = get_admin_client()
-    auth_response = admin_client.auth.admin.create_user(
-        {
-            "email": PM_EMAIL,
-            "password": PM_PASSWORD,
-            "email_confirm": True,
-            "user_metadata": {"name": "Project Manager"},
-        }
-    )
-
     user = User(
-        id=uuid.UUID(auth_response.user.id),
+        id=uuid.uuid4(),
+        password_hash=hash_password(PM_PASSWORD),
         name="Project Manager",
         email=PM_EMAIL,
         role="project_manager",
         phone="+91-98765-43214",
         is_active=True,
         is_email_verified=True,
+        email_verified_at=datetime.now(UTC),
     )
     db.add(user)
-    print(f"Project Manager user created: {PM_EMAIL} / {PM_PASSWORD}")
+    _generated_credentials[PM_EMAIL] = PM_PASSWORD
+    print(f"Project Manager user created: {PM_EMAIL}")
 
 
 async def seed_developer(db):
@@ -254,27 +223,20 @@ async def seed_developer(db):
         print("i  Developer user already exists")
         return
 
-    admin_client = get_admin_client()
-    auth_response = admin_client.auth.admin.create_user(
-        {
-            "email": DEVELOPER_EMAIL,
-            "password": DEVELOPER_PASSWORD,
-            "email_confirm": True,
-            "user_metadata": {"name": "Developer"},
-        }
-    )
-
     user = User(
-        id=uuid.UUID(auth_response.user.id),
+        id=uuid.uuid4(),
+        password_hash=hash_password(DEVELOPER_PASSWORD),
         name="Developer",
         email=DEVELOPER_EMAIL,
         role="developer",
         phone="+91-98765-43215",
         is_active=True,
         is_email_verified=True,
+        email_verified_at=datetime.now(UTC),
     )
     db.add(user)
-    print(f"Developer user created: {DEVELOPER_EMAIL} / {DEVELOPER_PASSWORD}")
+    _generated_credentials[DEVELOPER_EMAIL] = DEVELOPER_PASSWORD
+    print(f"Developer user created: {DEVELOPER_EMAIL}")
 
 
 async def seed_qa(db):
@@ -283,27 +245,20 @@ async def seed_qa(db):
         print("i  QA user already exists")
         return
 
-    admin_client = get_admin_client()
-    auth_response = admin_client.auth.admin.create_user(
-        {
-            "email": QA_EMAIL,
-            "password": QA_PASSWORD,
-            "email_confirm": True,
-            "user_metadata": {"name": "QA Engineer"},
-        }
-    )
-
     user = User(
-        id=uuid.UUID(auth_response.user.id),
+        id=uuid.uuid4(),
+        password_hash=hash_password(QA_PASSWORD),
         name="QA Engineer",
         email=QA_EMAIL,
         role="qa",
         phone="+91-98765-43216",
         is_active=True,
         is_email_verified=True,
+        email_verified_at=datetime.now(UTC),
     )
     db.add(user)
-    print(f"QA user created: {QA_EMAIL} / {QA_PASSWORD}")
+    _generated_credentials[QA_EMAIL] = QA_PASSWORD
+    print(f"QA user created: {QA_EMAIL}")
 
 
 async def seed_support(db):
@@ -312,27 +267,20 @@ async def seed_support(db):
         print("i  Support user already exists")
         return
 
-    admin_client = get_admin_client()
-    auth_response = admin_client.auth.admin.create_user(
-        {
-            "email": SUPPORT_EMAIL,
-            "password": SUPPORT_PASSWORD,
-            "email_confirm": True,
-            "user_metadata": {"name": "Support Engineer"},
-        }
-    )
-
     user = User(
-        id=uuid.UUID(auth_response.user.id),
+        id=uuid.uuid4(),
+        password_hash=hash_password(SUPPORT_PASSWORD),
         name="Support Engineer",
         email=SUPPORT_EMAIL,
         role="support",
         phone="+91-98765-43217",
         is_active=True,
         is_email_verified=True,
+        email_verified_at=datetime.now(UTC),
     )
     db.add(user)
-    print(f"Support user created: {SUPPORT_EMAIL} / {SUPPORT_PASSWORD}")
+    _generated_credentials[SUPPORT_EMAIL] = SUPPORT_PASSWORD
+    print(f"Support user created: {SUPPORT_EMAIL}")
 
 
 async def seed_finance(db):
@@ -341,30 +289,29 @@ async def seed_finance(db):
         print("i  Finance user already exists")
         return
 
-    admin_client = get_admin_client()
-    auth_response = admin_client.auth.admin.create_user(
-        {
-            "email": FINANCE_EMAIL,
-            "password": FINANCE_PASSWORD,
-            "email_confirm": True,
-            "user_metadata": {"name": "Finance Manager"},
-        }
-    )
-
     user = User(
-        id=uuid.UUID(auth_response.user.id),
+        id=uuid.uuid4(),
+        password_hash=hash_password(FINANCE_PASSWORD),
         name="Finance Manager",
         email=FINANCE_EMAIL,
         role="finance",
         phone="+91-98765-43218",
         is_active=True,
         is_email_verified=True,
+        email_verified_at=datetime.now(UTC),
     )
     db.add(user)
-    print(f"Finance user created: {FINANCE_EMAIL} / {FINANCE_PASSWORD}")
+    _generated_credentials[FINANCE_EMAIL] = FINANCE_PASSWORD
+    print(f"Finance user created: {FINANCE_EMAIL}")
 
 
 async def run():
+    if settings.env.lower() in {"production", "prod"}:
+        raise SystemExit(
+            "Refusing to run the demo seed script against ENV=production. "
+            "This creates known-role demo accounts and is for local/dev/staging only."
+        )
+
     async with AsyncSessionLocal() as db:
         await seed_super_admin(db)
         await seed_admin(db)
@@ -468,6 +415,15 @@ async def run():
             print(f"Seeded {len(views)} page views")
 
         await db.commit()
+
+        if _generated_credentials:
+            with open(_CREDENTIALS_OUT, "w", encoding="utf-8") as f:
+                json.dump(_generated_credentials, f, indent=2)
+            print(
+                f"\n{len(_generated_credentials)} new demo account password(s) written to "
+                f"{_CREDENTIALS_OUT} (gitignored, local-only). Rotate/delete before going to production."
+            )
+
         print("Seeding complete.")
 
 

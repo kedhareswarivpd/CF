@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy import Boolean, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -22,6 +22,7 @@ class CaseStudy(Base):
     roi: Mapped[str | None] = mapped_column(String(100))
     customer_feedback: Mapped[str | None] = mapped_column(Text)
     download_url: Mapped[str | None] = mapped_column(String(500))
+    downloads: Mapped[list | None] = mapped_column(JSONB, default=list)
     cover_image: Mapped[str | None] = mapped_column(String(500))
     is_published: Mapped[bool] = mapped_column(Boolean, default=True)
 

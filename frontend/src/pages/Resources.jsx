@@ -37,13 +37,15 @@ export default function Resources() {
   return (
     <>
       <ResourcesHero />
-      <SectionHeading
-        eyebrow="Knowledge Center"
-        title="Expert Guides & Resources"
-        description="Whitepapers, templates, and guides created by our engineering teams."
-        align="center"
-        className="mx-auto max-w-container px-margin-mobile pt-16 md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white"
-      />
+      <div className="bg-brand-dark">
+        <SectionHeading
+          eyebrow="Knowledge Center"
+          title="Expert Guides & Resources"
+          description="Whitepapers, templates, and guides created by our engineering teams."
+          align="center"
+          className="mx-auto max-w-container px-margin-mobile py-section-padding md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white [&_span]:!text-accent-cyan"
+        />
+      </div>
       <ResourcesGrid resources={resources} typeFilters={resourceTypeFilters} />
       <CtaBanner />
     </>

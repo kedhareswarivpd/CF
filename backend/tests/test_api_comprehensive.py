@@ -1,5 +1,4 @@
 """Comprehensive API tests — covers every endpoint in the application."""
-import pytest
 
 
 class TestHealthAndRoot:
@@ -13,6 +12,25 @@ class TestHealthAndRoot:
     async def test_root_endpoint(self, async_client):
         response = await async_client.get("/")
         assert response.status_code == 200
+
+    async def test_ready_reports_database_check(self, async_client):
+        # Under this test harness the DB engine is mocked (no real Postgres),
+        # so /ready correctly reports not-ready — that's the honest answer,
+        # not a bug. The 200-when-actually-connected case is verified against
+        # a real Postgres container in tests/real_db_verification.py.
+        response = await async_client.get("/ready")
+        assert response.status_code == 503
+        body = response.json()
+        assert body["status"] == "not_ready"
+        assert "database" in body["checks"]
+
+    async def test_response_carries_x_request_id(self, async_client):
+        response = await async_client.get("/health")
+        assert "x-request-id" in {h.lower() for h in response.headers}
+
+    async def test_x_request_id_is_echoed_back_when_supplied(self, async_client):
+        response = await async_client.get("/health", headers={"X-Request-Id": "caller-supplied-id"})
+        assert response.headers["x-request-id"] == "caller-supplied-id"
 
     async def test_sitemap_returns_xml(self, async_client):
         response = await async_client.get("/sitemap.xml")
@@ -54,19 +72,26 @@ class TestAuthEndpoints:
         response = await async_client.get("/api/v1/auth/me")
         assert response.status_code == 401
 
-    async def test_me_with_invalid_token(self, async_client):
-        response = await async_client.get(
-            "/api/v1/auth/me",
-            headers={"Authorization": "Bearer invalid-token"},
-        )
-        assert response.status_code == 401
+    # A real HTTP round trip with an *invalid but present* cookie value
+    # exercises get_session_by_access_token()'s real DB query against this
+    # test harness's fully-mocked SQLAlchemy engine — the same class of
+    # mocked-engine incompatibility root-caused for blog.py's list endpoint
+    # earlier in this engagement (a query shape the mock can't fake, not a
+    # real bug; confirmed separately against a real Postgres). Equivalent,
+    # non-fragile coverage of "an invalid/no-longer-valid session token is
+    # rejected" already exists at the function level in test_dependencies.py
+    # (TestGetCurrentUser::test_no_matching_session_raises_unauthorized) and
+    # test_cookie_auth.py, so it isn't duplicated here against the fragile path.
 
-    async def test_logout(self, async_client):
+    async def test_logout_requires_auth(self, async_client):
+        # Regression test for CF-AUD-005: logout must require the caller's own
+        # bearer token, not just any access_token in the body — otherwise an
+        # unauthenticated caller could revoke an arbitrary user's session.
         response = await async_client.post(
             "/api/v1/auth/logout",
             json={"access_token": "some-token"},
         )
-        assert response.status_code in (200, 500)
+        assert response.status_code == 401
 
 
 class TestUsersEndpoints:
@@ -282,6 +307,48 @@ class TestClientsEndpoints:
         response = await async_client.post(
             "/api/v1/clients/me/reports",
             json={"title": "Report"},
+        )
+        assert response.status_code == 401
+
+
+class TestPartnerAccountsEndpoints:
+    """Partner Portal endpoints — /api/v1/partner-accounts/* (mirrors Client
+    Portal's shape; distinct from the public /api/v1/partners CMS listing)."""
+
+    async def test_list_partner_accounts_requires_auth(self, async_client):
+        response = await async_client.get("/api/v1/partner-accounts")
+        assert response.status_code == 401
+
+    async def test_create_partner_account_requires_auth(self, async_client):
+        response = await async_client.post(
+            "/api/v1/partner-accounts",
+            json={"company_name": "Acme"},
+        )
+        assert response.status_code == 401
+
+    async def test_partner_me_profile_requires_auth(self, async_client):
+        response = await async_client.get("/api/v1/partner-accounts/me/profile")
+        assert response.status_code == 401
+
+    async def test_partner_update_profile_requires_auth(self, async_client):
+        response = await async_client.put(
+            "/api/v1/partner-accounts/me/profile",
+            json={"industry": "Reselling"},
+        )
+        assert response.status_code == 401
+
+    async def test_partner_me_files_requires_auth(self, async_client):
+        response = await async_client.get("/api/v1/partner-accounts/me/files")
+        assert response.status_code == 401
+
+    async def test_partner_me_tickets_requires_auth(self, async_client):
+        response = await async_client.get("/api/v1/partner-accounts/me/tickets")
+        assert response.status_code == 401
+
+    async def test_partner_create_ticket_requires_auth(self, async_client):
+        response = await async_client.post(
+            "/api/v1/partner-accounts/me/tickets",
+            json={"subject": "Issue"},
         )
         assert response.status_code == 401
 

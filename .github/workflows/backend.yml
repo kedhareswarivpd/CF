@@ -49,7 +49,21 @@ jobs:
           psql -h localhost -U test_user -d corefusion_test -c "CREATE SCHEMA IF NOT EXISTS auth;"
           psql -h localhost -U test_user -d corefusion_test -c "CREATE TABLE IF NOT EXISTS auth.users (id uuid PRIMARY KEY DEFAULT gen_random_uuid());"
 
-      - name: Run tests
+      - name: Apply Alembic migrations to the real CI Postgres
+        # Previously this Postgres service was never actually migrated or
+        # connected to by the app — see status.md CF-BE-REAL-DB-01. This step
+        # is the regression guard for the enum-duplication migration bug
+        # found and fixed in that pass (DuplicateObjectError on a fresh DB).
+        env:
+          ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: corefusion_test
+          DB_USER: test_user
+          DB_PASS: test_pass
+        run: alembic upgrade head
+
+      - name: Run pytest (mocked-persistence unit/API/security suite)
         env:
           ENV: test
           DB_HOST: localhost
@@ -62,6 +76,24 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: test_service_role_key
           SUPABASE_JWT_SECRET: test_jwt_secret
         run: pytest -v
+
+      - name: Run real-Postgres verification (IDOR, tenant isolation, N+1 — not mocked)
+        # tests/conftest.py mocks the SQLAlchemy engine for the whole pytest
+        # session (see CF-AUD-008), so nothing above touches this database.
+        # This script runs standalone, outside that mock, against the
+        # already-migrated schema.
+        env:
+          ENV: test
+          DB_HOST: localhost
+          DB_PORT: 5432
+          DB_NAME: corefusion_test
+          DB_USER: test_user
+          DB_PASS: test_pass
+          SUPABASE_URL: http://localhost:54321
+          SUPABASE_ANON_KEY: test_anon_key
+          SUPABASE_SERVICE_ROLE_KEY: test_service_role_key
+          SUPABASE_JWT_SECRET: test_jwt_secret
+        run: python -m tests.real_db_verification
 
   build-and-push:
     needs: test

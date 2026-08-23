@@ -19,42 +19,45 @@ export default {
         },
         warning: '#FD5521',
 
-        // Neutral surface scale (Material 3 tonal system from the Stitch exports)
+        // Neutral surface scale — light mode is the spec-compliant default
+        // (Background #F8FAFC / Primary #0A2540 text); dark mode (the
+        // `dark:` variants below) keeps the deep-navy scheme.
         surface: {
-          DEFAULT: '#0F3460',
-          dim: '#102C4F',
-          bright: '#143A62',
-          low: '#0A2540',
-          container: '#102C4F',
-          high: '#143A62',
-          highest: '#1A446E',
-          white: '#0A2540',
+          DEFAULT: '#F8FAFC',
+          dim: '#EEF2F6',
+          bright: '#FFFFFF',
+          low: '#FFFFFF',
+          container: '#EEF2F6',
+          high: '#E2E8F0',
+          highest: '#CBD5E1',
+          white: '#FFFFFF',
         },
         ink: {
           DEFAULT: '#0A2540',   // on-surface (body text)
           muted: '#334155',     // on-surface-variant (secondary text)
-          inverse: '#EFF1F3',   // text on dark backgrounds
+          inverse: '#F8FAFC',   // text on dark accent sections (hero images, brand banners)
         },
         outline: {
           DEFAULT: '#93C5FD',
           variant: '#BFDBFE',
         },
         dark: {
-          surface: { DEFAULT: '#0A2540', dim: '#102C4F', bright: '#0A2540', low: '#0F3460', container: '#102C4F', high: '#143A62', highest: '#1A446E', white: '#0A2540' },
+          surface: { DEFAULT: '#0F172A', dim: '#0A2540', bright: '#0F172A', low: '#1E293B', container: '#1E293B', high: '#334155', highest: '#475569', white: '#1E293B' },
           ink: { DEFAULT: '#F8FAFC', muted: '#CBD5E1', inverse: '#0A2540' },
-          outline: { DEFAULT: '#2563EB', variant: '#0F3460' },
+          outline: { DEFAULT: '#2563EB', variant: '#334155' },
           brand: { DEFAULT: '#2563EB', dark: '#0A2540', light: '#3B82F6', tint: '#93C5FD' },
         },
         status: {
-          success: { bg: '#dcfce7', text: '#166534' },
-          warning: { bg: '#fef3c7', text: '#92400e' },
-          error: { bg: '#fee2e2', text: '#991b1b' },
-          info: { bg: '#dbeafe', text: '#1e40af' },
+          success: { DEFAULT: '#16A34A', bg: '#dcfce7', text: '#166534' },
+          warning: { DEFAULT: '#F59E0B', bg: '#fef3c7', text: '#92400e' },
+          error: { DEFAULT: '#DC2626', bg: '#fee2e2', text: '#991b1b' },
+          danger: { DEFAULT: '#DC2626', bg: '#fee2e2', text: '#991b1b' },
+          info: { DEFAULT: '#0EA5E9', bg: '#dbeafe', text: '#1e40af' },
           neutral: { bg: '#f3f4f6', text: '#4b5563' },
         },
       },
       fontFamily: {
-        display: ['"Plus Jakarta Sans"', 'sans-serif'],
+        display: ['Poppins', 'sans-serif'],
         body: ['Inter', 'sans-serif'],
         stat: ['Montserrat', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'monospace'],
@@ -100,6 +103,15 @@ export default {
       boxShadow: {
         card: '0px 4px 20px rgba(10, 37, 64, 0.05)',
         'card-hover': '0px 12px 32px rgba(10, 37, 64, 0.1)',
+      },
+      keyframes: {
+        'fade-in': {
+          '0%': { opacity: '0', transform: 'translateY(-4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'fade-in': 'fade-in 0.2s ease-out',
       },
     },
   },

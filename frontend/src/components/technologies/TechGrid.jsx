@@ -10,8 +10,8 @@ export default function TechGrid({ categories }) {
             <Reveal key={cat.name} from="left" delay={i * 80}>
               <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
                 <div className="flex items-center gap-3 border-b border-outline-variant bg-surface-container px-stack-lg py-4 dark:border-dark-outline-variant dark:bg-dark-surface-container">
-                  <Icon name={cat.icon} className="text-2xl text-accent-cyan" />
-                  <h3 className="font-display text-headline-sm font-bold tracking-wide text-white">{cat.name}</h3>
+                  <Icon name={cat.icon} className="text-2xl text-brand" />
+                  <h3 className="font-display text-headline-sm font-bold tracking-wide text-brand-dark dark:text-dark-brand">{cat.name}</h3>
                 </div>
                 <div className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
                   {cat.technologies.map((tech) => (

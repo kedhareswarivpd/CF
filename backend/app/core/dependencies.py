@@ -1,78 +1,54 @@
-import uuid
-
 from fastapi import Depends, Request
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.cookies import ACCESS_TOKEN_COOKIE
 from app.core.database import get_db
 from app.core.errors import ApiError
 from app.core.logger import logger
-from app.core.security import decode_supabase_token
 from app.models.user import User
+from app.services.auth_service import get_session_by_access_token
 
-bearer_scheme = HTTPBearer(auto_error=False)
 
-
-async def _resolve_user(claims: dict, db: AsyncSession) -> User | None:
-    user_id = uuid.UUID(claims["sub"])
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-
-    if user is None:
-        # Auto-provision a minimal profile row for a Supabase-authenticated user
-        # who has no local profile yet (e.g. signed up via OAuth or directly
-        # through the Supabase dashboard).
-        metadata = claims.get("user_metadata") or {}
-        user = User(
-            id=user_id,
-            email=claims.get("email", ""),
-            name=metadata.get("name") or claims.get("email", "New User"),
-            role="client",
-            is_active=True,
-            is_email_verified=bool(
-                claims.get("email_confirmed_at") or metadata.get("email_verified")
-            ),
-        )
-        db.add(user)
-        await db.commit()
-        await db.refresh(user)
-
+async def _user_from_access_token(token: str, db: AsyncSession) -> User | None:
+    """Looks up the live session for this access token (CoreFusion-owned —
+    no external identity provider involved) and loads its user. Returns
+    None for a missing/expired/revoked session, an unknown user, or a
+    deactivated account — callers decide how to report that."""
+    session = await get_session_by_access_token(db, token)
+    if session is None:
+        return None
+    user = await db.get(User, session.user_id)
+    if user is None or not user.is_active:
+        return None
     return user
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> User:
-    if credentials is None:
+    token = request.cookies.get(ACCESS_TOKEN_COOKIE)
+    if not token:
         raise ApiError.unauthorized("Authentication token missing")
 
-    try:
-        claims = await decode_supabase_token(credentials.credentials)
-    except ValueError as exc:
-        raise ApiError.unauthorized("Invalid or expired token") from exc
-
-    user = await _resolve_user(claims, db)
-    if user is None or not user.is_active:
-        raise ApiError.unauthorized("User no longer exists or is deactivated")
-
+    user = await _user_from_access_token(token, db)
+    if user is None:
+        raise ApiError.unauthorized("Invalid or expired session")
     return user
 
 
 async def get_optional_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> User | None:
-    if credentials is None:
+    token = request.cookies.get(ACCESS_TOKEN_COOKIE)
+    if not token:
         return None
     try:
-        claims = await decode_supabase_token(credentials.credentials)
-        user = await _resolve_user(claims, db)
-        return user if (user and user.is_active) else None
-    except Exception as exc:
-        logger.warning("Could not resolve optional user from token: %s", exc)
+        return await _user_from_access_token(token, db)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not resolve optional user from session: %s", exc)
         return None
 
 
@@ -91,6 +67,16 @@ def require_roles(*roles: str):
         return current_user
 
     return dependency
+
+
+def is_staff(user: User | None, *roles: str) -> bool:
+    """None-safe role-membership check for the recurring "is this caller
+    staff, or the general public" pattern (e.g. content-visibility gates in
+    blog.py/projects.py) — `user` may be None (get_optional_user on a public
+    route), which every ad-hoc `current_user is not None and current_user.role
+    in (...)` check needs to handle the same way.
+    """
+    return user is not None and user.role in roles
 
 
 def get_client_ip(request: Request) -> str:

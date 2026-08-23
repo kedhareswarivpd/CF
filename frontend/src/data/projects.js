@@ -52,6 +52,7 @@ export const projects = [
     title: 'MedCore AI Diagnostic',
     description: 'A neural network integration for real-time pathology analysis with 99.4% accuracy across regional clinics.',
     tags: ['Python', 'TensorFlow', 'AWS'],
+    services: ['AI & ML'],
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBCLNWFWCyG0LoOGvaAlbswuqNQQGFhPdpxQ8UADsD4JhZtFg-CMZX9JviEertUUS6cgoosDa09t0_EwHzZ4Gnx5vzhyyRcMDz1ODZT_3zMCsQ3rZahZQvC1xF_GmCxRtrRaXlAp6DLnTHzJBIAh05HkY-tn2tNItroOZZD6NwX3_5s9_holl3vkMJZH1PT9hCDRXrja6LEOGGUrl8J5hNi6Sal7yAYH8SVmyu2whe2V7QfSXizSt6w',
   },
   {
@@ -60,6 +61,7 @@ export const projects = [
     title: 'RouteOptima Global',
     description: 'Fleet management system using predictive analytics to optimize trans-continental delivery routes.',
     tags: ['Golang', 'Kubernetes', 'React'],
+    services: ['AI & ML'],
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC-3cb2OCKi2iIGETqrRNtb-fzwLSaYQxXwanh0OOERM-2lrq1XylwKokpUusCESDZkb8SIv0aoCMvVzFSdSOdlxDPw6N6j9dIEf_L8-vLumrnr3MqniLrMx3IfMNjV_7EXI1spD87FYcWbQt-kKcRiPLM1l9lBQtYasEsVW_wkhqLZwE5Ovea7AEPaS2u2q_w1M5vz864_s5IUl3fyQCI-TQEhUJSHPZ9MJbaoXlDATTiieRvkBh7r',
   },
   {
@@ -68,6 +70,7 @@ export const projects = [
     title: 'OmniRetail ERP',
     description: 'Unified inventory and CRM solution for luxury retail chains spanning 120+ physical locations globally.',
     tags: ['Java', 'Oracle', 'Azure'],
+    services: ['ERP Systems'],
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAyWK2p8W1tmxijkrcqudr5NqqAdEYMdSIRI0vaQrmISXhgtva-GH658AmC-GvNrPxbQC5kY3egIerdQ8bxEVBLZpFNg6YH3cREBMyfOAvxG-C5S8y7grlIifyvhQ4sFhRxraAiNnZQ9MTI61UG9A95r1z_cRWnLwNwcAn2D1CD9D4SpGGshucmHg-TxbIgLL4ceyEWuVP-6UJvHk3NGSYWlc0_cbIDV-wJupVVeQnDuRueXXM7dKpJ',
   },
   {
@@ -76,6 +79,7 @@ export const projects = [
     title: 'PayStream Analytics',
     description: 'Real-time payment fraud detection engine processing 2M+ transactions per second with sub-10ms latency.',
     tags: ['Scala', 'Apache Flink', 'AWS'],
+    services: ['AI & ML', 'Cloud Architecture'],
     image: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80',
   },
   {
@@ -84,6 +88,7 @@ export const projects = [
     title: 'CareSync Patient Portal',
     description: 'HIPAA-compliant patient engagement platform connecting 300+ hospitals with unified health records.',
     tags: ['React', 'Node.js', 'PostgreSQL'],
+    services: ['Cloud Architecture'],
     image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80',
   },
   {
@@ -92,6 +97,7 @@ export const projects = [
     title: 'SmartShelf IoT',
     description: 'IoT-powered inventory management reducing stockouts by 62% across 500+ retail locations.',
     tags: ['IoT', 'Python', 'Azure'],
+    services: ['Cloud Architecture'],
     image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=800&q=80',
   },
   {
@@ -100,6 +106,7 @@ export const projects = [
     title: 'AeroTrack Cargo',
     description: 'End-to-end air freight visibility platform tracking 50,000+ shipments daily across 80 countries.',
     tags: ['Golang', 'gRPC', 'GCP'],
+    services: ['Cloud Architecture'],
     image: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?auto=format&fit=crop&w=800&q=80',
   },
   {
@@ -108,6 +115,7 @@ export const projects = [
     title: 'WealthOS Platform',
     description: 'White-label wealth management SaaS serving 40+ financial institutions with AI-driven portfolio insights.',
     tags: ['Python', 'React', 'Kubernetes'],
+    services: ['ERP Systems', 'AI & ML'],
     image: 'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=800&q=80',
   },
   {
@@ -116,6 +124,7 @@ export const projects = [
     title: 'GenomIQ Research Suite',
     description: 'Cloud-native genomics pipeline accelerating drug discovery research by 3x for biotech firms.',
     tags: ['Python', 'Nextflow', 'AWS'],
+    services: ['Cloud Architecture'],
     image: 'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=800&q=80',
   },
   {
@@ -124,6 +133,7 @@ export const projects = [
     title: 'LuxeCommerce Engine',
     description: 'Headless commerce platform powering 12 luxury brands with personalised AI-driven storefronts.',
     tags: ['Next.js', 'GraphQL', 'Elasticsearch'],
+    services: ['AI & ML'],
     image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=800&q=80',
   },
   {
@@ -132,6 +142,7 @@ export const projects = [
     title: 'ColdChain Monitor',
     description: 'Pharmaceutical cold-chain compliance system ensuring temperature integrity across 200+ distribution hubs.',
     tags: ['IoT', 'React', 'TimescaleDB'],
+    services: ['Cloud Architecture'],
     image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80',
   },
   {
@@ -140,11 +151,14 @@ export const projects = [
     title: 'RegTech Compliance Hub',
     description: 'Automated regulatory reporting platform reducing compliance overhead by 70% for mid-size banks.',
     tags: ['Java', 'Spring Boot', 'Oracle'],
+    services: ['ERP Systems'],
     image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=800&q=80',
   },
 ];
 
 export const industryFilters = ['All', 'Healthcare', 'Finance', 'Retail', 'Logistics'];
+// Each project above carries a `services` array whose values match these
+// filter options — the taxonomy ProjectGallery filters on client-side.
 export const serviceFilters = ['AI & ML', 'ERP Systems', 'Cloud Architecture'];
 
 export const globalNodes = [

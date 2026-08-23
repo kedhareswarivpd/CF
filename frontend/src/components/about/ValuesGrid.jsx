@@ -20,7 +20,7 @@ export default function ValuesGrid() {
                   isDark
                     ? 'bg-brand text-white hover:scale-[1.02]'
                     : 'bg-white hover:shadow-card-hover'
-                } ${value.title === 'Global Collaboration' ? 'flex flex-col justify-between' : ''}`}
+                } ${value.showAvatars ? 'flex flex-col justify-between' : ''}`}
               >
                 <div className="relative z-10">
                   <Icon name={value.icon} className={`mb-6 text-4xl ${isDark ? 'text-accent-cyan' : 'text-brand'}`} />

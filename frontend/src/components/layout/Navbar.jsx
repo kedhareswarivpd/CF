@@ -5,10 +5,12 @@ import { useTheme } from '../../context/ThemeContext.jsx';
 
 
 const NAV_LINKS = [
+  { label: 'Home', to: '/' },
+  { label: 'About', to: '/about' },
+  { label: 'Services', to: '/services' },
   { label: 'Solutions', to: '/solutions' },
-  { label: 'Products', to: '/products' },
-  { label: 'Technologies', to: '/technologies' },
   { label: 'Industries', to: '/industries' },
+  { label: 'Portfolio', to: '/portfolio' },
   { label: 'Resources', to: '/resources' },
   { label: 'Blog', to: '/blog' },
   { label: 'Careers', to: '/careers' },
@@ -86,16 +88,13 @@ export default function Navbar() {
             >
               Login
             </NavLink>
-            <Link
-              to="/register"
-              className="rounded bg-brand px-4 py-2 font-label-caps text-label-caps uppercase text-white transition-all hover:bg-brand-dark"
-            >
-              Register
-            </Link>
           </nav>
         </div>
 
         <div className="flex items-center gap-4">
+          <Link to="/" aria-label="Home" className="p-2 text-brand transition-colors hover:text-brand-dark dark:text-dark-brand dark:hover:text-brand">
+            <Icon name="home" />
+          </Link>
           <ThemeToggle />
 
           <button
@@ -129,13 +128,6 @@ export default function Navbar() {
           >
             Login
           </NavLink>
-          <Link
-            to="/register"
-            onClick={() => setMobileOpen(false)}
-            className="rounded bg-brand px-4 py-2 text-center font-label-caps text-label-caps uppercase text-white transition-all hover:bg-brand-dark"
-          >
-            Register
-          </Link>
         </nav>
       )}
 

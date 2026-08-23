@@ -8,15 +8,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.database import get_db
 from app.core.dependencies import require_roles
 from app.core.errors import ApiError
+from app.core.limiter import limiter
 from app.crud.base import CRUDBase
 from app.models.application import Application
 from app.models.career import Career
 from app.schemas.career import (
-    ApplicationOut, ApplicationStatusUpdate, CareerCreate, CareerOut,
+    ApplicationOut,
+    ApplicationStatusUpdate,
+    CareerCreate,
+    CareerOut,
 )
 from app.utils.pagination import PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
-from app.utils.uploads import save_upload
+from app.utils.uploads import load_private_file, save_upload
 
 router = APIRouter(prefix="/careers", tags=["Careers"])
 
@@ -35,7 +39,9 @@ async def list_open_positions(request: Request, db: AsyncSession = Depends(get_d
 
 
 @router.post("/{career_id}/apply", response_model=dict, status_code=201)
+@limiter.limit("5/hour")
 async def apply(
+    request: Request,
     career_id: uuid.UUID,
     full_name: str = Form(...),
     email: EmailStr = Form(...),
@@ -86,3 +92,15 @@ async def list_applications(request: Request, db: AsyncSession = Depends(get_db)
 async def update_application_status(application_id: uuid.UUID, payload: ApplicationStatusUpdate, db: AsyncSession = Depends(get_db)):
     application = await application_crud.update(db, application_id, payload.model_dump())
     return success_response(data=ApplicationOut.model_validate(application), message="Application status updated")
+
+
+@router.get("/admin/applications/{application_id}/resume", dependencies=[Depends(require_roles("admin", "hr"))])
+async def download_resume(application_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    from fastapi import Response
+
+    application = await application_crud.get(db, application_id)
+    content, filename, content_type = await load_private_file(application.resume_url, "careers")
+    return Response(
+        content=content, media_type=content_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

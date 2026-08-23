@@ -6,7 +6,7 @@ import LoadingSpinner from '../ui/LoadingSpinner.jsx';
 import {
   servicesApi, eventsApi, blogsApi, solutionsApi, caseStudiesApi, downloadsApi,
   industriesApi, technologiesApi, productsApi, awardsApi, faqsApi, galleryApi,
-  portfolioApi, resourcesApi, testimonialsApi, categoriesApi, partnersApi,
+  portfolioApi, resourcesApi, testimonialsApi, categoriesApi, partnersApi, seoApi, pageContentApi,
 } from '../../api/cms.js';
 
 import { FORM_INPUT_CLASS as BASE_INPUT_CLASS } from '../ui/formClasses.js';
@@ -21,20 +21,42 @@ const PUBLISHED = { name: 'is_published', label: 'Published', kind: 'checkbox' }
 const RESOURCES = [
   {
     key: 'services', label: 'Services', icon: 'settings', api: servicesApi,
+    // Full field set per the Service Content Workflow (source PDF §6):
+    // Overview → Business Problems → Solutions → Features → Benefits →
+    // Process → Technology Stack → Deliverables → Industries → Gallery →
+    // FAQs → CTA. Gallery/FAQs/CTA are rendered from their own separate
+    // admin resources (Gallery, FAQ) filtered by this service, not
+    // service-specific fields on the Service record itself — matching how
+    // the backend's ServiceCreate/Out schema actually models it.
     title: (i) => i.name, fields: [
       { name: 'name', label: 'Name', ...TEXT }, { name: 'slug', label: 'Slug', ...TEXT },
-      { name: 'icon', label: 'Icon', ...TEXT }, { name: 'overview', label: 'Overview', ...TEXTAREA },
+      { name: 'icon', label: 'Icon', ...TEXT }, { name: 'cover_image', label: 'Cover Image URL', ...TEXT },
+      { name: 'overview', label: 'Overview', ...TEXTAREA },
+      { name: 'business_problems', label: 'Business Problems', ...TEXTAREA },
+      { name: 'solutions', label: 'Solutions', ...TEXTAREA },
       { name: 'features', label: 'Features (one per line)', kind: 'list' },
-      { name: 'benefits', label: 'Benefits (one per line)', kind: 'list' }, PUBLISHED,
+      { name: 'benefits', label: 'Benefits (one per line)', kind: 'list' },
+      { name: 'process', label: 'Process steps (one per line)', kind: 'labelList' },
+      { name: 'technology_stack', label: 'Technology Stack (one per line)', kind: 'list' },
+      { name: 'deliverables', label: 'Deliverables (one per line)', kind: 'list' },
+      { name: 'related_industries', label: 'Related Industries (slugs, one per line — set on create only)', kind: 'list' },
+      { name: 'gallery', label: 'Gallery (image URLs, one per line)', kind: 'list' },
+      { name: 'faqs', label: 'FAQs ("Question :: Answer", one per line)', kind: 'qaList' },
+      { name: 'order', label: 'Display Order', ...NUMBER }, PUBLISHED,
     ],
   },
   {
     key: 'solutions', label: 'Solutions', icon: 'cloud', api: solutionsApi,
     title: (i) => i.name, fields: [
       { name: 'name', label: 'Name', ...TEXT }, { name: 'slug', label: 'Slug', ...TEXT },
-      { name: 'icon', label: 'Icon', ...TEXT }, { name: 'overview', label: 'Overview', ...TEXTAREA },
+      { name: 'icon', label: 'Icon', ...TEXT }, { name: 'cover_image', label: 'Cover Image URL', ...TEXT },
+      { name: 'overview', label: 'Overview', ...TEXTAREA },
+      { name: 'problem_statement', label: 'Problem Statement', ...TEXTAREA },
       { name: 'approach', label: 'Approach (one per line)', kind: 'list' },
-      { name: 'related_industries', label: 'Related industries (comma-separated)', kind: 'list' }, PUBLISHED,
+      { name: 'outcomes', label: 'Outcomes (one per line)', kind: 'list' },
+      { name: 'related_industries', label: 'Related industries (slugs, one per line)', kind: 'list' },
+      { name: 'related_services', label: 'Related services (slugs, one per line)', kind: 'list' },
+      { name: 'order', label: 'Display Order', ...NUMBER }, PUBLISHED,
     ],
   },
   {
@@ -43,7 +65,12 @@ const RESOURCES = [
       { name: 'title', label: 'Title', ...TEXT }, { name: 'slug', label: 'Slug', ...TEXT },
       { name: 'client_name', label: 'Client name', ...TEXT }, { name: 'industry', label: 'Industry', ...TEXT },
       { name: 'problem', label: 'Problem', ...TEXTAREA }, { name: 'solution', label: 'Solution', ...TEXTAREA },
-      { name: 'result', label: 'Result', ...TEXTAREA }, { name: 'roi', label: 'ROI', ...TEXTAREA }, PUBLISHED,
+      { name: 'implementation', label: 'Implementation', ...TEXTAREA },
+      { name: 'result', label: 'Result', ...TEXTAREA }, { name: 'roi', label: 'ROI', ...TEXT },
+      { name: 'customer_feedback', label: 'Customer Feedback', ...TEXTAREA },
+      { name: 'download_url', label: 'Download URL', ...TEXT },
+      { name: 'downloads', label: 'Additional Downloads ("Label :: URL", one per line)', kind: 'linkList' },
+      { name: 'cover_image', label: 'Cover Image URL', ...TEXT }, PUBLISHED,
     ],
   },
   {
@@ -158,7 +185,39 @@ const RESOURCES = [
       { name: 'type', label: 'Type', kind: 'select', options: ['technology_partner', 'business_partner', 'reseller'] }, PUBLISHED,
     ],
   },
+  {
+    key: 'seo', label: 'SEO', icon: 'search', api: seoApi,
+    title: (i) => i.page_path, fields: [
+      { name: 'page_path', label: 'Page path (e.g. /services)', ...TEXT },
+      { name: 'title', label: 'Meta title', ...TEXT }, { name: 'description', label: 'Meta description', ...TEXTAREA },
+      { name: 'keywords', label: 'Keywords', ...TEXT },
+      { name: 'og_title', label: 'OG title', ...TEXT }, { name: 'og_description', label: 'OG description', ...TEXTAREA },
+      { name: 'og_image', label: 'OG image URL', ...TEXT },
+      { name: 'canonical_url', label: 'Canonical URL', ...TEXT },
+      { name: 'no_index', label: 'No-index (hide from search engines)', kind: 'checkbox' },
+    ],
+  },
+  {
+    key: 'pageContent', label: 'Page Content', icon: 'description', api: pageContentApi,
+    title: (i) => i.title, fields: [
+      { name: 'slug', label: 'Slug (e.g. about-us)', ...TEXT }, { name: 'title', label: 'Title', ...TEXT },
+      { name: 'content', label: 'Content', ...TEXTAREA }, PUBLISHED,
+    ],
+  },
 ];
+
+// Best-effort singularization for the "New {X}" button label. A blind
+// "chop the last character" (the previous implementation) silently
+// mangles anything that isn't a plain "-s" plural — "SEO" became "SE",
+// "FAQ" became "FA", "Technologies"/"Categories" became "Technologie"/
+// "Categorie". Handles "-ies" plurals and plain "-s" plurals; anything
+// else (SEO, FAQ, Gallery, Portfolio, Page Content) is already singular
+// and is left as-is rather than guessed at.
+function singularize(label) {
+  if (label.endsWith('ies')) return `${label.slice(0, -3)}y`;
+  if (label.endsWith('s') && !label.endsWith('ss')) return label.slice(0, -1);
+  return label;
+}
 
 function splitList(value) {
   return String(value ?? '')
@@ -176,6 +235,16 @@ function toForm(item, fields) {
   fields.forEach((f) => {
     const raw = item?.[f.name];
     if (f.kind === 'list') form[f.name] = joinList(raw);
+    // Some backend fields (e.g. Service.process) are typed `list[dict]`, not
+    // `list[str]` — each line becomes {label: line} on submit so the plain
+    // one-per-line textarea UI still works against that stricter type.
+    else if (f.kind === 'labelList') form[f.name] = joinList((raw || []).map((r) => (typeof r === 'string' ? r : r?.label ?? '')));
+    // FAQ pairs (Service.faqs / list[dict] with question+answer keys) — one
+    // "Question :: Answer" per line in the textarea UI.
+    else if (f.kind === 'qaList') form[f.name] = joinList((raw || []).map((r) => `${r?.question ?? ''} :: ${r?.answer ?? ''}`));
+    // Label+URL pairs (Project.downloads / CaseStudy.downloads) — one
+    // "Label :: URL" per line.
+    else if (f.kind === 'linkList') form[f.name] = joinList((raw || []).map((r) => `${r?.label ?? ''} :: ${r?.url ?? ''}`));
     else if (f.kind === 'checkbox') form[f.name] = !!raw;
     else form[f.name] = raw ?? '';
   });
@@ -187,6 +256,18 @@ function toPayload(form, fields) {
   fields.forEach((f) => {
     let value = form[f.name];
     if (f.kind === 'list') value = splitList(value);
+    else if (f.kind === 'labelList') value = splitList(value).map((label) => ({ label }));
+    else if (f.kind === 'qaList') {
+      value = splitList(value).map((line) => {
+        const [question, ...rest] = line.split('::');
+        return { question: question.trim(), answer: rest.join('::').trim() };
+      });
+    } else if (f.kind === 'linkList') {
+      value = splitList(value).map((line) => {
+        const [label, ...rest] = line.split('::');
+        return { label: label.trim(), url: rest.join('::').trim() };
+      });
+    }
     else if (f.kind === 'number') value = value === '' ? null : Number(value);
     else if (f.kind === 'checkbox') value = !!value;
     else if (f.kind === 'text' && value === '') value = null;
@@ -199,7 +280,7 @@ function Field({ field, value, onChange }) {
   if (field.kind === 'textarea') {
     return <textarea rows={3} placeholder={field.label} value={value} onChange={(e) => onChange(field.name, e.target.value)} className={FORM_INPUT_CLASS} />;
   }
-  if (field.kind === 'list') {
+  if (field.kind === 'list' || field.kind === 'labelList' || field.kind === 'qaList' || field.kind === 'linkList') {
     return <textarea rows={3} placeholder={`${field.label} (one per line)`} value={value} onChange={(e) => onChange(field.name, e.target.value)} className={FORM_INPUT_CLASS} />;
   }
   if (field.kind === 'select') {
@@ -315,7 +396,7 @@ export default function ContentManager({ accessToken }) {
             key={r.key}
             onClick={() => { setActiveKey(r.key); setShowForm(false); }}
             className={`flex items-center gap-2 rounded-full px-4 py-2 font-label-caps text-label-caps uppercase transition-all ${
-              activeKey === r.key ? 'bg-brand text-white' : 'bg-surface-container text-white hover:bg-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted'
+              activeKey === r.key ? 'bg-brand text-white' : 'bg-surface-container text-ink-muted hover:bg-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted'
             }`}
           >
             <Icon name={r.icon} className="text-lg" />{r.label}
@@ -329,7 +410,7 @@ export default function ContentManager({ accessToken }) {
             {resource.label} <span className="text-body-sm font-normal text-ink-muted">({items.length})</span>
           </h3>
           <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={showForm ? () => setShowForm(false) : startCreate}>
-            {showForm ? 'Close' : `New ${resource.label.slice(0, -1) || 'Item'}`}
+            {showForm ? 'Close' : `New ${singularize(resource.label) || 'Item'}`}
           </Button>
         </div>
 
@@ -337,7 +418,7 @@ export default function ContentManager({ accessToken }) {
           <form onSubmit={handleSubmit} className="space-y-4 border-b border-outline-variant bg-surface-container p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface-container">
             <div className="grid gap-4 sm:grid-cols-2">
               {resource.fields.map((f) => (
-                <div key={f.name} className={f.kind === 'textarea' || f.kind === 'list' ? 'sm:col-span-2' : ''}>
+                <div key={f.name} className={['textarea', 'list', 'labelList', 'qaList', 'linkList'].includes(f.kind) ? 'sm:col-span-2' : ''}>
                   <label className="mb-1 block text-body-sm font-medium text-ink dark:text-white">{f.label}</label>
                   <Field field={f} value={form[f.name] ?? ''} onChange={(name, value) => setForm((prev) => ({ ...prev, [name]: value }))} />
                   {fieldErrors[f.name] && (
@@ -347,7 +428,7 @@ export default function ContentManager({ accessToken }) {
               ))}
             </div>
             {error && (
-              <div className="rounded-lg border border-status-error bg-status-error/10 px-4 py-3">
+              <div className="border-status-error bg-status-error/10 rounded-lg border px-4 py-3">
                 <p className="flex items-center gap-1 text-body-sm font-semibold text-status-error-text"><Icon name="error" className="text-base" />{error}</p>
                 {Object.keys(fieldErrors).length > 0 && (
                   <ul className="mt-2 list-inside list-disc text-body-xs text-status-error-text">
@@ -372,7 +453,7 @@ export default function ContentManager({ accessToken }) {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+              <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
                 <tr>
                   <th className="px-stack-lg py-4">Name</th>
                   <th className="px-stack-lg py-4">Status</th>
@@ -394,10 +475,10 @@ export default function ContentManager({ accessToken }) {
                     </td>
                     <td className="px-stack-lg py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => startEdit(item)} className="text-ink-muted transition-colors hover:text-brand" title="Edit">
+                        <button onClick={() => startEdit(item)} aria-label={`Edit ${resource.title(item)}`} className="text-ink-muted transition-colors hover:text-brand" title="Edit">
                           <Icon name="edit" className="text-lg" />
                         </button>
-                        <button onClick={() => remove(item)} className="text-ink-muted transition-colors hover:text-status-error-text" title="Delete">
+                        <button onClick={() => remove(item)} aria-label={`Delete ${resource.title(item)}`} className="text-ink-muted transition-colors hover:text-status-error-text" title="Delete">
                           <Icon name="delete" className="text-lg" />
                         </button>
                       </div>

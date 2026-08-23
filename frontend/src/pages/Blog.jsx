@@ -37,7 +37,12 @@ export default function Blog() {
 
   useEffect(() => {
     apiRequest('/blogs?limit=20')
-      .then((res) => setPosts(adaptBlogPosts(res.data || [])))
+      .then((res) => {
+        const adapted = adaptBlogPosts(res.data || []);
+        // An empty (but successful) response means no posts are published yet —
+        // fall back to the bundled demo dataset so the section isn't blank.
+        setPosts(adapted.length ? adapted : fallbackPosts);
+      })
       .catch(() => setPosts(fallbackPosts))
       .finally(() => setLoading(false));
   }, []);
@@ -50,7 +55,7 @@ export default function Blog() {
         title="Thought Leadership & Engineering Deep Dives"
         description="Practical knowledge and perspectives from our team of experts."
         align="center"
-        className="mx-auto max-w-container px-margin-mobile pt-16 md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white"
+        className="mx-auto max-w-container px-margin-mobile pt-16 md:px-margin-desktop"
       />
       {loading ? (
         <div className="py-8 text-center text-body-md text-ink-muted">Loading posts...</div>

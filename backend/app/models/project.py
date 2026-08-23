@@ -2,7 +2,7 @@ import uuid
 from datetime import date
 
 from sqlalchemy import ARRAY, Boolean, Date, Enum, ForeignKey, Integer, Numeric, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -30,6 +30,9 @@ class Project(Base):
     project_manager_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
     cover_image: Mapped[str | None] = mapped_column(String(500))
     video_url: Mapped[str | None] = mapped_column(String(500))
+    deliverables: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=list)
+    gallery: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=list)
+    downloads: Mapped[list | None] = mapped_column(JSONB, default=list)
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False)
     is_published: Mapped[bool] = mapped_column(Boolean, default=False)
 

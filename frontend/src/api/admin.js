@@ -1,4 +1,4 @@
-import { apiRequest, toQueryString, API_URL, ApiRequestError } from './client.js';
+import { apiRequest, toQueryString, API_URL } from './client.js';
 
 // ── Dashboard ──────────────────────────────────────────────────────────────
 export const fetchDashboardOverview      = (token)         => apiRequest('/dashboard/overview', { token });
@@ -83,34 +83,31 @@ export const trackPageView = (data) => apiRequest('/analytics/track', { method: 
 export const fetchMedia       = (token, p = {}) => apiRequest(`/media${toQueryString(p)}`, { token });
 export const deleteMedia      = (token, id)     => apiRequest(`/media/${id}`, { method: 'DELETE', token });
 
-/** Multipart file upload — bypasses apiRequest's JSON-only body encoding. */
-export async function uploadMedia(token, files, folder = 'misc') {
+/** Multipart file upload — uses apiRequest so cookies/CSRF are handled the same as every other request. */
+export function uploadMedia(token, files, folder = 'misc') {
   const formData = new FormData();
   Array.from(files).forEach((file) => formData.append('files', file));
   formData.append('folder', folder);
-
-  let response;
-  try {
-    response = await fetch(`${API_URL}/media/upload`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
-  } catch (networkError) {
-    throw new ApiRequestError('Could not reach the CoreFusion API. Is the backend running?', 0, [{ field: null, message: networkError.message }]);
-  }
-
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) {
-    throw new ApiRequestError(payload?.message || response.statusText || 'Upload failed', response.status, payload?.errors || []);
-  }
-  return payload;
+  return apiRequest('/media/upload', { method: 'POST', body: formData, token });
 }
 
 // ── Notifications ──────────────────────────────────────────────────────────
 export const fetchNotifications = (token)     => apiRequest('/notifications', { token });
 export const markNotificationRead = (token, id) => apiRequest(`/notifications/${id}/read`, { method: 'PATCH', token });
 export const markAllNotificationsRead = (token) => apiRequest('/notifications/read-all', { method: 'PATCH', token });
+export const createNotification = (token, body) => apiRequest('/notifications', { method: 'POST', body, token });
+
+// ── Blog comment moderation ─────────────────────────────────────────────────
+export const fetchComments  = (token, p = {}) => apiRequest(`/comments${toQueryString(p)}`, { token });
+export const moderateComment = (token, id, status) => apiRequest(`/comments/${id}`, { method: 'PATCH', body: { status }, token });
+export const deleteComment  = (token, id)     => apiRequest(`/comments/${id}`, { method: 'DELETE', token });
+
+// ── Newsletter subscribers (admin view) ─────────────────────────────────────
+export const fetchNewsletterSubscribers = (token, p = {}) => apiRequest(`/newsletter${toQueryString(p)}`, { token });
+
+// ── Training courses (admin/hr create — no update/delete endpoint exists) ──
+export const fetchCourses = (token, p = {}) => apiRequest(`/trainings/courses${toQueryString({ limit: 100, ...p })}`, { token });
+export const createCourse = (token, body)   => apiRequest('/trainings/courses', { method: 'POST', body, token });
 
 // ── Reports ────────────────────────────────────────────────────────────────
 export const fetchReports  = (token, p = {}) => apiRequest(`/reports${toQueryString(p)}`, { token });
@@ -123,3 +120,20 @@ export const updateContactStatus = (token, id, status) => apiRequest(`/contact/$
 
 // ── Audit Logs ─────────────────────────────────────────────────────────────
 export const fetchAuditLogs = (token, p = {}) => apiRequest(`/audit-logs${toQueryString(p)}`, { token });
+
+// ── SEO Metadata ───────────────────────────────────────────────────────────
+export const fetchSeoEntries = (token, p = {}) => apiRequest(`/seo${toQueryString({ limit: 100, ...p })}`, { token });
+export const createSeoEntry  = (token, body)   => apiRequest('/seo', { method: 'POST', body, token });
+export const updateSeoEntry  = (token, id, b)  => apiRequest(`/seo/${id}`, { method: 'PUT', body: b, token });
+export const deleteSeoEntry  = (token, id)     => apiRequest(`/seo/${id}`, { method: 'DELETE', token });
+
+// ── Settings (key-based, not id-based — GET list, PUT upserts by key) ──────
+export const fetchSettings = (token, p = {}) => apiRequest(`/settings${toQueryString(p)}`, { token });
+export const upsertSetting = (token, key, body) => apiRequest(`/settings/${encodeURIComponent(key)}`, { method: 'PUT', body, token });
+export const deleteSetting = (token, key)     => apiRequest(`/settings/${encodeURIComponent(key)}`, { method: 'DELETE', token });
+
+// ── Backups (Super Admin only server-side) ──────────────────────────────────
+export const fetchBackups   = (token)         => apiRequest('/backups', { token });
+export const triggerBackup  = (token)         => apiRequest('/backups/trigger', { method: 'POST', token });
+export const deleteBackup   = (token, filename) => apiRequest(`/backups/${encodeURIComponent(filename)}`, { method: 'DELETE', token });
+export const backupDownloadUrl = (filename)   => `${API_URL}/backups/${encodeURIComponent(filename)}/download`;

@@ -24,6 +24,9 @@ class ProjectCreate(BaseModel):
     project_manager_id: uuid.UUID | None = None
     cover_image: str | None = None
     video_url: str | None = None
+    deliverables: list[str] = []
+    gallery: list[str] = []
+    downloads: list[dict] = []
     is_featured: bool = False
     is_published: bool = False
 
@@ -35,6 +38,7 @@ class ProjectUpdate(BaseModel):
     challenge: str | None = None
     solution: str | None = None
     technology_stack: list[str] | None = None
+    architecture_notes: str | None = None
     status: ProjectStatus | None = None
     progress_percent: int | None = None
     budget: float | None = None
@@ -43,6 +47,9 @@ class ProjectUpdate(BaseModel):
     project_manager_id: uuid.UUID | None = None
     cover_image: str | None = None
     video_url: str | None = None
+    deliverables: list[str] | None = None
+    gallery: list[str] | None = None
+    downloads: list[dict] | None = None
     is_featured: bool | None = None
     is_published: bool | None = None
 
@@ -65,6 +72,7 @@ class ProjectOut(TimestampedRead):
     challenge: str | None = None
     solution: str | None = None
     technology_stack: list[str] = []
+    architecture_notes: str | None = None
     industry: str | None = None
     start_date: date | None = None
     end_date: date | None = None
@@ -74,6 +82,9 @@ class ProjectOut(TimestampedRead):
     project_manager_id: uuid.UUID | None = None
     cover_image: str | None = None
     video_url: str | None = None
+    deliverables: list[str] = []
+    gallery: list[str] = []
+    downloads: list[dict] = []
     is_featured: bool
     is_published: bool
     team: list[ProjectMemberOut] = []

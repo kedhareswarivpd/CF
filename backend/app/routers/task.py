@@ -5,8 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
+from app.core.errors import ApiError
 from app.crud.base import CRUDBase
 from app.models.task import Task
+from app.models.user import User
 from app.schemas.task import TaskCreate, TaskOut, TaskStatusUpdate
 from app.utils.pagination import PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
@@ -31,6 +33,17 @@ async def create_task(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/{task_id}/status", response_model=dict)
-async def update_task_status(task_id: uuid.UUID, payload: TaskStatusUpdate, db: AsyncSession = Depends(get_db)):
+async def update_task_status(
+    task_id: uuid.UUID,
+    payload: TaskStatusUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    existing = await crud.get(db, task_id)
+    is_privileged = current_user.role in ("admin", "super_admin", "project_manager")
+    is_assignee = existing.assigned_to is not None and existing.assigned_to == current_user.id
+    if not is_privileged and not is_assignee:
+        raise ApiError.forbidden("You can only update tasks assigned to you")
+
     task = await crud.update(db, task_id, payload.model_dump())
     return success_response(data=TaskOut.model_validate(task), message="Task status updated")

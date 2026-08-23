@@ -15,6 +15,7 @@ class UserRole(str, enum.Enum):
     client = "client"
     employee = "employee"
     guest = "guest"
+    partner = "partner"
 
 
 class EmploymentType(str, enum.Enum):
@@ -186,13 +187,6 @@ class NotificationType(str, enum.Enum):
     success = "success"
     warning = "warning"
     error = "error"
-
-
-class ContactStatus(str, enum.Enum):
-    new = "new"
-    in_progress = "in_progress"
-    resolved = "resolved"
-    spam = "spam"
 
 
 class LeadSource(str, enum.Enum):

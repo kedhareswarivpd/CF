@@ -1,10 +1,8 @@
 """Unit tests for pagination, sorting, and error classes."""
-from unittest.mock import MagicMock, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 from app.core.errors import ApiError
-from app.utils.pagination import PageParams, apply_sort, page_params
+from app.utils.pagination import PageParams, apply_sort
 
 
 class TestPageParams:
@@ -42,7 +40,7 @@ class TestApplySort:
         mock_model = MagicMock()
         mock_model.created_at = MagicMock()
 
-        result = apply_sort(mock_query, mock_model, None)
+        apply_sort(mock_query, mock_model, None)
         mock_model.created_at.desc.assert_called_once()
 
     def test_descending_sort(self):

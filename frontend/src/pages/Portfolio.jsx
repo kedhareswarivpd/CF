@@ -26,7 +26,7 @@ export default function Portfolio() {
         onServiceToggle={toggleService}
       />
       <FeaturedCaseStudy />
-      <ProjectGallery industry={industry} />
+      <ProjectGallery industry={industry} activeServices={activeServices} />
       <GlobalMap />
     </>
   );

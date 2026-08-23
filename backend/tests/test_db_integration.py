@@ -1,5 +1,4 @@
 """True database integration tests using aiosqlite with raw SQL."""
-import asyncio
 import uuid
 
 import aiosqlite

@@ -1,36 +1,49 @@
-import html
-from email.message import EmailMessage
+"""Transactional email via Brevo's HTTP API (https://api.brevo.com/v3/smtp/email)
+— not SMTP. One Brevo account/API key serves every environment (local dev
+and staging both send through Brevo, per explicit instruction); there is no
+separate SMTP-relay code path anymore.
 
-import aiosmtplib
+Brevo requires the sender address to be a verified sender/domain in that
+Brevo account — an unverified `brevo_sender_email` will make every send fail
+with a 4xx from Brevo's API (visible in the logged response body), not a
+silent failure.
+"""
+import html
+
+import httpx
 
 from app.core.config import settings
 from app.core.logger import logger
 
+_BREVO_SEND_URL = "https://api.brevo.com/v3/smtp/email"
+
 
 async def send_email(to: str, subject: str, html_body: str) -> None:
-    if not settings.smtp_host:
-        logger.info("[email:skipped, no SMTP configured] to=%s subject=%s", to, subject)
+    if not settings.brevo_api_key:
+        logger.info("[email:skipped, no BREVO_API_KEY configured] to=%s subject=%s", to, subject)
         return
 
-    message = EmailMessage()
-    message["From"] = settings.smtp_from
-    message["To"] = to
-    message["Subject"] = subject
-    message.set_content("This email requires an HTML-capable client.")
-    message.add_alternative(html_body, subtype="html")
+    payload = {
+        "sender": {"email": settings.brevo_sender_email, "name": settings.brevo_sender_name},
+        "to": [{"email": to}],
+        "subject": subject,
+        "htmlContent": html_body,
+    }
+    headers = {
+        "api-key": settings.brevo_api_key,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
 
     try:
-        await aiosmtplib.send(
-            message,
-            hostname=settings.smtp_host,
-            port=settings.smtp_port,
-            username=settings.smtp_user or None,
-            password=settings.smtp_pass or None,
-            start_tls=True,
-        )
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(_BREVO_SEND_URL, json=payload, headers=headers)
+        if response.status_code >= 400:
+            logger.error("Brevo rejected email to %s (status %s): %s", to, response.status_code, response.text[:500])
+            return
         logger.info("Email sent to %s: %s", to, subject)
-    except Exception as exc:  # noqa: BLE001
-        logger.error("Failed to send email to %s: %s", to, exc)
+    except Exception as exc:  # noqa: BLE001 — email delivery must never crash the caller's request
+        logger.error("Failed to send email to %s via Brevo: %s", to, exc)
 
 
 def _esc(value: object) -> str:
@@ -56,9 +69,49 @@ async def send_password_reset_email(name: str, email: str, reset_url: str) -> No
     )
 
 
+async def send_verification_email(name: str, email: str, verify_url: str) -> None:
+    safe_name = _esc(name)
+    safe_url = _esc(verify_url)
+    await send_email(
+        email,
+        f"Verify your {settings.app_name} email",
+        f"<p>Hi {safe_name},</p><p>Please verify your email address to finish setting up your account. "
+        f"This link expires in 24 hours.</p><p><a href=\"{safe_url}\">{safe_url}</a></p>",
+    )
+
+
+async def send_password_changed_notification(name: str, email: str) -> None:
+    """Sent after a successful password change/reset — a standard security
+    notification so the account owner notices if it wasn't them."""
+    await send_email(
+        email,
+        f"Your {settings.app_name} password was changed",
+        f"<p>Hi {_esc(name)},</p><p>Your password was just changed. If this wasn't you, "
+        f"contact support immediately — all other active sessions have been signed out.</p>",
+    )
+
+
+async def send_mfa_enabled_notification(name: str, email: str) -> None:
+    await send_email(
+        email,
+        f"Two-factor authentication enabled on your {settings.app_name} account",
+        f"<p>Hi {_esc(name)},</p><p>Two-factor authentication was just turned on for your account. "
+        f"If this wasn't you, contact support immediately.</p>",
+    )
+
+
+async def send_mfa_disabled_notification(name: str, email: str) -> None:
+    await send_email(
+        email,
+        f"Two-factor authentication disabled on your {settings.app_name} account",
+        f"<p>Hi {_esc(name)},</p><p>Two-factor authentication was just turned off for your account. "
+        f"If this wasn't you, contact support immediately and re-enable it.</p>",
+    )
+
+
 async def send_contact_notification(name: str, email: str, message: str, subject: str | None) -> None:
     await send_email(
-        settings.smtp_from,
+        settings.brevo_sender_email,
         f"New Contact Form Submission: {subject or 'General Inquiry'}",
         f"<p><strong>Name:</strong> {_esc(name)}</p><p><strong>Email:</strong> {_esc(email)}</p>"
         f"<p><strong>Message:</strong> {_esc(message)}</p>",

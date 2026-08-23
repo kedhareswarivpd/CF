@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
-from app.core.dependencies import get_current_user, get_optional_user, require_roles
+from app.core.dependencies import get_current_user, get_optional_user, is_staff, require_roles
 from app.core.errors import ApiError
 from app.core.logger import logger
 from app.crud.base import CRUDBase
@@ -75,11 +75,18 @@ async def list_projects(
 
 @router.get("/{identifier}", response_model=dict)
 async def get_project(identifier: str, db: AsyncSession = Depends(get_db), current_user: User | None = Depends(get_optional_user)):
+    # ProjectOut serializes `team` — without eager-loading it, Pydantic's lazy
+    # attribute access crashes with MissingGreenlet outside a live session
+    # context on any project that actually has team members assigned. Only
+    # ever caught against a real Postgres session (mocked tests can't
+    # reproduce SQLAlchemy's async lazy-load behavior) — found via
+    # tests/e2e_workflows.py.
+    from sqlalchemy.orm import selectinload
     try:
         project_id = uuid.UUID(identifier)
-        query = select(Project).where(Project.id == project_id)
+        query = select(Project).options(selectinload(Project.team)).where(Project.id == project_id)
     except ValueError:
-        query = select(Project).where(Project.slug == identifier)
+        query = select(Project).options(selectinload(Project.team)).where(Project.slug == identifier)
 
     try:
         project = (await db.execute(query)).scalar_one_or_none()
@@ -87,7 +94,7 @@ async def get_project(identifier: str, db: AsyncSession = Depends(get_db), curre
         logger.warning("Database query failed while loading project: %s", exc)
         raise ApiError.not_found("Project not found") from exc
 
-    if not project or (current_user is None and not project.is_published):
+    if not project or (not project.is_published and not is_staff(current_user, "admin", "super_admin", "project_manager", "marketing")):
         raise ApiError.not_found("Project not found")
     return success_response(data=ProjectOut.model_validate(project))
 
@@ -103,9 +110,24 @@ async def create_project(payload: ProjectCreate, db: AsyncSession = Depends(get_
     return success_response(data=ProjectOut.model_validate(loaded), message="Project created successfully", status_code=201)
 
 
+def _require_own_project_or_admin(current_user: User, project: Project) -> None:
+    """Real gap found during a security audit: any `project_manager` could
+    edit or reassign the team of ANY project, not just the ones they
+    actually manage — a horizontal privilege escalation within the
+    project_manager role, the same class of issue already fixed for
+    clients/partners (account_manager_id) and leaves/timesheets
+    (reporting_manager_id)."""
+    if current_user.role in ("admin", "super_admin"):
+        return
+    if project.project_manager_id != current_user.id:
+        raise ApiError.forbidden("You can only manage projects you are assigned as the project manager for")
+
+
 @router.put("/{project_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "project_manager"))])
-async def update_project(project_id: uuid.UUID, payload: ProjectUpdate, db: AsyncSession = Depends(get_db)):
+async def update_project(project_id: uuid.UUID, payload: ProjectUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     from sqlalchemy.orm import selectinload
+    existing = await crud.get(db, project_id)
+    _require_own_project_or_admin(current_user, existing)
     project = await crud.update(db, project_id, payload.model_dump(exclude_unset=True))
     res = await db.execute(select(Project).options(selectinload(Project.team)).where(Project.id == project.id))
     loaded = res.scalar_one()
@@ -113,14 +135,16 @@ async def update_project(project_id: uuid.UUID, payload: ProjectUpdate, db: Asyn
 
 
 @router.patch("/{project_id}/team", response_model=dict, dependencies=[Depends(require_roles("admin", "project_manager"))])
-async def assign_team(project_id: uuid.UUID, payload: AssignTeamRequest, db: AsyncSession = Depends(get_db)):
+async def assign_team(project_id: uuid.UUID, payload: AssignTeamRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     from sqlalchemy.orm import selectinload
+
     from app.models.employee import Employee
 
     result = await db.execute(select(Project).options(selectinload(Project.team)).where(Project.id == project_id))
     project = result.scalar_one_or_none()
     if not project:
         raise ApiError.not_found("Project not found")
+    _require_own_project_or_admin(current_user, project)
 
     employees = (await db.execute(
         select(Employee).where((Employee.id.in_(payload.employee_ids)) | (Employee.user_id.in_(payload.employee_ids)))

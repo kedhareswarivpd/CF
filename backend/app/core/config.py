@@ -1,10 +1,20 @@
+import os
 from functools import lru_cache
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
+
+# Which .env file to load — defaults to backend/.env (local dev), but
+# scripts/migrate.sh (and anything else targeting a different environment,
+# e.g. staging) can set ENV_FILE=.env.staging in the process environment
+# before starting Python. Deliberately NOT done by having callers `source`
+# the .env file in bash first — .env syntax isn't bash syntax (e.g.
+# SMTP_FROM's `Name <email>` format breaks bash's `<` as redirection) and
+# that produced real, confusing failures when tried. Let pydantic-settings'
+# real dotenv parser handle it instead.
+_ENV_FILE = os.environ.get("ENV_FILE") or str(BACKEND_ROOT / ".env")
 
 # SQLAlchemy driver aliases used to switch a `postgresql://` URL between the
 # async and sync dialects. The order matters for prefixes like
@@ -27,7 +37,7 @@ def _as_scheme(url: str, scheme: str) -> str:
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=str(BACKEND_ROOT / ".env"),
+        env_file=_ENV_FILE,
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
@@ -48,32 +58,55 @@ class Settings(BaseSettings):
     db_user: str = "postgres"
     db_pass: str = ""
     db_use_pgbouncer: bool = False  # set True when pointing at Supabase's transaction pooler (port 6543)
+    # Sized so 4 gunicorn workers (docker/Dockerfile) x (pool_size+max_overflow)
+    # stays safely under a vanilla Postgres' default max_connections=100 with
+    # headroom for migrations/admin/other consumers: 4 x 20 = 80. When
+    # DB_USE_PGBOUNCER=true, PgBouncer's transaction-mode multiplexing means
+    # these can be raised well above what direct-to-Postgres would allow —
+    # see backend/performance/pool_matrix_test.py for the measurements this
+    # sizing is based on (CF-BE-009).
+    db_pool_size: int = 10
+    db_max_overflow: int = 10
 
-    # Supabase
-    
-    supabase_url: str = ""
-    supabase_anon_key: str = ""
-    supabase_service_role_key: str = ""
-    supabase_jwt_secret: str = ""
-
-    # Redis
+    # Redis — a local container in dev, Upstash (managed, TLS-required Redis)
+    # in staging. redis_url_override, if set, is used verbatim as the full
+    # connection string (Upstash's own dashboard gives you exactly this:
+    # `rediss://default:<token>@<host>:<port>`) — paste it here rather than
+    # decomposing it into the host/port/password fields below, which are for
+    # the local-container case and assume plain, non-TLS `redis://`.
+    redis_url_override: str = ""
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_password: str | None = None
+    redis_tls: bool = False  # forces rediss:// when building from host/port/password instead of redis_url_override
 
-    # JWT (Supabase issues these; we only need the algorithm to verify them)
-    jwt_algorithm: str = "HS256"
+    # Email — Brevo's transactional email HTTP API (not SMTP; see
+    # services/email_service.py). One account/API key serves every
+    # environment (local dev and staging both send through Brevo per
+    # explicit instruction) — there is no separate "local" email path.
+    brevo_api_key: str = ""
+    brevo_sender_email: str = "no-reply@corefusiontech.com"
+    brevo_sender_name: str = "CoreFusion Technologies"
 
-    # SMTP
-    smtp_host: str = ""
-    smtp_port: int = 587
-    smtp_user: str = ""
-    smtp_pass: str = ""
-    smtp_from: str = "CoreFusion Technologies <no-reply@corefusiontech.com>"
-
-    # Uploads
+    # Uploads / file storage. "local" (default) writes to local disk exactly
+    # as before — nothing changes for a deployment that doesn't set these.
+    # "s3" routes every upload through an S3-compatible bucket instead
+    # (core/storage_service.py) — MinIO locally, Supabase Storage's
+    # S3-compatible API in staging/production; the same code path serves
+    # both since both speak the S3 API, only the endpoint/credentials differ
+    # per environment.
+    storage_backend: str = "local"  # "local" | "s3"
     upload_dir: str = "uploads"
     max_file_size_mb: int = 10
+
+    s3_endpoint_url: str = ""  # e.g. http://minio:9000 (local) or https://<project-ref>.supabase.co/storage/v1/s3 (staging)
+    s3_access_key_id: str = ""
+    s3_secret_access_key: str = ""
+    s3_bucket: str = "corefusion-uploads"
+    s3_region: str = "us-east-1"
+    s3_force_path_style: bool = True  # required by MinIO; harmless elsewhere
+    s3_public_url_base: str = ""  # e.g. http://localhost:9000/corefusion-uploads (local) or https://<project-ref>.supabase.co/storage/v1/object/public/corefusion-uploads (staging)
+    s3_auto_create_bucket: bool = True  # convenient for MinIO's empty local volume; a no-op (caught, ignored) if the bucket already exists, e.g. on Supabase
 
     # Site
     site_url: str = "https://www.corefusiontech.com"
@@ -86,6 +119,38 @@ class Settings(BaseSettings):
 
     # Trust `x-forwarded-for` for client IP (only when behind a known proxy/load balancer)
     trust_proxy_headers: bool = False
+
+    # MFA / 2FA (TOTP) — OFF by default for every account. This is a global
+    # kill switch: when False, every /auth/mfa/* endpoint responds 404 (the
+    # feature doesn't exist as far as any caller can tell) regardless of any
+    # per-user state, and login never branches into the MFA-challenge path.
+    # Flipping this to True does NOT turn MFA on for existing users — each
+    # account still opts in individually via POST /auth/mfa/setup +
+    # POST /auth/mfa/enable. mfa_encryption_key must be a valid Fernet key
+    # (generate with `python -c "from cryptography.fernet import Fernet;
+    # print(Fernet.generate_key().decode())"`) before mfa_enabled=True is used
+    # for real — app/core/mfa.py raises clearly at call time if it's missing.
+    mfa_enabled: bool = False
+    mfa_issuer: str = "CoreFusion Technologies"
+    mfa_encryption_key: str = ""
+
+    # OAuth / social login — OFF by default. oauth_enabled is the same kind
+    # of global kill switch as mfa_enabled: when False, every /auth/oauth/*
+    # endpoint responds 404. Each provider is additionally only usable once
+    # its own client_id/client_secret/redirect_uri are all set — an unset
+    # provider's login/callback routes 404 individually even if oauth_enabled
+    # is True, so partial configuration (e.g. Google only) is safe.
+    oauth_enabled: bool = False
+    oauth_success_redirect_url: str = ""  # defaults to client_url if unset
+    oauth_failure_redirect_url: str = ""  # defaults to client_url if unset
+
+    oauth_google_client_id: str = ""
+    oauth_google_client_secret: str = ""
+    oauth_google_redirect_uri: str = ""
+
+    oauth_github_client_id: str = ""
+    oauth_github_client_secret: str = ""
+    oauth_github_redirect_uri: str = ""
 
     def _get_async_database_url(self) -> str:
         """Get the async PostgreSQL URL."""
@@ -110,6 +175,32 @@ class Settings(BaseSettings):
     def sync_database_url(self) -> str:
         """Get the sync database URL (used by Alembic for migrations)."""
         return self._get_sync_database_url()
+
+    @property
+    def redis_url(self) -> str:
+        # socket_connect_timeout/socket_timeout: without these, redis-py's
+        # default connect/read timeouts are long enough that every request
+        # blocks for several seconds when Redis is unreachable, rather than
+        # failing fast into `swallow_errors=True`'s fallback path — found via
+        # a live Redis-outage drill (killed Redis mid-traffic and measured
+        # ~4-8s per request, severe enough to trigger a gunicorn worker
+        # SIGABRT from request pile-up). The actual amplification factor
+        # observed end-to-end in the real gunicorn app (multiple rate-limit
+        # checks/retries per request) was higher than isolated single-call
+        # testing suggested — 0.3s alone still produced multi-second request
+        # latency in the full app. 0.05s keeps even a large amplification
+        # factor well under 1s, while still being generous for a healthy
+        # same-network Redis (sub-ms normally). Also applied to
+        # redis_url_override (e.g. Upstash) — a managed Redis being briefly
+        # unreachable is exactly the scenario CF-BE-014 was found under, and
+        # nothing about that failure mode is specific to a local container.
+        timeout_params = "socket_connect_timeout=0.05&socket_timeout=0.05"
+        if self.redis_url_override:
+            separator = "&" if "?" in self.redis_url_override else "?"
+            return f"{self.redis_url_override}{separator}{timeout_params}"
+        scheme = "rediss" if self.redis_tls else "redis"
+        auth = f":{self.redis_password}@" if self.redis_password else ""
+        return f"{scheme}://{auth}{self.redis_host}:{self.redis_port}?{timeout_params}"
 
 
 @lru_cache

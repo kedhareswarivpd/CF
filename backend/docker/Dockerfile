@@ -2,9 +2,10 @@ FROM python:3.12-slim AS base
 
 WORKDIR /usr/src/app
 
-# System deps for psycopg2 / asyncpg builds
+# System deps for psycopg2 / asyncpg builds, plus postgresql-client for
+# pg_dump (app/routers/backups.py — the Admin Panel's Backups module)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libpq-dev curl \
+    gcc libpq-dev curl postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .

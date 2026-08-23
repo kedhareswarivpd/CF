@@ -39,7 +39,7 @@ export default function Solutions() {
           title="Comprehensive Solution Portfolio"
           description="End-to-end enterprise solutions designed to address your most complex business and technology challenges."
           align="center"
-          className="mx-auto max-w-container px-margin-mobile pb-stack-xl md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white"
+          className="mx-auto max-w-container px-margin-mobile py-section-padding md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white [&_span]:!text-accent-cyan"
         />
       </div>
       <SolutionsGrid solutions={solutions} />

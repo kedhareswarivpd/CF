@@ -11,13 +11,12 @@ import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import { useAuth } from '../context/AuthContext.jsx';
 // demo data removed — all data now fetched from API
-import { fetchAdminKPIs } from '../lib/db.js';
-
 import {
   fetchDepartments, createDepartment, deleteDepartment,
   fetchRoles, createRole, deleteRole, fetchPermissions, createPermission, deletePermission,
   fetchUsers, exportUserData, anonymizeUser,
-  fetchAuditLogs,
+  fetchAuditLogs, fetchDashboardOverview,
+  fetchBackups, triggerBackup, deleteBackup, backupDownloadUrl,
 } from '../api/admin.js';
 
 const TABLE_HEADER = 'bg-slate-100 font-label-caps text-label-caps uppercase text-slate-500';
@@ -29,6 +28,7 @@ const superAdminTabs = [
   { id: 'roles', label: 'Roles & Permissions', icon: 'verified_user' },
   { id: 'gdpr', label: 'Data Export / GDPR', icon: 'privacy_tip' },
   { id: 'audit', label: 'Audit Logs', icon: 'history' },
+  { id: 'backups', label: 'Backups', icon: 'backup' },
   { id: 'billing', label: 'Billing', icon: 'account_balance' },
   { id: 'impersonation', label: 'Impersonation', icon: 'switch_account' },
 ];
@@ -44,12 +44,14 @@ function ComingSoon({ icon, title, description }) {
 }
 
 function Overview() {
+  const { accessToken } = useAuth();
   const [kpis, setKpis] = useState({ total_employees: 0, total_clients: 0, total_projects: 0, active_projects: 0, open_tasks: 0, total_revenue: 0, open_tickets: 0, new_applications: 0, unresolved_contacts: 0, published_blogs: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchAdminKPIs().then(setKpis).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+    if (!accessToken) { setLoading(false); return; }
+    fetchDashboardOverview(accessToken).then((res) => setKpis(res?.data || {})).catch(() => {}).finally(() => setLoading(false));
+  }, [accessToken]);
 
   if (loading) return <LoadingSpinner />;
   const cards = [
@@ -367,6 +369,88 @@ function AuditLogs({ accessToken }) {
   );
 }
 
+function Backups({ accessToken }) {
+  const [backups, setBackups] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [triggering, setTriggering] = useState(false);
+  const [error, setError] = useState('');
+
+  const load = useCallback(() => {
+    if (!accessToken) { setLoading(false); return; }
+    setLoading(true);
+    fetchBackups(accessToken).then((r) => setBackups(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
+  }, [accessToken]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const runBackup = async () => {
+    setTriggering(true);
+    setError('');
+    try {
+      // A real pg_dump — the backend gives this up to 5 minutes.
+      await triggerBackup(accessToken);
+      load();
+    } catch (err) {
+      setError(err?.message || 'Backup failed. Please try again.');
+    } finally {
+      setTriggering(false);
+    }
+  };
+
+  const removeBackup = async (filename) => {
+    if (!window.confirm(`Permanently delete backup "${filename}"? This cannot be undone.`)) return;
+    await deleteBackup(accessToken, filename);
+    load();
+  };
+
+  const formatSize = (bytes) => {
+    if (!bytes) return '—';
+    const mb = bytes / (1024 * 1024);
+    return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
+  };
+
+  if (loading) return <LoadingSpinner />;
+
+  return (
+    <div className="space-y-stack-lg">
+      <div className="flex items-center justify-between">
+        <p className="text-body-sm text-slate-500">Real database backups (pg_dump), triggered manually — no scheduler runs automatically yet.</p>
+        <Button variant="primary" size="md" onClick={runBackup} disabled={triggering} icon={<Icon name="backup" />}>
+          {triggering ? 'Running backup...' : 'Trigger Backup Now'}
+        </Button>
+      </div>
+      {error && <p className="flex items-center gap-1 text-body-sm text-red-600"><Icon name="error" className="text-base" />{error}</p>}
+      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+        <table className="w-full text-left">
+          <thead className={TABLE_HEADER}>
+            <tr><th className={TABLE_HEADER_TH}>Filename</th><th className={TABLE_HEADER_TH}>Size</th><th className={TABLE_HEADER_TH}>Created</th><th className={TABLE_HEADER_TH}></th></tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {backups.map((b) => (
+              <tr key={b.filename} className={TABLE_ROW_HOVER}>
+                <td className="px-stack-lg py-4 font-mono text-body-xs text-slate-900">{b.filename}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-500">{formatSize(b.size_bytes)}</td>
+                <td className="px-stack-lg py-4 text-body-sm text-slate-500">{b.created_at ? new Date(b.created_at).toLocaleString() : '—'}</td>
+                <td className="px-stack-lg py-4">
+                  <div className="flex gap-3">
+                    <a href={backupDownloadUrl(b.filename)} aria-label={`Download backup ${b.filename}`} className="text-brand hover:text-brand-dark" title="Download">
+                      <Icon name="download" className="text-xl" />
+                    </a>
+                    <button onClick={() => removeBackup(b.filename)} aria-label={`Delete backup ${b.filename}`} className="text-red-600 hover:opacity-70" title="Delete">
+                      <Icon name="delete" className="text-xl" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {!backups.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-slate-400">No backups yet — trigger one above.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function SuperAdminPanel() {
   useDocumentTitle('Super Admin | CoreFusion Technologies');
   const { user, initializing, accessToken, logout } = useAuth();
@@ -377,19 +461,13 @@ export default function SuperAdminPanel() {
 
   useEffect(() => {
     if (user) {
-      setCurrentUser({ name: user?.user_metadata?.name || user?.email, email: user?.email, role: user?.user_metadata?.role || 'super_admin' });
+      setCurrentUser({ name: user?.name || user?.email, email: user?.email, role: user?.role || 'super_admin' });
     }
   }, [user]);
 
-  useEffect(() => {
-    if (!initializing && !user) navigate('/login', { replace: true });
-  }, [initializing, user, navigate]);
-  useEffect(() => {
-    if (currentUser !== null && (denied || currentUser.role !== 'super_admin')) {
-      navigate('/admin', { replace: true });
-    }
-  }, [currentUser, denied, navigate]);
-
+  // useRoleGuard already redirects both the unauthenticated case (to
+  // /login?returnTo=..., preserving destination) and the wrong-role case
+  // (to /admin, per the redirectTo passed above) — no separate effect needed.
   if (initializing || !user || denied || currentUser === null || currentUser.role !== 'super_admin') {
     return <div className="bg-slate-50 py-section-padding"><LoadingSpinner /></div>;
   }
@@ -415,7 +493,7 @@ export default function SuperAdminPanel() {
             {superAdminTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left text-body-sm font-medium transition-colors ${
-                  activeTab === tab.id ? 'bg-white/20 font-semibold text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white font-medium'
+                  activeTab === tab.id ? 'bg-white/20 font-semibold text-white' : 'font-medium text-blue-200 hover:bg-white/10 hover:text-white'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>
@@ -441,6 +519,7 @@ export default function SuperAdminPanel() {
             {activeTab === 'roles' && <RolesPermissions accessToken={accessToken} />}
             {activeTab === 'gdpr' && <DataExportGdpr accessToken={accessToken} />}
             {activeTab === 'audit' && <AuditLogs accessToken={accessToken} />}
+            {activeTab === 'backups' && <Backups accessToken={accessToken} />}
             {activeTab === 'billing' && (
               <ComingSoon icon="account_balance" title="Billing & Subscription"
                 description="This deployment doesn't have a billing/subscription model yet — there's no plan, invoice-to-platform, or metering system in the current schema. Building it for real is a separate project, not a UI-only add-on." />

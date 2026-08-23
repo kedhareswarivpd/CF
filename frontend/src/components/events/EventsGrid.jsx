@@ -34,9 +34,9 @@ function RegisterModal({ event, onClose }) {
         <div className="mb-6 flex items-start justify-between">
           <div>
             <h2 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Register for Event</h2>
-            <p className="mt-1 text-body-sm text-ink-muted">{event.title}</p>
+            <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{event.title}</p>
           </div>
-          <button onClick={onClose} className="ml-4 text-ink-muted hover:text-ink">
+          <button onClick={onClose} aria-label="Close" className="ml-4 text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
             <Icon name="close" className="text-xl" />
           </button>
         </div>
@@ -45,13 +45,13 @@ function RegisterModal({ event, onClose }) {
           <div className="py-6 text-center">
             <Icon name="check_circle" className="mb-3 text-5xl text-green-500" />
             <p className="font-semibold text-ink dark:text-dark-ink">Registration received!</p>
-            <p className="mt-1 text-body-sm text-ink-muted">We&apos;ll send confirmation details to {form.email}.</p>
+            <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">We&apos;ll send confirmation details to {form.email}.</p>
             <Button variant="outline" size="md" className="mt-6" onClick={onClose}>Close</Button>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="mb-1 block font-label-caps text-label-caps text-ink-muted">Full Name *</label>
+              <label className="mb-1 block font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">Full Name *</label>
               <input
                 required
                 value={form.name}
@@ -60,7 +60,7 @@ function RegisterModal({ event, onClose }) {
               />
             </div>
             <div>
-              <label className="mb-1 block font-label-caps text-label-caps text-ink-muted">Email *</label>
+              <label className="mb-1 block font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">Email *</label>
               <input
                 required
                 type="email"
@@ -71,7 +71,7 @@ function RegisterModal({ event, onClose }) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block font-label-caps text-label-caps text-ink-muted">Phone</label>
+                <label className="mb-1 block font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">Phone</label>
                 <input
                   value={form.phone}
                   onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -79,7 +79,7 @@ function RegisterModal({ event, onClose }) {
                 />
               </div>
               <div>
-                <label className="mb-1 block font-label-caps text-label-caps text-ink-muted">Company</label>
+                <label className="mb-1 block font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">Company</label>
                 <input
                   value={form.company}
                   onChange={(e) => setForm({ ...form, company: e.target.value })}
@@ -146,8 +146,8 @@ export default function EventsGrid({ events, typeFilters }) {
                   <Badge className="bg-accent-cyan-pale text-label-caps text-brand">{event.type}</Badge>
                 </div>
                 <h3 className="mb-3 font-display text-headline-sm text-brand-dark dark:text-dark-brand">{event.title}</h3>
-                <p className="mb-4 flex-1 text-body-md text-ink-muted">{event.description}</p>
-                <div className="space-y-2 border-t border-outline-variant pt-4 text-body-sm text-ink-muted">
+                <p className="mb-4 flex-1 text-body-md text-ink-muted dark:text-dark-ink-muted">{event.description}</p>
+                <div className="space-y-2 border-t border-outline-variant pt-4 text-body-sm text-ink-muted dark:border-dark-outline-variant dark:text-dark-ink-muted">
                   <div className="flex items-center gap-2">
                     <Icon name="calendar_today" className="text-lg text-brand" />
                     <span>{new Date(event.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
@@ -161,7 +161,7 @@ export default function EventsGrid({ events, typeFilters }) {
                     <span>{event.location}</span>
                   </div>
                 </div>
-                <div className="mt-4 border-t border-outline-variant pt-4">
+                <div className="mt-4 border-t border-outline-variant pt-4 dark:border-dark-outline-variant">
                   <Button variant="outline" size="md" className="w-full" onClick={() => handleRegister(event)}>
                     Register Now
                   </Button>

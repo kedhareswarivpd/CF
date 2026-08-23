@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import Badge from '../ui/Badge.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
 import Icon from '../ui/Icon.jsx';
@@ -9,13 +10,15 @@ export default function CaseStudyCard({ study }) {
         <div className="mb-3 flex items-center gap-2">
           <Badge className="bg-accent-cyan-pale text-label-caps text-brand">{study.industry}</Badge>
         </div>
-        <h3 className="mb-3 font-display text-headline-sm text-brand-dark dark:text-dark-brand">{study.title}</h3>
+        <h3 className="mb-3 font-display text-headline-sm text-brand-dark dark:text-dark-brand">
+          {study.slug ? <Link to={`/case-studies/${study.slug}`} className="hover:underline">{study.title}</Link> : study.title}
+        </h3>
         <p className="mb-4 flex-1 text-body-md text-ink-muted dark:text-dark-ink-muted">{study.description}</p>
         <div className="mb-4">
-          <h4 className="mb-2 font-label-caps text-label-caps uppercase text-ink-muted">Key Results</h4>
+          <h4 className="mb-2 font-label-caps text-label-caps uppercase text-ink-muted dark:text-white/60">Key Results</h4>
           <ul className="space-y-1.5">
             {study.results.map((r) => (
-              <li key={r} className="flex items-start gap-2 text-body-sm text-ink-muted">
+              <li key={r} className="flex items-start gap-2 text-body-sm text-ink-muted dark:text-white/70">
                 <Icon name="trending_up" className="flex-shrink-0 text-lg text-status-success-text" />
                 <span>{r}</span>
               </li>

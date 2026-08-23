@@ -1,5 +1,4 @@
 """Unit tests for file upload validation and security."""
-import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -12,6 +11,7 @@ from app.utils.uploads import (
     ALLOWED_MIME,
     ALLOWED_SUBFOLDERS,
     _verify_magic,
+    load_private_file,
     save_upload,
 )
 
@@ -161,6 +161,79 @@ class TestSaveUpload:
                 await save_upload(mock_file, "../../../etc")
             assert exc_info.value.status_code == 400
             assert "Unsupported upload folder" in exc_info.value.message
+
+
+class TestSaveUploadS3Backend:
+    """Same validation logic, routed through storage_service instead of disk
+    when STORAGE_BACKEND=s3 (MinIO locally, Supabase Storage in staging) —
+    boto3 itself is exercised for real in test_storage_service.py; here only
+    the branch inside save_upload/load_private_file is under test."""
+
+    @pytest.mark.asyncio
+    async def test_public_upload_calls_put_object_and_returns_public_url(self):
+        mock_file = MagicMock(spec=UploadFile)
+        mock_file.content_type = "image/png"
+        mock_file.filename = "photo.png"
+        mock_file.read = AsyncMock(return_value=b"\x89PNG\r\n\x1a\n\x00\x00\x00")
+
+        with patch.object(settings, "storage_backend", "s3"):
+            with patch("app.utils.uploads.storage_service.put_object", new_callable=AsyncMock) as mock_put:
+                with patch("app.utils.uploads.storage_service.public_url", return_value="http://minio:9000/bucket/public/media/x.png") as mock_url:
+                    result = await save_upload(mock_file, "media")
+
+        mock_put.assert_called_once()
+        key_arg = mock_put.call_args.args[0]
+        assert key_arg.startswith("public/media/")
+        mock_url.assert_called_once_with(key_arg)
+        assert result == "http://minio:9000/bucket/public/media/x.png"
+
+    @pytest.mark.asyncio
+    async def test_private_upload_returns_bare_reference_not_a_url(self):
+        mock_file = MagicMock(spec=UploadFile)
+        mock_file.content_type = "application/pdf"
+        mock_file.filename = "resume.pdf"
+        mock_file.read = AsyncMock(return_value=b"%PDF-1.4")
+
+        with patch.object(settings, "storage_backend", "s3"):
+            with patch("app.utils.uploads.storage_service.put_object", new_callable=AsyncMock) as mock_put:
+                result = await save_upload(mock_file, "careers")
+
+        key_arg = mock_put.call_args.args[0]
+        assert key_arg.startswith("private/careers/")
+        assert result == f"careers/{key_arg.split('/')[-1]}"
+        assert not result.startswith("http")
+        assert not result.startswith("/uploads")
+
+
+class TestLoadPrivateFileS3Backend:
+    @pytest.mark.asyncio
+    async def test_fetches_object_with_private_prefix(self):
+        with patch.object(settings, "storage_backend", "s3"):
+            with patch("app.utils.uploads.storage_service.get_object", new_callable=AsyncMock) as mock_get:
+                mock_get.return_value = b"%PDF-1.4 fake resume"
+                content, filename, content_type = await load_private_file("careers/12345-abcdef.pdf", "careers")
+
+        mock_get.assert_called_once_with("private/careers/12345-abcdef.pdf")
+        assert content == b"%PDF-1.4 fake resume"
+        assert filename == "12345-abcdef.pdf"
+        assert content_type == "application/pdf"
+
+    @pytest.mark.asyncio
+    async def test_missing_object_raises_not_found(self):
+        with patch.object(settings, "storage_backend", "s3"):
+            with patch("app.utils.uploads.storage_service.get_object", new_callable=AsyncMock, side_effect=FileNotFoundError):
+                with pytest.raises(ApiError) as exc_info:
+                    await load_private_file("careers/missing.pdf", "careers")
+        assert exc_info.value.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_path_traversal_rejected_before_any_s3_call(self):
+        with patch.object(settings, "storage_backend", "s3"):
+            with patch("app.utils.uploads.storage_service.get_object", new_callable=AsyncMock) as mock_get:
+                with pytest.raises(ApiError) as exc_info:
+                    await load_private_file("../../etc/passwd", "careers")
+        assert exc_info.value.status_code == 400
+        mock_get.assert_not_called()
 
 
 class TestAllowedConstants:

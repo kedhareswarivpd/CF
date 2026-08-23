@@ -5,7 +5,7 @@ import { privacyPolicy } from '../data/legal.js';
 export default function Privacy() {
   useDocumentTitle('Privacy Policy | CoreFusion Technologies');
   return (
-    <div className="flex-1 bg-brand-dark pb-section-padding">
+    <div className="pt-32">
       <LegalContent content={privacyPolicy} />
     </div>
   );

@@ -11,11 +11,11 @@ export default function ServicesGrid() {
   return (
     <section className="mx-auto max-w-container px-margin-mobile py-section-padding md:px-margin-desktop">
       <div className="mb-stack-xl flex flex-col items-center gap-4 text-center">
-        <h2 className="font-display text-headline-md text-white">Full-Stack Digital Transformation</h2>
+        <h2 className="font-display text-headline-md text-brand-dark dark:text-dark-brand">Full-Stack Digital Transformation</h2>
         <div className="h-1 w-20 rounded-full bg-brand" />
       </div>
       {isFallback && !loading && (
-        <p className="mb-6 text-center text-body-sm text-white">
+        <p className="mb-6 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">
           Showing sample services — connect a live backend to see real service data here.
         </p>
       )}

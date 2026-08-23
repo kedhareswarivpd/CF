@@ -6,18 +6,17 @@ export default function MissionVision() {
       <div className="grid items-center gap-20 md:grid-cols-2">
         <Reveal from="left" className="space-y-12">
           <div>
-            <h2 className="mb-6 font-display text-headline-md text-brand-dark">Our Mission</h2>
-            <p className="font-body text-body-lg leading-relaxed text-ink-muted">
-              To become one of Asia&apos;s most trusted Digital Transformation companies, empowering enterprises
-              through robust software architectures, AI-driven insights, and a culture of relentless
-              engineering excellence.
+            <h2 className="mb-6 font-display text-headline-md text-brand-dark dark:text-white">Our Mission</h2>
+            <p className="font-body text-body-lg leading-relaxed text-ink-muted dark:text-white/80">
+              Deliver world-class enterprise technology solutions through innovation, engineering excellence
+              and customer-centric development.
             </p>
           </div>
           <div>
-            <h2 className="mb-6 font-display text-headline-md text-brand-dark">Our Vision</h2>
-            <p className="font-body text-body-lg leading-relaxed text-ink-muted">
-              To orchestrate a future where technology and human ingenuity converge seamlessly, creating a
-              digital ecosystem that is secure, sustainable, and universally accessible.
+            <h2 className="mb-6 font-display text-headline-md text-brand-dark dark:text-white">Our Vision</h2>
+            <p className="font-body text-body-lg leading-relaxed text-ink-muted dark:text-white/80">
+              To become one of Asia&apos;s most trusted Digital Transformation companies by building secure,
+              scalable and intelligent enterprise software.
             </p>
           </div>
         </Reveal>

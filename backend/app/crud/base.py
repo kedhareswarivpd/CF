@@ -1,9 +1,10 @@
 import uuid
-from typing import Any, Generic, Sequence, TypeVar
+from collections.abc import Sequence
+from typing import Any, Generic, TypeVar
 
-from sqlalchemy import Boolean, Integer, Numeric, func, or_, select
+from sqlalchemy import Boolean, Integer, Numeric, func, inspect, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from app.core.errors import ApiError
 from app.core.logger import logger
@@ -45,8 +46,18 @@ class CRUDBase(Generic[ModelType]):
         self.relationships = relationships or []
 
     def _with_relationships(self, query):
+        # CF-BE-009: scalar (many-to-one/one-to-one) relationships are folded
+        # into the main query via a JOIN (joinedload) instead of a separate
+        # round trip (selectinload) — under connection-pool contention, each
+        # extra round trip compounds latency (measured: employees list went
+        # from 4 sequential round trips to 2). Collection relationships still
+        # use selectinload, since joining a to-many relationship duplicates
+        # the parent row per child and is the wrong tool for that shape.
+        mapper = inspect(self.model)
         for rel in self.relationships:
-            query = query.options(selectinload(getattr(self.model, rel)))
+            is_collection = mapper.relationships[rel].uselist
+            loader = selectinload if is_collection else joinedload
+            query = query.options(loader(getattr(self.model, rel)))
         return query
 
     async def list(
@@ -119,13 +130,18 @@ class CRUDBase(Generic[ModelType]):
         except Exception:
             await db.rollback()
             logger.exception("Database create failed for %s", self.model.__name__)
-            raise ApiError.internal(f"Failed to create {self.model.__name__}")
+            raise ApiError.internal(f"Failed to create {self.model.__name__}") from None
 
     async def update(self, db: AsyncSession, id: uuid.UUID, data: dict[str, Any]) -> ModelType:
         obj = await self.get(db, id)
         for field, value in data.items():
             setattr(obj, field, value)
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            logger.exception("Database update failed for %s", self.model.__name__)
+            raise ApiError.internal(f"Failed to update {self.model.__name__}") from None
         await db.refresh(obj)
         return obj
 
@@ -137,4 +153,4 @@ class CRUDBase(Generic[ModelType]):
         except Exception:
             await db.rollback()
             logger.exception("Database delete failed for %s", self.model.__name__)
-            raise ApiError.internal(f"Failed to delete {self.model.__name__}")
+            raise ApiError.internal(f"Failed to delete {self.model.__name__}") from None

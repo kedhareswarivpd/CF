@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import Badge from '../ui/Badge.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
 import Icon from '../ui/Icon.jsx';
@@ -9,7 +10,9 @@ export default function BlogCard({ post }) {
         <div className="mb-3 flex items-center gap-2">
           <Badge className="bg-accent-cyan-pale text-label-caps text-brand">{post.category}</Badge>
         </div>
-        <h3 className="mb-3 font-display text-headline-sm text-brand-dark dark:text-dark-brand">{post.title}</h3>
+        <h3 className="mb-3 font-display text-headline-sm text-brand-dark dark:text-dark-brand">
+          {post.slug ? <Link to={`/blog/${post.slug}`} className="hover:underline">{post.title}</Link> : post.title}
+        </h3>
         <p className="mb-4 flex-1 text-body-md text-ink-muted dark:text-dark-ink-muted">{post.excerpt}</p>
         <div className="flex items-center gap-4 border-t border-outline-variant pt-4 text-body-sm text-ink-muted dark:border-dark-outline-variant dark:text-dark-ink-muted">
           <div>

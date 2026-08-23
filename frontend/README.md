@@ -26,6 +26,25 @@ npm run build    # production build to dist/
 npm run preview  # preview the production build locally
 ```
 
+## Testing
+
+```bash
+npm test            # Vitest — unit/component tests (src/**/__tests__)
+npm run test:e2e     # Playwright — auth E2E (e2e/), against a *running* stack
+```
+
+`test:e2e` targets an already-running backend+frontend stack (defaults to
+`http://localhost:8081`; override with `PLAYWRIGHT_BASE_URL`) rather than
+spawning its own dev server — CoreFusion's httpOnly-cookie auth needs the
+frontend and backend to share an origin the way the real reverse proxy
+provides, so `docker compose up -d backend frontend` (see the root
+`docker-compose.yml`) first. `e2e/global-setup.js` performs one real API
+login and reuses it as a Playwright `storageState` fixture for tests that
+don't need to exercise the login form itself — this keeps the suite well
+under the backend's real per-IP login rate limit (10/minute); if you add new
+E2E tests, prefer that fixture over a fresh UI login unless the test is
+specifically about the login flow.
+
 ## Production (Docker)
 
 `docker/Dockerfile` is a multi-stage build: it compiles the Vite app, then

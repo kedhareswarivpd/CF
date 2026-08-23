@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 
 from fastapi import FastAPI, Request
@@ -6,35 +7,42 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
+from slowapi.middleware import SlowAPIMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.audit import log_audit
 from app.core.config import settings
+from app.core.cookies import ACCESS_TOKEN_COOKIE
+from app.core.csrf import CSRFMiddleware
+from app.core.database import AsyncSessionLocal
 from app.core.dependencies import get_client_ip
 from app.core.errors import ApiError
+from app.core.limiter import limiter
 from app.core.logger import logger
-from app.core.security import decode_supabase_token
 from app.core.sitemap import SITEMAP_ROUTES
 from app.routers import api_router
+from app.services.auth_service import get_session_by_access_token
 
-limiter = Limiter(key_func=get_remote_address, default_limits=[settings.rate_limit])
+_is_production = settings.env.lower() in {"production", "prod"}
 
 app = FastAPI(
     title=settings.app_name,
     description="CoreFusion Technologies — Website, Admin Panel, Client Portal & Employee Portal API",
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    # Swagger/Redoc leak the full route/schema surface; keep them out of production.
+    docs_url=None if _is_production else "/docs",
+    redoc_url=None if _is_production else "/redoc",
+    openapi_url=None if _is_production else "/openapi.json",
 )
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Middleware is applied in reverse-registration order by Starlette:
-# AuditMiddleware → SecurityHeadersMiddleware → CORSMiddleware (outermost last)
+# AuditMiddleware → CSRFMiddleware → SecurityHeadersMiddleware → CORSMiddleware (outermost last)
 # CORS must be outermost so preflight OPTIONS responses are handled before any
 # other middleware inspects the request.
 
@@ -59,6 +67,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(CSRFMiddleware)
 
 
 # ---------- Audit middleware ----------
@@ -81,12 +90,17 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
         try:
             user_id = None
-            auth_header = request.headers.get("authorization")
-            if auth_header and auth_header.startswith("Bearer "):
-                token = auth_header[7:]
+            token = request.cookies.get(ACCESS_TOKEN_COOKIE)
+            if token:
                 try:
-                    claims = await decode_supabase_token(token)
-                    user_id = uuid.UUID(claims["sub"])
+                    # A dedicated short-lived session here rather than reusing
+                    # any request-scoped one — this middleware runs outside
+                    # the route handler's own `Depends(get_db)` lifecycle,
+                    # after the handler's session has already been closed.
+                    async with AsyncSessionLocal() as audit_db:
+                        session = await get_session_by_access_token(audit_db, token)
+                        if session is not None:
+                            user_id = session.user_id
                 except Exception:
                     pass
 
@@ -114,6 +128,49 @@ class AuditMiddleware(BaseHTTPMiddleware):
 
 app.add_middleware(AuditMiddleware)
 
+
+# ---------- Request ID + structured access log middleware ----------
+# CF-AUD-010: `X-Request-Id` was already declared in CORS's expose_headers
+# but nothing ever generated or set it. This middleware generates (or
+# forwards a caller-supplied) request ID, attaches it to the response, and
+# emits one structured access-log line per request with the fields needed to
+# diagnose latency/errors in production (method, path, status, duration,
+# request id) — without adding a new logging dependency.
+class RequestContextMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
+        request.state.request_id = request_id
+        # Defensive default for a real bug found via a live Redis-outage drill
+        # (see status.md): slowapi 0.1.9's rate-limit decorator only sets
+        # `request.state.view_rate_limit` *after* its limit check succeeds —
+        # if the check raises (e.g. Redis unreachable) and `swallow_errors=True`
+        # swallows that, the decorator still unconditionally reads this
+        # attribute afterward to inject response headers, crashing every
+        # request with AttributeError for as long as Redis stays down. A sane
+        # default here means "no limit info to report" instead of a crash.
+        request.state.view_rate_limit = None
+        start = time.perf_counter()
+        try:
+            response = await call_next(request)
+        except Exception:
+            duration_ms = (time.perf_counter() - start) * 1000
+            logger.error(
+                "request_id=%s method=%s path=%s status=500 duration_ms=%.1f",
+                request_id, request.method, request.url.path, duration_ms,
+            )
+            raise
+        duration_ms = (time.perf_counter() - start) * 1000
+        response.headers["X-Request-Id"] = request_id
+        log_level = logger.warning if response.status_code >= 500 else logger.info
+        log_level(
+            "request_id=%s method=%s path=%s status=%s duration_ms=%.1f",
+            request_id, request.method, request.url.path, response.status_code, duration_ms,
+        )
+        return response
+
+
+app.add_middleware(RequestContextMiddleware)
+
 # CORSMiddleware is registered last so Starlette places it outermost —
 # it runs first on every request, including OPTIONS preflight.
 app.add_middleware(
@@ -121,7 +178,7 @@ app.add_middleware(
     allow_origins=_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "X-Requested-With", "X-CSRF-Token"],
     expose_headers=["X-Request-Id"],
     max_age=600,
 )
@@ -168,7 +225,51 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 @app.get("/", tags=["Health"])
 @app.get("/health", tags=["Health"])
 async def health_check():
+    """Liveness only — does not touch the database. A load balancer/orchestrator
+    should use this to decide whether to restart the process."""
     return {"status": "ok", "service": settings.app_name}
+
+
+@app.get("/ready", tags=["Health"])
+async def readiness_check():
+    """Readiness — verifies the database is actually reachable before traffic
+    is routed here. Distinct from /health: a process can be alive (able to
+    answer HTTP) while its DB connection is down (e.g. during a Postgres
+    failover), in which case it should be taken out of rotation, not killed."""
+    from sqlalchemy import text
+
+    from app.core.database import AsyncSessionLocal
+
+    checks = {}
+    try:
+        async with AsyncSessionLocal() as db:
+            await db.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception as exc:  # noqa: BLE001 — deliberately broad: any DB failure means not-ready
+        checks["database"] = f"unreachable: {exc}"
+
+    try:
+        import redis.asyncio as aioredis
+
+        redis_client = aioredis.from_url(settings.redis_url)
+        try:
+            await redis_client.ping()
+            checks["redis"] = "ok"
+        finally:
+            await redis_client.aclose()
+    except Exception as exc:  # noqa: BLE001 — rate limiting fails open (swallow_errors=True), so this
+        # is reported but does not, by itself, flip the whole response to 503 (see all_ok below).
+        checks["redis"] = f"unreachable: {exc}"
+
+    # Redis outages degrade (rate limiting fails open — see core/limiter.py)
+    # rather than making the app fully unusable, so only the database check
+    # controls the 503; Redis is surfaced for visibility without pulling a
+    # healthy-database instance out of rotation over a non-critical dependency.
+    all_ok = checks.get("database") == "ok"
+    return JSONResponse(
+        status_code=200 if all_ok else 503,
+        content={"status": "ready" if all_ok else "not_ready", "checks": checks},
+    )
 
 
 @app.get("/sitemap.xml", tags=["SEO"])

@@ -48,5 +48,9 @@ async def update_meeting(meeting_id: uuid.UUID, payload: MeetingUpdate, db: Asyn
 
 @router.delete("/{meeting_id}", response_model=dict)
 async def cancel_meeting(meeting_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    await crud.delete(db, meeting_id)
-    return success_response(message="Meeting cancelled")
+    # A real bug found during a documentation review: this endpoint is named
+    # (and responds) as "cancel" but was hard-deleting the row, losing
+    # meeting history rather than marking it cancelled. Fixed to match its
+    # own stated intent.
+    meeting = await crud.update(db, meeting_id, {"status": "cancelled"})
+    return success_response(data=MeetingOut.model_validate(meeting), message="Meeting cancelled")

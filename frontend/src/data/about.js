@@ -23,8 +23,50 @@ export const coreValues = [
     variant: 'light',
   },
   {
+    icon: 'verified',
+    title: 'Quality',
+    description: 'Every deliverable is held to enterprise-grade standards, validated through structured QA and continuous review.',
+    span: 'md:col-span-4',
+    variant: 'light',
+  },
+  {
+    icon: 'workspace_premium',
+    title: 'Customer Success',
+    description: 'Our engagements are measured by our clients\' outcomes, not just our delivery milestones.',
+    span: 'md:col-span-4',
+    variant: 'dark',
+  },
+  {
+    icon: 'handshake',
+    title: 'Ownership',
+    description: 'Every engineer treats client systems as their own — accountable end-to-end, not just for their slice of the code.',
+    span: 'md:col-span-4',
+    variant: 'light',
+  },
+  {
+    icon: 'visibility',
+    title: 'Transparency',
+    description: 'Clear communication, honest timelines, and open access to project status — no surprises, no black boxes.',
+    span: 'md:col-span-4',
+    variant: 'light',
+  },
+  {
+    icon: 'school',
+    title: 'Continuous Learning',
+    description: 'We invest in our engineers\' growth continuously, staying ahead of the technology curve as a discipline, not an event.',
+    span: 'md:col-span-4',
+    variant: 'dark',
+  },
+  {
+    icon: 'security',
+    title: 'Security First',
+    description: 'Security is designed in from day one of every engagement, not bolted on afterward.',
+    span: 'md:col-span-4',
+    variant: 'light',
+  },
+  {
     icon: 'public',
-    title: 'Global Collaboration',
+    title: 'Collaboration',
     description:
       'Operating across 6 countries, our diverse teams bring global perspectives to solve local enterprise challenges with unified standards.',
     span: 'md:col-span-8',
@@ -106,8 +148,11 @@ export const certifications = [
 ];
 
 export const aboutStats = [
-  { value: 'Global', label: 'Enterprise Clients', subtitle: 'Trusted by leading organizations worldwide' },
-  { value: 'Expert', label: 'Engineering Team', subtitle: 'Deep bench of specialists across domains' },
-  { value: 'Proven', label: 'Delivery Track Record', subtitle: 'Consistent on-time, on-budget delivery' },
-  { value: 'Global', label: 'Innovation Labs', subtitle: 'R&D centers driving cutting-edge solutions' },
+  { value: '285+', label: 'Employees', subtitle: 'Deep bench of specialists across domains' },
+  { value: '430+', label: 'Projects Delivered', subtitle: 'Consistent on-time, on-budget delivery' },
+  { value: '120+', label: 'Enterprise Clients', subtitle: 'Trusted by leading organizations worldwide' },
+  { value: '35+', label: 'Technology Partners', subtitle: 'A global ecosystem of delivery partners' },
+  { value: '18+', label: 'Countries Served', subtitle: 'Delivery hubs spanning the globe' },
+  { value: '5', label: 'Years in Business', subtitle: 'Founded in 2020, built for the long term' },
+  { value: '98%', label: 'Success Rate', subtitle: 'Projects delivered on scope and on schedule' },
 ];

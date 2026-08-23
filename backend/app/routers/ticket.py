@@ -1,9 +1,9 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Request
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlalchemy import select
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
@@ -22,7 +22,7 @@ crud = CRUDBase(Ticket, searchable_fields=["subject", "ticket_number"])
 
 @router.get("", response_model=dict)
 async def list_tickets(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params)):
-    filters = {k: request.query_params.get(k) for k in ("status", "priority", "assigned_to", "client_id") if request.query_params.get(k)}
+    filters = {k: request.query_params.get(k) for k in ("status", "priority", "assigned_to", "client_id", "partner_account_id") if request.query_params.get(k)}
     items, total = await crud.list(db, page, filters)
     meta = build_pagination_meta(total, page.page, page.limit)
     return success_response(data=[TicketOut.model_validate(t) for t in items], message="Tickets fetched", meta=meta)

@@ -15,12 +15,12 @@ export default function WhyChooseUs() {
       />
       <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-4">
         {whyChooseUs.map((item, i) => (
-          <Reveal key={item.title} from="zoom" delay={i * 80} className="flex flex-col rounded-lg bg-white p-stack-lg transition-shadow hover:shadow-card-hover">
-            <div className="mb-stack-md flex size-12 items-center justify-center rounded-md bg-white border border-slate-200 shadow-sm">
+          <Reveal key={item.title} from="zoom" delay={i * 80} className="flex flex-col rounded-lg bg-white p-stack-lg transition-shadow hover:shadow-card-hover dark:bg-dark-surface dark:border dark:border-dark-outline-variant">
+            <div className="mb-stack-md flex size-12 items-center justify-center rounded-md border border-slate-200 bg-white shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface-container">
               <Icon name={item.icon} className="text-3xl leading-none text-brand" />
             </div>
-            <h3 className="mb-2 min-h-16 font-display text-headline-sm text-brand-dark dark:text-dark-brand">{item.title}</h3>
-            <p className="text-body-sm text-black dark:text-black">{item.description}</p>
+            <h3 className="mb-2 min-h-16 font-display text-headline-sm text-brand-dark dark:text-white">{item.title}</h3>
+            <p className="text-body-sm text-ink-muted dark:text-white/70">{item.description}</p>
           </Reveal>
         ))}
       </div>

@@ -48,9 +48,14 @@ class BlogOut(TimestampedRead):
 
 
 class CommentCreate(BaseModel):
+    blog_id: uuid.UUID
     name: str
     email: EmailStr
     content: str
+
+
+class CommentModerate(BaseModel):
+    status: CommentStatus
 
 
 class CommentOut(TimestampedRead):

@@ -15,7 +15,7 @@ export default function Breadcrumbs() {
 
   return (
     <nav aria-label="Breadcrumb" itemScope itemType="https://schema.org/BreadcrumbList">
-      <ol className="flex items-center gap-2 text-body-sm text-white/70">
+      <ol className="flex items-center gap-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
         <li itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
           <Link to="/" itemProp="item" className="transition-colors hover:text-accent-cyan">
             <span itemProp="name">Home</span>
@@ -28,9 +28,9 @@ export default function Breadcrumbs() {
           const position = index + 2;
           return (
             <li key={segment} className="flex items-center gap-2" itemProp="itemListElement" itemScope itemType="https://schema.org/ListItem">
-              <span className="text-white/40">&gt;</span>
+              <span className="text-ink-muted/50 dark:text-dark-ink-muted/50">&gt;</span>
               {isLast ? (
-                <span itemProp="name" className="font-semibold text-white">{formatLabel(segment)}</span>
+                <span itemProp="name" className="font-semibold text-brand-dark dark:text-dark-brand">{formatLabel(segment)}</span>
               ) : (
                 <Link to={href} itemProp="item" className="transition-colors hover:text-accent-cyan">
                   <span itemProp="name">{formatLabel(segment)}</span>

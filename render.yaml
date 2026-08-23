@@ -28,14 +28,6 @@ services:
         sync: false
       - key: DB_USE_PGBOUNCER
         value: "false"
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_ANON_KEY
-        sync: false
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false
-      - key: SUPABASE_JWT_SECRET
-        sync: false
       - key: REDIS_HOST
         value: localhost
       - key: REDIS_PORT

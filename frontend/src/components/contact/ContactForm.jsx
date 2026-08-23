@@ -220,7 +220,7 @@ function Field({ label, error, children, inputId, errorId, required }) {
         {label}
         {(required || error) && <span className="ml-0.5 text-red-500">*</span>}
       </span>
-      <div className={error ? 'ring-2 ring-red-400 rounded' : ''}>{render}</div>
+      <div className={error ? 'rounded ring-2 ring-red-400' : ''}>{render}</div>
       {error && errorId && <span id={errorId} className="text-xs text-red-500">{error}</span>}
     </label>
   );

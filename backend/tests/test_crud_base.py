@@ -1,6 +1,6 @@
 """Unit tests for generic CRUD operations."""
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
@@ -158,7 +158,7 @@ class TestCrudBaseCreate:
         mock_db = AsyncMock()
         crud = CRUDBase(User)
 
-        result = await crud.create(
+        await crud.create(
             mock_db,
             {"id": uuid.uuid4(), "name": "New User", "email": "new@example.com", "role": "client"},
         )

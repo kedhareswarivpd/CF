@@ -25,6 +25,8 @@ class ServiceCreate(BaseModel):
     technology_stack: list[str] = []
     deliverables: list[str] = []
     related_industries: list[str] = []
+    gallery: list[str] = []
+    faqs: list[dict] = []
     cover_image: str | None = None
     is_published: bool = True
     order: int = 0
@@ -35,6 +37,8 @@ class ServiceUpdate(BaseModel):
     overview: str | None = None
     features: list[str] | None = None
     benefits: list[str] | None = None
+    gallery: list[str] | None = None
+    faqs: list[dict] | None = None
     is_published: bool | None = None
     order: int | None = None
 
@@ -51,6 +55,8 @@ class ServiceOut(TimestampedRead):
     process: list[dict] = []
     technology_stack: list[str] = []
     deliverables: list[str] = []
+    gallery: list[str] = []
+    faqs: list[dict] = []
     cover_image: str | None = None
     is_published: bool
     order: int
@@ -70,6 +76,7 @@ class CaseStudyCreate(BaseModel):
     roi: str | None = None
     customer_feedback: str | None = None
     download_url: str | None = None
+    downloads: list[dict] = []
     cover_image: str | None = None
     is_published: bool = True
 
@@ -77,6 +84,7 @@ class CaseStudyCreate(BaseModel):
 class CaseStudyUpdate(BaseModel):
     result: str | None = None
     roi: str | None = None
+    downloads: list[dict] | None = None
     is_published: bool | None = None
 
 
@@ -93,6 +101,7 @@ class CaseStudyOut(TimestampedRead):
     roi: str | None = None
     customer_feedback: str | None = None
     download_url: str | None = None
+    downloads: list[dict] = []
     cover_image: str | None = None
     is_published: bool
 

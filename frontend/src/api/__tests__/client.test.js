@@ -27,6 +27,8 @@ describe('apiRequest', () => {
       writable: true,
       configurable: true,
     });
+    // Clear any cf_csrf_token cookie left over from a previous test.
+    document.cookie = 'cf_csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   });
 
   afterEach(() => {
@@ -35,6 +37,7 @@ describe('apiRequest', () => {
       writable: true,
       configurable: true,
     });
+    document.cookie = 'cf_csrf_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
   });
 
   it('returns payload on successful request', async () => {
@@ -73,32 +76,104 @@ describe('apiRequest', () => {
     );
   });
 
-  it('includes Authorization header when token provided', async () => {
+  it('never sends an Authorization header — auth is cookie-based, a passed `token` is ignored', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({}),
     });
 
-    await apiRequest('/test', { token: 'my-token' });
-    expect(mockFetch).toHaveBeenCalledWith(
-      `${API_URL}/test`,
-      expect.objectContaining({
-        headers: expect.objectContaining({
-          Authorization: 'Bearer my-token',
-        }),
-      })
-    );
+    await apiRequest('/test', { token: 'legacy-prop-should-be-ignored' });
+    const callArgs = mockFetch.mock.calls[0][1];
+    expect(callArgs.headers.Authorization).toBeUndefined();
   });
 
-  it('does not include Authorization header when no token', async () => {
+  it('always sends credentials: "include" so the httpOnly session cookies are attached', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({}),
     });
 
     await apiRequest('/test');
+    expect(mockFetch).toHaveBeenCalledWith(
+      `${API_URL}/test`,
+      expect.objectContaining({ credentials: 'include' })
+    );
+  });
+
+  it('attaches X-CSRF-Token (read from the cf_csrf_token cookie) on mutating requests', async () => {
+    document.cookie = 'cf_csrf_token=my-csrf-value; path=/;';
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+
+    await apiRequest('/test', { method: 'POST', body: { a: 1 } });
+    expect(mockFetch).toHaveBeenCalledWith(
+      `${API_URL}/test`,
+      expect.objectContaining({
+        headers: expect.objectContaining({ 'X-CSRF-Token': 'my-csrf-value' }),
+      })
+    );
+  });
+
+  it('does not attach X-CSRF-Token on a plain GET', async () => {
+    document.cookie = 'cf_csrf_token=my-csrf-value; path=/;';
+    mockFetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) });
+
+    await apiRequest('/test');
     const callArgs = mockFetch.mock.calls[0][1];
-    expect(callArgs.headers.Authorization).toBeUndefined();
+    expect(callArgs.headers['X-CSRF-Token']).toBeUndefined();
+  });
+
+  it('on a 401, calls POST /auth/refresh once and retries the original request', async () => {
+    mockFetch
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ message: 'expired' }) })
+      .mockResolvedValueOnce({ ok: true, status: 200 }) // POST /auth/refresh
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, data: { id: 1 } }) }); // retried request
+
+    const result = await apiRequest('/protected');
+
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(mockFetch.mock.calls[1][0]).toBe(`${API_URL}/auth/refresh`);
+    expect(result).toEqual({ success: true, data: { id: 1 } });
+  });
+
+  it('shares a single in-flight refresh across concurrent 401s (no refresh storm)', async () => {
+    let refreshCalls = 0;
+    const seenPaths = new Set();
+    mockFetch.mockImplementation((url) => {
+      if (url === `${API_URL}/auth/refresh`) {
+        refreshCalls += 1;
+        return new Promise((resolve) => setTimeout(() => resolve({ ok: true, status: 200 }), 5));
+      }
+      // First fetch for a given path is a 401; the post-refresh retry of that
+      // same path succeeds.
+      if (!seenPaths.has(url)) {
+        seenPaths.add(url);
+        return Promise.resolve({ ok: false, status: 401, json: async () => ({}) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+    });
+
+    await Promise.all([apiRequest('/a'), apiRequest('/b'), apiRequest('/c')]);
+    expect(refreshCalls).toBe(1);
+  });
+
+  it('dispatches corefusion:unauthorized when refresh itself fails to recover the session', async () => {
+    const handler = vi.fn();
+    window.addEventListener('corefusion:unauthorized', handler);
+    mockFetch
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ message: 'expired' }) })
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) }); // refresh also 401s
+
+    await apiRequest('/protected').catch(() => {});
+    expect(handler).toHaveBeenCalledTimes(1);
+    window.removeEventListener('corefusion:unauthorized', handler);
+  });
+
+  it('does not attempt a refresh loop for /auth/login itself', async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({ message: 'bad credentials' }) });
+
+    const error = await apiRequest('/auth/login', { method: 'POST', body: {} }).catch((e) => e);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(error).toBeInstanceOf(ApiRequestError);
   });
 
   it('throws ApiRequestError on non-ok response', async () => {

@@ -1,8 +1,17 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import Icon from '../components/ui/Icon.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
+
+// Only ever navigate to a same-app relative path from `returnTo` — a bare
+// `/foo`, never `//host/foo` (protocol-relative) or `https://...`/`javascript:...`,
+// which would otherwise let a crafted `?returnTo=` query param send a logged-in
+// user off-site (open redirect).
+function sanitizeReturnTo(raw) {
+  if (typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//')) return null;
+  return raw;
+}
 
 const ROLE_PORTAL_MAP = {
   client: '/client',
@@ -17,12 +26,14 @@ const ROLE_PORTAL_MAP = {
   hr: '/hr',
   admin: '/admin',
   super_admin: '/super-admin',
+  partner: '/partner',
 };
 
 export default function LoginPage() {
   useDocumentTitle('Sign In | CoreFusion Technologies');
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -42,7 +53,8 @@ export default function LoginPage() {
         throw new Error('Your account does not have access to any portal.');
       }
 
-      navigate(target, { replace: true });
+      const returnTo = sanitizeReturnTo(searchParams.get('returnTo'));
+      navigate(returnTo || target, { replace: true });
     } catch (err) {
       setError(err.message || 'Invalid email or password.');
     } finally {
@@ -74,12 +86,16 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@corefusiontech.com"
+              autoComplete="username"
               className={inputClass}
             />
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Password</span>
+            <div className="flex items-center justify-between">
+              <span className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Password</span>
+              <Link to="/forgot-password" className="text-body-sm text-brand hover:underline">Forgot password?</Link>
+            </div>
             <div className="relative">
               <input
                 required
@@ -87,11 +103,13 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                autoComplete="current-password"
                 className={inputClass}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
               >
                 <Icon name={showPassword ? 'visibility_off' : 'visibility'} />
@@ -115,7 +133,7 @@ export default function LoginPage() {
 
           <p className="text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">
             Don&apos;t have an account?{' '}
-            <a href="/register" className="font-semibold text-brand hover:underline">Create account</a>
+            <Link to="/register" className="font-semibold text-brand hover:underline">Create account</Link>
           </p>
         </form>
       </div>

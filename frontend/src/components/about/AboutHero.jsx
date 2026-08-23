@@ -46,7 +46,7 @@ export default function AboutHero({ stats }) {
               {items.map((stat) => (
                 <div key={stat.label} className="animate-count-in">
                   <div className="font-stat text-stat-lg text-brand-dark dark:text-dark-brand">{stat.value}</div>
-                  <div className="font-label-caps text-label-caps uppercase text-ink-muted">{stat.label}</div>
+                  <div className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-white/60">{stat.label}</div>
                 </div>
               ))}
             </div>

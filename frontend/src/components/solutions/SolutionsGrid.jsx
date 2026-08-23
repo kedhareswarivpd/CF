@@ -17,19 +17,19 @@ export default function SolutionsGrid({ solutions }) {
                 <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-accent-cyan-pale">
                   <Icon name={s.icon} className="text-2xl text-brand" />
                 </div>
-                <h3 className="mb-3 min-h-16 font-display text-headline-sm text-black dark:text-white">{s.title}</h3>
-                <p className="mb-4 min-h-24 text-body-md text-black dark:text-white">{s.description}</p>
+                <h3 className="mb-3 min-h-16 font-display text-headline-sm text-ink dark:text-white">{s.title}</h3>
+                <p className="mb-4 min-h-24 text-body-md text-ink-muted dark:text-white/80">{s.description}</p>
                 <ul className="mb-4 space-y-2">
                   {s.capabilities.slice(0, 4).map((cap) => (
-                    <li key={cap} className="flex items-start gap-2 text-body-sm text-black dark:text-white">
+                    <li key={cap} className="flex items-start gap-2 text-body-sm text-ink-muted dark:text-white/70">
                       <Icon name="check_circle" className="mt-0.5 flex-shrink-0 text-lg text-brand" />
                       <span>{cap}</span>
                     </li>
                   ))}
                 </ul>
-                <div className="flex flex-wrap gap-2 border-t border-outline-variant pt-4">
+                <div className="flex flex-wrap gap-2 border-t border-outline-variant pt-4 dark:border-dark-outline-variant">
                   {s.industries.map((ind) => (
-                    <StatusBadge key={ind} variant="neutral" className="!text-black">{ind}</StatusBadge>
+                    <StatusBadge key={ind} variant="neutral" className="!text-ink dark:!text-white">{ind}</StatusBadge>
                   ))}
                 </div>
               </div>

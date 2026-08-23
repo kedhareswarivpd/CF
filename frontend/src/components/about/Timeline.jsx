@@ -7,16 +7,16 @@ function TimelineCard({ entry }) {
   return (
     <div
     className={`rounded-lg p-8 shadow-sm transition-all hover:shadow-md ${
-        isPresent ? 'bg-brand shadow-lg' : 'bg-white'
+        isPresent ? 'bg-brand shadow-lg' : 'bg-white dark:bg-dark-surface'
       }`}
     >
       <span className={`mb-2 block font-stat text-stat-lg ${isPresent ? 'text-white' : 'text-brand'}`}>
         {entry.year}
       </span>
-      <h4 className={`mb-2 font-display text-headline-sm ${isPresent ? 'text-white' : 'text-brand-dark dark:text-dark-brand'}`}>
+      <h4 className={`mb-2 font-display text-headline-sm ${isPresent ? 'text-white' : 'text-brand-dark dark:text-white'}`}>
         {entry.title}
       </h4>
-      <p className={isPresent ? 'text-white/80' : 'text-ink-muted'}>{entry.description}</p>
+      <p className={isPresent ? 'text-white/80' : 'text-ink-muted dark:text-white/70'}>{entry.description}</p>
     </div>
   );
 }

@@ -12,13 +12,13 @@ export default function IndustriesGrid({ industries }) {
                 <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-accent-cyan-pale">
                   <Icon name={ind.icon} className="text-2xl text-brand" />
                 </div>
-                <h3 className="mb-3 font-display text-headline-sm text-black dark:text-white">{ind.title}</h3>
-                <p className="mb-4 flex-1 text-body-md text-black dark:text-white">{ind.description}</p>
+                <h3 className="mb-3 flex min-h-16 items-center font-display text-headline-sm text-ink dark:text-white">{ind.title}</h3>
+                <p className="mb-4 flex-1 text-body-md text-ink-muted dark:text-white/80">{ind.description}</p>
                 <div className="mb-4">
-                  <h4 className="mb-2 font-label-caps text-label-caps uppercase text-black dark:text-white">Key Challenges</h4>
+                  <h4 className="mb-2 font-label-caps text-label-caps uppercase text-ink dark:text-white">Key Challenges</h4>
                   <ul className="space-y-1.5">
                     {ind.challenges.map((c) => (
-                      <li key={c} className="flex items-start gap-2 text-body-sm text-black dark:text-white">
+                      <li key={c} className="flex items-start gap-2 text-body-sm text-ink-muted dark:text-white/70">
                         <Icon name="chevron_right" className="flex-shrink-0 text-lg text-brand" />
                         <span>{c}</span>
                       </li>

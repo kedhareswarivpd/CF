@@ -71,7 +71,7 @@ function Projects({ projects }) {
         ? <div className="p-stack-lg"><EmptyState icon="folder" title="No projects yet" description="Your projects will appear here." /></div>
         : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
               <tr>
                 <th className="px-stack-lg py-4">Project</th>
                 <th className="px-stack-lg py-4">Progress</th>
@@ -111,7 +111,7 @@ function Invoices({ invoices }) {
         ? <div className="p-stack-lg"><EmptyState icon="receipt" title="No invoices yet" description="Your invoices will appear here." /></div>
         : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
               <tr>
                 <th className="px-stack-lg py-4">Invoice</th>
                 <th className="px-stack-lg py-4">Amount</th>
@@ -186,7 +186,7 @@ function Tickets({ tickets, onNewTicket }) {
           ? <div className="p-stack-lg"><EmptyState icon="support" title="No tickets yet" description="Submit a ticket to get support." /></div>
           : (
             <table className="w-full text-left">
-              <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+              <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
                 <tr>
                   <th className="px-stack-lg py-4">ID</th>
                   <th className="px-stack-lg py-4">Subject</th>
@@ -220,7 +220,7 @@ function Payments({ payments }) {
         ? <div className="p-stack-lg"><EmptyState icon="payments" title="No payments yet" description="Your payment history will appear here." /></div>
         : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
               <tr>
                 <th className="px-stack-lg py-4">Payment ID</th>
                 <th className="px-stack-lg py-4">Invoice</th>
@@ -248,434 +248,50 @@ function Payments({ payments }) {
   );
 }
 
-function getPreviewForFile(file) {
-  const name = (file.name || '').toLowerCase();
-  if (name.includes('pan card') || name.includes('pan number')) return PAN_CARD_PREVIEW;
-  if (name.includes('aadhaar') || name.includes('aadhar')) return AADHAAR_PREVIEW;
-  if (name.includes('offer letter')) return OFFER_LETTER_PREVIEW;
-  if (name.includes('experience letter') || name.includes('experience cert')) return EXPERIENCE_LETTER_PREVIEW;
-  if (name.includes('employment contract') || name.includes('employment agreement')) return CONTRACT_PREVIEW;
-  if (name.includes('relieving letter') || name.includes('relieving')) return RELIEVING_LETTER_PREVIEW;
-  if (name.includes('salary slip') || name.includes('salary statement') || name.includes('form 16')) return SALARY_SLIP_PREVIEW;
-  if (name.includes('bank') && (name.includes('detail') || name.includes('statement') || name.includes('account'))) return BANK_DETAILS_PREVIEW;
-  if (name.includes('address proof') || name.includes('utility bill') || name.includes('rent agreement')) return ADDRESS_PROOF_PREVIEW;
-  if (name.includes('photo') || name.includes('passport size')) return PHOTO_PREVIEW;
-  if (name.includes('proposal')) return PROPOSAL_PREVIEW;
-  if (name.includes('srs') || name.includes('requirement')) return SRS_PREVIEW;
-  if (name.includes('progress report') || name.includes('q2') || name.includes('status report')) return REPORT_PREVIEW;
-  if (name.includes('nda') || name.includes('non-disclosure') || name.includes('confidential')) return NDA_PREVIEW;
-  if (name.includes('api') || name.includes('integration') || name.includes('technical')) return API_GUIDE_PREVIEW;
-  if (name.includes('payslip') || name.includes('pay slip') || name.includes('salary')) return PAYSLIP_PREVIEW;
-  if (name.includes('invoice')) return INVOICE_PREVIEW;
-  if (name.includes('policy') || name.includes('handbook')) return POLICY_PREVIEW;
-  if (name.includes('certificate') || name.includes('completion')) return CERTIFICATE_PREVIEW;
-  return null;
-}
-
-const PAN_CARD_PREVIEW = {
-  sections: [
-    { heading: 'PAN Card Details', content: 'Permanent Account Number (PAN) card details submitted for tax and compliance purposes. PAN is a 10-digit alphanumeric identifier issued by the Income Tax Department of India.' },
-    { heading: 'PAN Information', table: { headers: ['Field', 'Details'], rows: [['PAN Number', 'ABCDE1234F'], ['Name on PAN', '[Employee Name]'], ['Date of Birth', '[DD/MM/YYYY]'], ['Father\'s Name', '[Father\'s Name]'], ['Address', '[Residential Address]'], ['PAN Type', 'Individual'], ['Issuing Authority', 'Income Tax Department, Govt. of India'], ['Date of Issue', '[DD/MM/YYYY]'], ['Validity', 'Lifetime (no expiry)']] } },
-    { heading: 'Important Notes', content: 'PAN is mandatory for all financial transactions exceeding ₹50,000. It is required for TDS deduction on salary, income tax filing, and opening bank accounts. A copy of the PAN card is retained in employee records for compliance.' },
-    { heading: 'Verification', content: 'PAN authenticity can be verified at https://www.incometax.gov.in/iec/foportal/ under "Verify Your PAN" service.' },
-  ],
-};
-
-const AADHAAR_PREVIEW = {
-  sections: [
-    { heading: 'Aadhaar Card Details', content: 'Aadhaar is a 12-digit unique identity number issued by the Unique Identification Authority of India (UIDAI). It serves as proof of identity and address.' },
-    { heading: 'Aadhaar Information', table: { headers: ['Field', 'Details'], rows: [['Aadhaar Number', 'XXXX XXXX 1234'], ['Name', '[Employee Name]'], ['Date of Birth', '[DD/MM/YYYY]'], ['Gender', '[Male/Female/Other]'], ['Address', '[Full residential address as per Aadhaar]'], ['Mobile Number', '[Registered mobile number]'], ['Email', '[Registered email]']] } },
-    { heading: 'Privacy Notice', content: 'As per Supreme Court ruling, Aadhaar cannot be mandatorily produced for private employment. Submission is voluntary and used only for KYC verification. The last 4 digits are stored; full number is masked in all records.' },
-  ],
-};
-
-const EXPERIENCE_LETTER_PREVIEW = {
-  sections: [
-    { heading: 'Experience Letter', content: 'This letter is issued to confirm the employment history and professional experience of the individual named below at CoreFusion Technologies Pvt. Ltd.' },
-    { heading: 'To Whom It May Concern', content: 'This is to certify that [Employee Name] (Employee Code: CFT-XXXX) was employed with CoreFusion Technologies Pvt. Ltd. in the capacity of [Designation] from [Joining Date] to [Last Working Date]. During their tenure, they were associated with the [Department] team.' },
-    { heading: 'Employment Details', table: { headers: ['Field', 'Details'], rows: [['Employee Code', 'CFT-XXXX'], ['Designation', '[Designation]'], ['Department', '[Department Name]'], ['Date of Joining', '[DD/MM/YYYY]'], ['Last Working Date', '[DD/MM/YYYY]'], ['Total Experience', '[X years, Y months]'], ['Reporting Manager', '[Manager Name]']] } },
-    { heading: 'Roles & Responsibilities', content: 'During their employment, [Employee Name] was responsible for [brief description of key responsibilities]. They demonstrated strong technical skills, teamwork, and commitment to deliverables throughout their tenure.' },
-    { heading: 'Reason for Separation', content: '[Resignation / End of Contract / Other — as applicable]' },
-    { heading: 'Issued On', content: 'This letter is issued on request of the employee for whatever legal purpose it may serve. Date of Issue: [DD/MM/YYYY]. Place: Bangalore, India.' },
-    { heading: 'Authorized Signatory', table: { headers: ['Field', 'Details'], rows: [['Name', 'Priya Mehta'], ['Title', 'HR Director'], ['Signature', '________________________'], ['Company Stamp', 'CoreFusion Technologies Pvt. Ltd.']] } },
-  ],
-};
-
-const RELIEVING_LETTER_PREVIEW = {
-  sections: [
-    { heading: 'Relieving Letter', content: 'This letter confirms that the undersigned employee has been formally relieved of all duties and obligations upon completion of their notice period at CoreFusion Technologies Pvt. Ltd.' },
-    { heading: 'Employee Details', table: { headers: ['Field', 'Details'], rows: [['Employee Name', '[Employee Name]'], ['Employee Code', 'CFT-XXXX'], ['Designation', '[Designation]'], ['Department', '[Department Name]'], ['Last Working Date', '[DD/MM/YYYY]'], ['Notice Period Served', '[1 month / 2 months]']] } },
-    { heading: 'Clearance Confirmation', content: 'We confirm that [Employee Name] has completed all formalities including handover of company assets (laptop, ID card, access badges), pending assignments, and exit interview. All dues have been settled and the employee has no outstanding liabilities.' },
-    { heading: 'Full and Final Settlement', table: { headers: ['Component', 'Amount (INR)', 'Status'], rows: [['Last Month Salary', '₹XX,XXX', 'Paid'], ['Leave Encashment', '₹XX,XXX', 'Paid'], ['Gratuity', '₹XX,XXX', 'Paid (if applicable)'], ['Bonus (Pro-rata)', '₹XX,XXX', 'Paid'], ['Deductions', '₹XX,XXX', 'Adjusted'], ['Net Settlement', '₹XX,XXX', 'Credited']] } },
-    { heading: 'Issued On', content: 'We wish [Employee Name] all the best in their future endeavors. Date of Issue: [DD/MM/YYYY].' },
-    { heading: 'Authorized Signatory', table: { headers: ['Field', 'Details'], rows: [['Name', 'Priya Mehta'], ['Title', 'HR Director'], ['Signature', '________________________'], ['Company Stamp', 'CoreFusion Technologies Pvt. Ltd.']] } },
-  ],
-};
-
-const SALARY_SLIP_PREVIEW = {
-  sections: [
-    { heading: 'Form 16 — Tax Deducted at Source', content: 'Certificate under Section 203 of the Income Tax Act, 1961 for tax deducted at source on salary income.' },
-    { heading: 'Employee & Employer Details', table: { headers: ['Field', 'Details'], rows: [['Employee Name', '[Employee Name]'], ['PAN', 'ABCDE1234F'], ['Assessment Year', '2026-27'], ['Period of Employment', 'Apr 2025 — Mar 2026'], ['Employer Name', 'CoreFusion Technologies Pvt. Ltd.'], ['Employer TAN', 'BLRD12345A'], ['Employer PAN', 'AABCC1234D']] } },
-    { heading: 'Summary of Salary & Tax', table: { headers: ['Component', 'Amount (INR)'], rows: [['Gross Salary (Sec 17(1))', '₹18,00,000'], ['Allowances under Sec 10', '₹3,00,000'], ['Deductions under Sec 16', '₹50,000'], ['Income from Salary', '₹14,50,000'], ['Chapter VI-A Deductions', '₹1,50,000'], ['Taxable Income', '₹13,00,000'], ['Total TDS Deducted', '₹2,34,000'], ['TDS Deposited (Challan)', '₹2,34,000']] } },
-    { heading: 'Verification', content: 'This is a system-generated Form 16. For any corrections, please contact the Finance team at finance@corefusiontech.com.' },
-  ],
-};
-
-const BANK_DETAILS_PREVIEW = {
-  sections: [
-    { heading: 'Bank Account Details', content: 'Bank account information on file for salary credit and official payments. This information is confidential and restricted to authorized personnel only.' },
-    { heading: 'Account Information', table: { headers: ['Field', 'Details'], rows: [['Account Holder Name', '[Employee Name]'], ['Bank Name', 'HDFC Bank Ltd.'], ['Account Number', '5010XXXX4821'], ['IFSC Code', 'HDFC0001234'], ['Branch', 'Koramangala, Bangalore'], ['Account Type', 'Savings'], ['Registered Mobile', '+91 XXXXX XXXXX'], ['PAN', 'ABCDE1234F']] } },
-    { heading: 'Verification Status', table: { headers: ['Check', 'Status', 'Date'], rows: [['Account Name Match', 'Verified', '2026-01-15'], ['IFSC Validation', 'Verified', '2026-01-15'], ['Bank Confirmation', 'Verified', '2026-01-16'], ['NEFT/RTGS Eligible', 'Yes', '—']] } },
-    { heading: 'Note', content: 'Salary is credited on the last working day of each month via NEFT. For any changes to bank details, please submit a request through the HR portal with a cancelled cheque leaf.' },
-  ],
-};
-
-const ADDRESS_PROOF_PREVIEW = {
-  sections: [
-    { heading: 'Address Proof Document', content: 'Document submitted as proof of residential address for KYC and employee records. Accepted documents include utility bills, rental agreements, and government-issued address proof.' },
-    { heading: 'Address on Record', table: { headers: ['Field', 'Details'], rows: [['Employee Name', '[Employee Name]'], ['Address Line 1', '[Flat/House No., Building]'], ['Address Line 2', '[Street, Locality]'], ['City', '[City]'], ['State', '[State]'], ['PIN Code', '[PIN Code]'], ['Country', 'India'], ['Address Type', 'Residential']] } },
-    { heading: 'Document Details', table: { headers: ['Field', 'Details'], rows: [['Document Type', '[Electricity Bill / Rental Agreement / Aadhaar]'], ['Issue Date', '[DD/MM/YYYY]'], ['Validity', '[DD/MM/YYYY]'], ['Verified By', 'HR Department'], ['Verification Date', '[DD/MM/YYYY]']] } },
-    { heading: 'Note', content: 'Address proof documents are retained in employee records for compliance and verification purposes. Documents older than 3 months may not be accepted as valid proof.' },
-  ],
-};
-
-const PHOTO_PREVIEW = {
-  sections: [
-    { heading: 'Employee Photograph', content: 'Passport-size photograph submitted for employee identification and records. Used for ID card, internal directory, and official correspondence.' },
-    { heading: 'Photo Specifications', table: { headers: ['Field', 'Details'], rows: [['Format', 'JPEG / PNG'], ['Dimensions', '3.5 cm x 4.5 cm (passport size)'], ['Resolution', '300 DPI minimum'], ['Background', 'White / Light Blue'], ['File Size', 'Max 2 MB']] } },
-    { heading: 'Employee Details', table: { headers: ['Field', 'Details'], rows: [['Employee Name', '[Employee Name]'], ['Employee Code', 'CFT-XXXX'], ['Department', '[Department Name]'], ['Date of Submission', '[DD/MM/YYYY]'], ['Purpose', 'Employee ID Card & Records']] } },
-    { heading: 'Note', content: 'Photographs must be recent (taken within the last 6 months). Snapshots, selfies, or edited photos are not accepted. Please submit a professional photograph with a neutral expression.' },
-  ],
-};
-
-const OFFER_LETTER_PREVIEW = {
-  sections: [
-    { heading: 'Offer Letter', content: 'CoreFusion Technologies Pvt. Ltd. is pleased to extend this offer of employment. This letter outlines the terms and conditions of your position with the company.' },
-    { heading: 'Offer Details', table: { headers: ['Field', 'Details'], rows: [['Position', 'Senior Software Engineer'], ['Department', 'Engineering — Platform Team'], ['Reporting To', 'Rajesh Kumar, VP of Engineering'], ['Joining Date', 'August 1, 2026'], ['Work Location', 'CoreFusion Technologies, Bangalore / Hybrid'], ['Employment Type', 'Full-Time, Permanent']] } },
-    { heading: 'Compensation', table: { headers: ['Component', 'Annual (INR)', 'Monthly (INR)'], rows: [['Base Salary', '₹18,00,000', '₹1,50,000'], ['Variable Pay (15%)', '₹2,70,000', '₹22,500'], ['Sign-On Bonus', '₹1,50,000', '— (one-time)'], ['Total CTC', '₹22,20,000', '—']] } },
-    { heading: 'Benefits & Perquisites', content: 'Health insurance (family floater ₹5L), term life insurance (₹1 Cr), employee stock options (ESOP) vesting over 4 years with 1-year cliff, 24 paid leave days per year, flexible work arrangement (3 days in-office), annual learning & development budget of ₹50,000, annual retreat & team outings.' },
-    { heading: 'Probation & Notice', content: 'You will be on probation for the first 6 months from the date of joining. Upon successful completion, your employment will be confirmed in writing. The notice period during probation is 1 month, and after confirmation is 2 months. Either party may terminate the employment by providing the requisite notice period or payment in lieu thereof.' },
-    { heading: 'Confidentiality', content: 'As a condition of employment, you will be required to sign the company\'s Non-Disclosure Agreement and Intellectual Property Assignment Agreement on or before your date of joining. All work product created during your tenure will belong to CoreFusion Technologies Pvt. Ltd.' },
-    { heading: 'Acceptance', content: 'Please sign below to indicate your acceptance of this offer on or before July 25, 2026. Failure to respond by this date may result in the offer being withdrawn.' },
-    { heading: 'Signatures', table: { headers: ['Party', 'Name', 'Title', 'Date'], rows: [['CoreFusion Tech', 'Priya Mehta', 'HR Director', 'July 10, 2026'], ['Candidate', '[Candidate Name]', '[To be signed]', '']] } },
-  ],
-};
-
-const CONTRACT_PREVIEW = {
-  sections: [
-    { heading: 'Employment Contract', content: 'This Employment Contract ("Contract") is entered into between CoreFusion Technologies Pvt. Ltd. ("Employer") and the undersigned Employee, effective as of the joining date specified in the Offer Letter.' },
-    { heading: '1. Position & Duties', content: 'The Employee is engaged as Senior Software Engineer in the Engineering — Platform Team. Duties include designing, developing, and maintaining production software systems; participating in code reviews; mentoring junior engineers; and contributing to architectural decisions.' },
-    { heading: '2. Compensation & Benefits', table: { headers: ['Item', 'Details'], rows: [['CTC', '₹22,20,000 per annum (as per Offer Letter)'], ['Pay Cycle', 'Monthly, last working day of each month'], ['Deductions', 'TDS, PF, ESI as per applicable laws'], ['Annual Bonus', 'Up to 15% of base, based on performance & company results'], ['ESOPs', '4,000 options, 4-year vesting, 1-year cliff']] } },
-    { heading: '3. Working Hours & Location', content: 'Standard working hours are 40 hours per week (Monday to Friday). Flexible scheduling is permitted with manager approval. Primary work location is CoreFusion Technologies, Bangalore. Hybrid work (3 days office / 2 days remote) is available after the probation period.' },
-    { heading: '4. Intellectual Property', content: 'All inventions, discoveries, source code, documentation, and other work product created during the term of employment shall be the sole property of CoreFusion Technologies Pvt. Ltd. The Employee assigns all rights, title, and interest in such work product to the Employer.' },
-    { heading: '5. Non-Competition & Non-Solicitation', content: 'For a period of twelve (12) months following termination, the Employee shall not directly or indirectly engage in any business that competes with CoreFusion Technologies, nor solicit any employee, contractor, or client of the Company.' },
-    { heading: '6. Termination', table: { headers: ['Condition', 'Notice Period', 'Severance'], rows: [['During Probation', '1 month', 'None'], ['After Confirmation', '2 months', '2 months CTC'], ['Termination for Cause', 'Immediate', 'None'], ['Layoff / Redundancy', '2 months or pay-in-lieu', 'As per company policy']] } },
-    { heading: '7. Governing Law', content: 'This Contract shall be governed by and construed in accordance with the laws of India. Any disputes shall be subject to the exclusive jurisdiction of the courts in Bangalore, Karnataka.' },
-    { heading: 'Signatures', table: { headers: ['Party', 'Name', 'Title', 'Date'], rows: [['Employer', 'Priya Mehta', 'HR Director', ''], ['Employee', '[Employee Name]', '[To be signed]', '']] } },
-  ],
-};
-
-const PROPOSAL_PREVIEW = {
-  sections: [
-    { heading: 'Project Proposal — Core Banking Modernization', content: 'This proposal outlines CoreFusion Technologies\' plan to modernize the core banking platform for Acme Corp, covering architecture, timeline, and investment.' },
-    { heading: 'Executive Summary', content: 'CoreFusion Technologies proposes a phased modernization of Acme Corp\'s legacy core banking system. The project will migrate critical banking services to a cloud-native microservices architecture while ensuring zero downtime for end customers. Total estimated investment: $2.4M over 18 months.' },
-    { heading: 'Scope of Work', table: { headers: ['Phase', 'Description', 'Duration', 'Team Size'], rows: [['Phase 1', 'Discovery & Architecture Design', '6 weeks', '5 engineers'], ['Phase 2', 'Core Migration & API Layer', '12 weeks', '8 engineers'], ['Phase 3', 'Testing & QA', '8 weeks', '6 engineers'], ['Phase 4', 'Go-Live & Support', '4 weeks', '4 engineers']] } },
-    { heading: 'Technology Stack', content: 'Java 17, Spring Boot, PostgreSQL, Redis, Kubernetes (EKS), Kafka for event streaming, React for admin dashboards.' },
-  ],
-};
-
-const SRS_PREVIEW = {
-  sections: [
-    { heading: 'Software Requirements Specification — v2.1', content: 'Detailed functional and non-functional requirements for the Core Banking Modernization project.' },
-    { heading: '1. Functional Requirements', table: { headers: ['ID', 'Requirement', 'Priority', 'Status'], rows: [['FR-001', 'Real-time transaction processing', 'Critical', 'Approved'], ['FR-002', 'Multi-currency support', 'High', 'Approved'], ['FR-003', 'Automated KYC verification', 'High', 'In Review'], ['FR-004', 'Mobile banking API gateway', 'Critical', 'Approved'], ['FR-005', 'Regulatory reporting module', 'Medium', 'Draft']] } },
-    { heading: '2. Non-Functional Requirements', table: { headers: ['Metric', 'Target', 'Measurement'], rows: [['Response Time', '< 200ms p99', 'Load testing'], ['Availability', '99.99%', 'Monitoring'], ['Throughput', '10,000 TPS', 'Stress testing'], ['Data Recovery', 'RPO < 1 min', 'Disaster recovery drill']] } },
-    { heading: '3. Constraints', content: 'The system must comply with PCI-DSS Level 1, SOC 2 Type II, and RBI guidelines. All data at rest must be encrypted using AES-256. PII data must be stored in India-based regions only.' },
-  ],
-};
-
-const REPORT_PREVIEW = {
-  sections: [
-    { heading: 'Q2 2026 Progress Report', content: 'Summary of project milestones, deliverables, and risks for the second quarter of 2026.' },
-    { heading: 'Milestone Tracker', table: { headers: ['Milestone', 'Target Date', 'Actual Date', 'Status'], rows: [['API Gateway Live', '2026-04-15', '2026-04-14', 'Completed'], ['Core DB Migration', '2026-05-30', '2026-06-05', 'Completed (delayed)'], ['Mobile SDK Release', '2026-06-15', '—', 'In Progress'], ['UAT Phase 1', '2026-07-01', '—', 'Scheduled']] } },
-    { heading: 'Budget Summary', table: { headers: ['Category', 'Budgeted', 'Spent', 'Remaining'], rows: [['Infrastructure', '$480,000', '$312,000', '$168,000'], ['Development', '$860,000', '$520,000', '$340,000'], ['QA & Testing', '$240,000', '$95,000', '$145,000'], ['Project Management', '$180,000', '$110,000', '$70,000']] } },
-    { heading: 'Risks & Mitigations', content: 'Risk 1: Third-party KYC provider API latency — Mitigation: Implementing caching layer and fallback provider. Risk 2: Regulatory audit scheduling conflict — Mitigation: Coordinating with compliance team for revised timeline.' },
-  ],
-};
-
-const NDA_PREVIEW = {
-  sections: [
-    { heading: 'Non-Disclosure Agreement', content: 'This Non-Disclosure Agreement ("Agreement") is entered into as of December 10, 2025, by and between Acme Corp ("Disclosing Party") and CoreFusion Technologies Pvt. Ltd. ("Receiving Party").' },
-    { heading: '1. Definition of Confidential Information', content: 'All non-public information disclosed by either party, including but not limited to: source code, business plans, financial data, customer lists, trade secrets, technical specifications, and architectural designs.' },
-    { heading: '2. Obligations', content: 'The Receiving Party agrees to: (a) hold all Confidential Information in strict confidence; (b) not disclose such information to any third party without prior written consent; (c) use the information solely for the purposes of the Core Banking Modernization project.' },
-    { heading: '3. Term', content: 'This Agreement shall remain in effect for a period of two (2) years from the date of execution, unless terminated earlier by either party with 30 days written notice.' },
-    { heading: 'Signatures', table: { headers: ['Party', 'Name', 'Title', 'Date'], rows: [['Acme Corp', 'James Wilson', 'CTO', 'Dec 10, 2025'], ['CoreFusion Tech', 'Rajesh Kumar', 'CEO', 'Dec 10, 2025']] } },
-  ],
-};
-
-const API_GUIDE_PREVIEW = {
-  sections: [
-    { heading: 'API Integration Guide', content: 'Technical documentation for integrating with the CoreFusion Banking API Gateway. Covers authentication, endpoints, error handling, and rate limits.' },
-    { heading: 'Authentication', content: 'All API requests must include a valid OAuth 2.0 Bearer token in the Authorization header. Tokens are obtained via the /oauth/token endpoint using client_credentials grant type.' },
-    { heading: 'Key Endpoints', table: { headers: ['Method', 'Endpoint', 'Description', 'Rate Limit'], rows: [['GET', '/api/v1/accounts', 'List customer accounts', '100/min'], ['POST', '/api/v1/transfers', 'Initiate fund transfer', '20/min'], ['GET', '/api/v1/transactions', 'Transaction history', '60/min'], ['POST', '/api/v1/beneficiaries', 'Add beneficiary', '10/min'], ['GET', '/api/v1/statements/:id', 'Download statement', '30/min']] } },
-    { heading: 'Error Codes', table: { headers: ['Code', 'Meaning', 'Action'], rows: [['400', 'Invalid request body', 'Check payload schema'], ['401', 'Invalid/expired token', 'Refresh OAuth token'], ['403', 'Insufficient permissions', 'Check scope grants'], ['429', 'Rate limit exceeded', 'Retry after Retry-After header'], ['500', 'Internal server error', 'Contact support']] } },
-    { heading: 'Webhooks', content: 'Subscribe to real-time events (transaction.completed, account.updated, beneficiary.added) via the Webhooks management endpoint. Payloads are signed with HMAC-SHA256 for verification.' },
-  ],
-};
-
-const PAYSLIP_PREVIEW = {
-  sections: [
-    { heading: 'Payslip — July 2026', content: 'Monthly salary slip for the pay period July 1–31, 2026. This is a system-generated document and does not require a signature.' },
-    { heading: 'Employee Details', table: { headers: ['Field', 'Value'], rows: [['Employee Code', 'CFT-1042'], ['Name', '[Employee Name]'], ['Department', 'Engineering'], ['Designation', 'Senior Software Engineer'], ['Pay Period', 'July 2026'], ['Payment Date', 'July 31, 2026']] } },
-    { heading: 'Earnings', table: { headers: ['Component', 'Amount (INR)'], rows: [['Basic Salary', '₹1,50,000'], ['House Rent Allowance (HRA)', '₹60,000'], ['Conveyance Allowance', '₹1,600'], ['Medical Allowance', '₹12,500'], ['Special Allowance', '₹25,900'], ['Performance Bonus', '₹22,500'], ['Gross Earnings', '₹2,72,500']] } },
-    { heading: 'Deductions', table: { headers: ['Component', 'Amount (INR)'], rows: [['Provident Fund (PF)', '₹18,000'], ['ESI', '₹0'], ['Professional Tax', '₹200'], ['Income Tax (TDS)', '₹42,000'], ['Total Deductions', '₹60,200']] } },
-    { heading: 'Net Pay', content: 'Net Pay (in hand): ₹2,12,300 — credited to account ending ****4821 (HDFC Bank) on July 31, 2026 via NEFT.' },
-  ],
-};
-
-const INVOICE_PREVIEW = {
-  sections: [
-    { heading: 'Invoice', content: 'This invoice is raised by CoreFusion Technologies Pvt. Ltd. for professional services rendered during the billing period.' },
-    { heading: 'Invoice Details', table: { headers: ['Field', 'Value'], rows: [['Invoice Number', 'INV-2026-0042'], ['Issue Date', 'July 1, 2026'], ['Due Date', 'July 31, 2026'], ['Billing Period', 'June 2026'], ['Payment Terms', 'Net 30']] } },
-    { heading: 'Line Items', table: { headers: ['Description', 'Hours', 'Rate', 'Amount'], rows: [['Platform Development', '120', '$85/hr', '$10,200'], ['API Integration Work', '40', '$95/hr', '$3,800'], ['Code Review & QA Support', '24', '$75/hr', '$1,800'], ['Project Management', '16', '$80/hr', '$1,280'], ['Total', '', '', '$17,080']] } },
-    { heading: 'Bank Details', table: { headers: ['Field', 'Value'], rows: [['Bank Name', 'HDFC Bank'], ['Account Name', 'CoreFusion Technologies Pvt. Ltd.'], ['Account Number', '50100012345678'], ['IFSC', 'HDFC0001234'], ['SWIFT', 'HDFCINBB']] } },
-  ],
-};
-
-const POLICY_PREVIEW = {
-  sections: [
-    { heading: 'Company Policy Document', content: 'This document outlines the policies and guidelines that govern employment at CoreFusion Technologies Pvt. All employees are expected to read, understand, and adhere to these policies.' },
-    { heading: '1. Code of Conduct', content: 'All employees must maintain the highest standards of professional integrity. This includes honesty in all business dealings, respect for colleagues, confidentiality of sensitive information, and compliance with all applicable laws and regulations.' },
-    { heading: '2. Leave Policy', table: { headers: ['Leave Type', 'Days/Year', 'Approval Required'], rows: [['Annual Leave', '24 days', 'Manager'], ['Sick Leave', '12 days', 'Self (3+ days: Manager)'], ['Casual Leave', '6 days', 'Manager'], ['Maternity/Paternity', '26/15 days', 'HR'], ['Bereavement', '5 days', 'HR']] } },
-    { heading: '3. Work From Home', content: 'Employees may work remotely up to 2 days per week after completing their probation period. Fully remote arrangements require VP-level approval and are subject to role suitability.' },
-    { heading: '4. Anti-Harassment', content: 'CoreFusion Technologies maintains a zero-tolerance policy toward harassment of any kind. All complaints will be investigated promptly and confidentially by the HR team.' },
-  ],
-};
-
-const CERTIFICATE_PREVIEW = {
-  sections: [
-    { heading: 'Certificate of Completion', content: 'This is to certify that the undersigned has successfully completed the assigned training / project milestone as documented below.' },
-    { heading: 'Details', table: { headers: ['Field', 'Value'], rows: [['Certificate ID', 'CERT-2026-0087'], ['Recipient', '[Employee Name]'], ['Program', 'Advanced Cloud Architecture — AWS Solutions Architect'], ['Duration', 'March 2026 – June 2026 (120 hours)'], ['Completion Date', 'June 30, 2026'], ['Issued By', 'CoreFusion Technologies Learning & Development']] } },
-    { heading: 'Competencies Acquired', content: 'AWS Solutions Architecture, Infrastructure as Code (Terraform), Container Orchestration (EKS/ECS), CI/CD Pipeline Design, Cost Optimization & FinOps, Security Best Practices (IAM, KMS, GuardDuty).' },
-    { heading: 'Verification', content: 'This certificate can be verified at https://corefusiontech.com/verify/CERT-2026-0087 using the certificate ID above.' },
-  ],
-};
-
-async function generateFilePDF(file) {
-  const { jsPDF } = await import('jspdf');
-  const preview = getPreviewForFile(file);
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  const pageW = 210;
-  const pageH = 297;
-  const margin = 20;
-  const contentW = pageW - margin * 2;
-  let cursor = margin;
-
-  const checkPage = (needed) => {
-    if (cursor + needed > pageH - margin) {
-      doc.addPage();
-      cursor = margin;
-    }
-  };
-
-  const writeLine = (text, opts = {}) => {
-    const { font = 'helvetica', style = 'normal', size = 10, color = [50, 50, 50], maxW = contentW } = opts;
-    doc.setFont(font, style);
-    doc.setFontSize(size);
-    doc.setTextColor(...color);
-    const lines = doc.splitTextToSize(text, maxW);
-    const lineH = size * 0.5;
-    checkPage(lines.length * lineH + 2);
-    lines.forEach((line) => {
-      doc.text(line, margin, cursor);
-      cursor += lineH;
-    });
-    cursor += 1;
-  };
-
-  const writeTable = (headers, rows) => {
-    const colCount = headers.length;
-    const colW = contentW / colCount;
-    const rowH = 7;
-    checkPage((rows.length + 1) * rowH + 6);
-
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.setTextColor(255, 255, 255);
-    doc.setFillColor(45, 65, 110);
-    doc.rect(margin, cursor, contentW, rowH, 'F');
-    headers.forEach((h, ci) => {
-      doc.text(String(h), margin + ci * colW + 2, cursor + 5);
-    });
-    cursor += rowH;
-
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
-    rows.forEach((row, ri) => {
-      checkPage(rowH + 2);
-      if (ri % 2 === 0) {
-        doc.setFillColor(242, 242, 248);
-        doc.rect(margin, cursor, contentW, rowH, 'F');
-      }
-      doc.setTextColor(40, 40, 40);
-      row.forEach((cell, ci) => {
-        doc.text(String(cell), margin + ci * colW + 2, cursor + 5);
-      });
-      cursor += rowH;
-    });
-    cursor += 4;
-  };
-
-  const docTitle = preview
-    ? (preview.sections[0]?.heading || file.name)
-    : file.name;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
-  doc.setTextColor(35, 55, 110);
-  const titleLines = doc.splitTextToSize(docTitle, contentW);
-  titleLines.forEach((line) => {
-    doc.text(line, pageW / 2, cursor, { align: 'center' });
-    cursor += 8;
-  });
-  cursor += 2;
-
-  doc.setDrawColor(180);
-  doc.setLineWidth(0.5);
-  doc.line(margin, cursor, pageW - margin, cursor);
-  cursor += 8;
-
-  if (preview) {
-    for (let i = 1; i < preview.sections.length; i++) {
-      const s = preview.sections[i];
-      if (s.heading) {
-        checkPage(16);
-        cursor += 2;
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(12);
-        doc.setTextColor(35, 55, 110);
-        doc.text(String(s.heading), margin, cursor);
-        cursor += 7;
-      }
-      if (s.content) {
-        writeLine(String(s.content), { size: 10, color: [50, 50, 50] });
-      }
-      if (s.table) {
-        writeTable(s.table.headers, s.table.rows);
-      }
-    }
-  } else {
-    writeLine(`Category: ${file.category || 'N/A'}`, { size: 11, color: [60, 60, 60] });
-    writeLine(`Size: ${file.size || 'N/A'}`, { size: 11, color: [60, 60, 60] });
-    writeLine(`Uploaded: ${file.uploadedOn || 'N/A'}`, { size: 11, color: [60, 60, 60] });
-    writeLine(`By: ${file.uploadedBy || 'N/A'}`, { size: 11, color: [60, 60, 60] });
-    cursor += 6;
-    doc.setDrawColor(180);
-    doc.line(margin, cursor, pageW - margin, cursor);
-    cursor += 8;
-    writeLine('This document is available for reference.', { size: 11, color: [80, 80, 80] });
-    writeLine('For the full version, please contact the CoreFusion team.', { size: 11, color: [80, 80, 80] });
-  }
-
-  const totalPages = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
-    doc.setPage(i);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.setTextColor(160, 160, 160);
-    doc.text(`CoreFusion Technologies  |  ${file.name}`, margin, pageH - 10);
-    doc.text(`Page ${i} of ${totalPages}`, pageW - margin, pageH - 10, { align: 'right' });
-  }
-
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.pdf$/i, '') + '.pdf';
-  doc.save(safeName);
-}
-
 function Files({ files }) {
-  const [previewFile, setPreviewFile] = useState(null);
-  const preview = previewFile ? getPreviewForFile(previewFile) : null;
-
   return (
-    <div className="space-y-4">
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-        {files.length === 0
-          ? <div className="p-stack-lg"><EmptyState icon="folder_open" title="No files yet" description="Shared files will appear here." /></div>
-          : (
-            <table className="w-full text-left">
-              <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
-                <tr>
-                  <th className="px-stack-lg py-4">Name</th>
-                  <th className="px-stack-lg py-4">Category</th>
-                  <th className="px-stack-lg py-4">Size</th>
-                  <th className="px-stack-lg py-4">Uploaded</th>
-                  <th className="px-stack-lg py-4">By</th>
-                  <th className="px-stack-lg py-4"></th>
+    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      {files.length === 0
+        ? <div className="p-stack-lg"><EmptyState icon="folder_open" title="No files yet" description="Shared files will appear here." /></div>
+        : (
+          <table className="w-full text-left">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
+              <tr>
+                <th className="px-stack-lg py-4">Name</th>
+                <th className="px-stack-lg py-4">Category</th>
+                <th className="px-stack-lg py-4">Size</th>
+                <th className="px-stack-lg py-4">Uploaded</th>
+                <th className="px-stack-lg py-4">By</th>
+                <th className="px-stack-lg py-4"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+              {files.map((f) => (
+                <tr key={f.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
+                  <td className="px-stack-lg py-4">
+                    <div className="flex items-center gap-2">
+                      <Icon name="description" className="text-lg text-brand" />
+                      <span className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{f.name}</span>
+                    </div>
+                  </td>
+                  <td className="px-stack-lg py-4"><Badge className="text-label-caps">{f.category}</Badge></td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.size}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedOn}</td>
+                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedBy}</td>
+                  <td className="px-stack-lg py-4">
+                    {f.file_url ? (
+                      <a href={f.file_url} target="_blank" rel="noreferrer" aria-label={`Open ${f.name}`} className="text-brand hover:text-brand-dark" title="Open file">
+                        <Icon name="open_in_new" className="text-xl" />
+                      </a>
+                    ) : (
+                      <span className="text-ink-muted/40" title="No file attached"><Icon name="open_in_new" className="text-xl" /></span>
+                    )}
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-                {files.map((f) => (
-                  <tr key={f.id} className={`transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low ${previewFile?.id === f.id ? 'bg-brand/5 dark:bg-brand/10' : ''}`}>
-                    <td className="px-stack-lg py-4">
-                      <div className="flex items-center gap-2">
-                        <Icon name="description" className="text-lg text-brand" />
-                        <button onClick={() => setPreviewFile(previewFile?.id === f.id ? null : f)} className="cursor-pointer text-left text-body-md font-semibold text-brand-dark hover:underline dark:text-dark-brand">{f.name}</button>
-                      </div>
-                    </td>
-                    <td className="px-stack-lg py-4"><Badge className="text-label-caps">{f.category}</Badge></td>
-                    <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.size}</td>
-                    <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedOn}</td>
-                    <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedBy}</td>
-                    <td className="px-stack-lg py-4">
-                      <button onClick={() => generateFilePDF(f)} className="cursor-pointer text-brand hover:text-brand-dark" title="Download PDF">
-                        <Icon name="download" className="text-xl" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-      </div>
-
-      {preview && (
-        <div className="overflow-hidden rounded-lg border border-brand/30 bg-white dark:bg-dark-surface">
-          <div className="flex items-center justify-between border-b border-brand/20 bg-brand/5 px-stack-lg py-4 dark:bg-brand/10">
-            <h3 className="font-display text-headline-sm font-bold text-brand-dark dark:text-white">Document Preview</h3>
-            <button onClick={() => setPreviewFile(null)} className="cursor-pointer text-ink-muted transition-colors hover:text-ink dark:text-white/60 dark:hover:text-white">
-              <Icon name="close" className="text-xl" />
-            </button>
-          </div>
-          <div className="space-y-stack-md px-stack-lg py-stack-md">
-            {preview.sections.map((s, i) => (
-              <div key={i}>
-                {s.heading && <h4 className="mb-2 font-display text-body-lg font-bold text-brand-dark dark:text-white">{s.heading}</h4>}
-                {s.content && <p className="text-body-md leading-relaxed text-ink dark:text-white/90">{s.content}</p>}
-                {s.table && (
-                  <div className="mt-2 overflow-x-auto">
-                    <table className="w-full overflow-hidden rounded-lg border border-outline-variant text-left text-body-sm dark:border-dark-outline-variant">
-                      <thead className="bg-surface-container dark:bg-dark-surface-container">
-                        <tr>
-                          {s.table.headers.map((h, hi) => (
-                            <th key={hi} className="px-4 py-2.5 font-label-caps text-label-caps uppercase text-white/70">{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-                        {s.table.rows.map((row, ri) => (
-                          <tr key={ri} className="hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                            {row.map((cell, ci) => (
-                              <td key={ci} className="px-4 py-2.5 text-body-sm text-ink dark:text-white">{cell}</td>
-                            ))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+              ))}
+            </tbody>
+          </table>
+        )}
     </div>
   );
 }
@@ -687,7 +303,7 @@ function Meetings({ meetings }) {
         ? <div className="p-stack-lg"><EmptyState icon="video_call" title="No meetings scheduled" description="Upcoming meetings will appear here." /></div>
         : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
               <tr>
                 <th className="px-stack-lg py-4">Meeting</th>
                 <th className="px-stack-lg py-4">Date & Time</th>
@@ -729,7 +345,7 @@ function Reports({ reports }) {
         ? <div className="p-stack-lg"><EmptyState icon="bar_chart" title="No reports yet" description="Generated reports will appear here." /></div>
         : (
           <table className="w-full text-left">
-            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-white/70 dark:bg-dark-surface-container">
+            <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
               <tr>
                 <th className="px-stack-lg py-4">Report</th>
                 <th className="px-stack-lg py-4">Type</th>
@@ -754,7 +370,7 @@ function Reports({ reports }) {
                   <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.size}</td>
                   <td className="px-stack-lg py-4">
                     {r.file_url
-                      ? <a href={r.file_url} target="_blank" rel="noreferrer" className="text-brand hover:text-brand-dark"><Icon name="download" className="text-xl" /></a>
+                      ? <a href={r.file_url} target="_blank" rel="noreferrer" aria-label={`Download ${r.title}`} className="text-brand hover:text-brand-dark"><Icon name="download" className="text-xl" /></a>
                       : <span className="text-ink-muted/40"><Icon name="download" className="text-xl" /></span>}
                   </td>
                 </tr>
@@ -812,6 +428,7 @@ const normalizeFile = (f) => ({
   size: f.size_bytes ? `${(f.size_bytes / 1024).toFixed(0)} KB` : (f.size ?? '—'),
   uploadedOn: f.created_at?.slice(0, 10) ?? f.uploadedOn,
   uploadedBy: f.uploaded_by ?? f.uploadedBy ?? 'CoreFusion Team',
+  file_url: f.file_url,
 });
 const normalizeFiles = (arr) => (Array.isArray(arr) ? arr.map(normalizeFile) : []);
 
@@ -888,19 +505,16 @@ export default function ClientPortal() {
     setTickets((prev) => [normalizeTicket(d), ...prev]);
   };
 
-  useEffect(() => {
-    if (!initializing && !user) navigate('/login', { replace: true });
-  }, [initializing, user, navigate]);
-  useEffect(() => {
-    if (!initializing && user && denied) navigate('/login', { replace: true });
-  }, [initializing, user, denied, navigate]);
-
+  // useRoleGuard already redirects both the unauthenticated case (to
+  // /login?returnTo=..., preserving destination) and the wrong-role case —
+  // no separate effect needed here. This gate just withholds rendering while
+  // that redirect is in flight.
   if (initializing || !user || denied) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
   if (loading) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
 
   return (
     <div className="flex h-screen flex-col bg-surface-container dark:bg-dark-surface-container">
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-outline-variant bg-surface-container px-margin-mobile py-3 dark:border-dark-outline-variant dark:bg-dark-surface-container md:px-margin-desktop">
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-outline-variant bg-brand-dark px-margin-mobile py-3 md:px-margin-desktop">
         <div className="flex items-center gap-4">
           <Avatar name={profile.contact_name || 'Client'} size="lg" />
           <div>
@@ -914,7 +528,7 @@ export default function ClientPortal() {
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-outline-variant dark:border-dark-outline-variant md:block">
+        <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-outline-variant bg-brand-dark md:block">
           <nav className="flex flex-col gap-1 p-3">
             {clientPortalTabs.map((tab) => (
               <button key={tab.id} onClick={() => handleTabChange(tab.id)}
@@ -928,7 +542,7 @@ export default function ClientPortal() {
         </aside>
 
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant px-margin-mobile py-2 md:hidden">
+          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-margin-mobile py-2 md:hidden">
             {clientPortalTabs.map((tab) => (
               <button key={tab.id} onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${

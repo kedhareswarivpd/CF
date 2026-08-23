@@ -80,3 +80,21 @@ export const resourcesApi = crudWithToken('/resources');
 export const categoriesApi = crudWithToken('/categories');
 export const testimonialsApi = crudWithToken('/testimonials');
 export const partnersApi = crudWithToken('/partners');
+export const seoApi = crudWithToken('/seo');
+export const pageContentApi = crudWithToken('/page-content');
+export const careersApi = crudWithToken('/careers');
+
+// Blog comments — public read (approved only, scoped to one post) and
+// public create (rate-limited 5/min server-side); moderation itself is
+// admin-only and lives in api/admin.js.
+export function fetchBlogComments(blogId) {
+  return apiRequest(`/comments${toQueryString({ blog_id: blogId, limit: 100 })}`);
+}
+export function submitComment(body) {
+  return apiRequest('/comments', { method: 'POST', body });
+}
+
+// Newsletter — public subscribe/unsubscribe (rate-limited 5/min server-side).
+export function subscribeNewsletter(body) {
+  return apiRequest('/newsletter/subscribe', { method: 'POST', body });
+}

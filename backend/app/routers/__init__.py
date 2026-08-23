@@ -1,24 +1,68 @@
 from fastapi import APIRouter
 
 from app.routers import (
-    audit_log, auth, award, blog, career, case_study, category, clients,
-    contact, dashboard, download, employees, event, faq, finance,
-    gallery, gdpr, industry, media, notification,
-    partner, portfolio, product, projects,
-    reports, resource, role, service, stats, task, technology,
-    testimonial, ticket, users,
     # Phase 2
     analytics,
-    solution, training,
+    audit_log,
+    auth,
+    award,
+    # Phase 5 — CMS/ops modules with models+schemas already defined but
+    # never wired to a router (found during the production-readiness audit)
+    backups,
+    blog,
+    career,
+    case_study,
+    category,
+    clients,
+    comment,
+    contact,
     # Phase 3 �?" Sales CRM
-    contracts, leads, meetings, proposals,
+    contracts,
+    dashboard,
     # Phase 4 🡺 Super Admin
     department,
+    download,
+    employees,
+    event,
+    faq,
+    finance,
+    gallery,
+    gdpr,
+    industry,
+    leads,
+    media,
+    meetings,
+    newsletter,
+    notification,
+    oauth,
+    page_content,
+    partner,
+    # Phase 6 — Partner Portal
+    partner_account,
+    portfolio,
+    product,
+    projects,
+    proposals,
+    reports,
+    resource,
+    role,
+    seo,
+    service,
+    settings,
+    solution,
+    stats,
+    task,
+    technology,
+    testimonial,
+    ticket,
+    training,
+    users,
 )
 
 api_router = APIRouter()
 
 api_router.include_router(auth.router)
+api_router.include_router(oauth.router)
 api_router.include_router(users.router)
 api_router.include_router(gdpr.router)
 api_router.include_router(stats.router)
@@ -66,3 +110,16 @@ api_router.include_router(meetings.router)
 
 # Phase 4 — Super Admin
 api_router.include_router(department.router)
+
+# Phase 5 — CMS/ops modules (SEO, Settings, Newsletter, Comments, Page Content,
+# Backups) — models and schemas already existed; only the router wiring was missing.
+api_router.include_router(seo.router)
+api_router.include_router(settings.router)
+api_router.include_router(newsletter.router)
+api_router.include_router(comment.router)
+api_router.include_router(page_content.router)
+api_router.include_router(backups.router)
+
+# Phase 6 — Partner Portal (login-gated self-service, mirrors Client Portal's
+# shape) — distinct from the pre-existing public `/partners` CMS listing.
+api_router.include_router(partner_account.router)

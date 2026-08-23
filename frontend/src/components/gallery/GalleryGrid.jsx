@@ -114,7 +114,7 @@ export default function GalleryGrid({ albums }) {
               <div>
                 <p className="font-body text-body-sm text-ink-muted dark:text-dark-ink-muted">{lightbox.caption}</p>
               </div>
-              <button onClick={() => setLightbox(null)} className="text-ink-muted hover:text-brand dark:text-dark-ink-muted dark:hover:text-dark-brand">
+              <button onClick={() => setLightbox(null)} aria-label="Close" className="text-ink-muted hover:text-brand dark:text-dark-ink-muted dark:hover:text-dark-brand">
                 <Icon name="close" className="text-2xl" />
               </button>
             </div>
@@ -124,7 +124,7 @@ export default function GalleryGrid({ albums }) {
             >
               {lightbox.src
                 ? <img src={lightbox.src} alt={lightbox.alt} className="size-full object-cover" />
-                : <Icon name="image" className="text-6xl text-ink-muted/40" />}
+                : <Icon name="image" className="text-6xl text-ink-muted/40 dark:text-dark-ink-muted/40" />}
             </div>
             <div className="mt-4 flex justify-between">
               <button

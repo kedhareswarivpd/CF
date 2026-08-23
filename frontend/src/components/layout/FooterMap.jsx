@@ -38,15 +38,15 @@ export default function FooterMap() {
   return (
     <div className="flex w-full flex-col">
       {/* Tab bar */}
-      <div className="scrollbar-hide flex overflow-x-auto border-b border-slate-200 bg-slate-100">
+      <div className="scrollbar-hide flex overflow-x-auto border-b border-slate-200 bg-slate-100 dark:border-dark-outline-variant dark:bg-dark-surface-container">
         {OFFICES.map((office, i) => (
           <button
             key={office.name}
             onClick={() => setActive(i)}
             className={`flex-shrink-0 whitespace-nowrap border-b-2 px-4 py-2.5 text-xs font-semibold tracking-wide transition-colors ${
               active === i
-                ? 'border-brand bg-white text-brand'
-                : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800'
+                ? 'border-brand bg-white text-brand dark:bg-dark-surface'
+                : 'border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-800 dark:text-dark-ink-muted dark:hover:bg-dark-surface dark:hover:text-dark-ink'
             }`}
           >
             {office.label ? `★ ${office.name}` : office.name}

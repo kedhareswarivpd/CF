@@ -26,12 +26,12 @@ export default function ProductsGrid({ products }) {
                   </div>
                   <StatusBadge variant={STATUS_VARIANTS[p.status] || 'neutral'} className="font-semibold">{p.status}</StatusBadge>
                 </div>
-                <h3 className="mb-1 font-display text-headline-sm text-black dark:text-white">{p.title}</h3>
-                <p className="mb-3 text-label-caps uppercase text-black dark:text-white">{p.tagline}</p>
-                <p className="mb-4 flex-1 text-body-md text-black dark:text-white">{p.description}</p>
-                <ul className="space-y-2 border-t border-outline-variant pt-4">
+                <h3 className="mb-1 flex min-h-16 items-center font-display text-headline-sm text-ink dark:text-white">{p.title}</h3>
+                <p className="mb-3 text-label-caps uppercase text-ink-muted dark:text-white/70">{p.tagline}</p>
+                <p className="mb-4 flex-1 text-body-md text-ink-muted dark:text-white/80">{p.description}</p>
+                <ul className="space-y-2 border-t border-outline-variant pt-4 dark:border-dark-outline-variant">
                   {p.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-body-sm text-black dark:text-white">
+                    <li key={f} className="flex items-start gap-2 text-body-sm text-ink-muted dark:text-white/70">
                       <Icon name="check_circle" className="mt-0.5 flex-shrink-0 text-lg text-brand" />
                       <span>{f}</span>
                     </li>

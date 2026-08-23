@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -46,7 +46,7 @@ async def send_proposal(proposal_id: uuid.UUID, db: AsyncSession = Depends(get_d
     if proposal.status != ProposalStatus.draft:
         raise ApiError.bad_request("Only a draft proposal can be sent")
 
-    proposal = await crud.update(db, proposal_id, {"status": ProposalStatus.sent, "sent_at": datetime.now(timezone.utc)})
+    proposal = await crud.update(db, proposal_id, {"status": ProposalStatus.sent, "sent_at": datetime.now(UTC)})
     await lead_crud.update(db, proposal.lead_id, {"status": LeadStatus.proposal_sent})
 
     if float(proposal.price) > DISCOUNT_APPROVAL_THRESHOLD:

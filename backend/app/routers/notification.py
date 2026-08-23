@@ -1,5 +1,8 @@
+import uuid
+
 from fastapi import APIRouter, Depends
-from sqlalchemy import select, update as sa_update
+from sqlalchemy import select
+from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -10,7 +13,6 @@ from app.models.user import User
 from app.schemas.ops import NotificationCreate, NotificationOut
 from app.services.notification_service import notify_roles, notify_user
 from app.utils.responses import success_response
-import uuid
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"], dependencies=[Depends(get_current_user)])
 

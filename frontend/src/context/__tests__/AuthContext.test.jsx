@@ -1,27 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../lib/supabase.js', () => ({
-  supabase: {
-    auth: {
-      getSession: vi.fn(),
-      onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })),
-      signUp: vi.fn(),
-      setSession: vi.fn(),
-      signOut: vi.fn(),
-    },
-  },
-}));
-
 vi.mock('../../api/auth.js', () => ({
   login: vi.fn(),
   register: vi.fn(),
   logout: vi.fn(),
+  fetchCurrentUser: vi.fn(),
 }));
 
 import { renderHook, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../AuthContext.jsx';
-import { supabase } from '../../lib/supabase.js';
-import { login as loginApi, register as registerApi, logout as logoutApi } from '../../api/auth.js';
+import {
+  login as loginApi,
+  register as registerApi,
+  logout as logoutApi,
+  fetchCurrentUser,
+} from '../../api/auth.js';
+import { ApiRequestError } from '../../api/client.js';
 
 describe('useAuth', () => {
   it('returns default values when used outside provider', () => {
@@ -35,13 +29,11 @@ describe('useAuth', () => {
 describe('AuthProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    supabase.auth.getSession.mockResolvedValue({ data: { session: null } });
-    supabase.auth.onAuthStateChange.mockReturnValue({
-      data: { subscription: { unsubscribe: vi.fn() } },
-    });
   });
 
-  it('initializes with no session', async () => {
+  it('hydrates as anonymous when GET /auth/me returns 401 (no session cookie)', async () => {
+    fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
+
     const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
     const { result } = renderHook(() => useAuth(), { wrapper });
 
@@ -51,12 +43,12 @@ describe('AuthProvider', () => {
 
     expect(result.current.user).toBeNull();
     expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.accessToken).toBeNull();
   });
 
-  it('initializes with existing session', async () => {
-    const mockUser = { id: 'user-123', email: 'test@example.com' };
-    const mockSession = { access_token: 'token', user: mockUser };
-    supabase.auth.getSession.mockResolvedValue({ data: { session: mockSession } });
+  it('hydrates the user from GET /auth/me when a session cookie is already present', async () => {
+    const mockUser = { id: 'user-123', email: 'test@example.com', role: 'client' };
+    fetchCurrentUser.mockResolvedValue({ data: mockUser });
 
     const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
     const { result } = renderHook(() => useAuth(), { wrapper });
@@ -67,17 +59,14 @@ describe('AuthProvider', () => {
 
     expect(result.current.user).toEqual(mockUser);
     expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.accessToken).toBe('token');
+    expect(result.current.role).toBe('client');
+    // Not a real credential — see AuthContext.jsx's AUTHENTICATED_SENTINEL comment.
+    expect(result.current.accessToken).toBeTruthy();
   });
 
-  it('login calls API and sets session', async () => {
-    loginApi.mockResolvedValue({
-      data: { access_token: 'access', refresh_token: 'refresh', user: { id: '1' } },
-    });
-    supabase.auth.setSession.mockResolvedValue({
-      data: { session: { access_token: 'access' } },
-      error: null,
-    });
+  it('login calls the API (no tokens ever touch JS — cookies are set by the server response)', async () => {
+    fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
+    loginApi.mockResolvedValue({ data: { user: { id: '1', role: 'client' } } });
 
     const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
     const { result } = renderHook(() => useAuth(), { wrapper });
@@ -86,18 +75,18 @@ describe('AuthProvider', () => {
       await new Promise((r) => setTimeout(r, 0));
     });
 
+    let returnedUser;
     await act(async () => {
-      await result.current.login('test@example.com', 'password');
+      returnedUser = await result.current.login('test@example.com', 'password');
     });
 
     expect(loginApi).toHaveBeenCalledWith('test@example.com', 'password');
-    expect(supabase.auth.setSession).toHaveBeenCalledWith({
-      access_token: 'access',
-      refresh_token: 'refresh',
-    });
+    expect(returnedUser).toEqual({ id: '1', role: 'client' });
+    expect(result.current.isAuthenticated).toBe(true);
   });
 
-  it('login throws on missing tokens', async () => {
+  it('login throws when the response has no user', async () => {
+    fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
     loginApi.mockResolvedValue({ data: {} });
 
     const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
@@ -110,12 +99,9 @@ describe('AuthProvider', () => {
     await expect(result.current.login('test@example.com', 'password')).rejects.toThrow('Login failed');
   });
 
-  it('register calls Supabase signUp', async () => {
-    supabase.auth.signUp.mockResolvedValue({
-      data: { user: { id: '1' }, session: { access_token: 'token' } },
-      error: null,
-    });
-    registerApi.mockResolvedValue({});
+  it('login throws a clear error for an MFA-challenged account (unsupported by this UI today)', async () => {
+    fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
+    loginApi.mockResolvedValue({ data: { mfa_token: 'challenge-token' } });
 
     const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
     const { result } = renderHook(() => useAuth(), { wrapper });
@@ -124,22 +110,12 @@ describe('AuthProvider', () => {
       await new Promise((r) => setTimeout(r, 0));
     });
 
-    await act(async () => {
-      await result.current.register('Test User', 'test@example.com', 'password');
-    });
-
-    expect(supabase.auth.signUp).toHaveBeenCalledWith({
-      email: 'test@example.com',
-      password: 'password',
-      options: { data: { name: 'Test User', role: 'client' } },
-    });
+    await expect(result.current.login('mfa@example.com', 'password')).rejects.toThrow('multi-factor');
   });
 
-  it('register throws on Supabase error', async () => {
-    supabase.auth.signUp.mockResolvedValue({
-      data: { user: null, session: null },
-      error: { message: 'Email already exists' },
-    });
+  it('register calls the API and returns the created user', async () => {
+    fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
+    registerApi.mockResolvedValue({ data: { id: '1', role: 'client' } });
 
     const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
     const { result } = renderHook(() => useAuth(), { wrapper });
@@ -148,16 +124,19 @@ describe('AuthProvider', () => {
       await new Promise((r) => setTimeout(r, 0));
     });
 
-    await expect(
-      result.current.register('Test', 'test@example.com', 'password')
-    ).rejects.toThrow('Email already exists');
+    let returned;
+    await act(async () => {
+      returned = await result.current.register('Test User', 'test@example.com', 'password');
+    });
+
+    expect(registerApi).toHaveBeenCalledWith('Test User', 'test@example.com', 'password');
+    expect(returned).toEqual({ id: '1', role: 'client' });
   });
 
-  it('logout calls API and Supabase signOut', async () => {
-    const mockSession = { access_token: 'token', user: { id: '1' } };
-    supabase.auth.getSession.mockResolvedValue({ data: { session: mockSession } });
-    logoutApi.mockResolvedValue({});
-    supabase.auth.signOut.mockResolvedValue({});
+  it('logout calls the API and clears local user state even if the API call fails', async () => {
+    const mockUser = { id: '1', email: 'test@example.com', role: 'client' };
+    fetchCurrentUser.mockResolvedValue({ data: mockUser });
+    logoutApi.mockRejectedValue(new Error('network error'));
 
     const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
     const { result } = renderHook(() => useAuth(), { wrapper });
@@ -165,12 +144,34 @@ describe('AuthProvider', () => {
     await act(async () => {
       await new Promise((r) => setTimeout(r, 0));
     });
+    expect(result.current.isAuthenticated).toBe(true);
 
     await act(async () => {
-      await result.current.logout();
+      await result.current.logout().catch(() => {});
     });
 
-    expect(logoutApi).toHaveBeenCalledWith('token');
-    expect(supabase.auth.signOut).toHaveBeenCalled();
+    expect(logoutApi).toHaveBeenCalled();
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.user).toBeNull();
+  });
+
+  it('clears local user state on a corefusion:unauthorized event (refresh-and-retry exhausted)', async () => {
+    const mockUser = { id: '1', email: 'test@example.com', role: 'client' };
+    fetchCurrentUser.mockResolvedValue({ data: mockUser });
+
+    const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
+    const { result } = renderHook(() => useAuth(), { wrapper });
+
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(result.current.isAuthenticated).toBe(true);
+
+    await act(async () => {
+      window.dispatchEvent(new CustomEvent('corefusion:unauthorized'));
+    });
+
+    expect(result.current.isAuthenticated).toBe(false);
+    expect(result.current.user).toBeNull();
   });
 });

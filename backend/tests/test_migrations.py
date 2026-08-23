@@ -1,8 +1,7 @@
+import importlib.util
 from pathlib import Path
 
 from sqlalchemy import create_engine, text
-
-import importlib.util
 
 
 def load_module(module_name: str, module_path: Path):

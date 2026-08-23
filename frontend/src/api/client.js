@@ -1,5 +1,14 @@
 const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
+// Cookie-based auth (CoreFusion self-auth): cf_access_token/cf_refresh_token
+// are httpOnly and never touched by JS. cf_csrf_token is the one readable
+// cookie — its value must be echoed back as X-CSRF-Token on every
+// state-changing request (double-submit CSRF check, see backend
+// app/core/csrf.py). There is no Authorization/Bearer header in this
+// architecture; every request relies on `credentials: 'include'` instead.
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const AUTH_PATHS_EXEMPT_FROM_REFRESH = new Set(['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout']);
+
 export class ApiRequestError extends Error {
   constructor(message, status, errors = []) {
     super(message);
@@ -9,21 +18,46 @@ export class ApiRequestError extends Error {
   }
 }
 
+function readCookie(name) {
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+// A 401 from many in-flight requests must trigger exactly one refresh call,
+// not one per request (refresh storm) — every caller awaits this same
+// in-flight promise instead of starting its own.
+let refreshPromise = null;
+
+function refreshSession() {
+  if (!refreshPromise) {
+    refreshPromise = fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'X-CSRF-Token': readCookie('cf_csrf_token') || '' },
+    }).finally(() => {
+      refreshPromise = null;
+    });
+  }
+  return refreshPromise;
+}
+
 /**
  * Low-level request helper. Returns the parsed `{ success, data, message, meta }`
  * envelope the FastAPI backend sends back (see app/utils/responses.py).
  * When `body` is a FormData instance it is sent as-is (multipart) — the browser
  * sets the boundary, so no Content-Type is forced.
  */
-export async function apiRequest(path, { method = 'GET', body, token, headers, signal } = {}) {
+export async function apiRequest(path, { method = 'GET', body, headers, signal, _isRetry = false } = {}) {
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+  const upperMethod = method.toUpperCase();
   let response;
   try {
     response = await fetch(`${API_URL}${path}`, {
       method,
+      credentials: 'include',
       headers: {
         ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(MUTATING_METHODS.has(upperMethod) ? { 'X-CSRF-Token': readCookie('cf_csrf_token') || '' } : {}),
         ...headers,
       },
       body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
@@ -35,6 +69,20 @@ export async function apiRequest(path, { method = 'GET', body, token, headers, s
       0,
       [{ field: null, message: networkError.message }]
     );
+  }
+
+  // Single retry after a silent refresh — never for the auth endpoints
+  // themselves, which would otherwise refresh-loop.
+  if (response.status === 401 && !_isRetry && !AUTH_PATHS_EXEMPT_FROM_REFRESH.has(path)) {
+    try {
+      const refreshResponse = await refreshSession();
+      if (refreshResponse.ok) {
+        return apiRequest(path, { method, body, headers, signal, _isRetry: true });
+      }
+    } catch {
+      // Refresh itself unreachable — fall through to normal 401 handling below.
+    }
+    window.dispatchEvent(new CustomEvent('corefusion:unauthorized'));
   }
 
   let payload = null;

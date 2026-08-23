@@ -13,18 +13,25 @@ from app.crud.base import CRUDBase
 from app.models.client import Client
 from app.models.client_file import ClientFile
 from app.models.client_report import ClientReport
+from app.models.employee import Employee
 from app.models.invoice import Invoice
 from app.models.meeting import Meeting
 from app.models.payment import Payment
 from app.models.project import Project
 from app.models.ticket import Ticket
-from app.models.ticket_reply import TicketReply
 from app.models.user import User
 from app.schemas.client import ClientCreate, ClientOut, TicketCreate
-from app.schemas.finance import ClientFileCreate, ClientFileOut, ClientPaymentOut, ClientReportCreate, ClientReportOut, InvoiceOut
+from app.schemas.finance import (
+    ClientFileCreate,
+    ClientFileOut,
+    ClientPaymentOut,
+    ClientReportCreate,
+    ClientReportOut,
+    InvoiceOut,
+)
 from app.schemas.ops import MeetingOut, TicketOut
 from app.schemas.project import ProjectOut
-from app.utils.pagination import PageParams, page_params
+from app.utils.pagination import SELF_SERVICE_LIST_CAP, PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
 router = APIRouter(prefix="/clients", tags=["Clients"], dependencies=[Depends(get_current_user)])
@@ -42,6 +49,21 @@ async def _get_client_for_user(db: AsyncSession, user: User) -> Client:
     return client
 
 
+async def _require_assigned_account_manager(db: AsyncSession, current_user: User, client: Client) -> None:
+    """A role check alone (admin/project_manager/finance) isn't ownership —
+    without this, any staff member with the right role could attach a
+    file/report to any client, not just the ones they're actually assigned
+    to manage (a real IDOR-adjacent gap found during a documentation
+    review, not caught by the existing RBAC matrix since that only tests
+    role gating, not per-resource ownership). admin/super_admin bypass,
+    matching require_roles()'s own bypass convention elsewhere."""
+    if current_user.role in ("admin", "super_admin"):
+        return
+    employee = (await db.execute(select(Employee).where(Employee.user_id == current_user.id))).scalar_one_or_none()
+    if employee is None or client.account_manager_id != employee.id:
+        raise ApiError.forbidden("You are not the assigned account manager for this client")
+
+
 # ---------- Client self-service (Client Portal) ----------
 @router.get("/me/profile", response_model=dict)
 async def my_profile(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -55,15 +77,22 @@ async def my_profile(db: AsyncSession = Depends(get_db), current_user: User = De
 @router.get("/me/projects", response_model=dict)
 async def my_projects(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
-    result = await db.execute(select(Project).where(Project.client_id == client.id).order_by(Project.created_at.desc()))
-    return success_response(data=[ProjectOut.model_validate(p) for p in result.scalars().all()])
+    # ProjectOut serializes `team` — must be eager-loaded or Pydantic's lazy
+    # attribute access crashes with MissingGreenlet on any project that has
+    # team members assigned (found via tests/e2e_workflows.py against a real
+    # Postgres session; mocked tests can't reproduce this).
+    result = await db.execute(
+        select(Project).options(selectinload(Project.team))
+        .where(Project.client_id == client.id).order_by(Project.created_at.desc()).limit(SELF_SERVICE_LIST_CAP)
+    )
+    return success_response(data=[ProjectOut.model_validate(p) for p in result.scalars().unique().all()])
 
 
 @router.get("/me/invoices", response_model=dict)
 async def my_invoices(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
     result = await db.execute(
-        select(Invoice).where(Invoice.client_id == client.id).order_by(Invoice.issue_date.desc())
+        select(Invoice).where(Invoice.client_id == client.id).order_by(Invoice.issue_date.desc()).limit(SELF_SERVICE_LIST_CAP)
     )
     return success_response(data=[InvoiceOut.model_validate(i) for i in result.scalars().all()])
 
@@ -71,7 +100,7 @@ async def my_invoices(db: AsyncSession = Depends(get_db), current_user: User = D
 @router.get("/me/tickets", response_model=dict)
 async def my_tickets(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
-    result = await db.execute(select(Ticket).where(Ticket.client_id == client.id).order_by(Ticket.created_at.desc()))
+    result = await db.execute(select(Ticket).where(Ticket.client_id == client.id).order_by(Ticket.created_at.desc()).limit(SELF_SERVICE_LIST_CAP))
     return success_response(data=[TicketOut.model_validate(t) for t in result.scalars().all()])
 
 
@@ -94,6 +123,7 @@ async def my_payments(db: AsyncSession = Depends(get_db), current_user: User = D
         .join(Invoice, Payment.invoice_id == Invoice.id)
         .where(Invoice.client_id == client.id)
         .order_by(Payment.paid_at.desc())
+        .limit(SELF_SERVICE_LIST_CAP)
     )
     rows = result.all()
     out = []
@@ -107,19 +137,20 @@ async def my_payments(db: AsyncSession = Depends(get_db), current_user: User = D
 @router.get("/me/meetings", response_model=dict)
 async def my_meetings(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
+    # Eager-load the organizer in the same query instead of one extra
+    # per-meeting lookup (CF-AUD-011 N+1).
     result = await db.execute(
-        select(Meeting).where(Meeting.client_id == client.id).order_by(Meeting.scheduled_at.desc())
+        select(Meeting)
+        .options(selectinload(Meeting.organizer))
+        .where(Meeting.client_id == client.id)
+        .order_by(Meeting.scheduled_at.desc())
+        .limit(SELF_SERVICE_LIST_CAP)
     )
     meetings = result.scalars().all()
     data = []
     for m in meetings:
         meeting = MeetingOut.model_validate(m).model_dump()
-        meeting["attendees"] = []
-        if m.organizer_id:
-            org = (
-                await db.execute(select(User).where(User.id == m.organizer_id))
-            ).scalar_one_or_none()
-            meeting["attendees"] = [org.name] if org else []
+        meeting["attendees"] = [m.organizer.name] if m.organizer else []
         data.append(meeting)
     return success_response(data=data)
 
@@ -128,13 +159,15 @@ async def my_meetings(db: AsyncSession = Depends(get_db), current_user: User = D
 async def my_files(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
     result = await db.execute(
-        select(ClientFile).where(ClientFile.client_id == client.id).order_by(ClientFile.created_at.desc())
+        select(ClientFile).where(ClientFile.client_id == client.id).order_by(ClientFile.created_at.desc()).limit(SELF_SERVICE_LIST_CAP)
     )
     return success_response(data=[ClientFileOut.model_validate(f) for f in result.scalars().all()])
 
 
 @router.post("/me/files", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "project_manager"))])
-async def upload_client_file(client_id: uuid.UUID, payload: ClientFileCreate, db: AsyncSession = Depends(get_db)):
+async def upload_client_file(client_id: uuid.UUID, payload: ClientFileCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    client = await crud.get(db, client_id)
+    await _require_assigned_account_manager(db, current_user, client)
     f = ClientFile(**payload.model_dump(), client_id=client_id)
     db.add(f)
     await db.commit()
@@ -146,13 +179,15 @@ async def upload_client_file(client_id: uuid.UUID, payload: ClientFileCreate, db
 async def my_reports(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
     result = await db.execute(
-        select(ClientReport).where(ClientReport.client_id == client.id).order_by(ClientReport.created_at.desc())
+        select(ClientReport).where(ClientReport.client_id == client.id).order_by(ClientReport.created_at.desc()).limit(SELF_SERVICE_LIST_CAP)
     )
     return success_response(data=[ClientReportOut.model_validate(r) for r in result.scalars().all()])
 
 
 @router.post("/me/reports", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "finance"))])
-async def create_client_report(client_id: uuid.UUID, payload: ClientReportCreate, db: AsyncSession = Depends(get_db)):
+async def create_client_report(client_id: uuid.UUID, payload: ClientReportCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    client = await crud.get(db, client_id)
+    await _require_assigned_account_manager(db, current_user, client)
     r = ClientReport(**payload.model_dump(), client_id=client_id)
     db.add(r)
     await db.commit()

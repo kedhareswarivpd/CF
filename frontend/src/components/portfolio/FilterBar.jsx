@@ -13,7 +13,7 @@ function FilterGroup({ label, options, active, onSelect, multi = false }) {
             className={`rounded-full border px-4 py-1.5 font-label-caps text-label-caps uppercase transition-all ${
               isActive
                 ? 'border-brand bg-brand text-white'
-                : 'border-outline text-white hover:border-brand dark:border-dark-outline'
+                : 'border-outline text-ink hover:border-brand dark:border-dark-outline dark:text-white'
             }`}
           >
             {option}

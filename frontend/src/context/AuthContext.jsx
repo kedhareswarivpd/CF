@@ -1,97 +1,118 @@
 import { createContext, useContext, useEffect, useCallback, useMemo, useState } from 'react';
-import { supabase } from '../lib/supabase.js';
-import { login as loginApi, register as registerApi, logout as logoutApi } from '../api/auth.js';
+import {
+  login as loginApi,
+  register as registerApi,
+  logout as logoutApi,
+  fetchCurrentUser,
+} from '../api/auth.js';
 
 const AuthContext = createContext(null);
 
+// CoreFusion self-auth: the backend owns identity/session/credentials via
+// httpOnly `cf_access_token`/`cf_refresh_token` cookies (see
+// backend/app/core/cookies.py) — this app never sees, stores, or reads
+// either token. Session state is reconstructed purely from GET /auth/me on
+// boot; there is no Supabase Auth, no localStorage/sessionStorage token, and
+// no Authorization: Bearer header anywhere in this codebase.
+//
+// `accessToken` below is a deliberate compatibility shim, not a real
+// credential: many existing components (ClientPortal, EmployeePortal,
+// AdminPanel, SuperAdminPanel, ContentManager) gate data fetches on
+// `if (!accessToken) return` and thread the value into api/*.js functions
+// that accept a `token` argument. Since the real transport is now the
+// browser's automatic cookie handling (`credentials: 'include'` in
+// api/client.js, which ignores this value entirely), `accessToken` is set to
+// a non-secret sentinel string while authenticated and `null` otherwise —
+// preserving every existing truthy/falsy gate without threading a rewrite
+// through those four large files. It holds no usable value and cannot be
+// replayed anywhere.
+const AUTHENTICATED_SENTINEL = 'cf-cookie-session';
+
 export function AuthProvider({ children }) {
-  const [session, setSession] = useState(null);
   const [user, setUser] = useState(null);
-  const [initializing, setInitializing] = useState(true);
+  const [status, setStatus] = useState('loading'); // 'loading' | 'authenticated' | 'anonymous' | 'error'
+
+  const hydrate = useCallback(async () => {
+    try {
+      const res = await fetchCurrentUser();
+      setUser(res?.data ?? null);
+      setStatus(res?.data ? 'authenticated' : 'anonymous');
+    } catch (err) {
+      if (err?.status === 401) {
+        setUser(null);
+        setStatus('anonymous');
+      } else {
+        // Network/server error distinct from "not logged in" — don't claim
+        // anonymous, since that would be indistinguishable from a real logout.
+        setUser(null);
+        setStatus('error');
+      }
+    }
+  }, []);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      setInitializing(false);
-    });
+    hydrate();
+  }, [hydrate]);
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      setInitializing(false);
-    }).catch(() => setInitializing(false));
-
-    return () => subscription?.unsubscribe();
+  // A request that survived one silent refresh attempt and still came back
+  // 401 (api/client.js) means the session is truly gone — clear local state
+  // so the UI reflects it without waiting for the next /auth/me poll.
+  useEffect(() => {
+    const onUnauthorized = () => {
+      setUser(null);
+      setStatus('anonymous');
+    };
+    window.addEventListener('corefusion:unauthorized', onUnauthorized);
+    return () => window.removeEventListener('corefusion:unauthorized', onUnauthorized);
   }, []);
 
   const register = useCallback(async (name, email, password) => {
-    // Sign up directly via Supabase Auth first — this always works even if
-    // the backend is temporarily unreachable.
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { name, role: 'client' } },
-    });
-    if (error) throw new Error(error.message);
-    if (!data.user) throw new Error('Registration failed. Please try again.');
-
-    // Best-effort: sync the new user row into the backend DB.
-    // If the backend is down we still let the user in — the row will be
-    // created lazily on their first login.
-    try {
-      await registerApi(name, email, password);
-    } catch {
-      // backend unreachable — non-fatal
-    }
-
-    // If email confirmation is required, session will be null here.
-    if (!data.session) {
-      throw new Error('Account created! Please check your email to confirm your address before signing in.');
-    }
-
-    return data;
+    const res = await registerApi(name, email, password);
+    return res?.data ?? null;
   }, []);
 
   const login = useCallback(async (email, password) => {
-    const response = await loginApi(email, password);
-    const tokenData = response?.data;
-    if (!tokenData?.access_token || !tokenData?.refresh_token) {
+    const res = await loginApi(email, password);
+    const data = res?.data;
+    if (data?.mfa_token) {
+      // MFA is off by default for every account (see backend
+      // app/routers/auth.py) — this branch exists so a future MFA-enabled
+      // account fails loudly instead of silently, rather than because the
+      // frontend implements a verification step today.
+      throw new Error('This account requires multi-factor verification, which is not yet supported here.');
+    }
+    if (!data?.user) {
       throw new Error('Login failed. Please try again.');
     }
-
-    // Set session state immediately so portal has access_token without waiting
-    setSession({ access_token: tokenData.access_token, refresh_token: tokenData.refresh_token });
-    setUser({ id: tokenData.user?.id, email: tokenData.user?.email, user_metadata: tokenData.user });
-
-    // Sync with Supabase in background (non-blocking)
-    supabase.auth.setSession({
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token,
-    }).catch(() => {});
-
-    return tokenData.user;
+    setUser(data.user);
+    setStatus('authenticated');
+    return data.user;
   }, []);
 
   const logout = useCallback(async () => {
-    const accessToken = session?.access_token ?? null;
-    if (accessToken) {
-      await logoutApi(accessToken);
+    try {
+      await logoutApi();
+    } finally {
+      setUser(null);
+      setStatus('anonymous');
     }
-    await supabase.auth.signOut();
-  }, [session]);
+  }, []);
 
   const value = useMemo(
     () => ({
       user,
-      accessToken: session?.access_token ?? null,
-      isAuthenticated: Boolean(user),
-      initializing,
+      status,
+      isAuthenticated: status === 'authenticated',
+      isLoading: status === 'loading',
+      initializing: status === 'loading',
+      role: user?.role ?? null,
+      accessToken: status === 'authenticated' ? AUTHENTICATED_SENTINEL : null,
       login,
       logout,
       register,
+      refresh: hydrate,
     }),
-    [user, session, initializing, login, logout, register]
+    [user, status, login, logout, register, hydrate]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -102,12 +123,16 @@ export function useAuth() {
   if (!ctx) {
     return {
       user: null,
-      accessToken: null,
+      status: 'anonymous',
       isAuthenticated: false,
+      isLoading: false,
       initializing: false,
+      role: null,
+      accessToken: null,
       login: async () => null,
       logout: async () => {},
       register: async () => null,
+      refresh: async () => {},
     };
   }
   return ctx;

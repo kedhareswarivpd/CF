@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -33,3 +33,9 @@ class TrainingEnrollment(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     course = relationship("Course", back_populates="enrollments")
+
+    # Real duplicate-enrollment race found during a documentation review:
+    # the router only did a query-then-insert check with no matching
+    # database constraint, so two concurrent enroll requests for the same
+    # employee/course could both pass the check before either committed.
+    __table_args__ = (UniqueConstraint("employee_id", "course_id", name="uq_training_enrollment_employee_course"),)

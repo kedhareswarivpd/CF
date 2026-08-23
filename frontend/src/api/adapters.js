@@ -10,6 +10,7 @@ const FALLBACK_PROJECT_IMAGE =
 
 export function adaptService(service) {
   return {
+    slug: service.slug,
     icon: service.icon || 'domain',
     title: service.name,
     description: service.overview || '',
@@ -22,6 +23,7 @@ export function adaptProject(project) {
   return {
     slug: project.slug,
     industry: project.industry || 'Enterprise',
+    services: project.services || [],
     version: `v${Math.max(1, Math.round((project.progress_percent || 100) / 10) / 10).toFixed(1)}`,
     title: project.title,
     description: project.overview || project.challenge || '',

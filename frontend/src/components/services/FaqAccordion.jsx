@@ -7,13 +7,13 @@ function FaqItem({ faq, isOpen, onToggle, index }) {
   const id = `faq-${index}`;
   const buttonId = `faq-btn-${index}`;
   return (
-    <div className="rounded-lg border border-outline-variant bg-surface-low p-stack-md">
+    <div className="rounded-lg border border-outline-variant bg-surface-low p-stack-md dark:border-dark-outline-variant dark:bg-dark-surface-low">
       <button
         id={buttonId}
         onClick={onToggle}
         aria-expanded={isOpen}
         aria-controls={id}
-        className="flex w-full cursor-pointer items-center justify-between text-left font-display text-body-lg font-semibold text-white"
+        className="flex w-full cursor-pointer items-center justify-between text-left font-display text-body-lg font-semibold text-ink dark:text-white"
       >
         {faq.question}
         <Icon name="expand_more" className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -23,7 +23,7 @@ function FaqItem({ faq, isOpen, onToggle, index }) {
           id={id}
           role="region"
           aria-labelledby={buttonId}
-          className="pt-4 text-body-md text-white"
+          className="pt-4 text-body-md text-ink-muted dark:text-white"
         >
           {faq.answer}
         </div>
@@ -39,12 +39,12 @@ export default function FaqAccordion() {
     <section className="mx-auto max-w-container px-margin-mobile py-section-padding md:px-margin-desktop">
       <div className="grid gap-gutter lg:grid-cols-12">
         <div className="lg:col-span-4">
-          <h2 className="mb-stack-md font-display text-headline-md text-white">Common Questions</h2>
-          <p className="mb-stack-lg text-body-md text-white">
+          <h2 className="mb-stack-md font-display text-headline-md text-brand-dark dark:text-white">Common Questions</h2>
+          <p className="mb-stack-lg text-body-md text-ink-muted dark:text-white">
             Everything you need to know about partnering with CoreFusion on your next technical venture.
           </p>
-          <div className="rounded-lg border border-brand/20 bg-accent-cyan-pale p-stack-md">
-            <p className="text-body-sm font-semibold text-brand-dark">Need specialized answers?</p>
+          <div className="rounded-lg border border-brand/20 bg-accent-cyan-pale p-stack-md dark:border-brand/30 dark:bg-dark-surface-container">
+            <p className="text-body-sm font-semibold text-brand-dark dark:text-white">Need specialized answers?</p>
             <Link to="/contact" className="mt-2 inline-block text-body-sm font-bold text-brand hover:underline">
               Speak with a Solution Architect
             </Link>

@@ -1,6 +1,6 @@
 """Integration-style tests for CRUD operations with mocked async database."""
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from sqlalchemy.exc import SQLAlchemyError

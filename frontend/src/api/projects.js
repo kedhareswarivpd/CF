@@ -5,3 +5,10 @@ export function fetchProjects({ industry, ...rest } = {}) {
   if (industry && industry !== 'All') params.industry = industry;
   return apiRequest(`/projects${toQueryString(params)}`);
 }
+
+// The backend accepts either a UUID or a slug at this path
+// (backend/app/routers/projects.py's GET /{identifier}), so this hits a
+// real single-item endpoint rather than fetching the whole list to filter.
+export function fetchProjectBySlug(slug) {
+  return apiRequest(`/projects/${encodeURIComponent(slug)}`);
+}

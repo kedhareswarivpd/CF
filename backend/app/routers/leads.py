@@ -1,11 +1,11 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
+from app.core.errors import ApiError
 from app.crud.base import CRUDBase
 from app.models.enums import NotificationType
 from app.models.lead import Lead
@@ -29,12 +29,14 @@ async def list_leads(request: Request, db: AsyncSession = Depends(get_db), page:
         filters["owner_id"] = owner_id
     items, total = await crud.list(db, page, filters)
     meta = build_pagination_meta(total, page.page, page.limit)
-    return success_response(data=[LeadOut.model_validate(l) for l in items], message="Leads fetched", meta=meta)
+    return success_response(data=[LeadOut.model_validate(lead) for lead in items], message="Leads fetched", meta=meta)
 
 
 @router.get("/{lead_id}", response_model=dict)
-async def get_lead(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def get_lead(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     lead = await crud.get(db, lead_id)
+    if current_user.role == "sales" and lead.owner_id != current_user.id:
+        raise ApiError.forbidden("You do not have access to this lead")
     return success_response(data=LeadOut.model_validate(lead))
 
 
@@ -56,8 +58,16 @@ async def create_lead(payload: LeadCreate, db: AsyncSession = Depends(get_db), c
 
 @router.patch("/{lead_id}", response_model=dict, dependencies=[Depends(require_roles("sales", "admin"))])
 async def update_lead(lead_id: uuid.UUID, payload: LeadUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    existing = await crud.get(db, lead_id)
+    # Real IDOR found during a security audit: GET /leads/{id} already
+    # blocked a `sales` user from reading a lead they don't own, but this
+    # PATCH had no matching check — any sales user could modify (including
+    # reassigning `owner_id` to themselves) a lead owned by a different
+    # salesperson, exactly the class of access GET was written to prevent.
+    if current_user.role == "sales" and existing.owner_id != current_user.id:
+        raise ApiError.forbidden("You do not have access to this lead")
     data = payload.model_dump(exclude_unset=True)
-    previous_owner = (await crud.get(db, lead_id)).owner_id
+    previous_owner = existing.owner_id
     lead = await crud.update(db, lead_id, data)
 
     new_owner = data.get("owner_id")

@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import func, select
@@ -19,20 +19,27 @@ from app.models.payslip import Payslip
 from app.models.performance_review import PerformanceReview
 from app.models.timesheet import Timesheet
 from app.models.user import User
-from app.models.enums import LeaveStatus
 from app.schemas.employee import (
-    AttendanceOut, EmployeeCreate, EmployeeDocumentOut,
-    EmployeeOut, LeaveApply, LeaveOut, LeaveStatusUpdate,
-    PayslipOut, TimesheetCreate, TimesheetOut, TimesheetStatusUpdate,
+    AttendanceOut,
+    EmployeeCreate,
+    EmployeeDocumentOut,
+    EmployeeOut,
+    LeaveApply,
+    LeaveOut,
+    LeaveStatusUpdate,
+    PayslipOut,
+    TimesheetCreate,
+    TimesheetOut,
+    TimesheetStatusUpdate,
 )
 from app.schemas.performance import PerformanceReviewOut
-from app.utils.pagination import PageParams, page_params
+from app.utils.pagination import SELF_SERVICE_LIST_CAP, PageParams, page_params, paginate_query
 from app.utils.responses import build_pagination_meta, success_response
 
 router = APIRouter(prefix="/employees", tags=["Employees"], dependencies=[Depends(get_current_user)])
 
-crud = CRUDBase(Employee, searchable_fields=["employee_code", "designation"], relationships=["department"])
-leave_crud = CRUDBase(Leave)
+crud = CRUDBase(Employee, searchable_fields=["employee_code", "designation"], relationships=["department", "user"])
+leave_crud = CRUDBase(Leave, relationships=["employee"])
 timesheet_crud = CRUDBase(Timesheet)
 
 
@@ -87,7 +94,7 @@ async def check_in(db: AsyncSession = Depends(get_db), current_user: User = Depe
         await db.execute(select(Attendance).where(Attendance.employee_id == employee.id, Attendance.date == today))
     ).scalar_one_or_none()
     if not record:
-        record = Attendance(employee_id=employee.id, date=today, check_in=datetime.now(timezone.utc).time(), status="present")
+        record = Attendance(employee_id=employee.id, date=today, check_in=datetime.now(UTC).time(), status="present")
         db.add(record)
         await db.commit()
         await db.refresh(record)
@@ -103,7 +110,7 @@ async def check_out(db: AsyncSession = Depends(get_db), current_user: User = Dep
     ).scalar_one_or_none()
     if not record:
         raise ApiError.bad_request("You have not checked in today")
-    record.check_out = datetime.now(timezone.utc).time()
+    record.check_out = datetime.now(UTC).time()
     await db.commit()
     await db.refresh(record)
     return success_response(data=AttendanceOut.model_validate(record), message="Checked out")
@@ -112,8 +119,8 @@ async def check_out(db: AsyncSession = Depends(get_db), current_user: User = Dep
 @router.get("/me/leaves", response_model=dict)
 async def my_leaves(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
-    result = await db.execute(select(Leave).where(Leave.employee_id == employee.id).order_by(Leave.id.desc()))
-    return success_response(data=[LeaveOut.model_validate(l) for l in result.scalars().all()])
+    result = await db.execute(select(Leave).where(Leave.employee_id == employee.id).order_by(Leave.id.desc()).limit(SELF_SERVICE_LIST_CAP))
+    return success_response(data=[LeaveOut.model_validate(leave) for leave in result.scalars().all()])
 
 
 @router.post("/me/leaves", response_model=dict, status_code=201)
@@ -136,7 +143,7 @@ async def apply_leave(payload: LeaveApply, db: AsyncSession = Depends(get_db), c
 @router.get("/me/timesheets", response_model=dict)
 async def my_timesheets(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
-    result = await db.execute(select(Timesheet).where(Timesheet.employee_id == employee.id).order_by(Timesheet.date.desc()))
+    result = await db.execute(select(Timesheet).where(Timesheet.employee_id == employee.id).order_by(Timesheet.date.desc()).limit(SELF_SERVICE_LIST_CAP))
     return success_response(data=[TimesheetOut.model_validate(t) for t in result.scalars().all()])
 
 
@@ -154,7 +161,7 @@ async def submit_timesheet(payload: TimesheetCreate, db: AsyncSession = Depends(
 async def my_payslips(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
     result = await db.execute(
-        select(Payslip).where(Payslip.employee_id == employee.id).order_by(Payslip.year.desc(), Payslip.month.desc())
+        select(Payslip).where(Payslip.employee_id == employee.id).order_by(Payslip.year.desc(), Payslip.month.desc()).limit(SELF_SERVICE_LIST_CAP)
     )
     payslips = result.scalars().all()
     return success_response(data=[PayslipOut.model_validate(p) for p in payslips])
@@ -163,7 +170,7 @@ async def my_payslips(db: AsyncSession = Depends(get_db), current_user: User = D
 @router.get("/me/documents", response_model=dict)
 async def my_documents(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
-    result = await db.execute(select(EmployeeDocument).where(EmployeeDocument.employee_id == employee.id))
+    result = await db.execute(select(EmployeeDocument).where(EmployeeDocument.employee_id == employee.id).limit(SELF_SERVICE_LIST_CAP))
     return success_response(data=[EmployeeDocumentOut.model_validate(d) for d in result.scalars().all()])
 
 
@@ -171,7 +178,7 @@ async def my_documents(db: AsyncSession = Depends(get_db), current_user: User = 
 async def my_performance_reviews(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
     result = await db.execute(
-        select(PerformanceReview).where(PerformanceReview.employee_id == employee.id).order_by(PerformanceReview.review_date.desc())
+        select(PerformanceReview).where(PerformanceReview.employee_id == employee.id).order_by(PerformanceReview.review_date.desc()).limit(SELF_SERVICE_LIST_CAP)
     )
     return success_response(data=[PerformanceReviewOut.model_validate(r) for r in result.scalars().all()])
 
@@ -179,96 +186,143 @@ async def my_performance_reviews(db: AsyncSession = Depends(get_db), current_use
 # ---------- Leave & timesheet approval (HR reviews all; PM reviews their team's) ----------
 # NOTE: These static routes MUST be registered before /{employee_id} to avoid
 # FastAPI matching the literal string "leaves"/"timesheets" as a UUID path param.
+async def _pm_team_employee_ids(db: AsyncSession, pm_user: User) -> list[uuid.UUID]:
+    """A real gap found during a security audit: this router's own comment
+    says "PM reviews their team's" leaves/timesheets, but until this fix
+    NOTHING scoped a project_manager's list/approve access to their actual
+    reports — any PM could view or approve any employee's leave/timesheet
+    company-wide, not just their own team's, a horizontal privilege
+    escalation within the project_manager role. Team = employees whose
+    reporting_manager_id is this PM's own Employee.id."""
+    pm_employee = (await db.execute(select(Employee).where(Employee.user_id == pm_user.id))).scalar_one_or_none()
+    if pm_employee is None:
+        return []
+    result = await db.execute(select(Employee.id).where(Employee.reporting_manager_id == pm_employee.id))
+    return list(result.scalars().all())
+
+
 @router.get("/leaves", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
-async def list_leaves(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params)):
+async def list_leaves(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params), current_user: User = Depends(get_current_user)):
     status_filter = request.query_params.get("status")
-    employee_id_filter = request.query_params.get("employee_id")
+    requested_employee_id = request.query_params.get("employee_id")
+
     stmt = select(Leave).options(selectinload(Leave.employee))
-    if status_filter:
-        try:
-            stmt = stmt.where(Leave.status == LeaveStatus(status_filter))
-        except ValueError:
-            pass
-    if employee_id_filter:
-        stmt = stmt.where(Leave.employee_id == employee_id_filter)
-    stmt = stmt.order_by(Leave.id.desc()).offset((page.page - 1) * page.limit).limit(page.limit)
-    result = await db.execute(stmt)
-    items = result.scalars().all()
     count_stmt = select(func.count()).select_from(Leave)
+
+    if current_user.role == "project_manager":
+        # CRUDBase.list() only supports equality filters, not IN — this
+        # endpoint needs an IN-over-team-ids filter, so it builds its own
+        # query rather than going through leave_crud.list() (same reasoning
+        # list_all_timesheets below already uses its own query for).
+        team_ids = await _pm_team_employee_ids(db, current_user)
+        if requested_employee_id and uuid.UUID(requested_employee_id) not in team_ids:
+            raise ApiError.forbidden("You can only view leave requests for your own team")
+        if not team_ids:
+            return success_response(data=[], message="Leave requests fetched", meta=build_pagination_meta(0, page.page, page.limit))
+        target_ids = [uuid.UUID(requested_employee_id)] if requested_employee_id else team_ids
+        stmt = stmt.where(Leave.employee_id.in_(target_ids))
+        count_stmt = count_stmt.where(Leave.employee_id.in_(target_ids))
+    elif requested_employee_id:
+        stmt = stmt.where(Leave.employee_id == requested_employee_id)
+        count_stmt = count_stmt.where(Leave.employee_id == requested_employee_id)
+
     if status_filter:
-        try:
-            count_stmt = count_stmt.where(Leave.status == LeaveStatus(status_filter))
-        except ValueError:
-            pass
-    if employee_id_filter:
-        count_stmt = count_stmt.where(Leave.employee_id == employee_id_filter)
-    total = (await db.execute(count_stmt)).scalar_one()
-    meta = build_pagination_meta(total, page.page, page.limit)
+        stmt = stmt.where(Leave.status == status_filter)
+        count_stmt = count_stmt.where(Leave.status == status_filter)
+
+    stmt = stmt.order_by(Leave.created_at.desc())
+    items, meta = await paginate_query(db, stmt, count_stmt, page)
     data = []
-    for l in items:
-        out = LeaveOut.model_validate(l)
-        out_dict = out.model_dump()
-        out_dict["employee_code"] = l.employee.employee_code if l.employee else None
-        out_dict["designation"] = l.employee.designation if l.employee else None
+    for leave in items:
+        out_dict = LeaveOut.model_validate(leave).model_dump()
+        out_dict["employee_code"] = leave.employee.employee_code if leave.employee else None
+        out_dict["designation"] = leave.employee.designation if leave.employee else None
         data.append(out_dict)
     return success_response(data=data, message="Leave requests fetched", meta=meta)
 
 
 @router.patch("/leaves/{leave_id}/approve", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
 async def review_leave(leave_id: uuid.UUID, payload: LeaveStatusUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role == "project_manager":
+        target = await leave_crud.get(db, leave_id)
+        team_ids = await _pm_team_employee_ids(db, current_user)
+        if target.employee_id not in team_ids:
+            raise ApiError.forbidden("You can only approve leave requests for your own team")
     leave = await leave_crud.update(db, leave_id, {"status": payload.status, "approved_by": current_user.id})
     return success_response(data=LeaveOut.model_validate(leave), message="Leave request updated")
 
 
 @router.get("/timesheets", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
-async def list_all_timesheets(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params)):
+async def list_all_timesheets(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params), current_user: User = Depends(get_current_user)):
     filters = {k: request.query_params.get(k) for k in ("employee_id", "project_id", "status") if request.query_params.get(k)}
-    stmt = select(Timesheet).options(selectinload(Timesheet.employee))
+    # Nested selectinload for employee.user avoids a per-row User re-query
+    # below (CF-AUD-011 N+1, same pattern as list_employees/my_meetings).
+    stmt = select(Timesheet).options(selectinload(Timesheet.employee).selectinload(Employee.user))
     count_stmt = select(func.count()).select_from(Timesheet)
+
+    if current_user.role == "project_manager":
+        # Same real gap as list_leaves above: nothing previously scoped a
+        # PM's timesheet visibility to their own team.
+        team_ids = await _pm_team_employee_ids(db, current_user)
+        requested_employee_id = filters.get("employee_id")
+        if requested_employee_id and uuid.UUID(requested_employee_id) not in team_ids:
+            raise ApiError.forbidden("You can only view timesheets for your own team")
+        if not team_ids:
+            return success_response(data=[], message="Timesheets fetched", meta=build_pagination_meta(0, page.page, page.limit))
+        target_ids = [uuid.UUID(requested_employee_id)] if requested_employee_id else team_ids
+        stmt = stmt.where(Timesheet.employee_id.in_(target_ids))
+        count_stmt = count_stmt.where(Timesheet.employee_id.in_(target_ids))
+        filters.pop("employee_id", None)
+
     for field, value in filters.items():
         column = getattr(Timesheet, field, None)
         if column is not None:
             stmt = stmt.where(column == value)
             count_stmt = count_stmt.where(column == value)
-    stmt = stmt.order_by(Timesheet.date.desc()).offset((page.page - 1) * page.limit).limit(page.limit)
-    result = await db.execute(stmt)
-    items = result.scalars().all()
-    total = (await db.execute(count_stmt)).scalar_one()
-    meta = build_pagination_meta(total, page.page, page.limit)
+    stmt = stmt.order_by(Timesheet.date.desc())
+    items, meta = await paginate_query(db, stmt, count_stmt, page)
     data = []
     for t in items:
         out = TimesheetOut.model_validate(t).model_dump()
         emp = t.employee
         out["employee_code"] = emp.employee_code if emp else None
         out["designation"] = emp.designation if emp else None
-        user = (await db.execute(select(User).where(User.id == emp.user_id))).scalar_one_or_none() if emp else None
-        out["employee_name"] = user.name if user else None
+        out["employee_name"] = emp.user.name if emp and emp.user else None
         data.append(out)
     return success_response(data=data, message="Timesheets fetched", meta=meta)
 
 
 @router.patch("/timesheets/{timesheet_id}/approve", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
-async def review_timesheet(timesheet_id: uuid.UUID, payload: TimesheetStatusUpdate, db: AsyncSession = Depends(get_db)):
+async def review_timesheet(timesheet_id: uuid.UUID, payload: TimesheetStatusUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if current_user.role == "project_manager":
+        target = await timesheet_crud.get(db, timesheet_id)
+        team_ids = await _pm_team_employee_ids(db, current_user)
+        if target.employee_id not in team_ids:
+            raise ApiError.forbidden("You can only approve timesheets for your own team")
     timesheet = await timesheet_crud.update(db, timesheet_id, {"status": payload.status})
     return success_response(data=TimesheetOut.model_validate(timesheet), message="Timesheet updated")
 
 
 # ---------- HR / Admin management ----------
 @router.get("", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
-async def list_employees(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params)):
+async def list_employees(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params), current_user: User = Depends(get_current_user)):
     filters = {k: request.query_params.get(k) for k in ("department_id", "status", "employment_type") if request.query_params.get(k)}
     items, total = await crud.list(db, page, filters)
+    # Compensation is payroll-sensitive: only admin/hr should see it here, not
+    # every role that can browse the employee directory (e.g. project_manager).
+    can_view_salary = current_user.role in ("admin", "super_admin", "hr")
+    # `crud.list()` above eager-loads `department`/`user` via selectinload
+    # (2 bounded queries total), so this loop must read those relationships
+    # directly rather than re-querying per row — the previous per-employee
+    # Department/User lookups were an N+1 (CF-AUD-011).
     data = []
     for e in items:
         out = EmployeeOut.model_validate(e).model_dump()
-        if e.department_id:
-            dept = (await db.execute(select(Department).where(Department.id == e.department_id))).scalar_one_or_none()
-            out["department_name"] = dept.name if dept else None
-        else:
-            out["department_name"] = None
-        user = (await db.execute(select(User).where(User.id == e.user_id))).scalar_one_or_none()
-        out["name"] = user.name if user else None
-        out["email"] = user.email if user else None
+        if not can_view_salary:
+            out.pop("salary", None)
+        out["department_name"] = e.department.name if e.department else None
+        out["name"] = e.user.name if e.user else None
+        out["email"] = e.user.email if e.user else None
         data.append(out)
     meta = build_pagination_meta(total, page.page, page.limit)
     return success_response(data=data, message="Employees fetched", meta=meta)
@@ -281,7 +335,17 @@ async def create_employee(payload: EmployeeCreate, db: AsyncSession = Depends(ge
     if user_id:
         existing = (await db.execute(select(Employee).where(Employee.user_id == user_id))).scalar_one_or_none()
         if existing:
-            for k, v in data.items():
+            # A real gap found during a security audit: this "re-POST to
+            # update" branch was applying every EmployeeCreate field to the
+            # existing record, including the identity fields `user_id`/
+            # `employee_code` — a caller could smuggle a changed
+            # `employee_code` (or, since `existing` was already looked up
+            # BY `user_id`, at least a redundant identity-mutation surface)
+            # through what's semantically an update, not a create. Excluded
+            # here since neither should ever change once an Employee row
+            # exists — the row's user_id is fixed by the lookup itself.
+            update_data = {k: v for k, v in data.items() if k not in ("user_id", "employee_code")}
+            for k, v in update_data.items():
                 setattr(existing, k, v)
             await db.commit()
             await db.refresh(existing)

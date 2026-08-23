@@ -5,10 +5,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import require_roles
+from app.core.limiter import limiter
 from app.core.logger import logger
 from app.crud.base import CRUDBase
 from app.models.contact_submission import ContactSubmission
-from app.schemas.contact import ContactOut, ContactSubmit, ContactStatusUpdate
+from app.schemas.contact import ContactOut, ContactStatusUpdate, ContactSubmit
 from app.services.email_service import send_contact_notification
 from app.utils.pagination import PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
@@ -19,7 +20,8 @@ crud = CRUDBase(ContactSubmission, searchable_fields=["name", "email", "company"
 
 
 @router.post("", response_model=dict, status_code=201)
-async def submit(payload: ContactSubmit, db: AsyncSession = Depends(get_db)):
+@limiter.limit("5/minute")
+async def submit(request: Request, payload: ContactSubmit, db: AsyncSession = Depends(get_db)):
     submission = await crud.create(db, payload.model_dump())
     try:
         await send_contact_notification(submission.name, submission.email, submission.message, submission.subject)

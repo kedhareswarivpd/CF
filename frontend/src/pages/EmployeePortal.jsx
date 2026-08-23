@@ -13,7 +13,6 @@ import { useAuth } from '../context/AuthContext.jsx';
 import {
   employeeTabsForRole,
 } from '../data/portal.js';
-import { downloadDocumentPdf, downloadPayslipPdf } from '../utils/documentPdf.js';
 import {
   fetchMyProfile, applyLeave as applyLeaveApi, submitTimesheet, fetchMyDocuments,
   checkIn as checkInApi, checkOut as checkOutApi,
@@ -105,38 +104,37 @@ function Attendance({ attendance, accessToken, onChange }) {
   const currentTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   const handleCheckIn = async () => {
+    if (!accessToken) return;
     setLoading(true);
     try {
-      const res = accessToken ? await checkInApi(accessToken) : null;
+      const res = await checkInApi(accessToken);
       const updated = res?.data;
       const time = toLocalTime(updated?.check_in) || currentTime();
       onChange?.({ ...attendance, checkIn: time, status: 'present' });
       setCheckedIn(true);
       showToast(`Checked in at ${time}`);
-    } catch {
-      const time = currentTime();
-      onChange?.({ ...attendance, checkIn: time, status: 'present' });
-      setCheckedIn(true);
-      showToast(`Checked in at ${time}`);
+    } catch (err) {
+      // Do not fabricate a check-in time on failure — the real attendance
+      // record was never created, so the UI must not claim it was.
+      showToast(err?.message || 'Check-in failed. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCheckOut = async () => {
+    if (!accessToken) return;
     setLoading(true);
     try {
-      const res = accessToken ? await checkOutApi(accessToken) : null;
+      const res = await checkOutApi(accessToken);
       const updated = res?.data;
       const time = toLocalTime(updated?.check_out) || currentTime();
       onChange?.({ ...attendance, checkOut: time });
       setCheckedOut(true);
       showToast(`Checked out at ${time}`);
-    } catch {
-      const time = currentTime();
-      onChange?.({ ...attendance, checkOut: time });
-      setCheckedOut(true);
-      showToast(`Checked out at ${time}`);
+    } catch (err) {
+      // Same as check-in: a failed request must not be reported as success.
+      showToast(err?.message || 'Check-out failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -463,7 +461,7 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
   );
 }
 
-function Payslips({ payslips, profile }) {
+function Payslips({ payslips }) {
   const totalNet = payslips.reduce((s, p) => s + (p.netPay || 0), 0);
   const latestPay = payslips.length ? payslips[0].netPay : 0;
   const kpis = [
@@ -517,11 +515,15 @@ function Payslips({ payslips, profile }) {
                 <td className="px-stack-lg py-4 text-body-md font-bold text-emerald-600">${p.netPay.toLocaleString()}</td>
                 <td className="px-stack-lg py-4"><StatusBadge variant="success">{p.status}</StatusBadge></td>
                 <td className="px-stack-lg py-4 text-right">
-                  <button
-                    onClick={() => downloadPayslipPdf(p, profile)}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-body-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-500 hover:text-blue-600 active:scale-95">
-                    <Icon name="download" className="text-sm" /> Slip
-                  </button>
+                  {p.file_url ? (
+                    <a
+                      href={p.file_url} target="_blank" rel="noreferrer" aria-label={`Download ${p.month} ${p.year} payslip`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-body-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-500 hover:text-blue-600 active:scale-95">
+                      <Icon name="download" className="text-sm" /> Slip
+                    </a>
+                  ) : (
+                    <span className="text-body-xs text-slate-400">Not available</span>
+                  )}
                 </td>
               </tr>
             ))}
@@ -538,7 +540,6 @@ function Tasks({ tasks }) {
 
   const inProgress = tasks.filter((t) => t.status === 'in_progress').length;
   const completed = tasks.filter((t) => t.status === 'done').length;
-  const pending = tasks.filter((t) => t.status === 'todo' || t.status === 'blocked').length;
 
   const kpis = [
     { label: 'Total Assigned Tasks', value: tasks.length, icon: 'assignment' },
@@ -734,7 +735,7 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
         <h3 className="mb-4 font-display text-headline-sm text-white">My Enrollments</h3>
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500 border-b border-slate-200">
+            <thead className="border-b border-slate-200 bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
               <tr>
                 <th className="px-6 py-4">Course</th>
                 <th className="px-6 py-4">Category</th>
@@ -763,7 +764,7 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
   );
 }
 
-function Documents({ docs, profile }) {
+function Documents({ docs }) {
   const typeIcon = { contract: 'gavel', id_proof: 'badge', certificate: 'workspace_premium', other: 'description', resume: 'person' };
   const contracts = docs.filter((d) => d.type === 'contract').length;
   const certs = docs.filter((d) => d.type === 'certificate').length;
@@ -772,14 +773,6 @@ function Documents({ docs, profile }) {
     { label: 'Contracts', value: contracts, icon: 'gavel' },
     { label: 'Certificates', value: certs, icon: 'workspace_premium' },
   ];
-
-  const handleDownload = async (d) => {
-    try {
-      await downloadDocumentPdf(d, profile);
-    } catch (e) {
-      console.error('Failed to generate document PDF:', e);
-    }
-  };
 
   return (
     <div className="space-y-stack-lg">
@@ -808,13 +801,17 @@ function Documents({ docs, profile }) {
               <p className="mt-2 flex-1 text-body-sm text-slate-600">{d.uploadedOn}</p>
               <div className="mt-4 flex items-center justify-between">
                 <span className="text-body-sm text-slate-600">Document</span>
-                <button
-                  onClick={() => handleDownload(d)}
-                  className="inline-flex items-center gap-1.5 rounded bg-brand px-4 py-2 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark disabled:opacity-60"
-                  aria-label="Download">
-                  <Icon name="download" className="text-base leading-none" />
-                  Download
-                </button>
+                {d.file_url ? (
+                  <a
+                    href={d.file_url} target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded bg-brand px-4 py-2 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark"
+                    aria-label={`Download ${d.name}`}>
+                    <Icon name="download" className="text-base leading-none" />
+                    Download
+                  </a>
+                ) : (
+                  <span className="text-body-sm text-slate-400">Not available</span>
+                )}
               </div>
             </div>
           ))}
@@ -1242,9 +1239,9 @@ function SalesConvertModal({ submission, accessToken, onClose, onSuccess }) {
             <h2 className="font-display text-headline-sm font-bold text-slate-900">Convert to Lead</h2>
             <p className="mt-1 text-body-sm text-slate-500">Create a CRM lead from this contact submission</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><Icon name="close" className="text-xl" /></button>
+          <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-700"><Icon name="close" className="text-xl" /></button>
         </div>
-        <div className="mb-5 rounded-lg bg-slate-50 p-4 space-y-1">
+        <div className="mb-5 space-y-1 rounded-lg bg-slate-50 p-4">
           <p className="text-body-sm font-semibold text-slate-900">{submission.name}</p>
           <p className="text-body-sm text-slate-600">{submission.email}</p>
           {submission.phone && <p className="text-body-sm text-slate-500">{submission.phone}</p>}
@@ -1495,7 +1492,7 @@ function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
                       {actingId === c.id ? 'Signing...' : 'Mark Signed'}
                     </RowAction>
                   )}
-                  {c.status === 'signed' && <span className="text-body-sm text-green-600 font-medium">✓ Signed</span>}
+                  {c.status === 'signed' && <span className="text-body-sm font-medium text-green-600">✓ Signed</span>}
                 </td>
               </tr>
             ))}
@@ -2030,7 +2027,6 @@ function MarketingLeadsView({ accessToken }) {
     load();
   };
 
-  const statusColor = { new: 'neutral', in_progress: 'info', resolved: 'success', spam: 'error' };
   const inProgressContacts = contacts.filter((c) => c.status === 'in_progress');
 
   if (loading) return <LoadingSpinner />;
@@ -2088,7 +2084,7 @@ function MarketingLeadsView({ accessToken }) {
                         <p className="text-body-sm text-slate-600">{s.email}</p>
                         {s.phone && <p className="text-body-sm text-slate-400">{s.phone}</p>}
                       </td>
-                      <td className="px-stack-lg py-4 max-w-xs">
+                      <td className="max-w-xs px-stack-lg py-4">
                         {s.subject && <p className="text-body-sm font-medium text-slate-700">{s.subject}</p>}
                         <p className="line-clamp-2 text-body-sm text-slate-500">{s.message}</p>
                       </td>
@@ -2306,7 +2302,7 @@ function TestimonialModeration({ accessToken }) {
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map((r) => (
                 <button key={r} type="button" onClick={() => setForm({ ...form, rating: r })}
-                  className="cursor-pointer">
+                  aria-label={`Rate ${r} star${r > 1 ? 's' : ''}`} aria-pressed={r === form.rating} className="cursor-pointer">
                   <Icon name={r <= form.rating ? 'star' : 'star_outline'} className="text-2xl text-yellow-400" />
                 </button>
               ))}
@@ -2485,9 +2481,9 @@ function TeamProjects({ accessToken, userId }) {
             {/* Display assigned team members if any */}
             {(p.team && p.team.length > 0 && assigningId !== p.id) && (
               <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                <span className="font-label-caps text-body-xs uppercase text-slate-500 mr-1">Team:</span>
+                <span className="mr-1 font-label-caps text-body-xs uppercase text-slate-500">Team:</span>
                 {p.team.map((m) => (
-                  <span key={m.id} className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-body-xs font-medium text-blue-700 border border-blue-200">
+                  <span key={m.id} className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-body-xs font-medium text-blue-700">
                     {m.employee_code || 'EMP'}{m.designation ? ` · ${m.designation}` : ''}
                   </span>
                 ))}
@@ -2671,7 +2667,7 @@ function TaskBoard({ accessToken, userId }) {
                   {colTasks.map((t) => (
                     <div key={t.id} className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3.5 shadow-sm transition-all hover:border-slate-300 hover:shadow">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-body-sm font-semibold text-slate-900 leading-snug">{t.title}</p>
+                        <p className="text-body-sm font-semibold leading-snug text-slate-900">{t.title}</p>
                         <StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
                       </div>
                       {assigneeLabel(t.assigned_to) && (
@@ -3542,9 +3538,10 @@ const normalizeTimesheets = (arr) => (arr || []).map((t) => ({
 }));
 
 const normalizePayslips = (arr) => (arr || []).map((p) => ({
-  month: MONTH_NAMES[(p.month ?? 1) - 1], year: p.year,
+  id: p.id, month: MONTH_NAMES[(p.month ?? 1) - 1], year: p.year,
   grossPay: Number(p.basic ?? 0) + Number(p.allowances ?? 0),
   deductions: Number(p.deductions ?? 0), netPay: Number(p.net_pay ?? 0), status: p.status,
+  file_url: p.file_url,
 }));
 
 const normalizeTasks = (arr) => (arr || []).map((t) => ({
@@ -3729,13 +3726,13 @@ export default function EmployeePortal() {
     setActiveTab('overview');
   }, [effectiveRole]);
 
+  // useRoleGuard already redirects the unauthenticated case (to
+  // /login?returnTo=..., preserving destination). This only adds a smarter
+  // fallback for the authenticated-but-wrong-role case: a client account
+  // landing here goes to /client instead of bouncing to /login.
   useEffect(() => {
-    if (!initializing && !user) navigate('/login', { replace: true });
-  }, [initializing, user, navigate]);
-
-  useEffect(() => {
-    if (denied) navigate(profile.role === 'client' ? '/client' : '/login', { replace: true });
-  }, [denied, profile.role, navigate]);
+    if (!initializing && user && denied) navigate(profile.role === 'client' ? '/client' : '/login', { replace: true });
+  }, [initializing, user, denied, profile.role, navigate]);
 
   if (initializing || !user || denied) return <div className="bg-white/10 py-section-padding"><LoadingSpinner /></div>;
   if (loading) return <div className="bg-white/10 py-section-padding"><LoadingSpinner /></div>;
@@ -3807,12 +3804,12 @@ export default function EmployeePortal() {
             {activeTab === 'attendance' && <Attendance attendance={attendance} accessToken={accessToken} onChange={setAttendance} />}
             {activeTab === 'leaves' && <Leaves leaves={leaves} accessToken={accessToken} />}
             {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} accessToken={accessToken} />}
-            {activeTab === 'payslips' && <Payslips payslips={payslips} profile={profile} />}
+            {activeTab === 'payslips' && <Payslips payslips={payslips} />}
             {activeTab === 'tasks' && <Tasks tasks={tasks} />}
             {activeTab === 'projects' && <Projects projects={projects} />}
             {activeTab === 'performance' && <Performance reviews={performance} />}
             {activeTab === 'training' && <Training courses={training} catalog={catalog} onEnroll={handleEnroll} enrollingId={enrollingId} />}
-            {activeTab === 'documents' && <Documents docs={documents} profile={profile} />}
+            {activeTab === 'documents' && <Documents docs={documents} />}
 
           </div>
         </div>

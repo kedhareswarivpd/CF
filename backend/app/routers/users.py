@@ -3,24 +3,20 @@ import uuid
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.concurrency import run_in_threadpool
 
 from app.core.database import get_db
-from app.core.logger import logger
 from app.core.dependencies import get_current_user, require_roles
 from app.core.errors import ApiError
+from app.core.password import hash_password
 from app.crud.base import CRUDBase
 from app.models.employee import Employee
 from app.models.user import User
 from app.schemas.user import UserCreate, UserOut, UserUpdate
-from app.services.supabase_client import get_admin_client
+from app.services.auth_service import revoke_all_sessions
 from app.utils.pagination import PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
 EMPLOYEE_ROLES = {"employee", "developer", "sales", "marketing", "project_manager", "qa", "support", "finance", "hr", "admin", "super_admin"}
-
-# Effectively permanent ban (100 years) applied to a deactivated Supabase auth account.
-DEACTIVATED_BAN_DURATION = "876000h"
 
 router = APIRouter(prefix="/users", tags=["Users"], dependencies=[Depends(require_roles("admin", "hr"))])
 
@@ -47,7 +43,8 @@ async def get_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 @router.post("", response_model=dict, status_code=201)
 async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Creates both the Supabase auth account (via the admin API) and the local profile row.
+    """Creates the local account directly — CoreFusion owns identity end to
+    end, there is no external auth provider to also register with.
 
     Only a Super Admin may grant `admin`/`super_admin` — an Admin or HR caller
     (both allowed through this router by `require_roles`) can provision every
@@ -56,29 +53,21 @@ async def create_user(payload: UserCreate, db: AsyncSession = Depends(get_db), c
     if payload.role in ("admin", "super_admin") and current_user.role != "super_admin":
         raise ApiError.forbidden("Only a Super Admin can create an Admin or Super Admin account")
 
-    admin = get_admin_client()
-    try:
-        auth_response = await run_in_threadpool(
-            admin.auth.admin.create_user,
-            {
-                "email": payload.email,
-                "password": payload.password,
-                "email_confirm": True,
-                "user_metadata": {"name": payload.name},
-            },
-        )
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("Supabase auth account creation failed for %s: %s", payload.email, exc)
-        raise ApiError.bad_request("Could not create the account. Please try again.") from exc
+    existing = (await db.execute(select(User).where(User.email == payload.email))).scalar_one_or_none()
+    if existing:
+        raise ApiError.conflict("An account with this email already exists")
 
     data = payload.model_dump(exclude={"password"})
-    data["id"] = uuid.UUID(auth_response.user.id)
+    data["id"] = uuid.uuid4()
+    data["password_hash"] = hash_password(payload.password)
+    # An admin-provisioned account is pre-verified — the person didn't sign
+    # themselves up through a link they'd need to click to prove ownership.
     data["is_email_verified"] = True
     user = await crud.create(db, data)
 
     if payload.role in EMPLOYEE_ROLES:
-        existing = (await db.execute(select(Employee).where(Employee.user_id == user.id))).scalar_one_or_none()
-        if not existing:
+        existing_employee = (await db.execute(select(Employee).where(Employee.user_id == user.id))).scalar_one_or_none()
+        if not existing_employee:
             # Generate a unique employee code from the user id
             short_id = str(user.id).replace("-", "")[:8].upper()
             employee_code = f"EMP-{short_id}"
@@ -99,31 +88,42 @@ async def update_user(user_id: uuid.UUID, payload: UserUpdate, db: AsyncSession 
     """
     if payload.role in ("admin", "super_admin") and current_user.role != "super_admin":
         raise ApiError.forbidden("Only a Super Admin can grant Admin or Super Admin roles")
+    # A real gap found during a security audit: the check above only
+    # blocked *granting* admin/super_admin — it never checked whether the
+    # TARGET already held one of those roles, so an HR caller (who cannot
+    # create or promote an admin) could still edit an existing admin's
+    # other fields, including flipping `is_active` to False via this same
+    # endpoint (UserUpdate exposes is_active). Consistent with "only a
+    # Super Admin manages admin/super_admin accounts," this now blocks any
+    # modification to an existing admin/super_admin target by a non-Super-Admin.
+    target = await crud.get(db, user_id)
+    if target.role in ("admin", "super_admin") and current_user.role != "super_admin":
+        raise ApiError.forbidden("Only a Super Admin can modify an Admin or Super Admin account")
     user = await crud.update(db, user_id, payload.model_dump(exclude_unset=True))
     return success_response(data=UserOut.model_validate(user), message="User updated successfully")
 
 
 @router.patch("/{user_id}/deactivate", response_model=dict)
-async def deactivate_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    """Deactivates the profile and bans the Supabase auth account so the person can no longer log in."""
+async def deactivate_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Deactivates the profile and revokes every active session — `is_active`
+    is checked on every authenticated request (core/dependencies.py), and a
+    revoked/expired session can't be silently kept alive by an already-issued
+    access token, so both the current session and any future login attempt
+    are blocked immediately.
+
+    Same real gap fixed as update_user above, applied here too: this
+    endpoint had zero role-hierarchy check, letting an HR caller (barred
+    from creating/promoting admins) neutralize an existing admin/super_admin
+    account outright."""
+    target = await crud.get(db, user_id)
+    if target.role in ("admin", "super_admin") and current_user.role != "super_admin":
+        raise ApiError.forbidden("Only a Super Admin can deactivate an Admin or Super Admin account")
     user = await crud.update(db, user_id, {"is_active": False})
-    admin = get_admin_client()
-    try:
-        await run_in_threadpool(admin.auth.admin.update_user_by_id, str(user_id), {"ban_duration": DEACTIVATED_BAN_DURATION})
-    except Exception:  # noqa: BLE001 — profile deactivation already succeeded; don't fail the request over this
-        pass
+    await revoke_all_sessions(db, user_id)
     return success_response(data=UserOut.model_validate(user), message="User deactivated")
 
 
 @router.delete("/{user_id}", response_model=dict, dependencies=[Depends(require_roles("admin"))])
 async def delete_user(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
-    admin = get_admin_client()
-    try:
-        await run_in_threadpool(admin.auth.admin.delete_user, str(user_id))
-    except Exception:  # noqa: BLE001 — proceed to remove the local profile even if Supabase deletion fails
-        pass
     await crud.delete(db, user_id)
     return success_response(message="User deleted successfully")
-
-
-

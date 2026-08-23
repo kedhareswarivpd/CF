@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Icon from '../ui/Icon.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
 import Button from '../ui/Button.jsx';
@@ -26,7 +27,7 @@ export default function DownloadsGrid({ downloads, categoryFilters }) {
               className={`rounded-full px-4 py-2 font-label-caps text-label-caps uppercase transition-all ${
                 activeCategory === cat
                   ? 'bg-brand text-white'
-                  : 'bg-surface-container text-ink-muted hover:bg-outline-variant'
+                  : 'bg-surface-container text-ink-muted hover:bg-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted dark:hover:bg-dark-outline-variant'
               }`}
             >
               {cat}
@@ -38,12 +39,14 @@ export default function DownloadsGrid({ downloads, categoryFilters }) {
             <Reveal key={d.title} from="zoom" delay={i * 80}>
               <div className="flex h-full flex-col rounded-lg border border-outline-variant bg-white p-stack-lg transition-all hover:-translate-y-1 hover:shadow-card-hover dark:border-dark-outline-variant dark:bg-dark-surface">
                 <div className="mb-3 flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-status-error-bg">
-                    <Icon name="description" className="text-xl text-status-error-text" />
+                  <div className="flex size-10 items-center justify-center rounded-lg bg-status-error-bg dark:bg-status-error-bg/20">
+                    <Icon name="description" className="text-xl text-status-error-text dark:text-status-error" />
                   </div>
                   <StatusBadge variant="neutral">{d.format}</StatusBadge>
                 </div>
-                <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-dark-brand">{d.title}</h3>
+                <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-dark-brand">
+                  {d.id ? <Link to={`/download/${d.id}`} className="hover:underline">{d.title}</Link> : d.title}
+                </h3>
                 <p className="mb-4 flex-1 text-body-md text-ink-muted dark:text-dark-ink-muted">{d.description}</p>
                 <div className="mb-4 flex items-center gap-4 border-t border-outline-variant pt-4 text-body-sm text-ink-muted dark:border-dark-outline-variant dark:text-dark-ink-muted">
                   <span className="flex items-center gap-1">

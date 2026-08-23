@@ -8,7 +8,7 @@ import Reveal from '../ui/Reveal.jsx';
 
 const PAGE_SIZE = 6;
 
-export default function ProjectGallery({ industry }) {
+export default function ProjectGallery({ industry, activeServices = [] }) {
   const [visible, setVisible] = useState(PAGE_SIZE);
 
   const fetchFn = useCallback(() => fetchProjects({ industry }), [industry]);
@@ -20,10 +20,18 @@ export default function ProjectGallery({ industry }) {
 
   const { items: projects, loading, isFallback } = useApiResource(fetchFn, adaptProject, fallback, [industry]);
 
-  useEffect(() => { setVisible(PAGE_SIZE); }, [industry]);
+  useEffect(() => { setVisible(PAGE_SIZE); }, [industry, activeServices]);
 
-  const visibleProjects = projects.slice(0, visible);
-  const remaining = projects.length - visible;
+  // Service categories are a presentation-level taxonomy (the backend project
+  // model carries no service field), so filter client-side on the `services`
+  // metadata preserved through adaptProject.
+  const filteredProjects =
+    activeServices.length === 0
+      ? projects
+      : projects.filter((p) => (p.services || []).some((s) => activeServices.includes(s)));
+
+  const visibleProjects = filteredProjects.slice(0, visible);
+  const remaining = filteredProjects.length - visible;
 
   return (
     <section className="px-margin-mobile pb-stack-xl md:px-margin-desktop">
@@ -35,7 +43,7 @@ export default function ProjectGallery({ industry }) {
         )}
         {loading ? (
           <GallerySkeleton />
-        ) : projects.length === 0 ? (
+        ) : filteredProjects.length === 0 ? (
           <p className="py-16 text-center text-ink-muted">No projects match this filter yet — check back soon.</p>
         ) : (
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">

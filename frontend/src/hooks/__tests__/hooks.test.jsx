@@ -17,8 +17,9 @@ vi.mock('../../context/AuthContext.jsx', () => ({
 describe('useRoleGuard', () => {
   it('allows matching roles', () => {
     mockUseAuth.mockReturnValue({
-      user: { user_metadata: { role: 'admin' } },
-      initializing: false,
+      user: { id: '1', role: 'admin' },
+      role: 'admin',
+      isLoading: false,
     });
     const { result } = renderHook(() => useRoleGuard('admin'), {
       wrapper: ({ children }) => (
@@ -31,8 +32,9 @@ describe('useRoleGuard', () => {
 
   it('denies non-matching roles', () => {
     mockUseAuth.mockReturnValue({
-      user: { user_metadata: { role: 'client' } },
-      initializing: false,
+      user: { id: '1', role: 'client' },
+      role: 'client',
+      isLoading: false,
     });
     const { result } = renderHook(() => useRoleGuard('admin'), {
       wrapper: ({ children }) => (
@@ -43,10 +45,44 @@ describe('useRoleGuard', () => {
     expect(result.current.isAllowed).toBe(false);
   });
 
-  it('allows when role metadata is absent (backend enforces)', () => {
+  it('denies when role is absent on an authenticated user (deny-by-default; backend is still authoritative)', () => {
+    // Regression test for CF-AUD-019: this test previously asserted the
+    // opposite (denied === false) and contradicted useRoleGuard.js's own
+    // documented behavior ("Missing or null roles are denied — the backend
+    // must confirm the role before the portal renders"). The hook's secure
+    // default was correct; the test's expectation was wrong.
     mockUseAuth.mockReturnValue({
-      user: { user_metadata: null },
-      initializing: false,
+      user: { id: '1', role: null },
+      role: null,
+      isLoading: false,
+    });
+    const { result } = renderHook(() => useRoleGuard('admin'), {
+      wrapper: ({ children }) => (
+        <MemoryRouter initialEntries={['/admin']}>{children}</MemoryRouter>
+      ),
+    });
+    expect(result.current.denied).toBe(true);
+  });
+
+  it('denies (and redirects to login) when there is no authenticated user at all', () => {
+    mockUseAuth.mockReturnValue({
+      user: null,
+      role: null,
+      isLoading: false,
+    });
+    const { result } = renderHook(() => useRoleGuard('admin'), {
+      wrapper: ({ children }) => (
+        <MemoryRouter initialEntries={['/admin']}>{children}</MemoryRouter>
+      ),
+    });
+    expect(result.current.denied).toBe(true);
+  });
+
+  it('is not yet denied while auth status is still loading', () => {
+    mockUseAuth.mockReturnValue({
+      user: null,
+      role: null,
+      isLoading: true,
     });
     const { result } = renderHook(() => useRoleGuard('admin'), {
       wrapper: ({ children }) => (

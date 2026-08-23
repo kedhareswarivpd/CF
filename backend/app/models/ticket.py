@@ -13,6 +13,7 @@ class Ticket(Base):
 
     ticket_number: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"))
+    partner_account_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("partner_accounts.id"))
     subject: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False)
     priority: Mapped[TicketPriority] = mapped_column(Enum(TicketPriority, name="ticket_priority"), default=TicketPriority.medium)
@@ -20,5 +21,6 @@ class Ticket(Base):
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
 
     client = relationship("Client", back_populates="tickets")
+    partner_account = relationship("PartnerAccount", back_populates="tickets")
     assignee = relationship("User")
     replies = relationship("TicketReply", back_populates="ticket")

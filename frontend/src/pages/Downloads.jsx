@@ -9,7 +9,7 @@ import { fetchDownloads } from '../api/cms.js';
 
 function toFrontend(d) {
   return {
-    id: d.slug || d.title,
+    id: d.id,
     title: d.title,
     description: d.description || '',
     category: d.category || 'General',

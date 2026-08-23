@@ -6,7 +6,7 @@ export default function Certifications() {
   return (
     <section className="mx-auto max-w-container px-margin-mobile py-section-padding text-center md:px-margin-desktop">
       <Reveal>
-        <h2 className="mb-12 font-display text-headline-md text-brand-dark">Certified Excellence</h2>
+        <h2 className="mb-12 font-display text-headline-md text-brand-dark dark:text-white">Certified Excellence</h2>
       </Reveal>
       <div className="flex flex-wrap items-center justify-center gap-16">
         {certifications.map((cert, i) => (
@@ -18,7 +18,7 @@ export default function Certifications() {
                   {cert.tag}
                 </div>
               </div>
-              <p className="font-label-caps text-label-caps uppercase text-brand-dark">{cert.label}</p>
+              <p className="font-label-caps text-label-caps uppercase text-brand-dark dark:text-white">{cert.label}</p>
             </div>
           </Reveal>
         ))}

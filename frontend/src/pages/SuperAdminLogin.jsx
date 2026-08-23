@@ -58,6 +58,7 @@ export default function SuperAdminLogin() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="superadmin@corefusiontech.com"
+              autoComplete="username"
               className={inputClass}
             />
           </label>
@@ -71,11 +72,13 @@ export default function SuperAdminLogin() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                autoComplete="current-password"
                 className={inputClass}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink"
               >
                 <Icon name={showPassword ? 'visibility_off' : 'visibility'} />

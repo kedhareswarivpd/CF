@@ -19,6 +19,7 @@ class TicketUpdate(BaseModel):
 class TicketOut(TimestampedRead):
     ticket_number: str
     client_id: uuid.UUID | None = None
+    partner_account_id: uuid.UUID | None = None
     subject: str
     description: str
     priority: TicketPriority

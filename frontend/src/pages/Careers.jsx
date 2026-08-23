@@ -38,13 +38,15 @@ export default function Careers() {
   return (
     <>
       <CareersHero />
-      <SectionHeading
-        eyebrow="Open Positions"
-        title="Join Our Team"
-        description="Explore opportunities to work on cutting-edge technology with talented teams across the globe."
-        align="center"
-        className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white [&_span]:!text-white"
-      />
+      <div className="bg-brand-dark">
+        <SectionHeading
+          eyebrow="Open Positions"
+          title="Join Our Team"
+          description="Explore opportunities to work on cutting-edge technology with talented teams across the globe."
+          align="center"
+          className="mx-auto max-w-container px-margin-mobile pb-section-padding md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white [&_span]:!text-accent-cyan"
+        />
+      </div>
       {loading ? (
         <div className="py-8 text-center text-body-md text-ink-muted">Loading positions...</div>
       ) : (

@@ -1,12 +1,13 @@
 import Reveal from '../ui/Reveal.jsx';
 
 const IMPACTS = [
-  { value: '430+', label: 'Projects Delivered', icon: 'rocket_launch', desc: 'Enterprise-grade solutions shipped on time and on budget across industries.' },
-  { value: '285+', label: 'Engineers & Specialists', icon: 'groups', desc: 'A deep bench of AI, cloud, cybersecurity, and enterprise architecture experts.' },
-  { value: '18+', label: 'Countries Served', icon: 'public', desc: 'Delivery hubs and client engagements spanning six continents.' },
-  { value: '99.8%', label: 'Uptime SLA', icon: 'verified', desc: 'Round-the-clock monitoring and L1–L3 support across every time zone.' },
-  { value: '5+', label: 'Years of Excellence', icon: 'emoji_events', desc: 'ISO 9001 & 27001 certified. Independently audited quality and security management.' },
-  { value: '3x', label: 'Avg. ROI for Clients', icon: 'trending_up', desc: 'Measurable business outcomes delivered through precision engineering.' },
+  { value: '285', label: 'Employees', icon: 'groups', desc: 'A deep bench of AI, cloud, cybersecurity, and enterprise architecture experts.' },
+  { value: '430', label: 'Projects', icon: 'rocket_launch', desc: 'Enterprise-grade solutions shipped on time and on budget across industries.' },
+  { value: '120', label: 'Clients', icon: 'business_center', desc: 'Long-term partnerships with organizations that can\'t afford downtime.' },
+  { value: '35', label: 'Partners', icon: 'handshake', desc: 'A global ecosystem of technology and delivery partners.' },
+  { value: '18', label: 'Countries', icon: 'public', desc: 'Delivery hubs and client engagements spanning six continents.' },
+  { value: '5', label: 'Years', icon: 'emoji_events', desc: 'Founded in 2020. ISO 9001 & 27001 certified since 2022.' },
+  { value: '98%', label: 'Success Rate', icon: 'verified', desc: 'Projects delivered on scope, on budget, and on schedule.' },
 ];
 
 export default function ImpactStats() {
@@ -15,10 +16,10 @@ export default function ImpactStats() {
       <div className="mx-auto max-w-container px-margin-mobile md:px-margin-desktop">
         <Reveal from="up" className="mb-stack-xl text-center">
           <span className="mb-3 block font-label-caps text-label-caps uppercase text-brand">Our Impact</span>
-          <h2 className="font-display text-headline-md text-white">
+          <h2 className="font-display text-headline-md text-brand-dark dark:text-dark-brand">
             Numbers that define our journey
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-body-lg text-white">
+          <p className="mx-auto mt-4 max-w-2xl text-body-lg text-ink-muted dark:text-dark-ink-muted">
             Five years of high-performance delivery for enterprises that can&apos;t afford downtime.
           </p>
         </Reveal>

@@ -5,7 +5,7 @@ const VARIANT_CLASSES = {
   warning: 'bg-status-warning-bg text-status-warning-text',
   error: 'bg-status-error-bg text-status-error-text',
   info: 'bg-status-info-bg text-status-info-text',
-  neutral: 'bg-status-neutral-bg text-status-neutral-text dark:text-black',
+  neutral: 'bg-status-neutral-bg text-status-neutral-text dark:bg-dark-surface-container dark:text-white/80',
 };
 
 export default function StatusBadge({ variant = 'neutral', children, className = '' }) {

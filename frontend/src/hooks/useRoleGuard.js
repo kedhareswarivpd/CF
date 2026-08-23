@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const ROLE_SETS = {
@@ -7,28 +7,36 @@ const ROLE_SETS = {
   super_admin: ['super_admin'],
   employee: ['employee', 'developer', 'sales', 'marketing', 'project_manager', 'qa', 'support', 'finance', 'hr', 'admin', 'super_admin'],
   client: ['client'],
+  partner: ['partner'],
 };
 
 /**
- * Client-side role guard for portal routes. The backend remains the source of
- * truth (every protected endpoint re-checks the role via `require_roles`);
- * this hook only improves UX by redirecting clearly-wrong roles immediately.
- * Missing or null roles are denied — the backend must confirm the role before
- * the portal renders.
+ * Client-side route guard for portal routes. The backend remains the source
+ * of truth (every protected endpoint re-checks the role via `require_roles`
+ * against the session cookie — never a frontend-supplied value); this hook
+ * only improves UX by redirecting unauthenticated or clearly-wrong-role
+ * visitors immediately instead of rendering an empty portal shell. Missing
+ * or null roles are denied — the backend must confirm the role before the
+ * portal renders.
  */
 export function useRoleGuard(portalKey, redirectTo = '/login') {
-  const { user, initializing } = useAuth();
+  const { user, role, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const role = user?.user_metadata?.role ?? user?.app_metadata?.role ?? null;
   const allowed = ROLE_SETS[portalKey] || [];
-  const denied = Boolean(!initializing && user && !allowed.includes(role));
+  const unauthenticated = Boolean(!isLoading && !user);
+  const wrongRole = Boolean(!isLoading && user && !allowed.includes(role));
+  const denied = unauthenticated || wrongRole;
 
   useEffect(() => {
-    if (denied) {
+    if (unauthenticated) {
+      const returnTo = `${location.pathname}${location.search}`;
+      navigate(`/login?returnTo=${encodeURIComponent(returnTo)}`, { replace: true });
+    } else if (wrongRole) {
       navigate(redirectTo, { replace: true });
     }
-  }, [denied, navigate, redirectTo]);
+  }, [unauthenticated, wrongRole, navigate, redirectTo, location]);
 
   return { role, denied, isAllowed: !denied };
 }

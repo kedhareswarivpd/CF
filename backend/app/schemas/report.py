@@ -1,14 +1,14 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas.common import TimestampedRead
 
 
 class ReportGenerate(BaseModel):
-    title: str
-    report_type: str
-    period: str
+    title: str = Field(min_length=1)
+    report_type: str = Field(min_length=1)
+    period: str = Field(min_length=1)
     summary: str | None = None
 
 

@@ -49,5 +49,15 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
     css: true,
+    // e2e/ holds Playwright specs, not Vitest ones — same `*.spec.js` naming
+    // convention, different `test`/`expect` runtime (Playwright's, not
+    // Vitest's), so it must never be collected here. Extends (not replaces)
+    // Vitest's own default exclude list.
+    exclude: [
+      '**/node_modules/**', '**/dist/**', '**/cypress/**',
+      '**/.{idea,git,cache,output,temp}/**',
+      '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build}.config.*',
+      'e2e/**',
+    ],
   },
 });

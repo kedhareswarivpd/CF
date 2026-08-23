@@ -2,7 +2,11 @@ __pycache__/
 *.pyc
 .venv/
 venv/
-.env
+# All real .env files (.env, .env.staging, .env.production, .env.local, ...)
+# are ignored — only the checked-in template should ever be committed.
+.env*
+!.env.example
+!.env.staging.example
 uploads/*
 !uploads/.gitkeep
 logs/*
@@ -10,3 +14,8 @@ logs/*
 .pytest_cache/
 *.egg-info/
 .DS_Store
+.seed_credentials.local.json
+scripts/CREDENTIALS.local.md
+uploads_private/
+backups/*
+!backups/.gitkeep

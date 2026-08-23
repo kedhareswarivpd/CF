@@ -29,15 +29,10 @@ export default function Register() {
     setSubmitting(true);
     try {
       await register(form.name, form.email, form.password);
-      navigate('/login');
+      setSuccess('Account created! Check your email to verify your address, then sign in.');
+      setTimeout(() => navigate('/login'), 1500);
     } catch (err) {
-      const msg = err.message || 'Registration failed. Please try again.';
-      // Supabase email-confirmation flow — not an error, show success notice
-      if (msg.toLowerCase().includes('confirm your email') || msg.toLowerCase().includes('check your email')) {
-        setSuccess(msg);
-      } else {
-        setError(msg);
-      }
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -62,14 +57,14 @@ export default function Register() {
 
           <label className="flex flex-col gap-1.5">
             <span className="font-label-caps text-label-caps uppercase text-ink-muted">Email</span>
-            <input required type="email" name="email" value={form.email} onChange={handleChange} placeholder="you@company.com" className={inputClass} />
+            <input required type="email" name="email" value={form.email} onChange={handleChange} placeholder="you@company.com" autoComplete="username" className={inputClass} />
           </label>
 
           <label className="flex flex-col gap-1.5">
             <span className="font-label-caps text-label-caps uppercase text-ink-muted">Password</span>
             <div className="relative">
-              <input required type={showPassword ? 'text' : 'password'} name="password" value={form.password} onChange={handleChange} placeholder="Min. 8 characters" className={inputClass} />
-              <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink">
+              <input required type={showPassword ? 'text' : 'password'} name="password" value={form.password} onChange={handleChange} placeholder="Min. 8 chars, 1 upper, 1 lower, 1 number, 1 symbol" autoComplete="new-password" className={inputClass} />
+              <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink">
                 <Icon name={showPassword ? 'visibility_off' : 'visibility'} />
               </button>
             </div>
@@ -83,7 +78,7 @@ export default function Register() {
 
           <label className="flex flex-col gap-1.5">
             <span className="font-label-caps text-label-caps uppercase text-ink-muted">Confirm Password</span>
-            <input required type={showPassword ? 'text' : 'password'} name="confirm" value={form.confirm} onChange={handleChange} placeholder="Re-enter password" className={inputClass} />
+            <input required type={showPassword ? 'text' : 'password'} name="confirm" value={form.confirm} onChange={handleChange} placeholder="Re-enter password" autoComplete="new-password" className={inputClass} />
           </label>
 
           {error && (

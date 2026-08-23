@@ -1,14 +1,14 @@
 """Unit tests for auth dependencies, role checking, and IP resolution."""
 import uuid
+from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import Request
-from fastapi.security import HTTPAuthorizationCredentials
 
 from app.core.config import settings
+from app.core.cookies import ACCESS_TOKEN_COOKIE
 from app.core.dependencies import (
-    _resolve_user,
     get_client_ip,
     get_current_user,
     get_optional_user,
@@ -16,202 +16,145 @@ from app.core.dependencies import (
 )
 from app.core.errors import ApiError
 from app.models.user import User
+from app.models.user_session import UserSession
 
 
-class TestResolveUser:
-    @pytest.mark.asyncio
-    async def test_resolve_existing_user(self):
-        existing_user = User(
-            id=uuid.uuid4(),
-            name="Existing User",
-            email="existing@example.com",
-            role="client",
-        )
-        mock_db = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = existing_user
-        mock_db.execute.return_value = mock_result
+def _mock_request(cookies: dict | None = None) -> MagicMock:
+    request = MagicMock(spec=Request)
+    request.cookies = cookies or {}
+    return request
 
-        claims = {"sub": str(existing_user.id), "email": "existing@example.com"}
-        user = await _resolve_user(claims, mock_db)
 
-        assert user is not None
-        assert user.id == existing_user.id
-        assert user.email == "existing@example.com"
-
-    @pytest.mark.asyncio
-    async def test_resolve_user_auto_provisions_new_user(self):
-        new_user_id = uuid.uuid4()
-        mock_db = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
-        mock_db.execute.return_value = mock_result
-
-        claims = {
-            "sub": str(new_user_id),
-            "email": "newuser@example.com",
-            "user_metadata": {"name": "New User"},
-        }
-        user = await _resolve_user(claims, mock_db)
-
-        assert user is not None
-        assert user.id == new_user_id
-        assert user.email == "newuser@example.com"
-        assert user.name == "New User"
-        assert user.role == "client"
-        assert user.is_active is True
-        mock_db.add.assert_called_once()
-        mock_db.commit.assert_awaited_once()
-
-    @pytest.mark.asyncio
-    async def test_resolve_user_auto_provision_without_metadata(self):
-        new_user_id = uuid.uuid4()
-        mock_db = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
-        mock_db.execute.return_value = mock_result
-
-        claims = {"sub": str(new_user_id), "email": "newuser@example.com"}
-        user = await _resolve_user(claims, mock_db)
-
-        assert user is not None
-        assert user.name == "newuser@example.com"
-
-    @pytest.mark.asyncio
-    async def test_resolve_user_email_verified(self):
-        new_user_id = uuid.uuid4()
-        mock_db = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = None
-        mock_db.execute.return_value = mock_result
-
-        claims = {
-            "sub": str(new_user_id),
-            "email": "newuser@example.com",
-            "email_confirmed_at": "2024-01-01T00:00:00Z",
-        }
-        user = await _resolve_user(claims, mock_db)
-
-        assert user.is_email_verified is True
+def _live_session(user_id: uuid.UUID) -> UserSession:
+    return UserSession(
+        id=uuid.uuid4(), user_id=user_id, session_token_hash="h", refresh_token_hash="r",
+        expires_at=datetime.now(UTC) + timedelta(minutes=15),
+    )
 
 
 class TestGetCurrentUser:
     @pytest.mark.asyncio
-    async def test_no_credentials_raises_unauthorized(self):
+    async def test_no_cookie_raises_unauthorized(self):
         with pytest.raises(ApiError) as exc_info:
-            await get_current_user(credentials=None, db=AsyncMock())
+            await get_current_user(request=_mock_request(), db=AsyncMock())
         assert exc_info.value.status_code == 401
         assert "Authentication token missing" in exc_info.value.message
 
     @pytest.mark.asyncio
-    async def test_invalid_token_raises_unauthorized(self):
-        credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer", credentials="invalid-token"
-        )
-        with patch("app.core.dependencies.decode_supabase_token", side_effect=ValueError("bad token")):
+    async def test_no_matching_session_raises_unauthorized(self):
+        request = _mock_request({ACCESS_TOKEN_COOKIE: "invalid-token"})
+        with patch("app.core.dependencies.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
+            mock_lookup.return_value = None
             with pytest.raises(ApiError) as exc_info:
-                await get_current_user(credentials=credentials, db=AsyncMock())
+                await get_current_user(request=request, db=AsyncMock())
             assert exc_info.value.status_code == 401
-            assert "Invalid or expired token" in exc_info.value.message
+            assert "Invalid or expired session" in exc_info.value.message
 
     @pytest.mark.asyncio
-    async def test_valid_token_returns_user(self):
+    async def test_valid_session_returns_user(self):
         user_id = uuid.uuid4()
-        mock_user = User(id=user_id, name="Test", email="test@example.com", role="client")
+        mock_user = User(id=user_id, name="Test", email="test@example.com", password_hash="x", role="client", is_active=True)
+        request = _mock_request({ACCESS_TOKEN_COOKIE: "valid-token"})
 
-        mock_db = MagicMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = mock_user
-        mock_db.execute = AsyncMock(return_value=mock_result)
-        mock_db.commit = AsyncMock()
-        mock_db.refresh = AsyncMock()
-        mock_db.add = MagicMock()
-        mock_db.rollback = AsyncMock()
+        mock_db = AsyncMock()
+        mock_db.get.return_value = mock_user
 
-        claims = {"sub": str(user_id), "email": "test@example.com"}
-        user = await _resolve_user(claims, mock_db)
+        with patch("app.core.dependencies.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
+            mock_lookup.return_value = _live_session(user_id)
+            user = await get_current_user(request=request, db=mock_db)
 
-        assert user is not None
-        assert user.id == user_id
+        assert user is mock_user
 
     @pytest.mark.asyncio
     async def test_deactivated_user_raises_unauthorized(self):
         user_id = uuid.uuid4()
-        mock_user = User(id=user_id, name="Test", email="test@example.com", role="client", is_active=False)
-        credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer", credentials="valid-token"
-        )
-        mock_db = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = mock_user
-        mock_db.execute.return_value = mock_result
+        mock_user = User(id=user_id, name="Test", email="test@example.com", password_hash="x", role="client", is_active=False)
+        request = _mock_request({ACCESS_TOKEN_COOKIE: "valid-token"})
 
-        with patch("app.core.dependencies.decode_supabase_token", new_callable=AsyncMock) as mock_decode:
-            mock_decode.return_value = {"sub": str(user_id), "email": "test@example.com"}
+        mock_db = AsyncMock()
+        mock_db.get.return_value = mock_user
+
+        with patch("app.core.dependencies.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
+            mock_lookup.return_value = _live_session(user_id)
             with pytest.raises(ApiError) as exc_info:
-                await get_current_user(credentials=credentials, db=mock_db)
+                await get_current_user(request=request, db=mock_db)
+            assert exc_info.value.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_session_for_deleted_user_raises_unauthorized(self):
+        """A session can outlive its user row being deleted (e.g. a race
+        between an admin delete and an in-flight request) — must not crash,
+        must reject cleanly."""
+        request = _mock_request({ACCESS_TOKEN_COOKIE: "valid-token"})
+        mock_db = AsyncMock()
+        mock_db.get.return_value = None
+
+        with patch("app.core.dependencies.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
+            mock_lookup.return_value = _live_session(uuid.uuid4())
+            with pytest.raises(ApiError) as exc_info:
+                await get_current_user(request=request, db=mock_db)
             assert exc_info.value.status_code == 401
 
 
 class TestGetOptionalUser:
     @pytest.mark.asyncio
-    async def test_no_credentials_returns_none(self):
-        result = await get_optional_user(credentials=None, db=AsyncMock())
+    async def test_no_cookie_returns_none(self):
+        result = await get_optional_user(request=_mock_request(), db=AsyncMock())
         assert result is None
 
     @pytest.mark.asyncio
-    async def test_invalid_token_returns_none(self):
-        credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer", credentials="invalid-token"
-        )
-        with patch("app.core.dependencies.decode_supabase_token", side_effect=ValueError("bad token")):
-            result = await get_optional_user(credentials=credentials, db=AsyncMock())
+    async def test_no_matching_session_returns_none(self):
+        request = _mock_request({ACCESS_TOKEN_COOKIE: "invalid-token"})
+        with patch("app.core.dependencies.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
+            mock_lookup.return_value = None
+            result = await get_optional_user(request=request, db=AsyncMock())
             assert result is None
 
     @pytest.mark.asyncio
-    async def test_valid_token_returns_user(self):
+    async def test_valid_session_returns_user(self):
         user_id = uuid.uuid4()
-        mock_user = User(id=user_id, name="Test", email="test@example.com", role="client", is_active=True)
+        mock_user = User(id=user_id, name="Test", email="test@example.com", password_hash="x", role="client", is_active=True)
+        request = _mock_request({ACCESS_TOKEN_COOKIE: "valid-token"})
 
-        mock_db = MagicMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = mock_user
-        mock_db.execute = AsyncMock(return_value=mock_result)
-        mock_db.commit = AsyncMock()
-        mock_db.refresh = AsyncMock()
-        mock_db.add = MagicMock()
-        mock_db.rollback = AsyncMock()
+        mock_db = AsyncMock()
+        mock_db.get.return_value = mock_user
 
-        claims = {"sub": str(user_id), "email": "test@example.com"}
-        user = await _resolve_user(claims, mock_db)
+        with patch("app.core.dependencies.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
+            mock_lookup.return_value = _live_session(user_id)
+            result = await get_optional_user(request=request, db=mock_db)
 
-        assert user is not None
-        assert user.id == user_id
-        assert user.is_active is True
+        assert result is mock_user
 
     @pytest.mark.asyncio
     async def test_deactivated_user_returns_none(self):
         user_id = uuid.uuid4()
-        mock_user = User(id=user_id, name="Test", email="test@example.com", role="client", is_active=False)
-        credentials = HTTPAuthorizationCredentials(
-            scheme="Bearer", credentials="valid-token"
-        )
+        mock_user = User(id=user_id, name="Test", email="test@example.com", password_hash="x", role="client", is_active=False)
+        request = _mock_request({ACCESS_TOKEN_COOKIE: "valid-token"})
+
         mock_db = AsyncMock()
-        mock_result = MagicMock()
-        mock_result.scalar_one_or_none.return_value = mock_user
-        mock_db.execute.return_value = mock_result
+        mock_db.get.return_value = mock_user
 
-        with patch("app.core.dependencies.decode_supabase_token", new_callable=AsyncMock) as mock_decode:
-            mock_decode.return_value = {"sub": str(user_id), "email": "test@example.com"}
-            result = await get_optional_user(credentials=credentials, db=mock_db)
+        with patch("app.core.dependencies.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
+            mock_lookup.return_value = _live_session(user_id)
+            result = await get_optional_user(request=request, db=mock_db)
 
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_unexpected_error_is_swallowed_and_returns_none(self):
+        """get_optional_user backs public routes (get_optional_user is used
+        where auth is optional) — an unexpected failure resolving the
+        session must degrade to "anonymous", not break the public page."""
+        request = _mock_request({ACCESS_TOKEN_COOKIE: "valid-token"})
+        with patch("app.core.dependencies.get_session_by_access_token", side_effect=RuntimeError("boom")):
+            result = await get_optional_user(request=request, db=AsyncMock())
         assert result is None
 
 
 class TestRequireRoles:
     @pytest.mark.asyncio
     async def test_super_admin_bypasses_role_check(self):
-        mock_user = User(id=uuid.uuid4(), name="Admin", email="admin@example.com", role="super_admin")
+        mock_user = User(id=uuid.uuid4(), name="Admin", email="admin@example.com", password_hash="x", role="super_admin")
         dependency = require_roles("admin", "hr")
 
         with patch("app.core.dependencies.get_current_user", new_callable=AsyncMock) as mock_get:
@@ -222,7 +165,7 @@ class TestRequireRoles:
 
     @pytest.mark.asyncio
     async def test_matching_role_returns_user(self):
-        mock_user = User(id=uuid.uuid4(), name="HR", email="hr@example.com", role="hr")
+        mock_user = User(id=uuid.uuid4(), name="HR", email="hr@example.com", password_hash="x", role="hr")
         dependency = require_roles("admin", "hr")
 
         result = await dependency(current_user=mock_user)
@@ -230,7 +173,7 @@ class TestRequireRoles:
 
     @pytest.mark.asyncio
     async def test_non_matching_role_raises_forbidden(self):
-        mock_user = User(id=uuid.uuid4(), name="Dev", email="dev@example.com", role="developer")
+        mock_user = User(id=uuid.uuid4(), name="Dev", email="dev@example.com", password_hash="x", role="developer")
         dependency = require_roles("admin", "hr")
 
         with pytest.raises(ApiError) as exc_info:

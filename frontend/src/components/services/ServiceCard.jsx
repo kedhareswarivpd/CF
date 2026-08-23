@@ -7,13 +7,13 @@ export default function ServiceCard({ service }) {
       <div className="mb-stack-md flex size-12 items-center justify-center rounded-lg bg-accent-cyan-pale">
         <Icon name={service.icon} className="text-4xl leading-none text-brand" />
       </div>
-      <h3 className="mb-stack-sm font-display text-headline-sm text-white">{service.title}</h3>
-      <p className="mb-stack-md font-body text-body-md text-white">{service.description}</p>
+      <h3 className="mb-stack-sm font-display text-headline-sm text-brand-dark dark:text-dark-brand">{service.title}</h3>
+      <p className="mb-stack-md font-body text-body-md text-ink-muted dark:text-dark-ink-muted">{service.description}</p>
       <div className="mb-stack-md space-y-2">
-        <p className="font-label-caps text-label-caps uppercase text-white">Key Features</p>
+        <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Key Features</p>
         <ul className="space-y-1">
           {service.features.map((feature) => (
-            <li key={feature} className="flex items-center gap-2 text-body-md text-white">
+            <li key={feature} className="flex items-center gap-2 text-body-md text-ink dark:text-dark-ink">
               <Icon name="check_circle" className="text-body-lg leading-none text-brand" />
               {feature}
             </li>
@@ -21,8 +21,8 @@ export default function ServiceCard({ service }) {
         </ul>
       </div>
       <div className="mt-auto border-t border-outline-variant pt-stack-md">
-        <p className="font-body font-semibold text-white">Business Benefit</p>
-        <p className="mb-stack-md text-body-md text-white">{service.benefit}</p>
+        <p className="font-body font-semibold text-ink dark:text-dark-ink">Business Benefit</p>
+        <p className="mb-stack-md text-body-md text-ink-muted dark:text-dark-ink-muted">{service.benefit}</p>
         <Link to={`/services/${service.slug}`} className="flex w-fit items-center gap-1 font-label-caps text-label-caps uppercase text-brand transition-all hover:gap-2">
           Learn more <Icon name="arrow_forward" className="text-body-lg leading-none" />
         </Link>

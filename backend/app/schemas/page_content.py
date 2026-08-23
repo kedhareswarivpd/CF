@@ -15,7 +15,7 @@ class PageContentCreate(PageContentBase):
 
 
 class PageContentUpdate(BaseModel):
-    title: str | None = None
+    title: str | None = Field(None, max_length=255)
     content: str | None = None
     is_published: bool | None = None
 
