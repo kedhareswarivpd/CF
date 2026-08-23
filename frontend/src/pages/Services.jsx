@@ -5,14 +5,14 @@ import FaqAccordion from '../components/services/FaqAccordion.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 
 export default function Services() {
-  useDocumentTitle('Our Technology Offerings | CoreFusion Technologies');
+ useDocumentTitle('Our Technology Offerings | CoreFusion Technologies');
 
-  return (
-    <>
-      <ServicesHero />
-      <ServicesGrid />
-      <EngagementProcess />
-      <FaqAccordion />
-    </>
-  );
+ return (
+  <>
+   <ServicesHero />
+   <ServicesGrid />
+   <EngagementProcess />
+   <FaqAccordion />
+  </>
+ );
 }

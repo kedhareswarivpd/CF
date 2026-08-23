@@ -53,66 +53,66 @@ const BrochurePage = lazy(() => import('./pages/BrochurePage.jsx'));
 const DownloadDetail = lazy(() => import('./pages/DownloadDetail.jsx'));
 
 function PageFallback() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-white py-section-padding dark:bg-dark-surface">
-      <LoadingSpinner />
-    </div>
-  );
+ return (
+  <div className="flex min-h-screen items-center justify-center bg-surface-white py-section-padding dark:bg-dark-surface">
+   <LoadingSpinner />
+  </div>
+ );
 }
 
 export default function App() {
-  usePageViewTracker();
-  return (
-    <>
-      <ErrorBoundary>
-      <Suspense fallback={<PageFallback />}>
-        <Routes>
-          <Route element={<Layout />}>
-            <Route index element={<Home />} />
-            <Route path="services" element={<Services />} />
-            <Route path="services/:slug" element={<ServiceDetail />} />
-            <Route path="portfolio" element={<Portfolio />} />
-            <Route path="portfolio/success/:slug" element={<SuccessStory />} />
-            <Route path="about" element={<About />} />
-            <Route path="contact" element={<Contact />} />
-            <Route path="solutions" element={<Solutions />} />
-            <Route path="products" element={<Products />} />
-            <Route path="technologies" element={<Technologies />} />
-            <Route path="industries" element={<Industries />} />
-            <Route path="case-studies" element={<CaseStudies />} />
-            <Route path="case-studies/:slug" element={<CaseStudyDetail />} />
-            <Route path="careers" element={<Careers />} />
-            <Route path="blog" element={<Blog />} />
-            <Route path="blog/:slug" element={<BlogDetail />} />
-            <Route path="events" element={<Events />} />
-            <Route path="gallery" element={<Gallery />} />
-            <Route path="awards" element={<Awards />} />
-            <Route path="downloads" element={<Downloads />} />
-            <Route path="resources" element={<Resources />} />
-            <Route path="faq" element={<Faq />} />
-            <Route path="privacy" element={<Privacy />} />
-            <Route path="terms" element={<Terms />} />
-            <Route path="cookies" element={<Cookies />} />
-            <Route path="client" element={<ClientPortal />} />
-            <Route path="partner" element={<PartnerPortal />} />
-            {employeePortalPaths.map((portalPath) => (
-              <Route key={portalPath} path={portalPath} element={<EmployeePortal />} />
-            ))}
-            <Route path="admin" element={<AdminPanel />} />
-            <Route path="super-admin" element={<SuperAdminPanel />} />
-            <Route path="super-admin/login" element={<SuperAdminLogin />} />
-            <Route path="login" element={<LoginPage />} />
-            <Route path="register" element={<Register />} />
-            <Route path="forgot-password" element={<ForgotPassword />} />
-            <Route path="reset-password" element={<ResetPassword />} />
-            <Route path="brochure" element={<BrochurePage />} />
-            <Route path="download/:slug" element={<DownloadDetail />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
-      </Suspense>
-      </ErrorBoundary>
-      <CookieConsent />
-    </>
-  );
+ usePageViewTracker();
+ return (
+  <>
+   <ErrorBoundary>
+   <Suspense fallback={<PageFallback />}>
+    <Routes>
+     <Route element={<Layout />}>
+      <Route index element={<Home />} />
+      <Route path="services" element={<Services />} />
+      <Route path="services/:slug" element={<ServiceDetail />} />
+      <Route path="portfolio" element={<Portfolio />} />
+      <Route path="portfolio/success/:slug" element={<SuccessStory />} />
+      <Route path="about" element={<About />} />
+      <Route path="contact" element={<Contact />} />
+      <Route path="solutions" element={<Solutions />} />
+      <Route path="products" element={<Products />} />
+      <Route path="technologies" element={<Technologies />} />
+      <Route path="industries" element={<Industries />} />
+      <Route path="case-studies" element={<CaseStudies />} />
+      <Route path="case-studies/:slug" element={<CaseStudyDetail />} />
+      <Route path="careers" element={<Careers />} />
+      <Route path="blog" element={<Blog />} />
+      <Route path="blog/:slug" element={<BlogDetail />} />
+      <Route path="events" element={<Events />} />
+      <Route path="gallery" element={<Gallery />} />
+      <Route path="awards" element={<Awards />} />
+      <Route path="downloads" element={<Downloads />} />
+      <Route path="resources" element={<Resources />} />
+      <Route path="faq" element={<Faq />} />
+      <Route path="privacy" element={<Privacy />} />
+      <Route path="terms" element={<Terms />} />
+      <Route path="cookies" element={<Cookies />} />
+      <Route path="client" element={<ClientPortal />} />
+      <Route path="partner" element={<PartnerPortal />} />
+      {employeePortalPaths.map((portalPath) => (
+       <Route key={portalPath} path={portalPath} element={<EmployeePortal />} />
+      ))}
+      <Route path="admin" element={<AdminPanel />} />
+      <Route path="super-admin" element={<SuperAdminPanel />} />
+      <Route path="super-admin/login" element={<SuperAdminLogin />} />
+      <Route path="login" element={<LoginPage />} />
+      <Route path="register" element={<Register />} />
+      <Route path="forgot-password" element={<ForgotPassword />} />
+      <Route path="reset-password" element={<ResetPassword />} />
+      <Route path="brochure" element={<BrochurePage />} />
+      <Route path="download/:slug" element={<DownloadDetail />} />
+      <Route path="*" element={<NotFound />} />
+     </Route>
+    </Routes>
+   </Suspense>
+   </ErrorBoundary>
+   <CookieConsent />
+  </>
+ );
 }

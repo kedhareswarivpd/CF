@@ -12,525 +12,525 @@ import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import { useAuth } from '../context/AuthContext.jsx';
 // demo data removed — all data now fetched from API
 import {
-  fetchDepartments, createDepartment, deleteDepartment,
-  fetchRoles, createRole, deleteRole, fetchPermissions, createPermission, deletePermission,
-  fetchUsers, exportUserData, anonymizeUser,
-  fetchAuditLogs, fetchDashboardOverview,
-  fetchBackups, triggerBackup, deleteBackup, backupDownloadUrl,
+ fetchDepartments, createDepartment, deleteDepartment,
+ fetchRoles, createRole, deleteRole, fetchPermissions, createPermission, deletePermission,
+ fetchUsers, exportUserData, anonymizeUser,
+ fetchAuditLogs, fetchDashboardOverview,
+ fetchBackups, triggerBackup, deleteBackup, backupDownloadUrl,
 } from '../api/admin.js';
 
 const TABLE_HEADER = 'bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted';
 const TABLE_HEADER_TH = 'px-stack-lg py-4 text-left';
 const TABLE_ROW_HOVER = 'transition-colors hover:bg-surface-container dark:bg-dark-surface-container';
 const superAdminTabs = [
-  { id: 'overview', label: 'Overview', icon: 'dashboard' },
-  { id: 'departments', label: 'Departments', icon: 'apartment' },
-  { id: 'roles', label: 'Roles & Permissions', icon: 'verified_user' },
-  { id: 'gdpr', label: 'Data Export / GDPR', icon: 'privacy_tip' },
-  { id: 'audit', label: 'Audit Logs', icon: 'history' },
-  { id: 'backups', label: 'Backups', icon: 'backup' },
-  { id: 'billing', label: 'Billing', icon: 'account_balance' },
-  { id: 'impersonation', label: 'Impersonation', icon: 'switch_account' },
+ { id: 'overview', label: 'Overview', icon: 'dashboard' },
+ { id: 'departments', label: 'Departments', icon: 'apartment' },
+ { id: 'roles', label: 'Roles & Permissions', icon: 'verified_user' },
+ { id: 'gdpr', label: 'Data Export / GDPR', icon: 'privacy_tip' },
+ { id: 'audit', label: 'Audit Logs', icon: 'history' },
+ { id: 'backups', label: 'Backups', icon: 'backup' },
+ { id: 'billing', label: 'Billing', icon: 'account_balance' },
+ { id: 'impersonation', label: 'Impersonation', icon: 'switch_account' },
 ];
 
 function ComingSoon({ icon, title, description }) {
-  return (
-    <div className="rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white p-stack-lg py-12 text-center">
-      <Icon name={icon} className="mb-3 text-4xl text-ink-muted dark:text-dark-ink-muted" />
-      <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-white">{title}</h3>
-      <p className="mx-auto max-w-md text-body-sm text-ink-muted dark:text-dark-ink-muted">{description}</p>
-    </div>
-  );
+ return (
+  <div className="rounded-lg border border-outline-variant bg-white p-stack-lg py-12 text-center dark:border-dark-outline-variant">
+   <Icon name={icon} className="mb-3 text-4xl text-ink-muted dark:text-dark-ink-muted" />
+   <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-white">{title}</h3>
+   <p className="mx-auto max-w-md text-body-sm text-ink-muted dark:text-dark-ink-muted">{description}</p>
+  </div>
+ );
 }
 
 function Overview() {
-  const { accessToken } = useAuth();
-  const [kpis, setKpis] = useState({ total_employees: 0, total_clients: 0, total_projects: 0, active_projects: 0, open_tasks: 0, total_revenue: 0, open_tickets: 0, new_applications: 0, unresolved_contacts: 0, published_blogs: 0 });
-  const [loading, setLoading] = useState(true);
+ const { accessToken } = useAuth();
+ const [kpis, setKpis] = useState({ total_employees: 0, total_clients: 0, total_projects: 0, active_projects: 0, open_tasks: 0, total_revenue: 0, open_tickets: 0, new_applications: 0, unresolved_contacts: 0, published_blogs: 0 });
+ const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!accessToken) { setLoading(false); return; }
-    fetchDashboardOverview(accessToken).then((res) => setKpis(res?.data || {})).catch(() => {}).finally(() => setLoading(false));
-  }, [accessToken]);
+ useEffect(() => {
+  if (!accessToken) { setLoading(false); return; }
+  fetchDashboardOverview(accessToken).then((res) => setKpis(res?.data || {})).catch(() => {}).finally(() => setLoading(false));
+ }, [accessToken]);
 
-  if (loading) return <LoadingSpinner />;
-  const cards = [
-    { label: 'Employees', value: kpis.total_employees, icon: 'badge', color: 'text-brand', bg: 'bg-accent-cyan-pale dark:bg-blue-900/30' },
-    { label: 'Clients', value: kpis.total_clients, icon: 'business', color: 'text-emerald-600', bg: 'bg-emerald-50' },
-    { label: 'Projects', value: kpis.total_projects, icon: 'folder', color: 'text-violet-600', bg: 'bg-violet-50' },
-    { label: 'Revenue', value: `$${(kpis.total_revenue / 1000000).toFixed(1)}M`, icon: 'payments', color: 'text-amber-600', bg: 'bg-amber-50' },
-  ];
-  return (
-    <div className="space-y-stack-lg">
-      <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-        {cards.map((c) => (
-          <div key={c.label} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
-            <div className={`mb-4 inline-flex size-11 items-center justify-center rounded-xl ${c.bg}`}>
-              <Icon name={c.icon} className={`text-2xl ${c.color}`} />
-            </div>
-            <p className="font-stat text-3xl font-bold text-brand-dark dark:text-white">{c.value}</p>
-            <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{c.label}</p>
-          </div>
-        ))}
+ if (loading) return <LoadingSpinner />;
+ const cards = [
+  { label: 'Employees', value: kpis.total_employees, icon: 'badge', color: 'text-brand', bg: 'bg-accent-cyan-pale dark:bg-blue-900/30' },
+  { label: 'Clients', value: kpis.total_clients, icon: 'business', color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  { label: 'Projects', value: kpis.total_projects, icon: 'folder', color: 'text-violet-600', bg: 'bg-violet-50' },
+  { label: 'Revenue', value: `$${(kpis.total_revenue / 1000000).toFixed(1)}M`, icon: 'payments', color: 'text-amber-600', bg: 'bg-amber-50' },
+ ];
+ return (
+  <div className="space-y-stack-lg">
+   <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+    {cards.map((c) => (
+     <div key={c.label} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-dark-outline-variant">
+      <div className={`mb-4 inline-flex size-11 items-center justify-center rounded-xl ${c.bg}`}>
+       <Icon name={c.icon} className={`text-2xl ${c.color}`} />
       </div>
-      <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
-        <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
-          This company-wide summary plus every screen in Admin Panel is available here. The tabs on the left are exclusive to Super Admin:
-          org structure, the global role/permission matrix, GDPR tooling, and the full audit trail.
-        </p>
-      </div>
-    </div>
-  );
+      <p className="font-stat text-3xl font-bold text-brand-dark dark:text-white">{c.value}</p>
+      <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{c.label}</p>
+     </div>
+    ))}
+   </div>
+   <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+    <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
+     This company-wide summary plus every screen in Admin Panel is available here. The tabs on the left are exclusive to Super Admin:
+     org structure, the global role/permission matrix, GDPR tooling, and the full audit trail.
+    </p>
+   </div>
+  </div>
+ );
 }
 
 function Departments({ accessToken }) {
-  const [departments, setDepartments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', description: '' });
-  const [submitting, setSubmitting] = useState(false);
-  const [actingId, setActingId] = useState(null);
+ const [departments, setDepartments] = useState([]);
+ const [loading, setLoading] = useState(true);
+ const [showForm, setShowForm] = useState(false);
+ const [form, setForm] = useState({ name: '', description: '' });
+ const [submitting, setSubmitting] = useState(false);
+ const [actingId, setActingId] = useState(null);
 
-  const load = useCallback(() => {
-    if (!accessToken) { setLoading(false); return; }
-    setLoading(true);
-    fetchDepartments(accessToken).then((r) => setDepartments(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  }, [accessToken]);
+ const load = useCallback(() => {
+  if (!accessToken) { setLoading(false); return; }
+  setLoading(true);
+  fetchDepartments(accessToken).then((r) => setDepartments(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, [accessToken]);
 
-  useEffect(() => { load(); }, [load]);
+ useEffect(() => { load(); }, [load]);
 
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    if (!form.name) return;
-    setSubmitting(true);
-    try {
-      await createDepartment(accessToken, form);
-      setForm({ name: '', description: '' });
-      setShowForm(false);
-      load();
-    } finally {
-      setSubmitting(false);
-    }
-  };
+ const handleCreate = async (e) => {
+  e.preventDefault();
+  if (!form.name) return;
+  setSubmitting(true);
+  try {
+   await createDepartment(accessToken, form);
+   setForm({ name: '', description: '' });
+   setShowForm(false);
+   load();
+  } finally {
+   setSubmitting(false);
+  }
+ };
 
-  const remove = async (id) => {
-    setActingId(id);
-    try { await deleteDepartment(accessToken, id); load(); } finally { setActingId(null); }
-  };
+ const remove = async (id) => {
+  setActingId(id);
+  try { await deleteDepartment(accessToken, id); load(); } finally { setActingId(null); }
+ };
 
-  if (loading) return <LoadingSpinner />;
-  return (
-    <div className="space-y-stack-md">
-      <div className="flex justify-end">
-        <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Department</Button>
-      </div>
-      {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white p-stack-lg shadow-sm">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <input required type="text" placeholder="Department name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={FORM_INPUT_CLASS} />
-            <input type="text" placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={FORM_INPUT_CLASS} />
-          </div>
-          <div className="flex gap-2">
-            <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Creating...' : 'Create'}</Button>
-            <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
-          </div>
-        </form>
-      )}
-      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white shadow-sm">
-        <table className="w-full text-left">
-          <thead className={TABLE_HEADER}>
-            <tr><th className={TABLE_HEADER_TH}>Name</th><th className={TABLE_HEADER_TH}>Description</th><th className={TABLE_HEADER_TH}>Actions</th></tr>
-          </thead>
-          <tbody className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
-            {departments.map((d) => (
-              <tr key={d.id} className={TABLE_ROW_HOVER}>
-                <td data-label="Name" className="px-stack-lg py-4 text-body-md font-medium text-brand-dark dark:text-white">{d.name}</td>
-                <td data-label="Description" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{d.description || '—'}</td>
-                <td data-label="Actions" className="px-stack-lg py-4"><RowAction variant="danger" disabled={actingId === d.id} onClick={() => remove(d.id)}>Delete</RowAction></td>
-              </tr>
-            ))}
-            {!departments.length && <tr><td data-label="Name" colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No departments yet.</td></tr>}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+ if (loading) return <LoadingSpinner />;
+ return (
+  <div className="space-y-stack-md">
+   <div className="flex justify-end">
+    <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Department</Button>
+   </div>
+   {showForm && (
+    <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg shadow-sm dark:border-dark-outline-variant">
+     <div className="grid gap-4 sm:grid-cols-2">
+      <input required type="text" placeholder="Department name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={FORM_INPUT_CLASS} />
+      <input type="text" placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={FORM_INPUT_CLASS} />
+     </div>
+     <div className="flex gap-2">
+      <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Creating...' : 'Create'}</Button>
+      <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
+     </div>
+    </form>
+   )}
+   <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
+    <table className="w-full text-left">
+     <thead className={TABLE_HEADER}>
+      <tr><th className={TABLE_HEADER_TH}>Name</th><th className={TABLE_HEADER_TH}>Description</th><th className={TABLE_HEADER_TH}>Actions</th></tr>
+     </thead>
+     <tbody className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
+      {departments.map((d) => (
+       <tr key={d.id} className={TABLE_ROW_HOVER}>
+        <td data-label="Name" className="px-stack-lg py-4 text-body-md font-medium text-brand-dark dark:text-white">{d.name}</td>
+        <td data-label="Description" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{d.description || '—'}</td>
+        <td data-label="Actions" className="px-stack-lg py-4"><RowAction variant="danger" disabled={actingId === d.id} onClick={() => remove(d.id)}>Delete</RowAction></td>
+       </tr>
+      ))}
+      {!departments.length && <tr><td data-label="Name" colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No departments yet.</td></tr>}
+     </tbody>
+    </table>
+   </div>
+  </div>
+ );
 }
 
 function RolesPermissions({ accessToken }) {
-  const [roles, setRoles] = useState([]);
-  const [permissions, setPermissions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [roleForm, setRoleForm] = useState({ name: '', slug: '', description: '' });
-  const [permForm, setPermForm] = useState({ name: '', module: '', action: '' });
-  const [submitting, setSubmitting] = useState(false);
-  const [actingId, setActingId] = useState(null);
+ const [roles, setRoles] = useState([]);
+ const [permissions, setPermissions] = useState([]);
+ const [loading, setLoading] = useState(true);
+ const [roleForm, setRoleForm] = useState({ name: '', slug: '', description: '' });
+ const [permForm, setPermForm] = useState({ name: '', module: '', action: '' });
+ const [submitting, setSubmitting] = useState(false);
+ const [actingId, setActingId] = useState(null);
 
-  const load = useCallback(() => {
-    if (!accessToken) { setLoading(false); return; }
-    setLoading(true);
-    Promise.allSettled([fetchRoles(accessToken), fetchPermissions(accessToken)]).then(([r, p]) => {
-      if (r.status === 'fulfilled') setRoles(r.value?.data || []);
-      if (p.status === 'fulfilled') setPermissions(p.value?.data || []);
-    }).finally(() => setLoading(false));
-  }, [accessToken]);
+ const load = useCallback(() => {
+  if (!accessToken) { setLoading(false); return; }
+  setLoading(true);
+  Promise.allSettled([fetchRoles(accessToken), fetchPermissions(accessToken)]).then(([r, p]) => {
+   if (r.status === 'fulfilled') setRoles(r.value?.data || []);
+   if (p.status === 'fulfilled') setPermissions(p.value?.data || []);
+  }).finally(() => setLoading(false));
+ }, [accessToken]);
 
-  useEffect(() => { load(); }, [load]);
+ useEffect(() => { load(); }, [load]);
 
-  const handleCreateRole = async (e) => {
-    e.preventDefault();
-    if (!roleForm.name || !roleForm.slug) return;
-    setSubmitting(true);
-    try { await createRole(accessToken, roleForm); setRoleForm({ name: '', slug: '', description: '' }); load(); } finally { setSubmitting(false); }
-  };
+ const handleCreateRole = async (e) => {
+  e.preventDefault();
+  if (!roleForm.name || !roleForm.slug) return;
+  setSubmitting(true);
+  try { await createRole(accessToken, roleForm); setRoleForm({ name: '', slug: '', description: '' }); load(); } finally { setSubmitting(false); }
+ };
 
-  const handleCreatePermission = async (e) => {
-    e.preventDefault();
-    if (!permForm.name || !permForm.module || !permForm.action) return;
-    setSubmitting(true);
-    try { await createPermission(accessToken, permForm); setPermForm({ name: '', module: '', action: '' }); load(); } finally { setSubmitting(false); }
-  };
+ const handleCreatePermission = async (e) => {
+  e.preventDefault();
+  if (!permForm.name || !permForm.module || !permForm.action) return;
+  setSubmitting(true);
+  try { await createPermission(accessToken, permForm); setPermForm({ name: '', module: '', action: '' }); load(); } finally { setSubmitting(false); }
+ };
 
-  const removeRole = async (id) => { setActingId(id); try { await deleteRole(accessToken, id); load(); } finally { setActingId(null); } };
-  const removePermission = async (id) => { setActingId(id); try { await deletePermission(accessToken, id); load(); } finally { setActingId(null); } };
+ const removeRole = async (id) => { setActingId(id); try { await deleteRole(accessToken, id); load(); } finally { setActingId(null); } };
+ const removePermission = async (id) => { setActingId(id); try { await deletePermission(accessToken, id); load(); } finally { setActingId(null); } };
 
-  if (loading) return <LoadingSpinner />;
-  return (
-    <div className="space-y-stack-lg">
-      <div className="space-y-4 rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white p-stack-lg shadow-sm">
-        <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Custom Roles</h3>
-        <form onSubmit={handleCreateRole} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <input required type="text" placeholder="Name" value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} className={FORM_INPUT_CLASS} />
-            <input required type="text" placeholder="Slug (e.g. regional-lead)" value={roleForm.slug} onChange={(e) => setRoleForm({ ...roleForm, slug: e.target.value })} className={FORM_INPUT_CLASS} />
-            <input type="text" placeholder="Description" value={roleForm.description} onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })} className={FORM_INPUT_CLASS} />
-          </div>
-          <div className="flex justify-end">
-            <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Adding...' : 'Add Role'}</Button>
-          </div>
-        </form>
-        <div className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
-          {roles.map((r) => (
-            <div key={r.id} className="flex items-center justify-between py-3">
-              <div>
-                <p className="text-body-md font-semibold text-brand-dark dark:text-white">{r.name} {r.is_system && <StatusBadge variant="neutral">system</StatusBadge>}</p>
-                <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.slug} — {r.description || 'No description'}</p>
-              </div>
-              {!r.is_system && <RowAction variant="danger" disabled={actingId === r.id} onClick={() => removeRole(r.id)}>Delete</RowAction>}
-            </div>
-          ))}
-          {!roles.length && <p className="py-6 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No custom roles yet — the 13 system roles from `UserRole` cover most needs.</p>}
-        </div>
+ if (loading) return <LoadingSpinner />;
+ return (
+  <div className="space-y-stack-lg">
+   <div className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg shadow-sm dark:border-dark-outline-variant">
+    <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Custom Roles</h3>
+    <form onSubmit={handleCreateRole} className="space-y-4">
+     <div className="grid gap-4 sm:grid-cols-3">
+      <input required type="text" placeholder="Name" value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} className={FORM_INPUT_CLASS} />
+      <input required type="text" placeholder="Slug (e.g. regional-lead)" value={roleForm.slug} onChange={(e) => setRoleForm({ ...roleForm, slug: e.target.value })} className={FORM_INPUT_CLASS} />
+      <input type="text" placeholder="Description" value={roleForm.description} onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })} className={FORM_INPUT_CLASS} />
+     </div>
+     <div className="flex justify-end">
+      <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Adding...' : 'Add Role'}</Button>
+     </div>
+    </form>
+    <div className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
+     {roles.map((r) => (
+      <div key={r.id} className="flex items-center justify-between py-3">
+       <div>
+        <p className="text-body-md font-semibold text-brand-dark dark:text-white">{r.name} {r.is_system && <StatusBadge variant="neutral">system</StatusBadge>}</p>
+        <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.slug} — {r.description || 'No description'}</p>
+       </div>
+       {!r.is_system && <RowAction variant="danger" disabled={actingId === r.id} onClick={() => removeRole(r.id)}>Delete</RowAction>}
       </div>
-
-      <div className="space-y-4 rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white p-stack-lg shadow-sm">
-        <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Permissions</h3>
-        <form onSubmit={handleCreatePermission} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <input required type="text" placeholder="Name" value={permForm.name} onChange={(e) => setPermForm({ ...permForm, name: e.target.value })} className={FORM_INPUT_CLASS} />
-            <input required type="text" placeholder="Module (e.g. invoices)" value={permForm.module} onChange={(e) => setPermForm({ ...permForm, module: e.target.value })} className={FORM_INPUT_CLASS} />
-            <input required type="text" placeholder="Action (e.g. approve)" value={permForm.action} onChange={(e) => setPermForm({ ...permForm, action: e.target.value })} className={FORM_INPUT_CLASS} />
-          </div>
-          <div className="flex justify-end">
-            <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Adding...' : 'Add Permission'}</Button>
-          </div>
-        </form>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {permissions.map((p) => (
-            <div key={p.id} className="flex items-center justify-between gap-2 rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white p-3 transition-colors hover:bg-surface-container dark:bg-dark-surface-container">
-              <div>
-                <p className="text-body-sm font-semibold text-brand-dark dark:text-white">{p.name}</p>
-                <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.module}.{p.action}</p>
-              </div>
-              <button type="button" onClick={() => removePermission(p.id)} disabled={actingId === p.id}
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-status-error/30 text-status-error transition-colors hover:bg-status-error-bg hover:text-status-error disabled:opacity-50"
-                aria-label={`Delete permission ${p.name}`}>
-                <Icon name="delete" className="text-base" />
-              </button>
-            </div>
-          ))}
-          {!permissions.length && <p className="py-6 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted sm:col-span-2 lg:col-span-3">No permissions defined yet.</p>}
-        </div>
-      </div>
+     ))}
+     {!roles.length && <p className="py-6 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No custom roles yet — the 13 system roles from `UserRole` cover most needs.</p>}
     </div>
-  );
+   </div>
+
+   <div className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg shadow-sm dark:border-dark-outline-variant">
+    <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Permissions</h3>
+    <form onSubmit={handleCreatePermission} className="space-y-4">
+     <div className="grid gap-4 sm:grid-cols-3">
+      <input required type="text" placeholder="Name" value={permForm.name} onChange={(e) => setPermForm({ ...permForm, name: e.target.value })} className={FORM_INPUT_CLASS} />
+      <input required type="text" placeholder="Module (e.g. invoices)" value={permForm.module} onChange={(e) => setPermForm({ ...permForm, module: e.target.value })} className={FORM_INPUT_CLASS} />
+      <input required type="text" placeholder="Action (e.g. approve)" value={permForm.action} onChange={(e) => setPermForm({ ...permForm, action: e.target.value })} className={FORM_INPUT_CLASS} />
+     </div>
+     <div className="flex justify-end">
+      <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Adding...' : 'Add Permission'}</Button>
+     </div>
+    </form>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+     {permissions.map((p) => (
+      <div key={p.id} className="flex items-center justify-between gap-2 rounded-lg border border-outline-variant bg-white p-3 transition-colors hover:bg-surface-container dark:border-dark-outline-variant dark:bg-dark-surface-container">
+       <div>
+        <p className="text-body-sm font-semibold text-brand-dark dark:text-white">{p.name}</p>
+        <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.module}.{p.action}</p>
+       </div>
+       <button type="button" onClick={() => removePermission(p.id)} disabled={actingId === p.id}
+        className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-status-error/30 text-status-error transition-colors hover:bg-status-error-bg hover:text-status-error disabled:opacity-50"
+        aria-label={`Delete permission ${p.name}`}>
+        <Icon name="delete" className="text-base" />
+       </button>
+      </div>
+     ))}
+     {!permissions.length && <p className="py-6 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted sm:col-span-2 lg:col-span-3">No permissions defined yet.</p>}
+    </div>
+   </div>
+  </div>
+ );
 }
 
 function DataExportGdpr({ accessToken }) {
-  const [search, setSearch] = useState('');
-  const [results, setResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [searching, setSearching] = useState(false);
-  const [actingId, setActingId] = useState(null);
-  const [exportedJson, setExportedJson] = useState(null);
+ const [search, setSearch] = useState('');
+ const [results, setResults] = useState([]);
+ const [loading, setLoading] = useState(true);
+ const [searching, setSearching] = useState(false);
+ const [actingId, setActingId] = useState(null);
+ const [exportedJson, setExportedJson] = useState(null);
 
-  useEffect(() => {
-    if (!accessToken) { setLoading(false); return; }
-    fetchUsers(accessToken, { limit: 50 }).then((r) => setResults(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  }, [accessToken]);
+ useEffect(() => {
+  if (!accessToken) { setLoading(false); return; }
+  fetchUsers(accessToken, { limit: 50 }).then((r) => setResults(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, [accessToken]);
 
-  const runSearch = async (e) => {
-    e.preventDefault();
-    setSearching(true);
-    try {
-      const r = await fetchUsers(accessToken, { search: search.trim() || undefined, limit: 50 });
-      setResults(r?.data || []);
-    } finally {
-      setSearching(false);
-    }
-  };
+ const runSearch = async (e) => {
+  e.preventDefault();
+  setSearching(true);
+  try {
+   const r = await fetchUsers(accessToken, { search: search.trim() || undefined, limit: 50 });
+   setResults(r?.data || []);
+  } finally {
+   setSearching(false);
+  }
+ };
 
-  const doExport = async (userId) => {
-    setActingId(userId);
-    try {
-      const r = await exportUserData(accessToken, userId);
-      setExportedJson(r?.data || null);
-    } finally {
-      setActingId(null);
-    }
-  };
+ const doExport = async (userId) => {
+  setActingId(userId);
+  try {
+   const r = await exportUserData(accessToken, userId);
+   setExportedJson(r?.data || null);
+  } finally {
+   setActingId(null);
+  }
+ };
 
-  const doAnonymize = async (userId) => {
-    if (!window.confirm('This permanently anonymizes the account (name, email, phone, avatar) and deactivates it. This cannot be undone. Continue?')) return;
-    setActingId(userId);
-    try { await anonymizeUser(accessToken, userId); setResults((prev) => prev.filter((u) => u.id !== userId)); } finally { setActingId(null); }
-  };
+ const doAnonymize = async (userId) => {
+  if (!window.confirm('This permanently anonymizes the account (name, email, phone, avatar) and deactivates it. This cannot be undone. Continue?')) return;
+  setActingId(userId);
+  try { await anonymizeUser(accessToken, userId); setResults((prev) => prev.filter((u) => u.id !== userId)); } finally { setActingId(null); }
+ };
 
-  if (loading) return <LoadingSpinner />;
+ if (loading) return <LoadingSpinner />;
 
-  return (
-    <div className="space-y-stack-md">
-      <form onSubmit={runSearch} className="flex gap-2">
-        <input type="text" placeholder="Search by name or email" value={search} onChange={(e) => setSearch(e.target.value)} className={`flex-1 ${FORM_INPUT_CLASS}`} />
-        <Button type="submit" variant="primary" size="md" disabled={searching}>{searching ? 'Searching...' : 'Search'}</Button>
-      </form>
-      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white shadow-sm">
-        <table className="w-full text-left">
-          <thead className={TABLE_HEADER}>
-            <tr><th className={TABLE_HEADER_TH}>Name</th><th className={TABLE_HEADER_TH}>Email</th><th className={TABLE_HEADER_TH}>Role</th><th className={TABLE_HEADER_TH}>Actions</th></tr>
-          </thead>
-          <tbody className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
-            {results.map((u) => (
-              <tr key={u.id} className={TABLE_ROW_HOVER}>
-                <td data-label="Name" className="px-stack-lg py-4 text-body-md font-medium text-brand-dark dark:text-white">{u.name}</td>
-                <td data-label="Email" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{u.email}</td>
-                <td data-label="Role" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{u.role?.replace('_', ' ')}</td>
-                <td data-label="Actions" className="px-stack-lg py-4">
-                  <div className="flex gap-2">
-                    <RowAction disabled={actingId === u.id} onClick={() => doExport(u.id)}>Export Data</RowAction>
-                    <RowAction variant="danger" disabled={actingId === u.id} onClick={() => doAnonymize(u.id)}>Anonymize</RowAction>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {!results.length && <tr><td data-label="Name" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">Search for a user to export or anonymize their data.</td></tr>}
-          </tbody>
-        </table>
-      </div>
-      {exportedJson && (
-        <div className="rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white p-stack-lg shadow-sm">
-          <h3 className="mb-3 font-display text-headline-sm text-brand-dark dark:text-white">Exported Data</h3>
-          <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-surface-container dark:bg-dark-surface-container p-4 text-body-sm text-ink dark:text-white">{JSON.stringify(exportedJson, null, 2)}</pre>
-        </div>
-      )}
+ return (
+  <div className="space-y-stack-md">
+   <form onSubmit={runSearch} className="flex gap-2">
+    <input type="text" placeholder="Search by name or email" value={search} onChange={(e) => setSearch(e.target.value)} className={`flex-1 ${FORM_INPUT_CLASS}`} />
+    <Button type="submit" variant="primary" size="md" disabled={searching}>{searching ? 'Searching...' : 'Search'}</Button>
+   </form>
+   <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
+    <table className="w-full text-left">
+     <thead className={TABLE_HEADER}>
+      <tr><th className={TABLE_HEADER_TH}>Name</th><th className={TABLE_HEADER_TH}>Email</th><th className={TABLE_HEADER_TH}>Role</th><th className={TABLE_HEADER_TH}>Actions</th></tr>
+     </thead>
+     <tbody className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
+      {results.map((u) => (
+       <tr key={u.id} className={TABLE_ROW_HOVER}>
+        <td data-label="Name" className="px-stack-lg py-4 text-body-md font-medium text-brand-dark dark:text-white">{u.name}</td>
+        <td data-label="Email" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{u.email}</td>
+        <td data-label="Role" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{u.role?.replace('_', ' ')}</td>
+        <td data-label="Actions" className="px-stack-lg py-4">
+         <div className="flex gap-2">
+          <RowAction disabled={actingId === u.id} onClick={() => doExport(u.id)}>Export Data</RowAction>
+          <RowAction variant="danger" disabled={actingId === u.id} onClick={() => doAnonymize(u.id)}>Anonymize</RowAction>
+         </div>
+        </td>
+       </tr>
+      ))}
+      {!results.length && <tr><td data-label="Name" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">Search for a user to export or anonymize their data.</td></tr>}
+     </tbody>
+    </table>
+   </div>
+   {exportedJson && (
+    <div className="rounded-lg border border-outline-variant bg-white p-stack-lg shadow-sm dark:border-dark-outline-variant">
+     <h3 className="mb-3 font-display text-headline-sm text-brand-dark dark:text-white">Exported Data</h3>
+     <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-surface-container p-4 text-body-sm text-ink dark:bg-dark-surface-container dark:text-white">{JSON.stringify(exportedJson, null, 2)}</pre>
     </div>
-  );
+   )}
+  </div>
+ );
 }
 
 function AuditLogs({ accessToken }) {
-  const [logs, setLogs] = useState([]);
-  const [loading, setLoading] = useState(true);
+ const [logs, setLogs] = useState([]);
+ const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!accessToken) { setLoading(false); return; }
-    fetchAuditLogs(accessToken, { limit: 50 }).then((r) => setLogs(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  }, [accessToken]);
+ useEffect(() => {
+  if (!accessToken) { setLoading(false); return; }
+  fetchAuditLogs(accessToken, { limit: 50 }).then((r) => setLogs(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, [accessToken]);
 
-  if (loading) return <LoadingSpinner />;
-  return (
-    <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white shadow-sm">
-      <table className="w-full text-left">
-        <thead className={TABLE_HEADER}>
-          <tr><th className={TABLE_HEADER_TH}>Action</th><th className={TABLE_HEADER_TH}>Entity</th><th className={TABLE_HEADER_TH}>IP</th><th className={TABLE_HEADER_TH}>When</th></tr>
-        </thead>
-        <tbody className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
-          {logs.map((l) => (
-            <tr key={l.id} className={TABLE_ROW_HOVER}>
-              <td data-label="Action" className="px-stack-lg py-4 text-body-sm font-medium text-brand-dark dark:text-white">{l.action}</td>
-              <td data-label="Entity" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.entity_type || '—'}</td>
-              <td data-label="IP" className="px-stack-lg py-4 font-mono text-body-xs text-ink-muted dark:text-dark-ink-muted">{l.ip_address || '—'}</td>
-              <td data-label="When" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.created_at ? new Date(l.created_at).toLocaleString() : '—'}</td>
-            </tr>
-          ))}
-          {!logs.length && <tr><td data-label="Action" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No audit activity yet.</td></tr>}
-        </tbody>
-      </table>
-    </div>
-  );
+ if (loading) return <LoadingSpinner />;
+ return (
+  <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
+   <table className="w-full text-left">
+    <thead className={TABLE_HEADER}>
+     <tr><th className={TABLE_HEADER_TH}>Action</th><th className={TABLE_HEADER_TH}>Entity</th><th className={TABLE_HEADER_TH}>IP</th><th className={TABLE_HEADER_TH}>When</th></tr>
+    </thead>
+    <tbody className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
+     {logs.map((l) => (
+      <tr key={l.id} className={TABLE_ROW_HOVER}>
+       <td data-label="Action" className="px-stack-lg py-4 text-body-sm font-medium text-brand-dark dark:text-white">{l.action}</td>
+       <td data-label="Entity" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.entity_type || '—'}</td>
+       <td data-label="IP" className="px-stack-lg py-4 font-mono text-body-xs text-ink-muted dark:text-dark-ink-muted">{l.ip_address || '—'}</td>
+       <td data-label="When" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.created_at ? new Date(l.created_at).toLocaleString() : '—'}</td>
+      </tr>
+     ))}
+     {!logs.length && <tr><td data-label="Action" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No audit activity yet.</td></tr>}
+    </tbody>
+   </table>
+  </div>
+ );
 }
 
 function Backups({ accessToken }) {
-  const [backups, setBackups] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [triggering, setTriggering] = useState(false);
-  const [error, setError] = useState('');
+ const [backups, setBackups] = useState([]);
+ const [loading, setLoading] = useState(true);
+ const [triggering, setTriggering] = useState(false);
+ const [error, setError] = useState('');
 
-  const load = useCallback(() => {
-    if (!accessToken) { setLoading(false); return; }
-    setLoading(true);
-    fetchBackups(accessToken).then((r) => setBackups(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
-  }, [accessToken]);
+ const load = useCallback(() => {
+  if (!accessToken) { setLoading(false); return; }
+  setLoading(true);
+  fetchBackups(accessToken).then((r) => setBackups(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, [accessToken]);
 
-  useEffect(() => { load(); }, [load]);
+ useEffect(() => { load(); }, [load]);
 
-  const runBackup = async () => {
-    setTriggering(true);
-    setError('');
-    try {
-      // A real pg_dump — the backend gives this up to 5 minutes.
-      await triggerBackup(accessToken);
-      load();
-    } catch (err) {
-      setError(err?.message || 'Backup failed. Please try again.');
-    } finally {
-      setTriggering(false);
-    }
-  };
+ const runBackup = async () => {
+  setTriggering(true);
+  setError('');
+  try {
+   // A real pg_dump — the backend gives this up to 5 minutes.
+   await triggerBackup(accessToken);
+   load();
+  } catch (err) {
+   setError(err?.message || 'Backup failed. Please try again.');
+  } finally {
+   setTriggering(false);
+  }
+ };
 
-  const removeBackup = async (filename) => {
-    if (!window.confirm(`Permanently delete backup "${filename}"? This cannot be undone.`)) return;
-    await deleteBackup(accessToken, filename);
-    load();
-  };
+ const removeBackup = async (filename) => {
+  if (!window.confirm(`Permanently delete backup "${filename}"? This cannot be undone.`)) return;
+  await deleteBackup(accessToken, filename);
+  load();
+ };
 
-  const formatSize = (bytes) => {
-    if (!bytes) return '—';
-    const mb = bytes / (1024 * 1024);
-    return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
-  };
+ const formatSize = (bytes) => {
+  if (!bytes) return '—';
+  const mb = bytes / (1024 * 1024);
+  return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
+ };
 
-  if (loading) return <LoadingSpinner />;
+ if (loading) return <LoadingSpinner />;
 
-  return (
-    <div className="space-y-stack-lg">
-      <div className="flex items-center justify-between">
-        <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Real database backups (pg_dump), triggered manually — no scheduler runs automatically yet.</p>
-        <Button variant="primary" size="md" onClick={runBackup} disabled={triggering} icon={<Icon name="backup" />}>
-          {triggering ? 'Running backup...' : 'Trigger Backup Now'}
-        </Button>
-      </div>
-      {error && <p className="flex items-center gap-1 text-body-sm text-status-error"><Icon name="error" className="text-base" />{error}</p>}
-      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white shadow-sm">
-        <table className="w-full text-left">
-          <thead className={TABLE_HEADER}>
-            <tr><th className={TABLE_HEADER_TH}>Filename</th><th className={TABLE_HEADER_TH}>Size</th><th className={TABLE_HEADER_TH}>Created</th><th className={TABLE_HEADER_TH}></th></tr>
-          </thead>
-          <tbody className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
-            {backups.map((b) => (
-              <tr key={b.filename} className={TABLE_ROW_HOVER}>
-                <td data-label="Filename" className="px-stack-lg py-4 font-mono text-body-xs text-brand-dark dark:text-white">{b.filename}</td>
-                <td data-label="Size" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{formatSize(b.size_bytes)}</td>
-                <td data-label="Created" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{b.created_at ? new Date(b.created_at).toLocaleString() : '—'}</td>
-                <td data-label="Filename" className="px-stack-lg py-4">
-                  <div className="flex gap-3">
-                    <a href={backupDownloadUrl(b.filename)} aria-label={`Download backup ${b.filename}`} className="text-brand hover:text-brand-dark" title="Download">
-                      <Icon name="download" className="text-xl" />
-                    </a>
-                    <button onClick={() => removeBackup(b.filename)} aria-label={`Delete backup ${b.filename}`} className="text-status-error hover:opacity-70" title="Delete">
-                      <Icon name="delete" className="text-xl" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {!backups.length && <tr><td data-label="Filename" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No backups yet — trigger one above.</td></tr>}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+ return (
+  <div className="space-y-stack-lg">
+   <div className="flex items-center justify-between">
+    <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Real database backups (pg_dump), triggered manually — no scheduler runs automatically yet.</p>
+    <Button variant="primary" size="md" onClick={runBackup} disabled={triggering} icon={<Icon name="backup" />}>
+     {triggering ? 'Running backup...' : 'Trigger Backup Now'}
+    </Button>
+   </div>
+   {error && <p className="flex items-center gap-1 text-body-sm text-status-error"><Icon name="error" className="text-base" />{error}</p>}
+   <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
+    <table className="w-full text-left">
+     <thead className={TABLE_HEADER}>
+      <tr><th className={TABLE_HEADER_TH}>Filename</th><th className={TABLE_HEADER_TH}>Size</th><th className={TABLE_HEADER_TH}>Created</th><th className={TABLE_HEADER_TH}></th></tr>
+     </thead>
+     <tbody className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
+      {backups.map((b) => (
+       <tr key={b.filename} className={TABLE_ROW_HOVER}>
+        <td data-label="Filename" className="px-stack-lg py-4 font-mono text-body-xs text-brand-dark dark:text-white">{b.filename}</td>
+        <td data-label="Size" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{formatSize(b.size_bytes)}</td>
+        <td data-label="Created" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{b.created_at ? new Date(b.created_at).toLocaleString() : '—'}</td>
+        <td data-label="Filename" className="px-stack-lg py-4">
+         <div className="flex gap-3">
+          <a href={backupDownloadUrl(b.filename)} aria-label={`Download backup ${b.filename}`} className="text-brand hover:text-brand-dark" title="Download">
+           <Icon name="download" className="text-xl" />
+          </a>
+          <button onClick={() => removeBackup(b.filename)} aria-label={`Delete backup ${b.filename}`} className="text-status-error hover:opacity-70" title="Delete">
+           <Icon name="delete" className="text-xl" />
+          </button>
+         </div>
+        </td>
+       </tr>
+      ))}
+      {!backups.length && <tr><td data-label="Filename" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No backups yet — trigger one above.</td></tr>}
+     </tbody>
+    </table>
+   </div>
+  </div>
+ );
 }
 
 export default function SuperAdminPanel() {
-  useDocumentTitle('Super Admin | CoreFusion Technologies');
-  const { user, initializing, accessToken, logout } = useAuth();
-  const { denied } = useRoleGuard('super_admin', '/admin');
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('overview');
-  const [currentUser, setCurrentUser] = useState(null);
+ useDocumentTitle('Super Admin | CoreFusion Technologies');
+ const { user, initializing, accessToken, logout } = useAuth();
+ const { denied } = useRoleGuard('super_admin', '/admin');
+ const navigate = useNavigate();
+ const [activeTab, setActiveTab] = useState('overview');
+ const [currentUser, setCurrentUser] = useState(null);
 
-  useEffect(() => {
-    if (user) {
-      setCurrentUser({ name: user?.name || user?.email, email: user?.email, role: user?.role || 'super_admin' });
-    }
-  }, [user]);
-
-  // useRoleGuard already redirects both the unauthenticated case (to
-  // /login?returnTo=..., preserving destination) and the wrong-role case
-  // (to /admin, per the redirectTo passed above) — no separate effect needed.
-  if (initializing || !user || denied || currentUser === null || currentUser.role !== 'super_admin') {
-    return <div className="bg-surface-container dark:bg-dark-surface-container py-section-padding"><LoadingSpinner /></div>;
+ useEffect(() => {
+  if (user) {
+   setCurrentUser({ name: user?.name || user?.email, email: user?.email, role: user?.role || 'super_admin' });
   }
+ }, [user]);
 
-  return (
-    <div className="flex h-screen flex-col bg-dark-surface">
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-brand-dark/30 bg-brand-dark px-margin-mobile py-3 md:px-margin-desktop">
-        <div className="flex items-center gap-4">
-          <Avatar name={currentUser?.name || 'Super Admin'} size="lg" />
-          <div>
-            <h1 className="font-display text-headline-md font-bold text-white">{currentUser?.name || 'Super Admin'}</h1>
-            <p className="text-body-sm">{currentUser?.email || ''} &middot; super admin</p>
-          </div>
-        </div>
-        <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
-          Sign Out
-        </Button>
-      </div>
+ // useRoleGuard already redirects both the unauthenticated case (to
+ // /login?returnTo=..., preserving destination) and the wrong-role case
+ // (to /admin, per the redirectTo passed above) — no separate effect needed.
+ if (initializing || !user || denied || currentUser === null || currentUser.role !== 'super_admin') {
+  return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
+ }
 
-      <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-brand-dark/30 bg-brand-dark md:block">
-          <nav aria-label="Portal navigation" className="flex flex-col gap-1 p-3">
-            {superAdminTabs.map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left text-body-sm font-medium transition-colors ${
-                  activeTab === tab.id ? 'bg-white/20 font-semibold text-white' : 'font-medium text-white/70 hover:bg-white/10 hover:text-white'
-                }`}>
-                <Icon name={tab.icon} className="text-lg" />{tab.label}
-              </button>
-            ))}
-          </nav>
-        </aside>
-
-        <div className="flex min-h-0 flex-1 flex-col">
-          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b px-margin-mobile py-2 md:hidden">
-            {superAdminTabs.map((tab) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-body-sm font-medium transition-colors ${
-                  activeTab === tab.id ? 'border-white font-semibold text-white' : 'border-transparent text-white/70 hover:border-white/40 hover:text-white'
-                }`}>
-                <Icon name={tab.icon} className="text-lg" />{tab.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="min-w-0 flex-1 overflow-y-auto px-margin-mobile py-stack-lg md:px-margin-desktop">
-            {activeTab === 'overview' && <Overview />}
-            {activeTab === 'departments' && <Departments accessToken={accessToken} />}
-            {activeTab === 'roles' && <RolesPermissions accessToken={accessToken} />}
-            {activeTab === 'gdpr' && <DataExportGdpr accessToken={accessToken} />}
-            {activeTab === 'audit' && <AuditLogs accessToken={accessToken} />}
-            {activeTab === 'backups' && <Backups accessToken={accessToken} />}
-            {activeTab === 'billing' && (
-              <ComingSoon icon="account_balance" title="Billing & Subscription"
-                description="This deployment doesn't have a billing/subscription model yet — there's no plan, invoice-to-platform, or metering system in the current schema. Building it for real is a separate project, not a UI-only add-on." />
-            )}
-            {activeTab === 'impersonation' && (
-              <ComingSoon icon="switch_account" title="Impersonation"
-                description="Deliberately not implemented yet. Signing in as another user safely requires audit-logged, time-boxed session tokens and its own review — that's a security-sensitive feature that shouldn't ship as a quick add-on." />
-            )}
-          </div>
-        </div>
-      </div>
+ return (
+  <div className="flex h-screen flex-col bg-dark-surface">
+   <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-brand-dark/30 bg-brand-dark px-4 py-3 sm:px-6 lg:px-10 xl:px-12 ">
+    <div className="flex items-center gap-4">
+     <Avatar name={currentUser?.name || 'Super Admin'} size="lg" />
+     <div>
+      <h1 className="font-display text-headline-md font-bold text-white">{currentUser?.name || 'Super Admin'}</h1>
+      <p className="text-body-sm">{currentUser?.email || ''} &middot; super admin</p>
+     </div>
     </div>
-  );
+    <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
+     Sign Out
+    </Button>
+   </div>
+
+   <div className="flex min-h-0 flex-1">
+    <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-brand-dark/30 bg-brand-dark md:block">
+     <nav aria-label="Portal navigation" className="flex flex-col gap-1 p-3">
+      {superAdminTabs.map((tab) => (
+       <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+        className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left text-body-sm font-medium transition-colors ${
+         activeTab === tab.id ? 'bg-white/20 font-semibold text-white' : 'font-medium text-white/70 hover:bg-white/10 hover:text-white'
+        }`}>
+        <Icon name={tab.icon} className="text-lg" />{tab.label}
+       </button>
+      ))}
+     </nav>
+    </aside>
+
+    <div className="flex min-h-0 flex-1 flex-col">
+     <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12">
+      {superAdminTabs.map((tab) => (
+       <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+        className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-body-sm font-medium transition-colors ${
+         activeTab === tab.id ? 'border-white font-semibold text-white' : 'border-transparent text-white/70 hover:border-white/40 hover:text-white'
+        }`}>
+        <Icon name={tab.icon} className="text-lg" />{tab.label}
+       </button>
+      ))}
+     </div>
+
+     <div className="min-w-0 flex-1 overflow-y-auto px-4 py-stack-lg sm:px-6 lg:px-10 xl:px-12 ">
+      {activeTab === 'overview' && <Overview />}
+      {activeTab === 'departments' && <Departments accessToken={accessToken} />}
+      {activeTab === 'roles' && <RolesPermissions accessToken={accessToken} />}
+      {activeTab === 'gdpr' && <DataExportGdpr accessToken={accessToken} />}
+      {activeTab === 'audit' && <AuditLogs accessToken={accessToken} />}
+      {activeTab === 'backups' && <Backups accessToken={accessToken} />}
+      {activeTab === 'billing' && (
+       <ComingSoon icon="account_balance" title="Billing & Subscription"
+        description="This deployment doesn't have a billing/subscription model yet — there's no plan, invoice-to-platform, or metering system in the current schema. Building it for real is a separate project, not a UI-only add-on." />
+      )}
+      {activeTab === 'impersonation' && (
+       <ComingSoon icon="switch_account" title="Impersonation"
+        description="Deliberately not implemented yet. Signing in as another user safely requires audit-logged, time-boxed session tokens and its own review — that's a security-sensitive feature that shouldn't ship as a quick add-on." />
+      )}
+     </div>
+    </div>
+   </div>
+  </div>
+ );
 }

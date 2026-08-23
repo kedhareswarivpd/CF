@@ -8,15 +8,15 @@ import { ToastProvider } from './context/ToastContext.jsx';
 import './index.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <ToastProvider>
-            <App />
-          </ToastProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
-  </React.StrictMode>
+ <React.StrictMode>
+  <BrowserRouter>
+   <ThemeProvider>
+    <AuthProvider>
+     <ToastProvider>
+      <App />
+     </ToastProvider>
+    </AuthProvider>
+   </ThemeProvider>
+  </BrowserRouter>
+ </React.StrictMode>
 );

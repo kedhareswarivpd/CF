@@ -12,26 +12,26 @@ import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { getStats } from '../api/stats.js';
 
 export default function About() {
-  useDocumentTitle('About Us | CoreFusion Technologies');
-  const [stats, setStats] = useState(null);
+ useDocumentTitle('About Us | CoreFusion Technologies');
+ const [stats, setStats] = useState(null);
 
-  useEffect(() => {
-    getStats()
-      .then((res) => setStats(res.data))
-      .catch(() => setStats(null));
-  }, []);
+ useEffect(() => {
+  getStats()
+   .then((res) => setStats(res.data))
+   .catch(() => setStats(null));
+ }, []);
 
-  return (
-    <>
-      <AboutHero stats={stats} />
-      <ImpactStats />
-      <MissionVision />
-      <ValuesGrid />
-      <Timeline />
-      <LeadershipGrid />
-      <DepartmentsGrid />
-      <GlobalPresence />
-      <Certifications />
-    </>
-  );
+ return (
+  <>
+   <AboutHero stats={stats} />
+   <ImpactStats />
+   <MissionVision />
+   <ValuesGrid />
+   <Timeline />
+   <LeadershipGrid />
+   <DepartmentsGrid />
+   <GlobalPresence />
+   <Certifications />
+  </>
+ );
 }

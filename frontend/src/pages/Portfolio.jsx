@@ -7,27 +7,27 @@ import GlobalMap from '../components/portfolio/GlobalMap.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 
 export default function Portfolio() {
-  useDocumentTitle('Project Portfolio | CoreFusion Technologies');
+ useDocumentTitle('Project Portfolio | CoreFusion Technologies');
 
-  const [industry, setIndustry] = useState('All');
-  const [activeServices, setActiveServices] = useState([]);
+ const [industry, setIndustry] = useState('All');
+ const [activeServices, setActiveServices] = useState([]);
 
-  const toggleService = (service) => {
-    setActiveServices((prev) => (prev.includes(service) ? [] : [service]));
-  };
+ const toggleService = (service) => {
+  setActiveServices((prev) => (prev.includes(service) ? [] : [service]));
+ };
 
-  return (
-    <>
-      <PortfolioHero />
-      <FilterBar
-        industry={industry}
-        onIndustryChange={setIndustry}
-        activeServices={activeServices}
-        onServiceToggle={toggleService}
-      />
-      <FeaturedCaseStudy />
-      <ProjectGallery industry={industry} activeServices={activeServices} />
-      <GlobalMap />
-    </>
-  );
+ return (
+  <>
+   <PortfolioHero />
+   <FilterBar
+    industry={industry}
+    onIndustryChange={setIndustry}
+    activeServices={activeServices}
+    onServiceToggle={toggleService}
+   />
+   <FeaturedCaseStudy />
+   <ProjectGallery industry={industry} activeServices={activeServices} />
+   <GlobalMap />
+  </>
+ );
 }

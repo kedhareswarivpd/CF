@@ -93,12 +93,11 @@ export default {
         'stack-lg': '32px',
         'stack-xl': '48px',
         gutter: '24px',
-        'margin-mobile': '16px',
-        'margin-desktop': '40px',
+
         'section-padding': '80px',
       },
       maxWidth: {
-        container: '1280px',
+        container: '1440px',
       },
       boxShadow: {
         card: '0px 4px 20px rgba(10, 37, 64, 0.05)',

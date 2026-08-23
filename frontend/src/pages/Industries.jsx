@@ -8,42 +8,42 @@ import { industries as staticIndustries } from '../data/industries.js';
 import { fetchIndustries } from '../api/cms.js';
 
 function toFrontend(ind) {
-  return {
-    icon: ind.icon || 'business',
-    title: ind.name,
-    description: ind.description || '',
-    challenges: [],
-    stats: '',
-  };
+ return {
+  icon: ind.icon || 'business',
+  title: ind.name,
+  description: ind.description || '',
+  challenges: [],
+  stats: '',
+ };
 }
 
 export default function Industries() {
-  useDocumentTitle('Industries We Serve | CoreFusion Technologies');
-  const [industries, setIndustries] = useState(staticIndustries);
+ useDocumentTitle('Industries We Serve | CoreFusion Technologies');
+ const [industries, setIndustries] = useState(staticIndustries);
 
-  useEffect(() => {
-    fetchIndustries()
-      .then((res) => {
-        const items = res?.data;
-        if (Array.isArray(items) && items.length) setIndustries(items.map(toFrontend));
-      })
-      .catch(() => {});
-  }, []);
+ useEffect(() => {
+  fetchIndustries()
+   .then((res) => {
+    const items = res?.data;
+    if (Array.isArray(items) && items.length) setIndustries(items.map(toFrontend));
+   })
+   .catch(() => {});
+ }, []);
 
-  return (
-    <>
-      <IndustriesHero />
-      <div className="bg-brand-dark">
-        <SectionHeading
-          eyebrow="Who We Serve"
-          title="Industries Transformed by Technology"
-          description="Domain expertise combined with technical excellence to address sector-specific challenges."
-          align="center"
-          className="mx-auto max-w-container px-margin-mobile py-section-padding md:px-margin-desktop [&_h2]:!text-white [&_p]:!text-white [&_span]:!text-accent-cyan"
-        />
-      </div>
-      <IndustriesGrid industries={industries} />
-      <CtaBanner />
-    </>
-  );
+ return (
+  <>
+   <IndustriesHero />
+   <div className="bg-brand-dark">
+    <SectionHeading
+     eyebrow="Who We Serve"
+     title="Industries Transformed by Technology"
+     description="Domain expertise combined with technical excellence to address sector-specific challenges."
+     align="center"
+     className="mx-auto max-w-container px-4 py-section-padding sm:px-6 lg:px-10 xl:px-12 [&_h2]:!text-white [&_p]:!text-white [&_span]:!text-accent-cyan"
+    />
+   </div>
+   <IndustriesGrid industries={industries} />
+   <CtaBanner />
+  </>
+ );
 }

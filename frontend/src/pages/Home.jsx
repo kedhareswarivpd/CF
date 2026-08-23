@@ -16,33 +16,33 @@ import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { getStats } from '../api/stats.js';
 
 export default function Home() {
-  useDocumentTitle('CoreFusion Technologies | Transforming Businesses Through Intelligent Digital Solutions');
-  const [stats, setStats] = useState(null);
+ useDocumentTitle('CoreFusion Technologies | Transforming Businesses Through Intelligent Digital Solutions');
+ const [stats, setStats] = useState(null);
 
-  useEffect(() => {
-    getStats()
-      .then((res) => setStats(res?.data ?? null))
-      .catch(() => {});
-  }, []);
+ useEffect(() => {
+  getStats()
+   .then((res) => setStats(res?.data ?? null))
+   .catch(() => {});
+ }, []);
 
-  return (
-    <>
-      <Hero />
-      <StatsBar stats={stats} />
-      <AboutTeaser />
-      <ServicesTeaser />
-      <ExploreMoreSection />
-      <PortfolioTeaser />
-      {/* Testimonials doubles as the "Clients" section — it already surfaces
-          real client/company names; a separate client-logo strip would need
-          a dedicated CMS resource the backend doesn't have. */}
-      <TestimonialsSection />
-      <PartnersStrip />
-      <AwardsTeaser />
-      <BlogTeaser />
-      <WhyChooseUs />
-      <NewsletterSignup />
-      <CtaBanner />
-    </>
-  );
+ return (
+  <>
+   <Hero />
+   <StatsBar stats={stats} />
+   <AboutTeaser />
+   <ServicesTeaser />
+   <ExploreMoreSection />
+   <PortfolioTeaser />
+   {/* Testimonials doubles as the "Clients" section — it already surfaces
+     real client/company names; a separate client-logo strip would need
+     a dedicated CMS resource the backend doesn't have. */}
+   <TestimonialsSection />
+   <PartnersStrip />
+   <AwardsTeaser />
+   <BlogTeaser />
+   <WhyChooseUs />
+   <NewsletterSignup />
+   <CtaBanner />
+  </>
+ );
 }

@@ -1,177 +1,177 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../api/auth.js', () => ({
-  login: vi.fn(),
-  register: vi.fn(),
-  logout: vi.fn(),
-  fetchCurrentUser: vi.fn(),
+ login: vi.fn(),
+ register: vi.fn(),
+ logout: vi.fn(),
+ fetchCurrentUser: vi.fn(),
 }));
 
 import { renderHook, act } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../AuthContext.jsx';
 import {
-  login as loginApi,
-  register as registerApi,
-  logout as logoutApi,
-  fetchCurrentUser,
+ login as loginApi,
+ register as registerApi,
+ logout as logoutApi,
+ fetchCurrentUser,
 } from '../../api/auth.js';
 import { ApiRequestError } from '../../api/client.js';
 
 describe('useAuth', () => {
-  it('returns default values when used outside provider', () => {
-    const { result } = renderHook(() => useAuth());
-    expect(result.current.user).toBeNull();
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.accessToken).toBeNull();
-  });
+ it('returns default values when used outside provider', () => {
+  const { result } = renderHook(() => useAuth());
+  expect(result.current.user).toBeNull();
+  expect(result.current.isAuthenticated).toBe(false);
+  expect(result.current.accessToken).toBeNull();
+ });
 });
 
 describe('AuthProvider', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+ beforeEach(() => {
+  vi.clearAllMocks();
+ });
+
+ it('hydrates as anonymous when GET /auth/me returns 401 (no session cookie)', async () => {
+  fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
+
+  const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
+  const { result } = renderHook(() => useAuth(), { wrapper });
+
+  await act(async () => {
+   await new Promise((r) => setTimeout(r, 0));
   });
 
-  it('hydrates as anonymous when GET /auth/me returns 401 (no session cookie)', async () => {
-    fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
+  expect(result.current.user).toBeNull();
+  expect(result.current.isAuthenticated).toBe(false);
+  expect(result.current.accessToken).toBeNull();
+ });
 
-    const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
-    const { result } = renderHook(() => useAuth(), { wrapper });
+ it('hydrates the user from GET /auth/me when a session cookie is already present', async () => {
+  const mockUser = { id: 'user-123', email: 'test@example.com', role: 'client' };
+  fetchCurrentUser.mockResolvedValue({ data: mockUser });
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
-    });
+  const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
+  const { result } = renderHook(() => useAuth(), { wrapper });
 
-    expect(result.current.user).toBeNull();
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.accessToken).toBeNull();
+  await act(async () => {
+   await new Promise((r) => setTimeout(r, 0));
   });
 
-  it('hydrates the user from GET /auth/me when a session cookie is already present', async () => {
-    const mockUser = { id: 'user-123', email: 'test@example.com', role: 'client' };
-    fetchCurrentUser.mockResolvedValue({ data: mockUser });
+  expect(result.current.user).toEqual(mockUser);
+  expect(result.current.isAuthenticated).toBe(true);
+  expect(result.current.role).toBe('client');
+  // Not a real credential — see AuthContext.jsx's AUTHENTICATED_SENTINEL comment.
+  expect(result.current.accessToken).toBeTruthy();
+ });
 
-    const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
-    const { result } = renderHook(() => useAuth(), { wrapper });
+ it('login calls the API (no tokens ever touch JS — cookies are set by the server response)', async () => {
+  fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
+  loginApi.mockResolvedValue({ data: { user: { id: '1', role: 'client' } } });
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
-    });
+  const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
+  const { result } = renderHook(() => useAuth(), { wrapper });
 
-    expect(result.current.user).toEqual(mockUser);
-    expect(result.current.isAuthenticated).toBe(true);
-    expect(result.current.role).toBe('client');
-    // Not a real credential — see AuthContext.jsx's AUTHENTICATED_SENTINEL comment.
-    expect(result.current.accessToken).toBeTruthy();
+  await act(async () => {
+   await new Promise((r) => setTimeout(r, 0));
   });
 
-  it('login calls the API (no tokens ever touch JS — cookies are set by the server response)', async () => {
-    fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
-    loginApi.mockResolvedValue({ data: { user: { id: '1', role: 'client' } } });
-
-    const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
-    });
-
-    let returnedUser;
-    await act(async () => {
-      returnedUser = await result.current.login('test@example.com', 'password');
-    });
-
-    expect(loginApi).toHaveBeenCalledWith('test@example.com', 'password');
-    expect(returnedUser).toEqual({ id: '1', role: 'client' });
-    expect(result.current.isAuthenticated).toBe(true);
+  let returnedUser;
+  await act(async () => {
+   returnedUser = await result.current.login('test@example.com', 'password');
   });
 
-  it('login throws when the response has no user', async () => {
-    fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
-    loginApi.mockResolvedValue({ data: {} });
+  expect(loginApi).toHaveBeenCalledWith('test@example.com', 'password');
+  expect(returnedUser).toEqual({ id: '1', role: 'client' });
+  expect(result.current.isAuthenticated).toBe(true);
+ });
 
-    const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
-    const { result } = renderHook(() => useAuth(), { wrapper });
+ it('login throws when the response has no user', async () => {
+  fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
+  loginApi.mockResolvedValue({ data: {} });
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
-    });
+  const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
+  const { result } = renderHook(() => useAuth(), { wrapper });
 
-    await expect(result.current.login('test@example.com', 'password')).rejects.toThrow('Login failed');
+  await act(async () => {
+   await new Promise((r) => setTimeout(r, 0));
   });
 
-  it('login throws a clear error for an MFA-challenged account (unsupported by this UI today)', async () => {
-    fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
-    loginApi.mockResolvedValue({ data: { mfa_token: 'challenge-token' } });
+  await expect(result.current.login('test@example.com', 'password')).rejects.toThrow('Login failed');
+ });
 
-    const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
-    const { result } = renderHook(() => useAuth(), { wrapper });
+ it('login throws a clear error for an MFA-challenged account (unsupported by this UI today)', async () => {
+  fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
+  loginApi.mockResolvedValue({ data: { mfa_token: 'challenge-token' } });
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
-    });
+  const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
+  const { result } = renderHook(() => useAuth(), { wrapper });
 
-    await expect(result.current.login('mfa@example.com', 'password')).rejects.toThrow('multi-factor');
+  await act(async () => {
+   await new Promise((r) => setTimeout(r, 0));
   });
 
-  it('register calls the API and returns the created user', async () => {
-    fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
-    registerApi.mockResolvedValue({ data: { id: '1', role: 'client' } });
+  await expect(result.current.login('mfa@example.com', 'password')).rejects.toThrow('multi-factor');
+ });
 
-    const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
-    const { result } = renderHook(() => useAuth(), { wrapper });
+ it('register calls the API and returns the created user', async () => {
+  fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
+  registerApi.mockResolvedValue({ data: { id: '1', role: 'client' } });
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
-    });
+  const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
+  const { result } = renderHook(() => useAuth(), { wrapper });
 
-    let returned;
-    await act(async () => {
-      returned = await result.current.register('Test User', 'test@example.com', 'password');
-    });
-
-    expect(registerApi).toHaveBeenCalledWith('Test User', 'test@example.com', 'password');
-    expect(returned).toEqual({ id: '1', role: 'client' });
+  await act(async () => {
+   await new Promise((r) => setTimeout(r, 0));
   });
 
-  it('logout calls the API and clears local user state even if the API call fails', async () => {
-    const mockUser = { id: '1', email: 'test@example.com', role: 'client' };
-    fetchCurrentUser.mockResolvedValue({ data: mockUser });
-    logoutApi.mockRejectedValue(new Error('network error'));
-
-    const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
-    });
-    expect(result.current.isAuthenticated).toBe(true);
-
-    await act(async () => {
-      await result.current.logout().catch(() => {});
-    });
-
-    expect(logoutApi).toHaveBeenCalled();
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBeNull();
+  let returned;
+  await act(async () => {
+   returned = await result.current.register('Test User', 'test@example.com', 'password');
   });
 
-  it('clears local user state on a corefusion:unauthorized event (refresh-and-retry exhausted)', async () => {
-    const mockUser = { id: '1', email: 'test@example.com', role: 'client' };
-    fetchCurrentUser.mockResolvedValue({ data: mockUser });
+  expect(registerApi).toHaveBeenCalledWith('Test User', 'test@example.com', 'password');
+  expect(returned).toEqual({ id: '1', role: 'client' });
+ });
 
-    const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
-    const { result } = renderHook(() => useAuth(), { wrapper });
+ it('logout calls the API and clears local user state even if the API call fails', async () => {
+  const mockUser = { id: '1', email: 'test@example.com', role: 'client' };
+  fetchCurrentUser.mockResolvedValue({ data: mockUser });
+  logoutApi.mockRejectedValue(new Error('network error'));
 
-    await act(async () => {
-      await new Promise((r) => setTimeout(r, 0));
-    });
-    expect(result.current.isAuthenticated).toBe(true);
+  const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
+  const { result } = renderHook(() => useAuth(), { wrapper });
 
-    await act(async () => {
-      window.dispatchEvent(new CustomEvent('corefusion:unauthorized'));
-    });
-
-    expect(result.current.isAuthenticated).toBe(false);
-    expect(result.current.user).toBeNull();
+  await act(async () => {
+   await new Promise((r) => setTimeout(r, 0));
   });
+  expect(result.current.isAuthenticated).toBe(true);
+
+  await act(async () => {
+   await result.current.logout().catch(() => {});
+  });
+
+  expect(logoutApi).toHaveBeenCalled();
+  expect(result.current.isAuthenticated).toBe(false);
+  expect(result.current.user).toBeNull();
+ });
+
+ it('clears local user state on a corefusion:unauthorized event (refresh-and-retry exhausted)', async () => {
+  const mockUser = { id: '1', email: 'test@example.com', role: 'client' };
+  fetchCurrentUser.mockResolvedValue({ data: mockUser });
+
+  const wrapper = ({ children }) => <AuthProvider>{children}</AuthProvider>;
+  const { result } = renderHook(() => useAuth(), { wrapper });
+
+  await act(async () => {
+   await new Promise((r) => setTimeout(r, 0));
+  });
+  expect(result.current.isAuthenticated).toBe(true);
+
+  await act(async () => {
+   window.dispatchEvent(new CustomEvent('corefusion:unauthorized'));
+  });
+
+  expect(result.current.isAuthenticated).toBe(false);
+  expect(result.current.user).toBeNull();
+ });
 });

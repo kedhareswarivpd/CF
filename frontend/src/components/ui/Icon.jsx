@@ -6,9 +6,9 @@
 // visible adjacent text in this app, so they're hidden from the
 // accessibility tree by default; a caller can still override via props.
 export default function Icon({ name, className = '', ...rest }) {
-  return (
-    <span aria-hidden="true" className={`material-symbols-outlined ${className}`} {...rest}>
-      {name}
-    </span>
-  );
+ return (
+  <span aria-hidden="true" className={`material-symbols-outlined ${className}`} {...rest}>
+   {name}
+  </span>
+ );
 }
