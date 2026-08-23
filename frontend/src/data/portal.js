@@ -42,6 +42,9 @@ export const employeePortalTabs = [
 // with a dedicated workspace beyond the generic HR/attendance set — see
 // docs/ROLE_WORKFLOW.md §2 for the full per-role navigation spec.
 export const rolePortalTabs = {
+  developer: [
+    { id: 'my-tasks', label: 'My Tasks', icon: 'view_kanban' },
+  ],
   sales: [
     { id: 'crm-dashboard', label: 'Dashboard', icon: 'analytics' },
     { id: 'contact-submissions', label: 'Contact Submissions', icon: 'mail' },

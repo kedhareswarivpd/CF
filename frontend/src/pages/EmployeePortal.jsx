@@ -2831,6 +2831,118 @@ function Approvals({ accessToken }) {
   );
 }
 
+// ---------- Developer ----------
+function MyTasksBoard({ accessToken, userId }) {
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState(null);
+  const [toast, setToast] = useState({ msg: '', type: 'success' });
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: '', type: 'success' }), 3500);
+  };
+
+  const load = useCallback(() => {
+    if (!accessToken || !userId) { setLoading(false); return; }
+    setLoading(true);
+    fetchTasks(accessToken, { assigned_to: userId, limit: 100 })
+      .then((r) => setTasks(r?.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [accessToken, userId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const changeStatus = async (taskId, status) => {
+    setSavingId(taskId);
+    try {
+      await updateTaskStatus(accessToken, taskId, status);
+      showToast(`Task moved to ${status.replace('_', ' ')}`);
+      load();
+    } catch (err) {
+      showToast(err?.message || 'Failed to update task', 'error');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const kpis = [
+    { label: 'Assigned to Me', value: tasks.length, icon: 'assignment' },
+    { label: 'In Progress', value: tasks.filter((t) => t.status === 'in_progress').length, icon: 'pending' },
+    { label: 'In Review', value: tasks.filter((t) => t.status === 'in_review').length, icon: 'rate_review' },
+    { label: 'Blocked', value: tasks.filter((t) => t.status === 'blocked').length, icon: 'report' },
+  ];
+
+  if (loading) return <LoadingSpinner />;
+  return (
+    <div className="space-y-stack-lg">
+      <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
+        {kpis.map((stat) => (
+          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-2 flex items-center gap-3">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
+              <span className="font-label-caps text-label-caps text-slate-600">{stat.label}</span>
+            </div>
+            <p className="font-stat text-stat-lg text-slate-900">{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {toast.msg && (
+        <p className={`rounded-lg px-4 py-2 text-body-sm ${
+          toast.type === 'success' ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+        }`}>{toast.msg}</p>
+      )}
+
+      <div className="grid gap-gutter md:grid-cols-5">
+        {TASK_STATUS_COLUMNS.map((col) => {
+          const colTasks = tasks.filter((t) => t.status === col);
+          return (
+            <div key={col} className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <p className="font-label-caps text-label-caps font-bold uppercase text-slate-800">
+                  {col.replace('_', ' ')}
+                </p>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-body-xs font-semibold text-slate-600">{colTasks.length}</span>
+              </div>
+              <div className="space-y-2.5">
+                {colTasks.map((t) => (
+                  <div key={t.id} className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3.5 shadow-sm transition-all hover:border-slate-300 hover:shadow">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-body-sm font-semibold leading-snug text-slate-900">{t.title}</p>
+                      <StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
+                    </div>
+                    {t.due_date && (
+                      <p className="flex items-center gap-1 text-body-xs text-slate-400">
+                        <Icon name="event" className="text-xs" />
+                        <span>Due: {t.due_date}</span>
+                      </p>
+                    )}
+                    <div className="pt-1">
+                      <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
+                        className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-body-xs font-medium text-slate-700 focus:border-brand focus:outline-none">
+                        {TASK_STATUS_COLUMNS.map((s) => (
+                          <option key={s} value={s}>Move to: {s.replace('_', ' ').toUpperCase()}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                ))}
+                {!colTasks.length && (
+                  <div className="rounded-lg border border-dashed border-slate-200 py-6 text-center text-body-xs text-slate-400">
+                    No tasks
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ---------- QA ----------
 function TestQueue({ accessToken }) {
   const [tasks, setTasks] = useState([]);
@@ -3796,6 +3908,7 @@ export default function EmployeePortal() {
             {activeTab === 'team-projects' && effectiveRole === 'project_manager' && <TeamProjects accessToken={accessToken} userId={user?.id} />}
             {activeTab === 'task-board' && effectiveRole === 'project_manager' && <TaskBoard accessToken={accessToken} userId={user?.id} />}
             {activeTab === 'approvals' && effectiveRole === 'project_manager' && <Approvals accessToken={accessToken} />}
+            {activeTab === 'my-tasks' && effectiveRole === 'developer' && <MyTasksBoard accessToken={accessToken} userId={user?.id} />}
             {activeTab === 'test-queue' && effectiveRole === 'qa' && <TestQueue accessToken={accessToken} />}
             {activeTab === 'ticket-queue' && effectiveRole === 'support' && <TicketQueue accessToken={accessToken} userId={user?.id} />}
             {activeTab === 'invoices' && effectiveRole === 'finance' && <Invoices accessToken={accessToken} />}
