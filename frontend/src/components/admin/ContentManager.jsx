@@ -451,7 +451,7 @@ export default function ContentManager({ accessToken }) {
         {loading ? (
           <div className="p-stack-lg"><LoadingSpinner /></div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="responsive-table overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
                 <tr>
@@ -462,9 +462,9 @@ export default function ContentManager({ accessToken }) {
               </thead>
               <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
                 {items.map((item) => (
-                  <tr key={item.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                    <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{resource.title(item)}</td>
-                    <td className="px-stack-lg py-4">
+                  <tr key={item.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                    <td data-label="Name" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{resource.title(item)}</td>
+                    <td data-label="Status" className="px-stack-lg py-4">
                       {hasPublish ? (
                         <button onClick={() => togglePublish(item)} className="cursor-pointer">
                           <StatusBadge variant={item.is_published ? 'success' : 'neutral'}>{item.is_published ? 'published' : 'draft'}</StatusBadge>
@@ -473,7 +473,7 @@ export default function ContentManager({ accessToken }) {
                         <StatusBadge variant="neutral">{item.slug || item.category || '—'}</StatusBadge>
                       )}
                     </td>
-                    <td className="px-stack-lg py-4 text-right">
+                    <td data-label="Actions" className="px-stack-lg py-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button onClick={() => startEdit(item)} aria-label={`Edit ${resource.title(item)}`} className="text-ink-muted transition-colors hover:text-brand" title="Edit">
                           <Icon name="edit" className="text-lg" />
@@ -486,7 +486,7 @@ export default function ContentManager({ accessToken }) {
                   </tr>
                 ))}
                 {!items.length && (
-                  <tr><td colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No {resource.label.toLowerCase()} found.</td></tr>
+                  <tr><td data-label="Name" colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No {resource.label.toLowerCase()} found.</td></tr>
                 )}
               </tbody>
             </table>

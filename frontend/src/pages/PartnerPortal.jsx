@@ -71,7 +71,7 @@ function Overview({ profile, files, tickets }) {
 // ─── Files ─────────────────────────────────────────────────────────────────
 function Files({ files }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       {files.length === 0
         ? <div className="p-stack-lg"><EmptyState icon="folder_open" title="No files yet" description="Shared files will appear here." /></div>
         : (
@@ -88,11 +88,11 @@ function Files({ files }) {
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {files.map((f) => (
                 <tr key={f.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                  <td className="px-stack-lg py-4"><div className="flex items-center gap-2"><Icon name="description" className="text-lg text-brand" />{f.name}</div></td>
-                  <td className="px-stack-lg py-4"><Badge className="text-label-caps">{f.category}</Badge></td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.size}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedOn}</td>
-                  <td className="px-stack-lg py-4">
+                  <td data-label="Name" className="px-stack-lg py-4"><div className="flex items-center gap-2"><Icon name="description" className="text-lg text-brand" />{f.name}</div></td>
+                  <td data-label="Category" className="px-stack-lg py-4"><Badge className="text-label-caps">{f.category}</Badge></td>
+                  <td data-label="Size" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.size}</td>
+                  <td data-label="Uploaded" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedOn}</td>
+                  <td data-label="Name" className="px-stack-lg py-4">
                     {f.file_url && (
                       <a href={f.file_url} target="_blank" rel="noreferrer" aria-label={`Open ${f.name}`} className="text-brand hover:text-brand-dark" title="Open file">
                         <Icon name="open_in_new" className="text-xl" />
@@ -149,7 +149,7 @@ function Tickets({ tickets, onNewTicket }) {
           </div>
         </form>
       )}
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         {tickets.length === 0
           ? <div className="p-stack-lg"><EmptyState icon="support" title="No tickets yet" description="Submit a ticket to get support." /></div>
           : (
@@ -165,10 +165,10 @@ function Tickets({ tickets, onNewTicket }) {
               <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
                 {tickets.map((t) => (
                   <tr key={t.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                    <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.subject}</td>
-                    <td className="px-stack-lg py-4"><Badge className="text-label-caps">{t.priority}</Badge></td>
-                    <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{t.createdAt}</td>
-                    <td className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[t.status] || 'neutral'}>{t.status}</StatusBadge></td>
+                    <td data-label="Subject" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.subject}</td>
+                    <td data-label="Priority" className="px-stack-lg py-4"><Badge className="text-label-caps">{t.priority}</Badge></td>
+                    <td data-label="Created" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{t.createdAt}</td>
+                    <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[t.status] || 'neutral'}>{t.status}</StatusBadge></td>
                   </tr>
                 ))}
               </tbody>
@@ -235,7 +235,7 @@ export default function PartnerPortal() {
 
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-outline-variant bg-brand-dark md:block">
-          <nav className="flex flex-col gap-1 p-3">
+          <nav aria-label="Portal navigation" className="flex flex-col gap-1 p-3">
             {partnerPortalTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
@@ -248,7 +248,7 @@ export default function PartnerPortal() {
         </aside>
 
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-margin-mobile py-2 md:hidden">
+          <div role="tablist" aria-label="Portal navigation" className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-margin-mobile py-2 md:hidden">
             {partnerPortalTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${

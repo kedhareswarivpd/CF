@@ -60,7 +60,7 @@ export default function ResetPassword() {
         </div>
 
         {success ? (
-          <p className="flex items-center gap-1 rounded bg-green-50 p-3 text-body-sm text-green-700">
+          <p className="flex items-center gap-1 rounded bg-status-success-bg p-3 text-body-sm text-status-success-text">
             <Icon name="check_circle" className="text-base" />Password updated. Redirecting to sign in...
           </p>
         ) : !token ? (

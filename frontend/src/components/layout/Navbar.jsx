@@ -23,7 +23,7 @@ function ThemeToggle() {
     <button
       onClick={toggle}
       aria-label="Toggle theme"
-      className="relative flex h-7 w-14 items-center rounded-full border border-outline-variant bg-slate-100 px-1 transition-colors duration-300 dark:border-dark-outline-variant dark:bg-dark-surface-low"
+      className="relative flex h-7 w-14 items-center rounded-full border border-outline-variant bg-surface-container px-1 transition-colors duration-300 dark:border-dark-outline-variant dark:bg-dark-surface-low"
     >
       <span
         className={`absolute left-1 flex size-5 items-center justify-center rounded-full text-xs shadow transition-all duration-300 ${

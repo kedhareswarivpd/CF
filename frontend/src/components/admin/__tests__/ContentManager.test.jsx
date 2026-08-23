@@ -29,6 +29,8 @@ vi.mock('../../../api/cms.js', () => {
     testimonialsApi: emptyApi(),
     categoriesApi: emptyApi(),
     partnersApi: emptyApi(),
+    seoApi: emptyApi(),
+    pageContentApi: emptyApi(),
   };
 });
 

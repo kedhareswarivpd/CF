@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import Layout from './components/layout/Layout.jsx';
 import LoadingSpinner from './components/ui/LoadingSpinner.jsx';
+import ErrorBoundary from './components/ui/ErrorBoundary.jsx';
 import { employeePortalPaths } from './data/portal.js';
 import CookieConsent from './components/ui/CookieConsent.jsx';
 import usePageViewTracker from './hooks/usePageViewTracker.js';
@@ -63,6 +64,7 @@ export default function App() {
   usePageViewTracker();
   return (
     <>
+      <ErrorBoundary>
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route element={<Layout />}>
@@ -109,6 +111,7 @@ export default function App() {
           </Route>
         </Routes>
       </Suspense>
+      </ErrorBoundary>
       <CookieConsent />
     </>
   );

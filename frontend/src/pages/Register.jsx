@@ -87,7 +87,7 @@ export default function Register() {
             </p>
           )}
           {success && (
-            <p className="flex items-center gap-1 rounded bg-green-50 p-3 text-body-sm text-green-600">
+            <p className="flex items-center gap-1 rounded bg-status-success-bg p-3 text-body-sm text-status-success-text">
               <Icon name="check_circle" className="text-base" />{success}
             </p>
           )}

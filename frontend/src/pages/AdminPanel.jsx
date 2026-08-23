@@ -167,8 +167,8 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
         {statCards.map((s) => (
-          <div key={s.label} className="flex flex-col rounded-xl border border-blue-100 bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-dark-outline-variant dark:bg-dark-surface">
-            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/30">
+          <div key={s.label} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-dark-outline-variant dark:bg-dark-surface">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30 dark:bg-blue-900/30">
               <Icon name={s.icon} className={`text-2xl ${s.color}`} />
             </div>
             <p className="font-stat text-3xl font-bold text-brand-dark dark:text-dark-brand">{s.value}</p>
@@ -178,7 +178,7 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-blue-100 bg-white p-6 shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface">
           <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Project Status Breakdown</h3>
           <div className="space-y-4">
             {statusBreakdown.map((item) => (
@@ -199,7 +199,7 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken
           </div>
         </div>
 
-        <div className="rounded-xl border border-blue-100 bg-white p-6 shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface">
           <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Quick Actions</h3>
           <div className="space-y-3">
             {[
@@ -208,7 +208,7 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken
               { icon: 'upload_file', label: 'Upload Resource', desc: 'Add a whitepaper or downloadable asset', tab: 'media' },
               { icon: 'campaign', label: 'Send Notification', desc: 'Broadcast a message to all users', tab: 'notifications' },
             ].map((action) => (
-              <div key={action.label} onClick={() => setActiveTab(action.tab)} className="flex cursor-pointer items-center gap-4 rounded-lg bg-surface-container p-3 transition-colors hover:bg-blue-50 dark:bg-dark-surface-container dark:hover:bg-blue-900/30">
+              <div key={action.label} onClick={() => setActiveTab(action.tab)} className="flex cursor-pointer items-center gap-4 rounded-lg bg-surface-container p-3 transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:bg-dark-surface-container dark:hover:bg-blue-900/30">
                 <Icon name={action.icon} className="text-2xl text-brand" />
                 <div>
                   <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{action.label}</p>
@@ -220,7 +220,7 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken
         </div>
       </div>
 
-      <div className="rounded-xl border border-blue-100 bg-white p-6 shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface">
         <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-dark-brand">Recent Activity</h3>
         {recentLogs.length === 0 ? (
           <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">No recent activity.</p>
@@ -370,7 +370,7 @@ function UserManagement({ accessToken, currentRole }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">All Users</h3>
           <Button variant="primary" size="md" icon={<Icon name="person_add" />} onClick={() => { setShowAddForm((v) => !v); setEditingUser(null); }}>
@@ -423,12 +423,12 @@ function UserManagement({ accessToken, currentRole }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {users.map((u) => (
-                <tr key={u.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{u.name}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{u.email}</td>
-                  <td className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{u.role?.replace('_', ' ')}</td>
-                  <td className="px-stack-lg py-4"><StatusBadge variant={u.is_active ? 'success' : 'neutral'}>{u.is_active ? 'active' : 'inactive'}</StatusBadge></td>
-                  <td className="px-stack-lg py-4">
+                <tr key={u.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
+                  <td data-label="Name" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{u.name}</td>
+                  <td data-label="Email" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{u.email}</td>
+                  <td data-label="Role" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{u.role?.replace('_', ' ')}</td>
+                  <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={u.is_active ? 'success' : 'neutral'}>{u.is_active ? 'active' : 'inactive'}</StatusBadge></td>
+                  <td data-label="Actions" className="px-stack-lg py-4">
                     <div className="flex gap-2">
                       <button onClick={() => handleEdit(u)} aria-label={`Edit ${u.name}`} className="text-ink-muted transition-colors hover:text-brand" title="Edit">
                         <Icon name="edit" className="text-lg" />
@@ -441,14 +441,14 @@ function UserManagement({ accessToken, currentRole }) {
                 </tr>
               ))}
               {!users.length && (
-                <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No users found.</td></tr>
+                <tr><td data-label="Name" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No users found.</td></tr>
               )}
             </tbody>
           </table>
         )}
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">User Roles</h3>
         </div>
@@ -465,13 +465,13 @@ function UserManagement({ accessToken, currentRole }) {
               });
               const roleList = Object.keys(roleCounts).sort((a, b) => roleCounts[b] - roleCounts[a]);
               if (!roleList.length) {
-                return <tr><td colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No roles found.</td></tr>;
+                return <tr><td data-label="Role" colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No roles found.</td></tr>;
               }
               return roleList.map((role) => (
-                <tr key={role} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                  <td className="px-stack-lg py-4 text-body-md capitalize text-brand-dark dark:text-dark-brand">{role.replace('_', ' ')}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{roleCounts[role]}</td>
-                  <td className="px-stack-lg py-4 text-body-md capitalize text-ink-muted dark:text-dark-ink-muted">{role === 'super_admin' ? 'Full access' : role.replace('_', ' ') + ' portal access'}</td>
+                <tr key={role} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
+                  <td data-label="Role" className="px-stack-lg py-4 text-body-md capitalize text-brand-dark dark:text-dark-brand">{role.replace('_', ' ')}</td>
+                  <td data-label="Users" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{roleCounts[role]}</td>
+                  <td data-label="Permissions" className="px-stack-lg py-4 text-body-md capitalize text-ink-muted dark:text-dark-ink-muted">{role === 'super_admin' ? 'Full access' : role.replace('_', ' ') + ' portal access'}</td>
                 </tr>
               ));
             })()}
@@ -495,7 +495,7 @@ function EmployeeManagement({ accessToken }) {
   }, [accessToken]);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
         <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Employees ({employees.length})</h3>
       </div>
@@ -506,17 +506,17 @@ function EmployeeManagement({ accessToken }) {
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {employees.map((e) => (
-              <tr key={e.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                <td className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-dark-brand">{e.name || '—'}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.employee_code || '—'}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.email || '—'}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.designation || '—'}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.department_name || '—'}</td>
-                <td className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{(e.employment_type || '—').replace('_', ' ')}</td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={e.status === 'active' ? 'success' : 'neutral'}>{e.status}</StatusBadge></td>
+              <tr key={e.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
+                <td data-label="Name" className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-dark-brand">{e.name || '—'}</td>
+                <td data-label="Code" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.employee_code || '—'}</td>
+                <td data-label="Email" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.email || '—'}</td>
+                <td data-label="Designation" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.designation || '—'}</td>
+                <td data-label="Department" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.department_name || '—'}</td>
+                <td data-label="Employment" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{(e.employment_type || '—').replace('_', ' ')}</td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={e.status === 'active' ? 'success' : 'neutral'}>{e.status}</StatusBadge></td>
               </tr>
             ))}
-            {!employees.length && <tr><td colSpan={7} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No employees found.</td></tr>}
+            {!employees.length && <tr><td data-label="Name" colSpan={7} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No employees found.</td></tr>}
           </tbody>
         </table>
       )}
@@ -537,7 +537,7 @@ function ClientManagement({ accessToken }) {
   }, [accessToken]);
 
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
         <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Clients</h3>
       </div>
@@ -548,14 +548,14 @@ function ClientManagement({ accessToken }) {
           </thead>
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {clients.map((c) => (
-              <tr key={c.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.company_name}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.industry || '—'}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.country || '—'}</td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={c.status === 'active' ? 'success' : 'neutral'}>{c.status || 'active'}</StatusBadge></td>
+              <tr key={c.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
+                <td data-label="Company" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.company_name}</td>
+                <td data-label="Industry" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.industry || '—'}</td>
+                <td data-label="Country" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.country || '—'}</td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={c.status === 'active' ? 'success' : 'neutral'}>{c.status || 'active'}</StatusBadge></td>
               </tr>
             ))}
-            {!clients.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No clients found.</td></tr>}
+            {!clients.length && <tr><td data-label="Company" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No clients found.</td></tr>}
           </tbody>
         </table>
       )}
@@ -686,7 +686,7 @@ function ProjectsManagement({ accessToken }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">All Projects</h3>
           <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => { setShowAddForm((v) => !v); setEditingProject(null); }}>
@@ -741,17 +741,17 @@ function ProjectsManagement({ accessToken }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {projects.map((p) => (
-                <tr key={p.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.title}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.industry || '—'}</td>
-                  <td className="px-stack-lg py-4"><StatusBadge variant={PROJECT_STATUS_VARIANT[p.status] || 'neutral'}>{p.status?.replace('_', ' ')}</StatusBadge></td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.progress_percent ?? 0}%</td>
-                  <td className="px-stack-lg py-4">
+                <tr key={p.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
+                  <td data-label="Title" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.title}</td>
+                  <td data-label="Industry" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.industry || '—'}</td>
+                  <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={PROJECT_STATUS_VARIANT[p.status] || 'neutral'}>{p.status?.replace('_', ' ')}</StatusBadge></td>
+                  <td data-label="Progress" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.progress_percent ?? 0}%</td>
+                  <td data-label="Published" className="px-stack-lg py-4">
                     <button onClick={() => togglePublish(p)} className="cursor-pointer">
                       <StatusBadge variant={p.is_published ? 'success' : 'neutral'}>{p.is_published ? 'published' : 'draft'}</StatusBadge>
                     </button>
                   </td>
-                  <td className="px-stack-lg py-4 text-right">
+                  <td data-label="Actions" className="px-stack-lg py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <button onClick={() => handleEdit(p)} aria-label={`Edit ${p.title}`} className="text-ink-muted transition-colors hover:text-brand" title="Edit">
                         <Icon name="edit" className="text-lg" />
@@ -764,7 +764,7 @@ function ProjectsManagement({ accessToken }) {
                 </tr>
               ))}
               {!projects.length && (
-                <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No projects found.</td></tr>
+                <tr><td data-label="Title" colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No projects found.</td></tr>
               )}
             </tbody>
           </table>
@@ -871,7 +871,7 @@ function RolesManagement({ accessToken }) {
   if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
         <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Custom Roles</h3>
         <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowRoleForm((v) => !v)}>
@@ -889,11 +889,11 @@ function RolesManagement({ accessToken }) {
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
           {roles.map((r) => (
-            <tr key={r.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
-              <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{r.name}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.slug}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.description || '—'}</td>
-              <td className="px-stack-lg py-4 text-right">
+            <tr key={r.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
+              <td data-label="Name" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{r.name}</td>
+              <td data-label="Slug" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.slug}</td>
+              <td data-label="Description" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.description || '—'}</td>
+              <td data-label="Name" className="px-stack-lg py-4 text-right">
                 {!r.is_system && (
                   <button onClick={() => removeRole(r)} aria-label={`Delete role ${r.name}`} className="text-ink-muted transition-colors hover:text-status-error-text">
                     <Icon name="delete" className="text-lg" />
@@ -903,7 +903,7 @@ function RolesManagement({ accessToken }) {
             </tr>
           ))}
           {!roles.length && (
-            <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No custom roles yet.</td></tr>
+            <tr><td data-label="Name" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No custom roles yet.</td></tr>
           )}
         </tbody>
       </table>
@@ -936,7 +936,7 @@ function PermissionsManagement({ accessToken }) {
   if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
         <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Permissions</h3>
         <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowPermForm((v) => !v)}>
@@ -954,11 +954,11 @@ function PermissionsManagement({ accessToken }) {
         </thead>
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
           {permissions.map((p) => (
-            <tr key={p.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
-              <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.name}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.module}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.action}</td>
-              <td className="px-stack-lg py-4 text-right">
+            <tr key={p.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
+              <td data-label="Name" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.name}</td>
+              <td data-label="Module" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.module}</td>
+              <td data-label="Action" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.action}</td>
+              <td data-label="Name" className="px-stack-lg py-4 text-right">
                 <button onClick={() => removePermission(p)} aria-label={`Delete permission ${p.name}`} className="text-ink-muted transition-colors hover:text-status-error-text">
                   <Icon name="delete" className="text-lg" />
                 </button>
@@ -966,7 +966,7 @@ function PermissionsManagement({ accessToken }) {
             </tr>
           ))}
           {!permissions.length && (
-            <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No permissions yet.</td></tr>
+            <tr><td data-label="Name" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No permissions yet.</td></tr>
           )}
         </tbody>
       </table>
@@ -1021,7 +1021,7 @@ function MediaManagement({ accessToken }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Media Library</h3>
           <label className="flex cursor-pointer items-center gap-2 rounded bg-brand px-4 py-2.5 font-label-caps text-label-caps uppercase text-white transition-all hover:bg-brand-dark">
@@ -1144,7 +1144,7 @@ function NotificationsManagement({ accessToken }) {
         <Button onClick={() => setShowSend((v) => !v)} variant="primary" size="md" icon={<Icon name="send" />}>Send Notification</Button>
       </div>
       {showSend && <SendNotificationForm accessToken={accessToken} onSent={() => { setShowSend(false); load(); }} onCancel={() => setShowSend(false)} />}
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">
             Notifications {unreadCount > 0 && <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">({unreadCount} unread)</span>}
@@ -1241,7 +1241,7 @@ function ReportsManagement({ accessToken }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Reports</h3>
           <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>
@@ -1262,11 +1262,11 @@ function ReportsManagement({ accessToken }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {reports.map((r) => (
-                <tr key={r.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{r.title}</td>
-                  <td className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{r.report_type}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.period}</td>
-                  <td className="flex items-center justify-end gap-3 px-stack-lg py-4 text-right">
+                <tr key={r.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
+                  <td data-label="Title" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{r.title}</td>
+                  <td data-label="Type" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{r.report_type}</td>
+                  <td data-label="Period" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.period}</td>
+                  <td data-label="Title" className="flex items-center justify-end gap-3 px-stack-lg py-4 text-right">
                     {r.file_url && (
                       <a href={r.file_url} target="_blank" rel="noreferrer" aria-label={`Download ${r.title}`} className="text-ink-muted transition-colors hover:text-brand">
                         <Icon name="download" className="text-lg" />
@@ -1279,7 +1279,7 @@ function ReportsManagement({ accessToken }) {
                 </tr>
               ))}
               {!reports.length && (
-                <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No reports generated yet.</td></tr>
+                <tr><td data-label="Title" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No reports generated yet.</td></tr>
               )}
             </tbody>
           </table>
@@ -1400,7 +1400,7 @@ function ContactsManagement({ accessToken }) {
         {loading ? (
           <div className="p-stack-lg"><LoadingSpinner /></div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="responsive-table overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
                 <tr>
@@ -1418,30 +1418,30 @@ function ContactsManagement({ accessToken }) {
               </thead>
               <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
                 {submissions.map((s) => (
-                  <tr key={s.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                    <td className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-dark-brand">{s.name}</td>
-                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.email}</td>
-                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.phone || '—'}</td>
-                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.company || '—'}</td>
-                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.department?.replace('_', ' ') || '—'}</td>
-                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.subject || '—'}</td>
-                    <td className="max-w-xs truncate px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.message}</td>
-                    <td className="px-stack-lg py-4">
+                  <tr key={s.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
+                    <td data-label="Name" className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-dark-brand">{s.name}</td>
+                    <td data-label="Email" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.email}</td>
+                    <td data-label="Phone" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.phone || '—'}</td>
+                    <td data-label="Company" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.company || '—'}</td>
+                    <td data-label="Department" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.department?.replace('_', ' ') || '—'}</td>
+                    <td data-label="Subject" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.subject || '—'}</td>
+                    <td data-label="Message" className="max-w-xs truncate px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.message}</td>
+                    <td data-label="Status" className="px-stack-lg py-4">
                       <StatusBadge variant={CONTACT_STATUS_OPTIONS.find((o) => o.value === s.status)?.variant || 'neutral'}>
                         {s.status?.replace('_', ' ') || 'new'}
                       </StatusBadge>
                     </td>
-                    <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">
+                    <td data-label="Submitted" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">
                       {s.created_at ? new Date(s.created_at).toLocaleString() : '—'}
                     </td>
-                    <td className="px-stack-lg py-4">
+                    <td data-label="Actions" className="px-stack-lg py-4">
                       <div className="flex items-center gap-1">
                         {/* Convert to Lead */}
                         {s.status !== 'spam' && (
                           <button
                             onClick={() => setConvertTarget(s)}
                             aria-label="Convert to Lead"
-                            className="rounded p-1 text-ink-muted transition-colors hover:bg-blue-50 hover:text-brand dark:text-dark-ink-muted dark:hover:bg-blue-900/30"
+                            className="rounded p-1 text-ink-muted transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 hover:text-brand dark:text-dark-ink-muted dark:hover:bg-blue-900/30"
                             title="Convert to Lead"
                           >
                             <Icon name="person_add" />
@@ -1486,7 +1486,7 @@ function ContactsManagement({ accessToken }) {
                 ))}
                 {!submissions.length && (
                   <tr>
-                    <td colSpan={10} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">
+                    <td data-label="Name" colSpan={10} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">
                       No contact submissions found.
                     </td>
                   </tr>
@@ -1531,7 +1531,7 @@ function AnalyticsManagement({ accessToken }) {
           <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Unique Pages Visited</p>
         </div>
       </div>
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Top Pages</h3>
         </div>
@@ -1542,12 +1542,12 @@ function AnalyticsManagement({ accessToken }) {
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {(summary.top_pages || []).map((p) => (
               <tr key={p.path} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.path}</td>
-                <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.count}</td>
+                <td data-label="Path" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.path}</td>
+                <td data-label="Views" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.count}</td>
               </tr>
             ))}
             {!(summary.top_pages || []).length && (
-              <tr><td colSpan={2} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No page views recorded yet.</td></tr>
+              <tr><td data-label="Path" colSpan={2} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No page views recorded yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -1625,7 +1625,7 @@ function SettingsManagement({ accessToken }) {
           </div>
         </form>
       )}
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <table className="w-full text-left">
           <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
             <tr><th className="px-stack-lg py-4">Key</th><th className="px-stack-lg py-4">Group</th><th className="px-stack-lg py-4">Value</th><th className="px-stack-lg py-4"></th></tr>
@@ -1633,14 +1633,14 @@ function SettingsManagement({ accessToken }) {
           <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {settings.map((s) => (
               <tr key={s.key} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                <td className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{s.key}</td>
-                <td className="px-stack-lg py-4"><Badge className="text-label-caps">{s.group}</Badge></td>
-                <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">
+                <td data-label="Key" className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{s.key}</td>
+                <td data-label="Group" className="px-stack-lg py-4"><Badge className="text-label-caps">{s.group}</Badge></td>
+                <td data-label="Value" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">
                   {editingKey === s.key
                     ? <input value={editValue} onChange={(e) => setEditValue(e.target.value)} className={FORM_INPUT_CLASS} autoFocus />
                     : (typeof s.value === 'string' ? s.value : JSON.stringify(s.value))}
                 </td>
-                <td className="px-stack-lg py-4">
+                <td data-label="Key" className="px-stack-lg py-4">
                   <div className="flex gap-2">
                     {editingKey === s.key ? (
                       <>
@@ -1658,7 +1658,7 @@ function SettingsManagement({ accessToken }) {
               </tr>
             ))}
             {!settings.length && (
-              <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No settings configured yet.</td></tr>
+              <tr><td data-label="Key" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No settings configured yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -1737,7 +1737,7 @@ function TrainingManagement({ accessToken }) {
         <Button onClick={() => setShowNew((v) => !v)} variant="primary" size="md" icon={<Icon name="add" />}>New Course</Button>
       </div>
       {showNew && <NewCourseForm accessToken={accessToken} onCreated={() => { setShowNew(false); load(); }} onCancel={() => setShowNew(false)} />}
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
           <table className="w-full text-left">
             <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
@@ -1746,13 +1746,13 @@ function TrainingManagement({ accessToken }) {
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {courses.map((c) => (
                 <tr key={c.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.title}</td>
-                  <td className="px-stack-lg py-4"><Badge className="text-label-caps">{c.category || '—'}</Badge></td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{c.duration_hours ? `${c.duration_hours}h` : '—'}</td>
-                  <td className="px-stack-lg py-4"><StatusBadge variant={c.is_published ? 'success' : 'neutral'}>{c.is_published ? 'published' : 'draft'}</StatusBadge></td>
+                  <td data-label="Title" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.title}</td>
+                  <td data-label="Category" className="px-stack-lg py-4"><Badge className="text-label-caps">{c.category || '—'}</Badge></td>
+                  <td data-label="Duration" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{c.duration_hours ? `${c.duration_hours}h` : '—'}</td>
+                  <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={c.is_published ? 'success' : 'neutral'}>{c.is_published ? 'published' : 'draft'}</StatusBadge></td>
                 </tr>
               ))}
-              {!courses.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No courses yet.</td></tr>}
+              {!courses.length && <tr><td data-label="Title" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No courses yet.</td></tr>}
             </tbody>
           </table>
         )}
@@ -1848,7 +1848,7 @@ function CareersManagement({ accessToken }) {
           <Button onClick={() => setShowNew((v) => !v)} variant="primary" size="md" icon={<Icon name="add" />}>New Position</Button>
         </div>
         {showNew && <NewCareerForm accessToken={accessToken} onCreated={() => { setShowNew(false); load(); }} onCancel={() => setShowNew(false)} />}
-        <div className="mt-4 overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="responsive-table mt-4 overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
           {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
             <table className="w-full text-left">
               <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
@@ -1857,13 +1857,13 @@ function CareersManagement({ accessToken }) {
               <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
                 {careers.map((c) => (
                   <tr key={c.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                    <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.title}</td>
-                    <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{c.department || '—'}</td>
-                    <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{c.location || '—'}</td>
-                    <td className="px-stack-lg py-4"><Badge className="text-label-caps">{c.employment_type?.replace('_', ' ')}</Badge></td>
+                    <td data-label="Title" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.title}</td>
+                    <td data-label="Department" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{c.department || '—'}</td>
+                    <td data-label="Location" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{c.location || '—'}</td>
+                    <td data-label="Type" className="px-stack-lg py-4"><Badge className="text-label-caps">{c.employment_type?.replace('_', ' ')}</Badge></td>
                   </tr>
                 ))}
-                {!careers.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No open positions — this list only shows currently-open postings.</td></tr>}
+                {!careers.length && <tr><td data-label="Title" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No open positions — this list only shows currently-open postings.</td></tr>}
               </tbody>
             </table>
           )}
@@ -1882,7 +1882,7 @@ function CareersManagement({ accessToken }) {
             ))}
           </div>
         </div>
-        <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+        <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
           {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
             <table className="w-full text-left">
               <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
@@ -1891,17 +1891,17 @@ function CareersManagement({ accessToken }) {
               <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
                 {applications.map((a) => (
                   <tr key={a.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                    <td className="px-stack-lg py-4">
+                    <td data-label="Applicant" className="px-stack-lg py-4">
                       <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{a.full_name}</p>
                       <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{a.email}</p>
                     </td>
-                    <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{careerTitleById[a.career_id] || '—'}</td>
-                    <td className="px-stack-lg py-4">
+                    <td data-label="Position" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{careerTitleById[a.career_id] || '—'}</td>
+                    <td data-label="Resume" className="px-stack-lg py-4">
                       <a href={a.resume_url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-body-sm text-brand hover:text-brand-dark">
                         <Icon name="description" className="text-lg" />Resume
                       </a>
                     </td>
-                    <td className="px-stack-lg py-4">
+                    <td data-label="Status" className="px-stack-lg py-4">
                       <select
                         value={a.status}
                         onChange={(e) => setAppStatus(a.id, e.target.value)}
@@ -1915,7 +1915,7 @@ function CareersManagement({ accessToken }) {
                     </td>
                   </tr>
                 ))}
-                {!applications.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No applications{statusFilter ? ` with status "${statusFilter}"` : ''} yet.</td></tr>}
+                {!applications.length && <tr><td data-label="Applicant" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No applications{statusFilter ? ` with status "${statusFilter}"` : ''} yet.</td></tr>}
               </tbody>
             </table>
           )}
@@ -1952,7 +1952,7 @@ function CommentsManagement({ accessToken }) {
           </button>
         ))}
       </div>
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
           <div className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {comments.map((c) => (
@@ -1993,7 +1993,7 @@ function NewsletterManagement({ accessToken }) {
   if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
 
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
         <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Newsletter Subscribers ({subscribers.length} active)</h3>
       </div>
@@ -2004,12 +2004,12 @@ function NewsletterManagement({ accessToken }) {
         <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
           {subscribers.map((s) => (
             <tr key={s.email} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-              <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{s.email}</td>
-              <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{s.name || '—'}</td>
-              <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{s.subscribed_at ? new Date(s.subscribed_at).toLocaleDateString() : '—'}</td>
+              <td data-label="Email" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{s.email}</td>
+              <td data-label="Name" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{s.name || '—'}</td>
+              <td data-label="Subscribed" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{s.subscribed_at ? new Date(s.subscribed_at).toLocaleDateString() : '—'}</td>
             </tr>
           ))}
-          {!subscribers.length && <tr><td colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No active subscribers yet.</td></tr>}
+          {!subscribers.length && <tr><td data-label="Email" colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No active subscribers yet.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -2029,7 +2029,7 @@ function AuditLogsManagement({ accessToken }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
           <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Audit Logs</h3>
         </div>
@@ -2047,15 +2047,15 @@ function AuditLogsManagement({ accessToken }) {
             </thead>
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {logs.map((l) => (
-                <tr key={l.id} className="transition-colors hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{l.action}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.entity_type || '—'}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.ip_address || '—'}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{new Date(l.created_at).toLocaleString()}</td>
+                <tr key={l.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
+                  <td data-label="Action" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{l.action}</td>
+                  <td data-label="Entity" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.entity_type || '—'}</td>
+                  <td data-label="IP Address" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.ip_address || '—'}</td>
+                  <td data-label="When" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{new Date(l.created_at).toLocaleString()}</td>
                 </tr>
               ))}
               {!logs.length && (
-                <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No audit log entries yet.</td></tr>
+                <tr><td data-label="Action" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No audit log entries yet.</td></tr>
               )}
             </tbody>
           </table>
@@ -2137,7 +2137,7 @@ export default function AdminPanel() {
 
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-outline-variant bg-brand-dark md:block">
-          <nav className="flex flex-col gap-1 p-3">
+          <nav aria-label="Portal navigation" className="flex flex-col gap-1 p-3">
             {adminPanelTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
@@ -2150,7 +2150,7 @@ export default function AdminPanel() {
         </aside>
 
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant px-margin-mobile py-2 md:hidden">
+          <div role="tablist" aria-label="Portal navigation" className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-margin-mobile py-2 md:hidden">
             {adminPanelTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${

@@ -49,18 +49,18 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
           { label: 'Pending Leaves', value: pendingLeaves, icon: 'beach_access' },
           { label: 'Latest Payslip', value: `$${payslips[0]?.netPay?.toLocaleString() || 0}`, icon: 'payments' },
         ].map((stat) => (
-          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
-            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
-              <Icon name={stat.icon} className="text-2xl text-blue-600" />
+          <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
             </div>
-            <p className="font-stat text-3xl font-bold capitalize text-slate-900">{stat.value}</p>
-            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
-            {stat.sub && <p className="mt-1 text-body-sm text-slate-400">{stat.sub}</p>}
+            <p className="font-stat text-3xl font-bold capitalize text-brand-dark dark:text-white">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{stat.label}</p>
+            {stat.sub && <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{stat.sub}</p>}
           </div>
         ))}
       </div>
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-4 font-display text-headline-sm text-slate-900">My Profile</h3>
+      <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+        <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-white">My Profile</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[
             { label: 'Name', value: profile.name },
@@ -71,8 +71,8 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
             { label: 'Status', value: profile.status },
           ].map((f) => (
             <div key={f.label}>
-              <span className="font-label-caps text-label-caps text-slate-500">{f.label}</span>
-              <p className="text-body-md capitalize text-slate-900">{f.value || '—'}</p>
+              <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{f.label}</span>
+              <p className="text-body-md capitalize text-brand-dark dark:text-white">{f.value || '—'}</p>
             </div>
           ))}
         </div>
@@ -142,22 +142,22 @@ function Attendance({ attendance, accessToken, onChange }) {
 
   return (
     <div className="space-y-stack-lg">
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-6 font-display text-headline-sm text-slate-900">Today&apos;s Attendance</h3>
+      <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+        <h3 className="mb-6 font-display text-headline-sm text-brand-dark dark:text-white">Today&apos;s Attendance</h3>
         <div className="mb-6 grid gap-gutter sm:grid-cols-3">
-          <div className="rounded-xl bg-blue-50 p-stack-lg text-center">
-            <Icon name="login" className="mb-2 text-3xl text-blue-600" />
-            <p className="font-label-caps text-label-caps text-blue-600">Check-In</p>
-            <p className="font-display text-headline-sm text-blue-600">{attendance.checkIn || '--'}</p>
+          <div className="rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30 p-stack-lg text-center">
+            <Icon name="login" className="mb-2 text-3xl text-brand" />
+            <p className="font-label-caps text-label-caps text-brand">Check-In</p>
+            <p className="font-display text-headline-sm text-brand">{attendance.checkIn || '--'}</p>
           </div>
-          <div className="rounded-xl bg-blue-50 p-stack-lg text-center">
-            <Icon name="logout" className="mb-2 text-3xl text-blue-600" />
-            <p className="font-label-caps text-label-caps text-blue-600">Check-Out</p>
-            <p className="font-display text-headline-sm text-blue-600">{attendance.checkOut || '--'}</p>
+          <div className="rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30 p-stack-lg text-center">
+            <Icon name="logout" className="mb-2 text-3xl text-brand" />
+            <p className="font-label-caps text-label-caps text-brand">Check-Out</p>
+            <p className="font-display text-headline-sm text-brand">{attendance.checkOut || '--'}</p>
           </div>
-          <div className="rounded-xl bg-blue-50 p-stack-lg text-center">
-            <Icon name="badge" className="mb-2 text-3xl text-blue-600" />
-            <p className="font-label-caps text-label-caps text-blue-600">Status</p>
+          <div className="rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30 p-stack-lg text-center">
+            <Icon name="badge" className="mb-2 text-3xl text-brand" />
+            <p className="font-label-caps text-label-caps text-brand">Status</p>
             <StatusBadge variant={attendance.status === 'present' ? 'success' : 'warning'} className="mt-1">
               {attendance.status || 'Not checked in'}
             </StatusBadge>
@@ -172,7 +172,7 @@ function Attendance({ attendance, accessToken, onChange }) {
           </Button>
         </div>
         {toast && (
-          <p className="mt-4 rounded-lg border border-green-200 bg-green-50 px-4 py-2 text-center text-body-sm text-green-600">
+          <p className="mt-4 rounded-lg border border-green-200 bg-status-success-bg px-4 py-2 text-center text-body-sm text-status-success-text">
             ✓ {toast}
           </p>
         )}
@@ -267,30 +267,30 @@ function Leaves({ leaves: initialLeaves, accessToken }) {
         <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>Apply Leave</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <select value={form.type} onChange={(e) => handleChange('type', e.target.value)}
-                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.type ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`}>
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:outline-none ${errors.type ? 'border-status-error focus:border-status-error' : 'border-outline-variant dark:border-dark-outline-variant focus:border-brand'}`}>
                 {LEAVE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
-              {errors.type && <p className="mt-1 text-body-xs text-red-500">{errors.type}</p>}
+              {errors.type && <p className="mt-1 text-body-xs text-status-error">{errors.type}</p>}
             </div>
             <div>
               <input type="date" value={form.from} onChange={(e) => handleChange('from', e.target.value)}
-                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.from ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
-              {errors.from && <p className="mt-1 text-body-xs text-red-500">{errors.from}</p>}
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:outline-none ${errors.from ? 'border-status-error focus:border-status-error' : 'border-outline-variant dark:border-dark-outline-variant focus:border-brand'}`} />
+              {errors.from && <p className="mt-1 text-body-xs text-status-error">{errors.from}</p>}
             </div>
             <div>
               <input type="date" value={form.to} onChange={(e) => handleChange('to', e.target.value)}
-                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.to ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
-              {errors.to && <p className="mt-1 text-body-xs text-red-500">{errors.to}</p>}
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:outline-none ${errors.to ? 'border-status-error focus:border-status-error' : 'border-outline-variant dark:border-dark-outline-variant focus:border-brand'}`} />
+              {errors.to && <p className="mt-1 text-body-xs text-status-error">{errors.to}</p>}
             </div>
           </div>
           <div>
             <textarea placeholder="Reason for leave (min 10 characters)" value={form.reason} onChange={(e) => handleChange('reason', e.target.value)}
-              rows={2} className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.reason ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
-            {errors.reason && <p className="mt-1 text-body-xs text-red-500">{errors.reason}</p>}
+              rows={2} className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:outline-none ${errors.reason ? 'border-status-error focus:border-status-error' : 'border-outline-variant dark:border-dark-outline-variant focus:border-brand'}`} />
+            {errors.reason && <p className="mt-1 text-body-xs text-status-error">{errors.reason}</p>}
           </div>
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit'}</Button>
@@ -300,24 +300,24 @@ function Leaves({ leaves: initialLeaves, accessToken }) {
       )}
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.includes('success') ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+          toast.includes('success') ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text' : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr><th className="px-stack-lg py-4">Type</th><th className="px-stack-lg py-4">From</th><th className="px-stack-lg py-4">To</th><th className="px-stack-lg py-4">Days</th><th className="px-stack-lg py-4">Status</th></tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {allLeaves.length === 0 ? (
-              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No leave requests yet.</td></tr>
+              <tr><td data-label="Type" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No leave requests yet.</td></tr>
             ) : allLeaves.map((l) => (
-              <tr key={l.id} className="transition-colors hover:bg-blue-50">
-                <td className="px-stack-lg py-4 text-body-md capitalize text-slate-900">{l.type}</td>
-                <td className="px-stack-lg py-4 text-body-md text-slate-600">{l.from}</td>
-                <td className="px-stack-lg py-4 text-body-md text-slate-600">{l.to}</td>
-                <td className="px-stack-lg py-4 text-body-md text-slate-600">{l.days}</td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={l.status === 'approved' ? 'success' : l.status === 'pending' ? 'warning' : 'error'}>{l.status}</StatusBadge></td>
+              <tr key={l.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                <td data-label="Type" className="px-stack-lg py-4 text-body-md capitalize text-brand-dark dark:text-white">{l.type}</td>
+                <td data-label="From" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{l.from}</td>
+                <td data-label="To" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{l.to}</td>
+                <td data-label="Days" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{l.days}</td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={l.status === 'approved' ? 'success' : l.status === 'pending' ? 'warning' : 'error'}>{l.status}</StatusBadge></td>
               </tr>
             ))}
           </tbody>
@@ -402,7 +402,7 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
   return (
     <div className="space-y-stack-md">
       <div className="flex items-center justify-between">
-        <p className="text-body-md text-slate-600">Total hours logged: <span className="font-semibold text-slate-900">{totalHours}h</span></p>
+        <p className="text-body-md text-ink-muted dark:text-dark-ink-muted">Total hours logged: <span className="font-semibold text-brand-dark dark:text-white">{totalHours}h</span></p>
         <div className="flex items-center gap-3">
           <button onClick={refresh} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-light">
             <Icon name="refresh" className="text-base" /> Refresh
@@ -411,23 +411,23 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
         </div>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm backdrop-blur">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm backdrop-blur">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <input type="date" value={form.date} onChange={(e) => handleChange('date', e.target.value)}
-                className={`w-full rounded border bg-brand px-4 py-3 text-body-md text-white placeholder-slate-300 focus:outline-none ${errors.date ? 'border-red-400 focus:border-red-500' : 'border-blue-700 focus:border-brand'}`} />
-              {errors.date && <p className="mt-1 text-body-xs text-red-400">{errors.date}</p>}
+                className={`w-full rounded border bg-brand px-4 py-3 text-body-md text-white placeholder-white/60 focus:outline-none ${errors.date ? 'border-status-error focus:border-status-error' : 'border-blue-700 focus:border-brand'}`} />
+              {errors.date && <p className="mt-1 text-body-xs text-status-error">{errors.date}</p>}
             </div>
             <input type="text" placeholder="Project name (optional)" value={form.project} onChange={(e) => handleChange('project', e.target.value)}
-              className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+              className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none" />
             <div>
               <input type="number" step="0.25" min="0.25" max="24" placeholder="Hours *" value={form.hours} onChange={(e) => handleChange('hours', e.target.value)}
-                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.hours ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
-              {errors.hours && <p className="mt-1 text-body-xs text-red-400">{errors.hours}</p>}
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:outline-none ${errors.hours ? 'border-status-error focus:border-status-error' : 'border-outline-variant dark:border-dark-outline-variant focus:border-brand'}`} />
+              {errors.hours && <p className="mt-1 text-body-xs text-status-error">{errors.hours}</p>}
             </div>
           </div>
           <textarea placeholder="Description" value={form.description} onChange={(e) => handleChange('description', e.target.value)}
-            rows={2} className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+            rows={2} className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none" />
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Logging...' : 'Log'}</Button>
             <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setErrors({}); }}>Cancel</Button>
@@ -436,24 +436,24 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
       )}
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.includes('success') || toast.includes('refreshed') ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+          toast.includes('success') || toast.includes('refreshed') ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text' : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-400">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Hours</th><th className="px-stack-lg py-4">Description</th></tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {allEntries.map((e) => (
-              <tr key={e.id} className="transition-colors hover:bg-blue-50">
-                <td className="px-stack-lg py-4 text-body-md text-slate-600">{e.date}</td>
-                <td className="px-stack-lg py-4 text-body-md text-slate-900">{e.project}</td>
-                <td className="px-stack-lg py-4 text-body-md text-slate-900">{e.hours}h</td>
-                <td className="px-stack-lg py-4 text-body-md text-slate-600">{e.description || '—'}</td>
+              <tr key={e.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                <td data-label="Date" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{e.date}</td>
+                <td data-label="Project" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-white">{e.project}</td>
+                <td data-label="Hours" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-white">{e.hours}h</td>
+                <td data-label="Description" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{e.description || '—'}</td>
               </tr>
             ))}
-            {!allEntries.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-slate-900/40">No timesheets logged yet. Click &ldquo;Log Hours&rdquo; to get started.</td></tr>}
+            {!allEntries.length && <tr><td data-label="Date" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-brand-dark dark:text-white/40">No timesheets logged yet. Click &ldquo;Log Hours&rdquo; to get started.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -474,22 +474,22 @@ function Payslips({ payslips }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
         {kpis.map((stat) => (
-          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
-              <Icon name={stat.icon} className="text-2xl text-blue-600" />
+          <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
             </div>
-            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
-            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
+            <p className="font-stat text-3xl font-bold text-brand-dark dark:text-white">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
-          <h3 className="font-display text-body-md font-bold text-slate-900">Monthly Compensation History</h3>
+      <div className="responsive-table overflow-hidden rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white shadow-sm">
+        <div className="border-b border-outline-variant/50 dark:border-dark-outline-variant/50 bg-surface-container dark:bg-dark-surface-container/50 px-6 py-4">
+          <h3 className="font-display text-body-md font-bold text-brand-dark dark:text-white">Monthly Compensation History</h3>
         </div>
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr>
               <th className="px-stack-lg py-4">Period</th>
               <th className="px-stack-lg py-4">Gross Earnings</th>
@@ -499,30 +499,30 @@ function Payslips({ payslips }) {
               <th className="px-stack-lg py-4 text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {payslips.length === 0 ? (
-              <tr><td colSpan={6} className="px-stack-lg py-12 text-center text-body-sm text-slate-500">No payslips available yet.</td></tr>
+              <tr><td data-label="Period" colSpan={6} className="px-stack-lg py-12 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No payslips available yet.</td></tr>
             ) : payslips.map((p) => (
-              <tr key={`${p.month}-${p.year}`} className="transition-colors hover:bg-blue-50/50">
-                <td className="px-stack-lg py-4 font-semibold text-slate-900">
+              <tr key={`${p.month}-${p.year}`} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30/50">
+                <td data-label="Period" className="px-stack-lg py-4 font-semibold text-brand-dark dark:text-white">
                   <div className="flex items-center gap-2">
-                    <Icon name="calendar_month" className="text-base text-blue-600" />
+                    <Icon name="calendar_month" className="text-base text-brand" />
                     <span>{p.month} {p.year}</span>
                   </div>
                 </td>
-                <td className="px-stack-lg py-4 text-body-md text-slate-600">${p.grossPay.toLocaleString()}</td>
-                <td className="px-stack-lg py-4 text-body-md text-red-500">-${p.deductions.toLocaleString()}</td>
-                <td className="px-stack-lg py-4 text-body-md font-bold text-emerald-600">${p.netPay.toLocaleString()}</td>
-                <td className="px-stack-lg py-4"><StatusBadge variant="success">{p.status}</StatusBadge></td>
-                <td className="px-stack-lg py-4 text-right">
+                <td data-label="Gross Earnings" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">${p.grossPay.toLocaleString()}</td>
+                <td data-label="Deductions" className="px-stack-lg py-4 text-body-md text-status-error">-${p.deductions.toLocaleString()}</td>
+                <td data-label="Net Payout" className="px-stack-lg py-4 text-body-md font-bold text-emerald-600">${p.netPay.toLocaleString()}</td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant="success">{p.status}</StatusBadge></td>
+                <td data-label="Action" className="px-stack-lg py-4 text-right">
                   {p.file_url ? (
                     <a
                       href={p.file_url} target="_blank" rel="noreferrer" aria-label={`Download ${p.month} ${p.year} payslip`}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-body-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-500 hover:text-blue-600 active:scale-95">
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white px-3 py-1.5 text-body-xs font-semibold text-ink dark:text-white shadow-sm transition hover:border-blue-500 hover:text-brand active:scale-95">
                       <Icon name="download" className="text-sm" /> Slip
                     </a>
                   ) : (
-                    <span className="text-body-xs text-slate-400">Not available</span>
+                    <span className="text-body-xs text-ink-muted dark:text-dark-ink-muted">Not available</span>
                   )}
                 </td>
               </tr>
@@ -551,22 +551,22 @@ function Tasks({ tasks }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
         {kpis.map((stat) => (
-          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
-              <Icon name={stat.icon} className="text-2xl text-blue-600" />
+          <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
             </div>
-            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
-            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
+            <p className="font-stat text-3xl font-bold text-brand-dark dark:text-white">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-100 bg-slate-50/50 px-6 py-4">
-          <h3 className="font-display text-body-md font-bold text-slate-900">Task Assignments & Milestones</h3>
+      <div className="responsive-table overflow-hidden rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white shadow-sm">
+        <div className="border-b border-outline-variant/50 dark:border-dark-outline-variant/50 bg-surface-container dark:bg-dark-surface-container/50 px-6 py-4">
+          <h3 className="font-display text-body-md font-bold text-brand-dark dark:text-white">Task Assignments & Milestones</h3>
         </div>
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr>
               <th className="px-stack-lg py-4">Task Deliverable</th>
               <th className="px-stack-lg py-4">Project</th>
@@ -575,21 +575,21 @@ function Tasks({ tasks }) {
               <th className="px-stack-lg py-4">Due Date</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {tasks.length === 0 ? (
-              <tr><td colSpan={5} className="px-stack-lg py-12 text-center text-body-sm text-slate-500">No tasks assigned yet.</td></tr>
+              <tr><td data-label="Task Deliverable" colSpan={5} className="px-stack-lg py-12 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No tasks assigned yet.</td></tr>
             ) : tasks.map((t) => (
-              <tr key={t.id} className="transition-colors hover:bg-blue-50/50">
-                <td className="px-stack-lg py-4 font-semibold text-slate-900">{t.title}</td>
-                <td className="px-stack-lg py-4">
-                  <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-body-xs font-semibold text-slate-700">
-                    <Icon name="folder" className="text-xs text-blue-500" />
+              <tr key={t.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30/50">
+                <td data-label="Task Deliverable" className="px-stack-lg py-4 font-semibold text-brand-dark dark:text-white">{t.title}</td>
+                <td data-label="Project" className="px-stack-lg py-4">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-surface-container dark:bg-dark-surface-container px-2 py-0.5 text-body-xs font-semibold text-ink dark:text-white">
+                    <Icon name="folder" className="text-xs text-brand" />
                     {t.project}
                   </span>
                 </td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={priorityColor[t.priority] || 'neutral'}>{t.priority}</StatusBadge></td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[t.status] || 'neutral'}>{t.status.replace('_', ' ')}</StatusBadge></td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{t.due}</td>
+                <td data-label="Priority" className="px-stack-lg py-4"><StatusBadge variant={priorityColor[t.priority] || 'neutral'}>{t.priority}</StatusBadge></td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={statusColor[t.status] || 'neutral'}>{t.status.replace('_', ' ')}</StatusBadge></td>
+                <td data-label="Due Date" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.due}</td>
               </tr>
             ))}
           </tbody>
@@ -612,29 +612,29 @@ function Projects({ projects }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
         {kpis.map((stat) => (
-          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
-              <Icon name={stat.icon} className="text-2xl text-blue-600" />
+          <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
             </div>
-            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
-            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
+            <p className="font-stat text-3xl font-bold text-brand-dark dark:text-white">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{stat.label}</p>
           </div>
         ))}
       </div>
       <section>
         <h3 className="mb-4 font-display text-headline-sm text-white">Assigned Projects</h3>
-        {projects.length === 0 && <p className="py-8 text-center text-body-sm text-slate-600">No projects assigned yet.</p>}
+        {projects.length === 0 && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No projects assigned yet.</p>}
         <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((p) => (
-            <div key={p.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="font-display text-body-md font-semibold text-slate-900">{p.title}</p>
-              <p className="mt-1 text-body-xs uppercase tracking-wide text-slate-600">Deadline: {p.deadline}</p>
-              <p className="mt-2 flex-1 text-body-sm text-slate-600">Role: {p.role}</p>
+            <div key={p.id} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+              <p className="font-display text-body-md font-semibold text-brand-dark dark:text-white">{p.title}</p>
+              <p className="mt-1 text-body-xs uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">Deadline: {p.deadline}</p>
+              <p className="mt-2 flex-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">Role: {p.role}</p>
               <div className="mt-4 flex items-center justify-between">
                 <StatusBadge variant={statusColor[p.status]}>{p.status.replace('_', ' ')}</StatusBadge>
-                <span className="text-body-sm font-semibold text-slate-900">{p.progress}%</span>
+                <span className="text-body-sm font-semibold text-brand-dark dark:text-white">{p.progress}%</span>
               </div>
-              <div className="mt-2 h-2 overflow-hidden rounded-full bg-slate-100">
+              <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
                 <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress}%` }} />
               </div>
             </div>
@@ -658,30 +658,30 @@ function Performance({ reviews }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
         {kpis.map((stat) => (
-          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
-              <Icon name={stat.icon} className="text-2xl text-blue-600" />
+          <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
             </div>
-            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
-            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
+            <p className="font-stat text-3xl font-bold text-brand-dark dark:text-white">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{stat.label}</p>
           </div>
         ))}
       </div>
       <section>
         <h3 className="mb-4 font-display text-headline-sm text-white">Performance Reviews</h3>
-        {reviews.length === 0 && <p className="py-8 text-center text-body-sm text-slate-600">No performance reviews yet.</p>}
+        {reviews.length === 0 && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No performance reviews yet.</p>}
         <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
           {reviews.map((r) => (
-            <div key={r.period} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <p className="font-display text-body-md font-semibold text-slate-900">{r.period}</p>
-              <p className="mt-1 text-body-xs uppercase tracking-wide text-slate-600">Goals Set: {r.goals} &middot; Achieved: {r.achieved}</p>
-              <p className="mt-2 flex-1 text-body-sm text-slate-600">&ldquo;{r.feedback}&rdquo;</p>
+            <div key={r.period} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+              <p className="font-display text-body-md font-semibold text-brand-dark dark:text-white">{r.period}</p>
+              <p className="mt-1 text-body-xs uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">Goals Set: {r.goals} &middot; Achieved: {r.achieved}</p>
+              <p className="mt-2 flex-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">&ldquo;{r.feedback}&rdquo;</p>
               <div className="mt-4 flex items-center justify-between">
                 <div className="flex items-center gap-1">
                   <Icon name="star" className="text-xl text-yellow-400" />
-                  <span className="font-stat text-body-md font-semibold text-slate-900">{r.rating}/5</span>
+                  <span className="font-stat text-body-md font-semibold text-brand-dark dark:text-white">{r.rating}/5</span>
                 </div>
-                <span className="text-body-sm text-slate-600">{Math.round((r.achieved / r.goals) * 100)}% achieved</span>
+                <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{Math.round((r.achieved / r.goals) * 100)}% achieved</span>
               </div>
             </div>
           ))}
@@ -703,12 +703,12 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
         {available.length > 0 ? (
           <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
             {available.map((c) => (
-              <div key={c.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all hover:shadow-md">
-                <p className="font-display text-body-md font-semibold text-slate-900">{c.title}</p>
-                <p className="mt-1 font-label-caps text-body-xs uppercase tracking-wide text-blue-600">{c.category}</p>
-                <p className="mt-2 flex-1 text-body-sm text-slate-600">{c.description || 'No description available.'}</p>
-                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                  <span className="text-body-sm font-medium text-slate-500">
+              <div key={c.id} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm transition-all hover:shadow-md">
+                <p className="font-display text-body-md font-semibold text-brand-dark dark:text-white">{c.title}</p>
+                <p className="mt-1 font-label-caps text-body-xs uppercase tracking-wide text-brand">{c.category}</p>
+                <p className="mt-2 flex-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.description || 'No description available.'}</p>
+                <div className="mt-4 flex items-center justify-between border-t border-outline-variant/50 dark:border-dark-outline-variant/50 pt-3">
+                  <span className="text-body-sm font-medium text-ink-muted dark:text-dark-ink-muted">
                     {c.duration_hours ? `${c.duration_hours} hrs` : 'Self-paced'}
                   </span>
                   <button
@@ -725,7 +725,7 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-body-sm text-slate-500 shadow-sm">
+          <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted shadow-sm">
             You are enrolled in all available courses, or no new courses are listed.
           </div>
         )}
@@ -733,9 +733,9 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
 
       <section>
         <h3 className="mb-4 font-display text-headline-sm text-white">My Enrollments</h3>
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+        <div className="responsive-table overflow-hidden rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white shadow-sm">
           <table className="w-full text-left">
-            <thead className="border-b border-slate-200 bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+            <thead className="border-b border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
               <tr>
                 <th className="px-6 py-4">Course</th>
                 <th className="px-6 py-4">Category</th>
@@ -744,16 +744,16 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
                 <th className="px-6 py-4">Score</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {courses.length === 0 ? (
-                <tr><td colSpan={5} className="px-6 py-8 text-center text-body-sm text-slate-500">No enrollments yet. Browse available courses above and click Enroll!</td></tr>
+                <tr><td data-label="Course" colSpan={5} className="px-6 py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No enrollments yet. Browse available courses above and click Enroll!</td></tr>
               ) : courses.map((c) => (
-                <tr key={c.id} className="transition-colors hover:bg-slate-50">
-                  <td className="px-6 py-4 font-medium text-slate-900">{c.title}</td>
-                  <td className="px-6 py-4 text-body-sm text-slate-600">{c.category}</td>
-                  <td className="px-6 py-4"><StatusBadge variant={statusColor[c.status] || 'neutral'}>{c.status?.replace('_', ' ')}</StatusBadge></td>
-                  <td className="px-6 py-4 text-body-sm text-slate-600">{c.completedOn || '—'}</td>
-                  <td className="px-6 py-4 text-body-sm font-semibold text-slate-900">{c.score || '—'}</td>
+                <tr key={c.id} className="transition-colors hover:bg-surface-container dark:bg-dark-surface-container">
+                  <td data-label="Course" className="px-6 py-4 font-medium text-brand-dark dark:text-white">{c.title}</td>
+                  <td data-label="Category" className="px-6 py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.category}</td>
+                  <td data-label="Status" className="px-6 py-4"><StatusBadge variant={statusColor[c.status] || 'neutral'}>{c.status?.replace('_', ' ')}</StatusBadge></td>
+                  <td data-label="Completed On" className="px-6 py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.completedOn || '—'}</td>
+                  <td data-label="Score" className="px-6 py-4 text-body-sm font-semibold text-brand-dark dark:text-white">{c.score || '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -778,29 +778,29 @@ function Documents({ docs }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
         {kpis.map((stat) => (
-          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
-              <Icon name={stat.icon} className="text-2xl text-blue-600" />
+          <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
             </div>
-            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
-            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
+            <p className="font-stat text-3xl font-bold text-brand-dark dark:text-white">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{stat.label}</p>
           </div>
         ))}
       </div>
       <section>
         <h3 className="mb-4 font-display text-headline-sm text-white">My Documents</h3>
-        {docs.length === 0 && <p className="py-8 text-center text-body-sm text-slate-600">No documents available yet.</p>}
+        {docs.length === 0 && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No documents available yet.</p>}
         <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
           {docs.map((d) => (
-            <div key={d.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="mb-3 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
-                <Icon name={typeIcon[d.type] || 'description'} className="text-2xl text-blue-600" />
+            <div key={d.id} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+              <div className="mb-3 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
+                <Icon name={typeIcon[d.type] || 'description'} className="text-2xl text-brand" />
               </div>
-              <p className="font-display text-body-md font-semibold text-slate-900">{d.name}</p>
-              <p className="mt-1 text-body-xs uppercase tracking-wide text-slate-600">{d.type.replace('_', ' ')}{d.size ? ` · ${d.size}` : ''}</p>
-              <p className="mt-2 flex-1 text-body-sm text-slate-600">{d.uploadedOn}</p>
+              <p className="font-display text-body-md font-semibold text-brand-dark dark:text-white">{d.name}</p>
+              <p className="mt-1 text-body-xs uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">{d.type.replace('_', ' ')}{d.size ? ` · ${d.size}` : ''}</p>
+              <p className="mt-2 flex-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{d.uploadedOn}</p>
               <div className="mt-4 flex items-center justify-between">
-                <span className="text-body-sm text-slate-600">Document</span>
+                <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Document</span>
                 {d.file_url ? (
                   <a
                     href={d.file_url} target="_blank" rel="noreferrer"
@@ -810,7 +810,7 @@ function Documents({ docs }) {
                     Download
                   </a>
                 ) : (
-                  <span className="text-body-sm text-slate-400">Not available</span>
+                  <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Not available</span>
                 )}
               </div>
             </div>
@@ -839,7 +839,7 @@ function Leads({ leads, accessToken, onRefresh }) {
   const [proposalForm, setProposalForm] = useState({ scope_summary: '', price: '' });
   const [demoForm, setDemoForm] = useState({ scheduled_at: '', duration_minutes: 30, meeting_link: '' });
   const [toast, setToast] = useState('');
-  const inputClass = 'border border-slate-200 rounded px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 bg-white focus:outline-none focus:border-brand';
+  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 bg-white focus:outline-none focus:border-brand';
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -975,29 +975,29 @@ function Leads({ leads, accessToken, onRefresh }) {
         <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>New Lead</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <input type="text" placeholder="Company (optional)" value={form.company} onChange={(e) => handleChange('company', e.target.value)} className={inputClass} />
             </div>
             <div>
-              <input type="text" placeholder="Contact name *" value={form.contact_name} onChange={(e) => handleChange('contact_name', e.target.value)} className={`${inputClass} ${errors.contact_name ? 'border-red-400' : ''}`} />
-              {errors.contact_name && <p className="mt-1 text-body-xs text-red-500">{errors.contact_name}</p>}
+              <input type="text" placeholder="Contact name *" value={form.contact_name} onChange={(e) => handleChange('contact_name', e.target.value)} className={`${inputClass} ${errors.contact_name ? 'border-status-error' : ''}`} />
+              {errors.contact_name && <p className="mt-1 text-body-xs text-status-error">{errors.contact_name}</p>}
             </div>
             <div>
-              <input type="email" placeholder="Email *" value={form.email} onChange={(e) => handleChange('email', e.target.value)} className={`${inputClass} ${errors.email ? 'border-red-400' : ''}`} />
-              {errors.email && <p className="mt-1 text-body-xs text-red-500">{errors.email}</p>}
+              <input type="email" placeholder="Email *" value={form.email} onChange={(e) => handleChange('email', e.target.value)} className={`${inputClass} ${errors.email ? 'border-status-error' : ''}`} />
+              {errors.email && <p className="mt-1 text-body-xs text-status-error">{errors.email}</p>}
             </div>
             <div>
-              <input type="text" placeholder="Phone (optional)" value={form.phone} onChange={(e) => handleChange('phone', e.target.value)} className={`${inputClass} ${errors.phone ? 'border-red-400' : ''}`} />
-              {errors.phone && <p className="mt-1 text-body-xs text-red-500">{errors.phone}</p>}
+              <input type="text" placeholder="Phone (optional)" value={form.phone} onChange={(e) => handleChange('phone', e.target.value)} className={`${inputClass} ${errors.phone ? 'border-status-error' : ''}`} />
+              {errors.phone && <p className="mt-1 text-body-xs text-status-error">{errors.phone}</p>}
             </div>
             <select value={form.source} onChange={(e) => handleChange('source', e.target.value)} className={inputClass}>
               {LEAD_SOURCE_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
             </select>
             <div>
-              <input type="number" min="0" placeholder="Estimated value ($)" value={form.estimated_value} onChange={(e) => handleChange('estimated_value', e.target.value)} className={`${inputClass} ${errors.estimated_value ? 'border-red-400' : ''}`} />
-              {errors.estimated_value && <p className="mt-1 text-body-xs text-red-500">{errors.estimated_value}</p>}
+              <input type="number" min="0" placeholder="Estimated value ($)" value={form.estimated_value} onChange={(e) => handleChange('estimated_value', e.target.value)} className={`${inputClass} ${errors.estimated_value ? 'border-status-error' : ''}`} />
+              {errors.estimated_value && <p className="mt-1 text-body-xs text-status-error">{errors.estimated_value}</p>}
             </div>
           </div>
           <div className="flex gap-2">
@@ -1008,35 +1008,35 @@ function Leads({ leads, accessToken, onRefresh }) {
       )}
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.includes('successfully') ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+          toast.includes('successfully') ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text' : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Est. Value</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Quick Actions</th></tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {leads.map((l) => (
               <Fragment key={l.id}>
-                <tr className="transition-colors hover:bg-blue-50">
-                   <td className="px-stack-lg py-4">
-                    <p className="text-body-md font-semibold text-slate-900">{l.company || '—'}</p>
-                    <p className="text-body-sm text-slate-600">{l.contact_name}</p>
+                <tr className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                   <td data-label="Company / Contact" className="px-stack-lg py-4">
+                    <p className="text-body-md font-semibold text-brand-dark dark:text-white">{l.company || '—'}</p>
+                    <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.contact_name}</p>
                   </td>
-                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{l.email}</td>
-                  <td className="px-stack-lg py-4 text-body-sm capitalize text-slate-600">{l.source?.replace('_', ' ')}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-slate-900">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
-                  <td className="px-stack-lg py-4">
+                  <td data-label="Email" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.email}</td>
+                  <td data-label="Source" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{l.source?.replace('_', ' ')}</td>
+                  <td data-label="Est. Value" className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-white">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
+                  <td data-label="Status" className="px-stack-lg py-4">
                     <div className="flex items-center gap-2">
                       <StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge>
                       <select value={l.status} disabled={savingId === l.id || !accessToken} onChange={(e) => handleStatusChange(l.id, e.target.value)}
-                        className="rounded border border-slate-200 bg-white px-2 py-1 text-body-sm disabled:opacity-50">
+                        className="rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-2 py-1 text-body-sm disabled:opacity-50">
                         {LEAD_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
                       </select>
                     </div>
                   </td>
-                  <td className="px-stack-lg py-4">
+                  <td data-label="Quick Actions" className="px-stack-lg py-4">
                     {PIPELINE_ACTIVE_STATUSES.includes(l.status) && accessToken && (
                       <div className="flex flex-col gap-1">
                         <RowAction disabled={savingId === l.id} onClick={() => openQuickAction(l.id, 'log_call')}>Log Call</RowAction>
@@ -1045,18 +1045,18 @@ function Leads({ leads, accessToken, onRefresh }) {
                       </div>
                     )}
                     {!accessToken && l.status !== 'disqualified' && l.status !== 'converted' && (
-                      <span className="text-body-xs text-slate-400">Login to use quick actions</span>
+                      <span className="text-body-xs text-ink-muted dark:text-dark-ink-muted">Login to use quick actions</span>
                     )}
                   </td>
                 </tr>
                 {expandedLeadId === l.id && (
-                  <tr className="bg-blue-50/30">
-                    <td colSpan={6} className="px-stack-lg py-4">
+                  <tr className="bg-accent-cyan-pale dark:bg-blue-900/30/30">
+                    <td data-label="Company / Contact" colSpan={6} className="px-stack-lg py-4">
                       {activeAction === 'log_call' && (
                         <div className="space-y-3">
-                          <p className="font-label-caps text-label-caps uppercase text-slate-600">Log Call — {l.company || l.contact_name}</p>
+                          <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Log Call — {l.company || l.contact_name}</p>
                           <textarea placeholder="Enter call notes..." value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} rows={3}
-                            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                            className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none" />
                           <div className="flex gap-2">
                             <Button type="button" variant="primary" size="md" disabled={savingId === l.id} onClick={() => handleLogCall(l.id)}>Save Note</Button>
                             <Button type="button" variant="outline" size="md" onClick={closeQuickAction}>Cancel</Button>
@@ -1065,11 +1065,11 @@ function Leads({ leads, accessToken, onRefresh }) {
                       )}
                       {activeAction === 'send_proposal' && (
                         <div className="space-y-3">
-                          <p className="font-label-caps text-label-caps uppercase text-slate-600">Send Proposal — {l.company || l.contact_name}</p>
+                          <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Send Proposal — {l.company || l.contact_name}</p>
                           <textarea placeholder="Scope summary *" value={proposalForm.scope_summary} onChange={(e) => setProposalForm({ ...proposalForm, scope_summary: e.target.value })} rows={3}
-                            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                            className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none" />
                           <input type="number" min="0" placeholder="Price ($) *" value={proposalForm.price} onChange={(e) => setProposalForm({ ...proposalForm, price: e.target.value })}
-                            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                            className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none" />
                           <div className="flex gap-2">
                             <Button type="button" variant="primary" size="md" disabled={savingId === l.id} onClick={() => handleSendProposal(l.id)}>Create & Send</Button>
                             <Button type="button" variant="outline" size="md" onClick={closeQuickAction}>Cancel</Button>
@@ -1078,15 +1078,15 @@ function Leads({ leads, accessToken, onRefresh }) {
                       )}
                       {activeAction === 'schedule_demo' && (
                         <div className="space-y-3">
-                          <p className="font-label-caps text-label-caps uppercase text-slate-600">Schedule Demo — {l.company || l.contact_name}</p>
+                          <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Schedule Demo — {l.company || l.contact_name}</p>
                           <input type="datetime-local" value={demoForm.scheduled_at} onChange={(e) => setDemoForm({ ...demoForm, scheduled_at: e.target.value })}
-                            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                            className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none" />
                           <input type="number" min="15" max="240" step="15" placeholder="Duration (minutes)" value={demoForm.duration_minutes}
                             onChange={(e) => setDemoForm({ ...demoForm, duration_minutes: e.target.value })}
-                            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                            className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none" />
                           <input type="url" placeholder="Meeting link (optional)" value={demoForm.meeting_link}
                             onChange={(e) => setDemoForm({ ...demoForm, meeting_link: e.target.value })}
-                            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                            className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none" />
                           <div className="flex gap-2">
                             <Button type="button" variant="primary" size="md" disabled={savingId === l.id} onClick={() => handleScheduleDemo(l.id)}>Schedule</Button>
                             <Button type="button" variant="outline" size="md" onClick={closeQuickAction}>Cancel</Button>
@@ -1099,7 +1099,7 @@ function Leads({ leads, accessToken, onRefresh }) {
               </Fragment>
             ))}
             {!leads.length && (
-              <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No leads yet.</td></tr>
+              <tr><td data-label="Company / Contact" colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No leads yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -1150,7 +1150,7 @@ function ContactSubmissionsView({ accessToken, onLeadCreated }) {
     <div className="space-y-stack-md">
       {toast.msg && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.type === 'success' ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+          toast.type === 'success' ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text' : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast.msg}</p>
       )}
       {convertTarget && (
@@ -1161,23 +1161,23 @@ function ContactSubmissionsView({ accessToken, onLeadCreated }) {
           onSuccess={() => handleConverted(convertTarget)}
         />
       )}
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr><th className="px-stack-lg py-4">Contact</th><th className="px-stack-lg py-4">Subject</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {submissions.map((s) => (
-              <tr key={s.id} className="transition-colors hover:bg-blue-50">
-                <td className="px-stack-lg py-4">
-                  <p className="text-body-md font-semibold text-slate-900">{s.name}</p>
-                  <p className="text-body-sm text-slate-600">{s.email}</p>
-                  {s.company && <p className="text-body-sm text-slate-400">{s.company}</p>}
+              <tr key={s.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                <td data-label="Contact" className="px-stack-lg py-4">
+                  <p className="text-body-md font-semibold text-brand-dark dark:text-white">{s.name}</p>
+                  <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.email}</p>
+                  {s.company && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.company}</p>}
                 </td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{s.subject || '—'}</td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[s.status] || 'neutral'}>{s.status?.replace('_', ' ')}</StatusBadge></td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{s.created_at?.slice(0, 10) || '—'}</td>
-                <td className="px-stack-lg py-4">
+                <td data-label="Subject" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.subject || '—'}</td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={statusColor[s.status] || 'neutral'}>{s.status?.replace('_', ' ')}</StatusBadge></td>
+                <td data-label="Date" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.created_at?.slice(0, 10) || '—'}</td>
+                <td data-label="Actions" className="px-stack-lg py-4">
                   <div className="flex flex-col gap-1">
                     {s.status !== 'spam' && s.status !== 'resolved' && (
                       <RowAction onClick={() => setConvertTarget(s)}>Convert to Lead</RowAction>
@@ -1192,7 +1192,7 @@ function ContactSubmissionsView({ accessToken, onLeadCreated }) {
                 </td>
               </tr>
             ))}
-            {!submissions.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No contact submissions yet.</td></tr>}
+            {!submissions.length && <tr><td data-label="Contact" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No contact submissions yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -1206,7 +1206,7 @@ function SalesConvertModal({ submission, accessToken, onClose, onSuccess }) {
   const [notes, setNotes] = useState(submission.message || '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const inputClass = 'w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none';
+  const inputClass = 'w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1236,30 +1236,30 @@ function SalesConvertModal({ submission, accessToken, onClose, onSuccess }) {
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
         <div className="mb-5 flex items-start justify-between">
           <div>
-            <h2 className="font-display text-headline-sm font-bold text-slate-900">Convert to Lead</h2>
-            <p className="mt-1 text-body-sm text-slate-500">Create a CRM lead from this contact submission</p>
+            <h2 className="font-display text-headline-sm font-bold text-brand-dark dark:text-white">Convert to Lead</h2>
+            <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">Create a CRM lead from this contact submission</p>
           </div>
-          <button onClick={onClose} aria-label="Close" className="text-slate-400 hover:text-slate-700"><Icon name="close" className="text-xl" /></button>
+          <button onClick={onClose} aria-label="Close" className="text-ink-muted dark:text-dark-ink-muted hover:text-ink dark:text-white"><Icon name="close" className="text-xl" /></button>
         </div>
-        <div className="mb-5 space-y-1 rounded-lg bg-slate-50 p-4">
-          <p className="text-body-sm font-semibold text-slate-900">{submission.name}</p>
-          <p className="text-body-sm text-slate-600">{submission.email}</p>
-          {submission.phone && <p className="text-body-sm text-slate-500">{submission.phone}</p>}
-          {submission.company && <p className="text-body-sm text-slate-500">{submission.company}</p>}
-          {submission.subject && <p className="text-body-sm italic text-slate-400">{submission.subject}</p>}
+        <div className="mb-5 space-y-1 rounded-lg bg-surface-container dark:bg-dark-surface-container p-4">
+          <p className="text-body-sm font-semibold text-brand-dark dark:text-white">{submission.name}</p>
+          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{submission.email}</p>
+          {submission.phone && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{submission.phone}</p>}
+          {submission.company && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{submission.company}</p>}
+          {submission.subject && <p className="text-body-sm italic text-ink-muted dark:text-dark-ink-muted">{submission.subject}</p>}
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-body-sm font-medium text-slate-700">Estimated Value (USD)</label>
+            <label className="mb-1 block text-body-sm font-medium text-ink dark:text-white">Estimated Value (USD)</label>
             <input type="number" min="0" step="0.01" placeholder="e.g. 5000" value={estimatedValue}
               onChange={(e) => setEstimatedValue(e.target.value)} className={inputClass} />
           </div>
           <div>
-            <label className="mb-1 block text-body-sm font-medium text-slate-700">Notes</label>
+            <label className="mb-1 block text-body-sm font-medium text-ink dark:text-white">Notes</label>
             <textarea rows={3} placeholder="Internal notes about this lead..." value={notes}
               onChange={(e) => setNotes(e.target.value)} className={`${inputClass} resize-none`} />
           </div>
-          {error && <p className="text-body-sm text-red-600">{error}</p>}
+          {error && <p className="text-body-sm text-status-error">{error}</p>}
           <div className="flex gap-3 pt-1">
             <Button type="submit" variant="primary" size="md" disabled={submitting} className="flex-1">
               {submitting ? 'Converting...' : 'Convert to Lead'}
@@ -1280,7 +1280,7 @@ function Proposals({ proposals, leads, contracts = [], accessToken, onRefresh, o
   const [actingId, setActingId] = useState(null);
   const [toast, setToast] = useState({ msg: '', type: 'success' });
   const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 3500); };
-  const inputClass = 'border border-slate-200 rounded px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 bg-white focus:outline-none focus:border-brand';
+  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 bg-white focus:outline-none focus:border-brand';
 
   const leadLabel = (leadId) => {
     const lead = leads.find((l) => l.id === leadId);
@@ -1341,31 +1341,31 @@ function Proposals({ proposals, leads, contracts = [], accessToken, onRefresh, o
 
   return (
     <div className="space-y-stack-md">
-      {toast.msg && <p className={`rounded-lg px-4 py-2 text-body-sm ${toast.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{toast.msg}</p>}
+      {toast.msg && <p className={`rounded-lg px-4 py-2 text-body-sm ${toast.type === 'success' ? 'bg-green-100 text-status-success-text' : 'bg-red-100 text-red-800'}`}>{toast.msg}</p>}
       <div className="flex justify-end">
         <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>New Proposal</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <select value={form.lead_id} onChange={(e) => handleChange('lead_id', e.target.value)} className={`${inputClass} ${errors.lead_id ? 'border-red-400' : ''}`}>
+              <select value={form.lead_id} onChange={(e) => handleChange('lead_id', e.target.value)} className={`${inputClass} ${errors.lead_id ? 'border-status-error' : ''}`}>
                 <option value="" disabled>Select lead *</option>
                 {leads.map((l) => <option key={l.id} value={l.id}>{l.company || l.contact_name}</option>)}
               </select>
-              {errors.lead_id && <p className="mt-1 text-body-xs text-red-500">{errors.lead_id}</p>}
+              {errors.lead_id && <p className="mt-1 text-body-xs text-status-error">{errors.lead_id}</p>}
             </div>
             <div>
-              <input type="number" min="0" placeholder="Price *" value={form.price} onChange={(e) => handleChange('price', e.target.value)} className={`${inputClass} ${errors.price ? 'border-red-400' : ''}`} />
-              {errors.price && <p className="mt-1 text-body-xs text-red-500">{errors.price}</p>}
+              <input type="number" min="0" placeholder="Price *" value={form.price} onChange={(e) => handleChange('price', e.target.value)} className={`${inputClass} ${errors.price ? 'border-status-error' : ''}`} />
+              {errors.price && <p className="mt-1 text-body-xs text-status-error">{errors.price}</p>}
             </div>
             <select value={form.currency} onChange={(e) => handleChange('currency', e.target.value)} className={inputClass}>
               {['USD', 'EUR', 'GBP', 'INR'].map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <textarea placeholder="Scope summary *" value={form.scope_summary} onChange={(e) => handleChange('scope_summary', e.target.value)} rows={3} className={`w-full ${inputClass} ${errors.scope_summary ? 'border-red-400' : ''}`} />
-            {errors.scope_summary && <p className="mt-1 text-body-xs text-red-500">{errors.scope_summary}</p>}
+            <textarea placeholder="Scope summary *" value={form.scope_summary} onChange={(e) => handleChange('scope_summary', e.target.value)} rows={3} className={`w-full ${inputClass} ${errors.scope_summary ? 'border-status-error' : ''}`} />
+            {errors.scope_summary && <p className="mt-1 text-body-xs text-status-error">{errors.scope_summary}</p>}
           </div>
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Saving...' : 'Save Draft'}</Button>
@@ -1373,19 +1373,19 @@ function Proposals({ proposals, leads, contracts = [], accessToken, onRefresh, o
           </div>
         </form>
       )}
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr><th className="px-stack-lg py-4">Lead</th><th className="px-stack-lg py-4">Price</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Sent</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {proposals.map((p) => (
-              <tr key={p.id} className="transition-colors hover:bg-blue-50">
-                <td className="px-stack-lg py-4 text-body-md text-slate-900">{leadLabel(p.lead_id)}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{p.currency} {Number(p.price).toLocaleString()}</td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={PROPOSAL_STATUS_COLOR[p.status]}>{p.status}</StatusBadge></td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{p.sent_at ? p.sent_at.slice(0, 10) : '—'}</td>
-                <td className="px-stack-lg py-4">
+              <tr key={p.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                <td data-label="Lead" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-white">{leadLabel(p.lead_id)}</td>
+                <td data-label="Price" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.currency} {Number(p.price).toLocaleString()}</td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={PROPOSAL_STATUS_COLOR[p.status]}>{p.status}</StatusBadge></td>
+                <td data-label="Sent" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.sent_at ? p.sent_at.slice(0, 10) : '—'}</td>
+                <td data-label="Actions" className="px-stack-lg py-4">
                   <div className="flex gap-2">
                     {p.status === 'draft' && <RowAction disabled={actingId === p.id} onClick={() => runAction(sendProposal, p.id, 'Proposal sent to client!')}>Send</RowAction>}
                     {(p.status === 'sent' || p.status === 'viewed') && (
@@ -1410,7 +1410,7 @@ function Proposals({ proposals, leads, contracts = [], accessToken, onRefresh, o
               </tr>
             ))}
             {!proposals.length && (
-              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No proposals yet.</td></tr>
+              <tr><td data-label="Lead" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No proposals yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -1450,7 +1450,7 @@ function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
     <div className="space-y-stack-md">
       {toast.msg && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.type === 'success' ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+          toast.type === 'success' ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text' : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast.msg}</p>
       )}
 
@@ -1458,9 +1458,9 @@ function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
       {confirmId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
-            <h3 className="mb-2 font-display text-headline-sm font-bold text-slate-900">Confirm Contract Signing</h3>
-            <p className="mb-1 text-body-sm text-slate-700">This will:</p>
-            <ul className="mb-5 ml-4 list-disc space-y-1 text-body-sm text-slate-600">
+            <h3 className="mb-2 font-display text-headline-sm font-bold text-brand-dark dark:text-white">Confirm Contract Signing</h3>
+            <p className="mb-1 text-body-sm text-ink dark:text-white">This will:</p>
+            <ul className="mb-5 ml-4 list-disc space-y-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">
               <li>Mark the contract as fully signed</li>
               <li>Set the lead status to <strong>Converted</strong></li>
               <li>Provision a client portal account (sends welcome email)</li>
@@ -1474,30 +1474,30 @@ function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr><th className="px-stack-lg py-4">Deal</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Client Signed</th><th className="px-stack-lg py-4">Company Signed</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {contracts.map((c) => (
-              <tr key={c.id} className="transition-colors hover:bg-blue-50">
-                <td className="px-stack-lg py-4 text-body-md text-slate-900">{describe(c.proposal_id)}</td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={CONTRACT_STATUS_COLOR[c.status]}>{c.status}</StatusBadge></td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.signed_by_client_at ? c.signed_by_client_at.slice(0, 10) : '—'}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.signed_by_company_at ? c.signed_by_company_at.slice(0, 10) : '—'}</td>
-                <td className="px-stack-lg py-4">
+              <tr key={c.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                <td data-label="Deal" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-white">{describe(c.proposal_id)}</td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={CONTRACT_STATUS_COLOR[c.status]}>{c.status}</StatusBadge></td>
+                <td data-label="Client Signed" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.signed_by_client_at ? c.signed_by_client_at.slice(0, 10) : '—'}</td>
+                <td data-label="Company Signed" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.signed_by_company_at ? c.signed_by_company_at.slice(0, 10) : '—'}</td>
+                <td data-label="Actions" className="px-stack-lg py-4">
                   {c.status === 'pending' && (
                     <RowAction disabled={actingId === c.id} onClick={() => setConfirmId(c.id)}>
                       {actingId === c.id ? 'Signing...' : 'Mark Signed'}
                     </RowAction>
                   )}
-                  {c.status === 'signed' && <span className="text-body-sm font-medium text-green-600">✓ Signed</span>}
+                  {c.status === 'signed' && <span className="text-body-sm font-medium text-status-success-text">✓ Signed</span>}
                 </td>
               </tr>
             ))}
             {!contracts.length && (
-              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No contracts yet — generate one from an accepted proposal.</td></tr>
+              <tr><td data-label="Deal" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No contracts yet — generate one from an accepted proposal.</td></tr>
             )}
           </tbody>
         </table>
@@ -1590,18 +1590,18 @@ function CrmDashboard({ leads, proposals, contracts }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
-              <Icon name={stat.icon} className="text-2xl text-blue-600" />
+          <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
             </div>
-            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
-            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
+            <p className="font-stat text-3xl font-bold text-brand-dark dark:text-white">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-4 font-display text-headline-sm text-slate-900">Pipeline Funnel</h3>
+      <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+        <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-white">Pipeline Funnel</h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart layout="vertical" data={funnelData} margin={{ top: 5, right: 30, left: 80, bottom: 5 }}>
@@ -1619,21 +1619,21 @@ function CrmDashboard({ leads, proposals, contracts }) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-4 font-display text-headline-sm text-slate-900">Recent Activity</h3>
+      <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+        <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-white">Recent Activity</h3>
         {recentActivity.length === 0 ? (
-          <p className="text-body-sm text-slate-500">No recent activity to show.</p>
+          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">No recent activity to show.</p>
         ) : (
           <ul className="space-y-3">
             {recentActivity.map((activity, i) => (
-              <li key={i} className="flex items-start gap-3 border-b border-slate-100 pb-2 last:border-0 last:pb-0">
+              <li key={i} className="flex items-start gap-3 border-b border-outline-variant/50 dark:border-dark-outline-variant/50 pb-2 last:border-0 last:pb-0">
                 <div className="mt-0.5 flex-shrink-0">
                   <Icon name={activity.type === 'lead' ? 'person_search' : activity.type === 'proposal' ? 'request_quote' : 'gavel'}
-                    className="text-lg text-blue-600" />
+                    className="text-lg text-brand" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-body-sm text-slate-900">{activity.text}</p>
-                  <p className="text-body-xs text-slate-500">{timeAgo(activity.time)}</p>
+                  <p className="text-body-sm text-brand-dark dark:text-white">{activity.text}</p>
+                  <p className="text-body-xs text-ink-muted dark:text-dark-ink-muted">{timeAgo(activity.time)}</p>
                 </div>
               </li>
             ))}
@@ -1665,18 +1665,18 @@ function SalesClients({ clients }) {
         <div className="relative flex-1">
           <input type="text" placeholder="Search clients..." value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded border border-slate-200 bg-white px-4 py-2.5 pl-10 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
-          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-base text-slate-400" />
+            className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-2.5 pl-10 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none" />
+          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-base text-ink-muted dark:text-dark-ink-muted" />
         </div>
         <select value={industryFilter} onChange={(e) => setIndustryFilter(e.target.value)}
-          className="rounded border border-slate-200 bg-white px-4 py-2.5 text-body-md text-slate-900 focus:border-brand focus:outline-none">
+          className="rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-2.5 text-body-md text-brand-dark dark:text-white focus:border-brand focus:outline-none">
           <option value="">All Industries</option>
           {industries.map((ind) => <option key={ind} value={ind}>{ind}</option>)}
         </select>
       </div>
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr>
               <th className="px-stack-lg py-4">Company</th>
               <th className="px-stack-lg py-4">Contact</th>
@@ -1685,18 +1685,18 @@ function SalesClients({ clients }) {
               <th className="px-stack-lg py-4">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {filtered.map((c) => (
-              <tr key={c.id} className="transition-colors hover:bg-blue-50">
-                <td className="px-stack-lg py-4 text-body-md font-semibold text-slate-900">{c.company_name || '—'}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.contact_name || c.company_name || '—'}</td>
-                <td className="px-stack-lg py-4 text-body-sm capitalize text-slate-600">{c.industry?.replace('_', ' ') || '—'}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{c.account_manager_id ? c.account_manager_id : 'Unassigned'}</td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={statusColor[c.status] || 'neutral'}>{c.status || 'active'}</StatusBadge></td>
+              <tr key={c.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                <td data-label="Company" className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-white">{c.company_name || '—'}</td>
+                <td data-label="Contact" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.contact_name || c.company_name || '—'}</td>
+                <td data-label="Industry" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{c.industry?.replace('_', ' ') || '—'}</td>
+                <td data-label="Account Manager" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.account_manager_id ? c.account_manager_id : 'Unassigned'}</td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={statusColor[c.status] || 'neutral'}>{c.status || 'active'}</StatusBadge></td>
               </tr>
             ))}
             {!filtered.length && (
-              <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No clients found.</td></tr>
+              <tr><td data-label="Company" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No clients found.</td></tr>
             )}
           </tbody>
         </table>
@@ -1786,8 +1786,8 @@ function SalesMeetings({ meetings, clients, accessToken, onRefresh }) {
     <div className="space-y-stack-md">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-display text-headline-sm text-slate-900">Meetings & Demos</h3>
-          <p className="text-body-sm text-slate-500">{upcoming.length} upcoming</p>
+          <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Meetings & Demos</h3>
+          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{upcoming.length} upcoming</p>
         </div>
         <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>
           New Meeting
@@ -1797,35 +1797,35 @@ function SalesMeetings({ meetings, clients, accessToken, onRefresh }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('scheduled')
-            ? 'border border-green-500/30 bg-green-500/10 text-green-800'
-            : 'border border-red-500/30 bg-red-500/10 text-red-800'
+            ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text'
+            : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <input type="text" placeholder="Title *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.title ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
-              {errors.title && <p className="mt-1 text-body-xs text-red-500">{errors.title}</p>}
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:outline-none ${errors.title ? 'border-status-error focus:border-status-error' : 'border-outline-variant dark:border-dark-outline-variant focus:border-brand'}`} />
+              {errors.title && <p className="mt-1 text-body-xs text-status-error">{errors.title}</p>}
             </div>
             <select value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-              className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 focus:border-brand focus:outline-none">
+              className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white focus:border-brand focus:outline-none">
               <option value="">Select client (optional)</option>
               {clients.map((c) => <option key={c.id} value={c.id}>{c.company_name || c.id}</option>)}
             </select>
             <div>
               <input type="datetime-local" value={form.scheduled_at} onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
-                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.scheduled_at ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`} />
-              {errors.scheduled_at && <p className="mt-1 text-body-xs text-red-500">{errors.scheduled_at}</p>}
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:outline-none ${errors.scheduled_at ? 'border-status-error focus:border-status-error' : 'border-outline-variant dark:border-dark-outline-variant focus:border-brand'}`} />
+              {errors.scheduled_at && <p className="mt-1 text-body-xs text-status-error">{errors.scheduled_at}</p>}
             </div>
             <input type="number" min="15" max="240" step="15" placeholder="Duration (minutes)" value={form.duration_minutes}
               onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })}
-              className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+              className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none" />
           </div>
           <input type="url" placeholder="Meeting link / location" value={form.meeting_link} onChange={(e) => setForm({ ...form, meeting_link: e.target.value })}
-            className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+            className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none" />
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Scheduling...' : 'Schedule'}</Button>
             <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setErrors({}); }}>Cancel</Button>
@@ -1833,9 +1833,9 @@ function SalesMeetings({ meetings, clients, accessToken, onRefresh }) {
         </form>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr>
               <th className="px-stack-lg py-4">Title</th>
               <th className="px-stack-lg py-4">Client / Lead</th>
@@ -1845,15 +1845,15 @@ function SalesMeetings({ meetings, clients, accessToken, onRefresh }) {
               <th className="px-stack-lg py-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {meetings.map((m) => (
-              <tr key={m.id} className="transition-colors hover:bg-blue-50">
-                <td className="px-stack-lg py-4 text-body-md font-semibold text-slate-900">{m.title}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{m.client_id ? clientName(m.client_id) : '—'}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{m.scheduled_at ? new Date(m.scheduled_at).toLocaleString() : '—'}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{m.duration_minutes}m</td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={MEETING_STATUS_COLOR[m.status]}>{m.status}</StatusBadge></td>
-                <td className="px-stack-lg py-4">
+              <tr key={m.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                <td data-label="Title" className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-white">{m.title}</td>
+                <td data-label="Client / Lead" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{m.client_id ? clientName(m.client_id) : '—'}</td>
+                <td data-label="Date & Time" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{m.scheduled_at ? new Date(m.scheduled_at).toLocaleString() : '—'}</td>
+                <td data-label="Duration" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{m.duration_minutes}m</td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={MEETING_STATUS_COLOR[m.status]}>{m.status}</StatusBadge></td>
+                <td data-label="Actions" className="px-stack-lg py-4">
                   <div className="flex gap-2">
                     {m.status === 'scheduled' && new Date(m.scheduled_at) >= new Date(now) && (
                       <>
@@ -1866,7 +1866,7 @@ function SalesMeetings({ meetings, clients, accessToken, onRefresh }) {
               </tr>
             ))}
             {!meetings.length && (
-              <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No meetings scheduled yet.</td></tr>
+              <tr><td data-label="Title" colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No meetings scheduled yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -1919,21 +1919,21 @@ function SalesReports({ leads, proposals, contracts }) {
           { label: 'Signed Contracts', value: contracts.filter((c) => c.status === 'signed').length, icon: 'gavel' },
           { label: 'Conversion Rate', value: `${conversionRate}%`, icon: 'trending_up' },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div key={stat.label} className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-slate-600">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-slate-900">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-white">{stat.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-2 font-display text-headline-sm text-slate-900">Pipeline Value by Stage</h3>
-        <p className="mb-4 text-body-sm text-slate-500">Total pipeline: ${totalValue.toLocaleString()}</p>
+      <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+        <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-white">Pipeline Value by Stage</h3>
+        <p className="mb-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">Total pipeline: ${totalValue.toLocaleString()}</p>
         {pipelineValueData.length === 0 ? (
-          <p className="text-body-sm text-slate-500">No pipeline data available.</p>
+          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">No pipeline data available.</p>
         ) : (
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -1949,10 +1949,10 @@ function SalesReports({ leads, proposals, contracts }) {
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-2 font-display text-headline-sm text-slate-900">Lead Source Attribution</h3>
+      <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+        <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-white">Lead Source Attribution</h3>
         {sourceData.length === 0 ? (
-          <p className="text-body-sm text-slate-500">No source data available.</p>
+          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">No source data available.</p>
         ) : (
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -1968,9 +1968,9 @@ function SalesReports({ leads, proposals, contracts }) {
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-2 font-display text-headline-sm text-slate-900">Conversion Funnel</h3>
-        <p className="mb-4 text-body-sm text-slate-500">Leads → Proposals → Contracts → Won</p>
+      <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+        <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-white">Conversion Funnel</h3>
+        <p className="mb-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">Leads → Proposals → Contracts → Won</p>
         <div className="h-52">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={funnelData} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
@@ -2034,7 +2034,7 @@ function MarketingLeadsView({ accessToken }) {
     <div className="space-y-stack-md">
       {toast.msg && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.type === 'success' ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+          toast.type === 'success' ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text' : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast.msg}</p>
       )}
 
@@ -2048,14 +2048,14 @@ function MarketingLeadsView({ accessToken }) {
       )}
 
       {/* Tab switcher */}
-      <div className="flex gap-1 border-b border-slate-200">
+      <div className="flex gap-1 border-b border-outline-variant dark:border-dark-outline-variant">
         {[
           { id: 'contacts', label: `Ready to Convert (${inProgressContacts.length})`, icon: 'person_add' },
           { id: 'leads', label: `All Leads (${leads.length})`, icon: 'person_search' },
         ].map((t) => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
             className={`flex items-center gap-2 border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
-              activeTab === t.id ? 'border-brand text-brand' : 'border-transparent text-slate-500 hover:text-slate-900'
+              activeTab === t.id ? 'border-brand text-brand' : 'border-transparent text-ink-muted dark:text-dark-ink-muted hover:text-brand-dark dark:text-white'
             }`}>
             <Icon name={t.icon} className="text-base" />{t.label}
           </button>
@@ -2065,32 +2065,32 @@ function MarketingLeadsView({ accessToken }) {
       {activeTab === 'contacts' && (
         <>
           {!inProgressContacts.length ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-              <Icon name="inbox" className="mx-auto mb-3 text-4xl text-slate-300" />
-              <p className="text-body-md font-semibold text-slate-700">No contacts ready yet</p>
-              <p className="mt-1 text-body-sm text-slate-500">When admin marks a contact submission as &ldquo;In Progress&rdquo;, it will appear here for you to convert to a lead.</p>
+            <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-8 text-center">
+              <Icon name="inbox" className="mx-auto mb-3 text-4xl text-ink-muted dark:text-dark-ink-muted" />
+              <p className="text-body-md font-semibold text-ink dark:text-white">No contacts ready yet</p>
+              <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">When admin marks a contact submission as &ldquo;In Progress&rdquo;, it will appear here for you to convert to a lead.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+            <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
               <table className="w-full text-left">
-                <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+                <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
                   <tr><th className="px-stack-lg py-4">Contact</th><th className="px-stack-lg py-4">Subject / Message</th><th className="px-stack-lg py-4">Company</th><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Action</th></tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200">
+                <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
                   {inProgressContacts.map((s) => (
-                    <tr key={s.id} className="transition-colors hover:bg-blue-50">
-                      <td className="px-stack-lg py-4">
-                        <p className="text-body-md font-semibold text-slate-900">{s.name}</p>
-                        <p className="text-body-sm text-slate-600">{s.email}</p>
-                        {s.phone && <p className="text-body-sm text-slate-400">{s.phone}</p>}
+                    <tr key={s.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                      <td data-label="Contact" className="px-stack-lg py-4">
+                        <p className="text-body-md font-semibold text-brand-dark dark:text-white">{s.name}</p>
+                        <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.email}</p>
+                        {s.phone && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.phone}</p>}
                       </td>
-                      <td className="max-w-xs px-stack-lg py-4">
-                        {s.subject && <p className="text-body-sm font-medium text-slate-700">{s.subject}</p>}
-                        <p className="line-clamp-2 text-body-sm text-slate-500">{s.message}</p>
+                      <td data-label="Subject / Message" className="max-w-xs px-stack-lg py-4">
+                        {s.subject && <p className="text-body-sm font-medium text-ink dark:text-white">{s.subject}</p>}
+                        <p className="line-clamp-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.message}</p>
                       </td>
-                      <td className="px-stack-lg py-4 text-body-sm text-slate-600">{s.company || '—'}</td>
-                      <td className="px-stack-lg py-4 text-body-sm text-slate-500">{s.created_at?.slice(0, 10) || '—'}</td>
-                      <td className="px-stack-lg py-4">
+                      <td data-label="Company" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.company || '—'}</td>
+                      <td data-label="Date" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.created_at?.slice(0, 10) || '—'}</td>
+                      <td data-label="Action" className="px-stack-lg py-4">
                         <RowAction onClick={() => setConvertTarget(s)}>Convert to Lead</RowAction>
                       </td>
                     </tr>
@@ -2103,24 +2103,24 @@ function MarketingLeadsView({ accessToken }) {
       )}
 
       {activeTab === 'leads' && (
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+        <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
           <table className="w-full text-left">
-            <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+            <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
               <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Est. Value</th></tr>
             </thead>
-            <tbody className="divide-y divide-slate-200">
+            <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {leads.map((l) => (
-                <tr key={l.id} className="transition-colors hover:bg-blue-50">
-                  <td className="px-stack-lg py-4">
-                    <p className="text-body-md font-semibold text-slate-900">{l.company || '—'}</p>
-                    <p className="text-body-sm text-slate-600">{l.contact_name}</p>
+                <tr key={l.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                  <td data-label="Company / Contact" className="px-stack-lg py-4">
+                    <p className="text-body-md font-semibold text-brand-dark dark:text-white">{l.company || '—'}</p>
+                    <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.contact_name}</p>
                   </td>
-                  <td className="px-stack-lg py-4 text-body-sm capitalize text-slate-600">{l.source?.replace('_', ' ')}</td>
-                  <td className="px-stack-lg py-4"><StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge></td>
-                  <td className="px-stack-lg py-4 text-body-sm text-slate-900">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
+                  <td data-label="Source" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{l.source?.replace('_', ' ')}</td>
+                  <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge></td>
+                  <td data-label="Est. Value" className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-white">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
                 </tr>
               ))}
-              {!leads.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No leads yet — convert a contact to create the first one.</td></tr>}
+              {!leads.length && <tr><td data-label="Company / Contact" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No leads yet — convert a contact to create the first one.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -2238,29 +2238,29 @@ function TestimonialModeration({ accessToken }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
         {kpis.map((stat) => (
-          <div key={stat.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
-              <Icon name={stat.icon} className="text-2xl text-blue-600" />
+          <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+            <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
+              <Icon name={stat.icon} className="text-2xl text-brand" />
             </div>
-            <p className="font-stat text-3xl font-bold text-slate-900">{stat.value}</p>
-            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{stat.label}</p>
+            <p className="font-stat text-3xl font-bold text-brand-dark dark:text-white">{stat.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{stat.label}</p>
           </div>
         ))}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-slate-900">Filter:</span>
+          <span className="font-label-caps text-label-caps uppercase text-brand-dark dark:text-white">Filter:</span>
           {['pending', 'published', 'all'].map((s) => (
             <button key={s} onClick={() => setFilter(s)}
               className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
-                filter === s ? 'border-brand bg-brand text-white' : 'border-slate-300 text-slate-600 hover:border-brand hover:text-brand'
+                filter === s ? 'border-brand bg-brand text-white' : 'border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted hover:border-brand hover:text-brand'
               }`}>{s}</button>
           ))}
         </div>
         <div className="flex items-center gap-3">
           <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>New Testimonial</Button>
-          <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-slate-900">
+          <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark dark:text-white">
             <Icon name="refresh" className="text-base" /> Refresh
           </button>
         </div>
@@ -2269,36 +2269,36 @@ function TestimonialModeration({ accessToken }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('published') || toast.includes('deleted')
-            ? 'border border-green-200 bg-green-50 text-green-700'
-            : 'border border-red-200 bg-red-50 text-red-700'
+            ? 'border border-green-200 bg-status-success-bg text-status-success-text'
+            : 'border border-status-error/30 bg-red-50 text-red-700'
         }`}>{toast}</p>
       )}
 
       {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
-              <label className="mb-1 block font-label-caps text-label-caps uppercase text-slate-600">Author Name *</label>
+              <label className="mb-1 block font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Author Name *</label>
               <input type="text" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })}
-                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.author_name ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`}
+                className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:outline-none ${errors.author_name ? 'border-status-error focus:border-status-error' : 'border-outline-variant dark:border-dark-outline-variant focus:border-brand'}`}
                 placeholder="John Doe" />
-              {errors.author_name && <p className="mt-1 text-body-xs text-red-500">{errors.author_name}</p>}
+              {errors.author_name && <p className="mt-1 text-body-xs text-status-error">{errors.author_name}</p>}
             </div>
             <div>
-              <label className="mb-1 block font-label-caps text-label-caps uppercase text-slate-600">Title / Role</label>
+              <label className="mb-1 block font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Title / Role</label>
               <input type="text" value={form.author_title} onChange={(e) => setForm({ ...form, author_title: e.target.value })}
-                className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none"
+                className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none"
                 placeholder="CEO at Acme Inc." />
             </div>
             <div>
-              <label className="mb-1 block font-label-caps text-label-caps uppercase text-slate-600">Company</label>
+              <label className="mb-1 block font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Company</label>
               <input type="text" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })}
-                className="w-full rounded border border-slate-200 bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none"
+                className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none"
                 placeholder="Acme Inc." />
             </div>
           </div>
           <div>
-            <label className="mb-1 block font-label-caps text-label-caps uppercase text-slate-600">Rating</label>
+            <label className="mb-1 block font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Rating</label>
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map((r) => (
                 <button key={r} type="button" onClick={() => setForm({ ...form, rating: r })}
@@ -2309,11 +2309,11 @@ function TestimonialModeration({ accessToken }) {
             </div>
           </div>
           <div>
-            <label className="mb-1 block font-label-caps text-label-caps uppercase text-slate-600">Testimonial *</label>
+            <label className="mb-1 block font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Testimonial *</label>
             <textarea rows={3} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })}
-              className={`w-full rounded border bg-white px-4 py-3 text-body-md text-slate-900 placeholder-slate-400 focus:outline-none ${errors.content ? 'border-red-400 focus:border-red-500' : 'border-slate-200 focus:border-brand'}`}
+              className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:outline-none ${errors.content ? 'border-status-error focus:border-status-error' : 'border-outline-variant dark:border-dark-outline-variant focus:border-brand'}`}
               placeholder="Write the testimonial content..." />
-            {errors.content && <p className="mt-1 text-body-xs text-red-500">{errors.content}</p>}
+            {errors.content && <p className="mt-1 text-body-xs text-status-error">{errors.content}</p>}
           </div>
           <div className="flex gap-2">
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Saving...' : 'Save Testimonial'}</Button>
@@ -2324,14 +2324,14 @@ function TestimonialModeration({ accessToken }) {
 
       <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
         {visible.map((t) => (
-          <div key={t.id} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="mb-3 inline-flex size-11 items-center justify-center rounded-xl bg-blue-50">
-              <Icon name="person" className="text-2xl text-blue-600" />
+          <div key={t.id} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+            <div className="mb-3 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
+              <Icon name="person" className="text-2xl text-brand" />
             </div>
-            <p className="font-display text-body-md font-semibold text-slate-900">{t.author_name}</p>
-            <p className="mt-1 text-body-xs uppercase tracking-wide text-slate-600">{t.author_title}{t.company_name ? ` · ${t.company_name}` : ''}</p>
+            <p className="font-display text-body-md font-semibold text-brand-dark dark:text-white">{t.author_name}</p>
+            <p className="mt-1 text-body-xs uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">{t.author_title}{t.company_name ? ` · ${t.company_name}` : ''}</p>
             <div className="mt-2 flex items-center gap-0.5">{stars(t.rating)}</div>
-            <p className="mt-2 flex-1 text-body-sm italic text-slate-600">&ldquo;{t.content}&rdquo;</p>
+            <p className="mt-2 flex-1 text-body-sm italic text-ink-muted dark:text-dark-ink-muted">&ldquo;{t.content}&rdquo;</p>
             <div className="mt-4 flex items-center justify-between">
               <StatusBadge variant={t.is_published ? 'success' : 'warning'}>{t.is_published ? 'published' : 'pending'}</StatusBadge>
               <div className="flex items-center gap-2">
@@ -2342,7 +2342,7 @@ function TestimonialModeration({ accessToken }) {
             </div>
           </div>
         ))}
-        {!visible.length && <p className="col-span-full py-8 text-center text-body-sm text-slate-600">No testimonials to show.</p>}
+        {!visible.length && <p className="col-span-full py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No testimonials to show.</p>}
       </div>
     </div>
   );
@@ -2433,7 +2433,7 @@ function TeamProjects({ accessToken, userId }) {
     <div className="space-y-stack-md">
       {toast.msg && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.type === 'success' ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+          toast.type === 'success' ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text' : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast.msg}</p>
       )}
 
@@ -2441,7 +2441,7 @@ function TeamProjects({ accessToken, userId }) {
         <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Project</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-2">
             <input required type="text" placeholder="Project title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={FORM_INPUT_CLASS} />
             <select value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className={FORM_INPUT_CLASS}>
@@ -2463,27 +2463,27 @@ function TeamProjects({ accessToken, userId }) {
 
       <div className="space-y-4">
         {projects.map((p) => (
-          <div key={p.id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div key={p.id} className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
             <div className="mb-3 flex items-start justify-between gap-4">
               <div>
-                <h3 className="font-display text-headline-sm text-slate-900">{p.title}</h3>
-                <p className="text-body-sm text-slate-600">Client: {clientName(p.client_id)}{p.budget ? ` · Budget: $${Number(p.budget).toLocaleString()}` : ''}</p>
+                <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">{p.title}</h3>
+                <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Client: {clientName(p.client_id)}{p.budget ? ` · Budget: $${Number(p.budget).toLocaleString()}` : ''}</p>
               </div>
               <StatusBadge variant={PROJECT_STATUS_COLOR[p.status]}>{p.status?.replace('_', ' ')}</StatusBadge>
             </div>
             <div className="mb-3 flex items-center gap-3">
-              <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-100">
+              <div className="h-2 flex-1 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
                 <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress_percent}%` }} />
               </div>
-              <span className="w-10 text-right text-body-sm font-semibold text-slate-900">{p.progress_percent}%</span>
+              <span className="w-10 text-right text-body-sm font-semibold text-brand-dark dark:text-white">{p.progress_percent}%</span>
             </div>
 
             {/* Display assigned team members if any */}
             {(p.team && p.team.length > 0 && assigningId !== p.id) && (
               <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                <span className="mr-1 font-label-caps text-body-xs uppercase text-slate-500">Team:</span>
+                <span className="mr-1 font-label-caps text-body-xs uppercase text-ink-muted dark:text-dark-ink-muted">Team:</span>
                 {p.team.map((m) => (
-                  <span key={m.id} className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-0.5 text-body-xs font-medium text-blue-700">
+                  <span key={m.id} className="inline-flex items-center rounded-full border border-blue-200 bg-accent-cyan-pale dark:bg-blue-900/30 px-2.5 py-0.5 text-body-xs font-medium text-brand">
                     {m.employee_code || 'EMP'}{m.designation ? ` · ${m.designation}` : ''}
                   </span>
                 ))}
@@ -2491,12 +2491,12 @@ function TeamProjects({ accessToken, userId }) {
             )}
 
             {assigningId === p.id ? (
-              <div className="space-y-3 border-t border-slate-200 pt-3">
-                <p className="font-label-caps text-label-caps uppercase text-slate-600">Select team members</p>
+              <div className="space-y-3 border-t border-outline-variant dark:border-dark-outline-variant pt-3">
+                <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Select team members</p>
                 <div className="flex flex-wrap gap-2">
                   {employees.map((emp) => (
                     <button key={emp.id} type="button" onClick={() => toggleTeamMember(emp.id)}
-                      className={`rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${teamSelection.includes(emp.id) ? 'border-brand bg-brand text-white shadow-sm' : 'border-slate-200 bg-white text-slate-700 hover:border-brand'}`}>
+                      className={`rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${teamSelection.includes(emp.id) ? 'border-brand bg-brand text-white shadow-sm' : 'border-outline-variant dark:border-dark-outline-variant bg-white text-ink dark:text-white hover:border-brand'}`}>
                       {emp.employee_code}{emp.designation ? ` · ${emp.designation}` : ''}
                     </button>
                   ))}
@@ -2513,7 +2513,7 @@ function TeamProjects({ accessToken, userId }) {
             )}
           </div>
         ))}
-        {!projects.length && <p className="py-8 text-center text-body-sm text-slate-600">No projects assigned to you yet.</p>}
+        {!projects.length && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No projects assigned to you yet.</p>}
       </div>
     </div>
   );
@@ -2609,14 +2609,14 @@ function TaskBoard({ accessToken, userId }) {
     <div className="space-y-stack-md">
       {toast.msg && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.type === 'success' ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+          toast.type === 'success' ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text' : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast.msg}</p>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-slate-500">Project:</span>
-          <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-body-md font-semibold text-slate-900 focus:border-brand focus:outline-none">
+          <span className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Project:</span>
+          <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white px-3 py-2 text-body-md font-semibold text-brand-dark dark:text-white focus:border-brand focus:outline-none">
             {!projects.length && <option value="">No projects</option>}
             {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
           </select>
@@ -2627,8 +2627,8 @@ function TaskBoard({ accessToken, userId }) {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h4 className="font-display text-body-lg font-bold text-slate-900">Add Task to {activeProjectTitle}</h4>
+        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+          <h4 className="font-display text-body-lg font-bold text-brand-dark dark:text-white">Add Task to {activeProjectTitle}</h4>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="sm:col-span-2">
               <input required type="text" placeholder="Task title *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={FORM_INPUT_CLASS} />
@@ -2656,35 +2656,35 @@ function TaskBoard({ accessToken, userId }) {
           {TASK_STATUS_COLUMNS.filter((c) => c !== 'blocked').map((col) => {
             const colTasks = tasks.filter((t) => t.status === col);
             return (
-              <div key={col} className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <p className="font-label-caps text-label-caps font-bold uppercase text-slate-800">
+              <div key={col} className="space-y-3 rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-4 shadow-sm">
+                <div className="flex items-center justify-between border-b border-outline-variant/50 dark:border-dark-outline-variant/50 pb-2">
+                  <p className="font-label-caps text-label-caps font-bold uppercase text-ink dark:text-white">
                     {col.replace('_', ' ')}
                   </p>
-                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-body-xs font-semibold text-slate-600">{colTasks.length}</span>
+                  <span className="rounded-full bg-surface-container dark:bg-dark-surface-container px-2 py-0.5 text-body-xs font-semibold text-ink-muted dark:text-dark-ink-muted">{colTasks.length}</span>
                 </div>
                 <div className="space-y-2.5">
                   {colTasks.map((t) => (
-                    <div key={t.id} className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3.5 shadow-sm transition-all hover:border-slate-300 hover:shadow">
+                    <div key={t.id} className="space-y-2 rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container p-3.5 shadow-sm transition-all hover:border-outline-variant dark:border-dark-outline-variant hover:shadow">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-body-sm font-semibold leading-snug text-slate-900">{t.title}</p>
+                        <p className="text-body-sm font-semibold leading-snug text-brand-dark dark:text-white">{t.title}</p>
                         <StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
                       </div>
                       {assigneeLabel(t.assigned_to) && (
-                        <p className="flex items-center gap-1 text-body-xs text-slate-500">
-                          <Icon name="person" className="text-xs text-slate-400" />
+                        <p className="flex items-center gap-1 text-body-xs text-ink-muted dark:text-dark-ink-muted">
+                          <Icon name="person" className="text-xs text-ink-muted dark:text-dark-ink-muted" />
                           <span>{assigneeLabel(t.assigned_to)}</span>
                         </p>
                       )}
                       {t.due_date && (
-                        <p className="flex items-center gap-1 text-body-xs text-slate-400">
+                        <p className="flex items-center gap-1 text-body-xs text-ink-muted dark:text-dark-ink-muted">
                           <Icon name="event" className="text-xs" />
                           <span>Due: {t.due_date}</span>
                         </p>
                       )}
                       <div className="pt-1">
                         <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
-                          className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-body-xs font-medium text-slate-700 focus:border-brand focus:outline-none">
+                          className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-2 py-1 text-body-xs font-medium text-ink dark:text-white focus:border-brand focus:outline-none">
                           {TASK_STATUS_COLUMNS.filter((c) => c !== 'blocked').map((s) => (
                             <option key={s} value={s}>Move to: {s.replace('_', ' ').toUpperCase()}</option>
                           ))}
@@ -2693,7 +2693,7 @@ function TaskBoard({ accessToken, userId }) {
                     </div>
                   ))}
                   {!colTasks.length && (
-                    <div className="rounded-lg border border-dashed border-slate-200 py-6 text-center text-body-xs text-slate-400">
+                    <div className="rounded-lg border border-dashed border-outline-variant dark:border-dark-outline-variant py-6 text-center text-body-xs text-ink-muted dark:text-dark-ink-muted">
                       No tasks
                     </div>
                   )}
@@ -2758,28 +2758,28 @@ function Approvals({ accessToken }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div key={stat.label} className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-slate-600">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-slate-900">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-white">{stat.value}</p>
           </div>
         ))}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-slate-900">Filter:</span>
+          <span className="font-label-caps text-label-caps uppercase text-brand-dark dark:text-white">Filter:</span>
           {['submitted', 'approved', 'rejected', 'all'].map((s) => (
             <button key={s} onClick={() => setFilter(s)}
               className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
-                filter === s ? 'border-brand bg-brand text-white' : 'border-slate-300 text-slate-600 hover:border-brand hover:text-brand'
+                filter === s ? 'border-brand bg-brand text-white' : 'border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted hover:border-brand hover:text-brand'
               }`}>{s}
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-slate-900">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark dark:text-white">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
@@ -2787,14 +2787,14 @@ function Approvals({ accessToken }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('approved') || toast.includes('rejected')
-            ? 'border border-green-500/30 bg-green-500/10 text-green-800'
-            : 'border border-red-500/30 bg-red-500/10 text-red-800'
+            ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text'
+            : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr>
               <th className="px-stack-lg py-4">Employee</th>
               <th className="px-stack-lg py-4">Date</th>
@@ -2804,18 +2804,18 @@ function Approvals({ accessToken }) {
               <th className="px-stack-lg py-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {visible.map((t) => (
-              <tr key={t.id} className="transition-colors hover:bg-blue-50">
-                <td className="px-stack-lg py-4">
-                  <p className="text-body-md font-semibold text-slate-900">{t.employee_name || t.employee_code || '—'}</p>
-                  {t.employee_code && t.employee_name && <p className="text-body-sm text-slate-600">{t.employee_code}</p>}
+              <tr key={t.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                <td data-label="Employee" className="px-stack-lg py-4">
+                  <p className="text-body-md font-semibold text-brand-dark dark:text-white">{t.employee_name || t.employee_code || '—'}</p>
+                  {t.employee_code && t.employee_name && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.employee_code}</p>}
                 </td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{t.date}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-900">{t.hours}h</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{t.description || '—'}</td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={TIMESHEET_STATUS_COLOR[t.status]}>{t.status}</StatusBadge></td>
-                <td className="px-stack-lg py-4">
+                <td data-label="Date" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.date}</td>
+                <td data-label="Hours" className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-white">{t.hours}h</td>
+                <td data-label="Description" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.description || '—'}</td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={TIMESHEET_STATUS_COLOR[t.status]}>{t.status}</StatusBadge></td>
+                <td data-label="Actions" className="px-stack-lg py-4">
                   <div className="flex gap-2">
                     <RowAction disabled={actingId === t.id} onClick={() => review(t.id, 'approved')}>Approve</RowAction>
                     <RowAction variant="outline" disabled={actingId === t.id} onClick={() => review(t.id, 'rejected')}>Reject</RowAction>
@@ -2823,7 +2823,7 @@ function Approvals({ accessToken }) {
                 </td>
               </tr>
             ))}
-            {!visible.length && <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No timesheets to show.</td></tr>}
+            {!visible.length && <tr><td data-label="Employee" colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No timesheets to show.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -2879,19 +2879,19 @@ function MyTasksBoard({ accessToken, userId }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div key={stat.label} className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-slate-600">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-slate-900">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-white">{stat.value}</p>
           </div>
         ))}
       </div>
 
       {toast.msg && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
-          toast.type === 'success' ? 'border border-green-500/30 bg-green-500/10 text-green-800' : 'border border-red-500/30 bg-red-500/10 text-red-800'
+          toast.type === 'success' ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text' : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast.msg}</p>
       )}
 
@@ -2899,29 +2899,29 @@ function MyTasksBoard({ accessToken, userId }) {
         {TASK_STATUS_COLUMNS.map((col) => {
           const colTasks = tasks.filter((t) => t.status === col);
           return (
-            <div key={col} className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <p className="font-label-caps text-label-caps font-bold uppercase text-slate-800">
+            <div key={col} className="space-y-3 rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between border-b border-outline-variant/50 dark:border-dark-outline-variant/50 pb-2">
+                <p className="font-label-caps text-label-caps font-bold uppercase text-ink dark:text-white">
                   {col.replace('_', ' ')}
                 </p>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-body-xs font-semibold text-slate-600">{colTasks.length}</span>
+                <span className="rounded-full bg-surface-container dark:bg-dark-surface-container px-2 py-0.5 text-body-xs font-semibold text-ink-muted dark:text-dark-ink-muted">{colTasks.length}</span>
               </div>
               <div className="space-y-2.5">
                 {colTasks.map((t) => (
-                  <div key={t.id} className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3.5 shadow-sm transition-all hover:border-slate-300 hover:shadow">
+                  <div key={t.id} className="space-y-2 rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container p-3.5 shadow-sm transition-all hover:border-outline-variant dark:border-dark-outline-variant hover:shadow">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-body-sm font-semibold leading-snug text-slate-900">{t.title}</p>
+                      <p className="text-body-sm font-semibold leading-snug text-brand-dark dark:text-white">{t.title}</p>
                       <StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
                     </div>
                     {t.due_date && (
-                      <p className="flex items-center gap-1 text-body-xs text-slate-400">
+                      <p className="flex items-center gap-1 text-body-xs text-ink-muted dark:text-dark-ink-muted">
                         <Icon name="event" className="text-xs" />
                         <span>Due: {t.due_date}</span>
                       </p>
                     )}
                     <div className="pt-1">
                       <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
-                        className="w-full rounded border border-slate-200 bg-white px-2 py-1 text-body-xs font-medium text-slate-700 focus:border-brand focus:outline-none">
+                        className="w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-2 py-1 text-body-xs font-medium text-ink dark:text-white focus:border-brand focus:outline-none">
                         {TASK_STATUS_COLUMNS.map((s) => (
                           <option key={s} value={s}>Move to: {s.replace('_', ' ').toUpperCase()}</option>
                         ))}
@@ -2930,7 +2930,7 @@ function MyTasksBoard({ accessToken, userId }) {
                   </div>
                 ))}
                 {!colTasks.length && (
-                  <div className="rounded-lg border border-dashed border-slate-200 py-6 text-center text-body-xs text-slate-400">
+                  <div className="rounded-lg border border-dashed border-outline-variant dark:border-dark-outline-variant py-6 text-center text-body-xs text-ink-muted dark:text-dark-ink-muted">
                     No tasks
                   </div>
                 )}
@@ -2997,28 +2997,28 @@ function TestQueue({ accessToken }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div key={stat.label} className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-slate-600">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-slate-900">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-white">{stat.value}</p>
           </div>
         ))}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-slate-900">Filter:</span>
+          <span className="font-label-caps text-label-caps uppercase text-brand-dark dark:text-white">Filter:</span>
           {['in_review', 'done', 'blocked', 'all'].map((s) => (
             <button key={s} onClick={() => setFilter(s)}
               className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
-                filter === s ? 'border-brand bg-brand text-white' : 'border-slate-300 text-slate-600 hover:border-brand hover:text-brand'
+                filter === s ? 'border-brand bg-brand text-white' : 'border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted hover:border-brand hover:text-brand'
               }`}>{s.replace('_', ' ')}
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-slate-900">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark dark:text-white">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
@@ -3026,14 +3026,14 @@ function TestQueue({ accessToken }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('passed') || toast.includes('success')
-            ? 'border border-green-500/30 bg-green-500/10 text-green-800'
-            : 'border border-red-500/30 bg-red-500/10 text-red-800'
+            ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text'
+            : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr>
               <th className="px-stack-lg py-4">Task</th>
               <th className="px-stack-lg py-4">Priority</th>
@@ -3042,14 +3042,14 @@ function TestQueue({ accessToken }) {
               <th className="px-stack-lg py-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {visible.map((t) => (
-              <tr key={t.id} className="transition-colors hover:bg-blue-50">
-                <td className="px-stack-lg py-4 text-body-md text-slate-900">{t.title}</td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge></td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={TASK_STATUS_COLOR[t.status]}>{t.status?.replace('_', ' ')}</StatusBadge></td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{t.due_date || '—'}</td>
-                <td className="px-stack-lg py-4">
+              <tr key={t.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                <td data-label="Task" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-white">{t.title}</td>
+                <td data-label="Priority" className="px-stack-lg py-4"><StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge></td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={TASK_STATUS_COLOR[t.status]}>{t.status?.replace('_', ' ')}</StatusBadge></td>
+                <td data-label="Due" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.due_date || '—'}</td>
+                <td data-label="Actions" className="px-stack-lg py-4">
                   <div className="flex gap-2">
                     <RowAction disabled={savingId === t.id} onClick={() => resolve(t.id, 'done')}>Pass</RowAction>
                     <RowAction variant="outline" disabled={savingId === t.id} onClick={() => resolve(t.id, 'blocked')}>Fail / Log Bug</RowAction>
@@ -3057,7 +3057,7 @@ function TestQueue({ accessToken }) {
                 </td>
               </tr>
             ))}
-            {!visible.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">Nothing waiting for QA sign-off.</td></tr>}
+            {!visible.length && <tr><td data-label="Task" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">Nothing waiting for QA sign-off.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -3160,28 +3160,28 @@ function TicketQueue({ accessToken, userId }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div key={stat.label} className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-slate-600">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-slate-900">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-white">{stat.value}</p>
           </div>
         ))}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-slate-900">Filter:</span>
+          <span className="font-label-caps text-label-caps uppercase text-brand-dark dark:text-white">Filter:</span>
           {['all', 'open', 'in_progress', 'resolved', 'closed'].map((s) => (
             <button key={s} onClick={() => setFilter(s)}
               className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
-                filter === s ? 'border-brand bg-brand text-white' : 'border-slate-300 text-slate-600 hover:border-brand hover:text-brand'
+                filter === s ? 'border-brand bg-brand text-white' : 'border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted hover:border-brand hover:text-brand'
               }`}>{s.replace('_', ' ')}
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-slate-900">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark dark:text-white">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
@@ -3189,29 +3189,29 @@ function TicketQueue({ accessToken, userId }) {
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('sent') || toast.includes('assigned') || toast.includes('resolved') || toast.includes('closed')
-            ? 'border border-green-500/30 bg-green-500/10 text-green-800'
-            : 'border border-red-500/30 bg-red-500/10 text-red-800'
+            ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text'
+            : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
 
       <div className="space-y-4">
         {visible.map((t) => (
-          <div key={t.id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div key={t.id} className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
             <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="font-display text-body-md font-semibold text-slate-900">{t.subject}</p>
-                <p className="text-body-sm text-slate-600">{t.ticket_number}</p>
+                <p className="font-display text-body-md font-semibold text-brand-dark dark:text-white">{t.subject}</p>
+                <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.ticket_number}</p>
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge variant={TICKET_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
                 <StatusBadge variant={TICKET_STATUS_COLOR[t.status]}>{t.status.replace('_', ' ')}</StatusBadge>
               </div>
             </div>
-            <p className="mb-3 text-body-sm text-slate-600">{t.description}</p>
+            <p className="mb-3 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.description}</p>
             <div className="flex flex-wrap items-center gap-2">
               {!t.assigned_to && <RowAction disabled={savingId === t.id} onClick={() => assignToMe(t.id)}>Assign to me</RowAction>}
               <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
-                className="rounded border border-slate-200 bg-white px-2 py-1.5 text-body-sm text-slate-900">
+                className="rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-2 py-1.5 text-body-sm text-brand-dark dark:text-white">
                 {['open', 'in_progress', 'resolved', 'closed'].map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
               </select>
               <RowAction variant="outline" onClick={() => setOpenTicketId(openTicketId === t.id ? null : t.id)}>Reply</RowAction>
@@ -3219,13 +3219,13 @@ function TicketQueue({ accessToken, userId }) {
             {openTicketId === t.id && (
               <div className="mt-3 flex gap-2">
                 <textarea rows={2} value={replyDraft[t.id] || ''} onChange={(e) => setReplyDraft((prev) => ({ ...prev, [t.id]: e.target.value }))}
-                  placeholder="Type a reply..." className="flex-1 rounded border border-slate-200 bg-white px-3 py-2 text-body-sm text-slate-900 placeholder-slate-400 focus:border-brand focus:outline-none" />
+                  placeholder="Type a reply..." className="flex-1 rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-3 py-2 text-body-sm text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none" />
                 <RowAction disabled={savingId === t.id} onClick={() => sendReply(t.id)}>Send</RowAction>
               </div>
             )}
           </div>
         ))}
-        {!visible.length && <p className="py-8 text-center text-body-sm text-slate-600">No tickets in the queue.</p>}
+        {!visible.length && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No tickets in the queue.</p>}
       </div>
     </div>
   );
@@ -3293,7 +3293,7 @@ function Invoices({ accessToken }) {
         <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Invoice</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
           <div className="grid gap-4 sm:grid-cols-3">
             <select required value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className={FORM_INPUT_CLASS}>
               <option value="" disabled>Select client</option>
@@ -3313,20 +3313,20 @@ function Invoices({ accessToken }) {
           </div>
         </form>
       )}
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr><th className="px-stack-lg py-4">Invoice</th><th className="px-stack-lg py-4">Client</th><th className="px-stack-lg py-4">Total</th><th className="px-stack-lg py-4">Due</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Actions</th></tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {invoices.map((inv) => (
-              <tr key={inv.id} className="transition-colors hover:bg-blue-50">
-                <td className="px-stack-lg py-4 text-body-md text-slate-900">{inv.invoice_number}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{clientName(inv.client_id)}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-900">{inv.currency} {Number(inv.total_amount).toLocaleString()}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{inv.due_date}</td>
-                <td className="px-stack-lg py-4"><StatusBadge variant={INVOICE_STATUS_COLOR[inv.status]}>{inv.status}</StatusBadge></td>
-                <td className="px-stack-lg py-4">
+              <tr key={inv.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                <td data-label="Invoice" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-white">{inv.invoice_number}</td>
+                <td data-label="Client" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{clientName(inv.client_id)}</td>
+                <td data-label="Total" className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-white">{inv.currency} {Number(inv.total_amount).toLocaleString()}</td>
+                <td data-label="Due" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{inv.due_date}</td>
+                <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={INVOICE_STATUS_COLOR[inv.status]}>{inv.status}</StatusBadge></td>
+                <td data-label="Actions" className="px-stack-lg py-4">
                   <div className="flex gap-2">
                     {inv.status === 'draft' && <RowAction disabled={actingId === inv.id} onClick={() => send(inv.id)}>Send</RowAction>}
                     {(inv.status === 'sent' || inv.status === 'overdue') && <RowAction disabled={actingId === inv.id} onClick={() => markPaid(inv)}>Record Payment</RowAction>}
@@ -3334,7 +3334,7 @@ function Invoices({ accessToken }) {
                 </td>
               </tr>
             ))}
-            {!invoices.length && <tr><td colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No invoices yet.</td></tr>}
+            {!invoices.length && <tr><td data-label="Invoice" colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No invoices yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -3388,29 +3388,29 @@ function LeaveApprovals({ accessToken }) {
     <div className="space-y-stack-md">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-slate-900">Filter:</span>
+          <span className="font-label-caps text-label-caps uppercase text-brand-dark dark:text-white">Filter:</span>
           {['pending', 'approved', 'rejected', 'all'].map((s) => (
             <button key={s} onClick={() => setFilter(s)}
               className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
-                filter === s ? 'border-brand bg-brand text-white' : 'border-slate-300 text-slate-600 hover:border-brand hover:text-brand'
+                filter === s ? 'border-brand bg-brand text-white' : 'border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted hover:border-brand hover:text-brand'
               }`}>{s}
             </button>
           ))}
         </div>
-        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-slate-900">
+        <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark dark:text-white">
           <Icon name="refresh" className="text-base" /> Refresh
         </button>
       </div>
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('approved') || toast.includes('rejected')
-            ? 'border border-green-500/30 bg-green-500/10 text-green-800'
-            : 'border border-red-500/30 bg-red-500/10 text-red-800'
+            ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text'
+            : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr>
               <th className="px-stack-lg py-4">Employee</th>
               <th className="px-stack-lg py-4">Type</th>
@@ -3422,24 +3422,24 @@ function LeaveApprovals({ accessToken }) {
               <th className="px-stack-lg py-4">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {leaves.map((l) => {
               const days = l.start_date && l.end_date
                 ? Math.ceil((new Date(l.end_date) - new Date(l.start_date)) / 86400000) + 1
                 : '—';
               return (
-                <tr key={l.id} className="transition-colors hover:bg-blue-50">
-                  <td className="px-stack-lg py-4">
-                    <p className="text-body-md font-semibold text-slate-900">{l.employee_code || '—'}</p>
-                    {l.designation && <p className="text-body-sm text-slate-600">{l.designation}</p>}
+                <tr key={l.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                  <td data-label="Employee" className="px-stack-lg py-4">
+                    <p className="text-body-md font-semibold text-brand-dark dark:text-white">{l.employee_code || '—'}</p>
+                    {l.designation && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.designation}</p>}
                   </td>
-                  <td className="px-stack-lg py-4 text-body-md capitalize text-slate-900">{l.type}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{l.start_date}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{l.end_date}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{days}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-slate-600">{l.reason || '—'}</td>
-                  <td className="px-stack-lg py-4"><StatusBadge variant={LEAVE_STATUS_COLOR[l.status]}>{l.status}</StatusBadge></td>
-                  <td className="px-stack-lg py-4">
+                  <td data-label="Type" className="px-stack-lg py-4 text-body-md capitalize text-brand-dark dark:text-white">{l.type}</td>
+                  <td data-label="From" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.start_date}</td>
+                  <td data-label="To" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.end_date}</td>
+                  <td data-label="Days" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{days}</td>
+                  <td data-label="Reason" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.reason || '—'}</td>
+                  <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={LEAVE_STATUS_COLOR[l.status]}>{l.status}</StatusBadge></td>
+                  <td data-label="Actions" className="px-stack-lg py-4">
                     {l.status === 'pending' && (
                       <div className="flex gap-2">
                         <RowAction disabled={actingId === l.id} onClick={() => review(l.id, 'approved')}>Approve</RowAction>
@@ -3450,7 +3450,7 @@ function LeaveApprovals({ accessToken }) {
                 </tr>
               );
             })}
-            {!leaves.length && <tr><td colSpan={8} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No leave requests found.</td></tr>}
+            {!leaves.length && <tr><td data-label="Employee" colSpan={8} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No leave requests found.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -3519,61 +3519,61 @@ function Recruitment({ accessToken }) {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
         {kpis.map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div key={stat.label} className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
             <div className="mb-2 flex items-center gap-3">
               <Icon name={stat.icon} className="text-2xl text-brand" />
-              <span className="font-label-caps text-label-caps text-slate-600">{stat.label}</span>
+              <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{stat.label}</span>
             </div>
-            <p className="font-stat text-stat-lg text-slate-900">{stat.value}</p>
+            <p className="font-stat text-stat-lg text-brand-dark dark:text-white">{stat.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h3 className="font-display text-headline-sm text-slate-900">Open Positions</h3>
-          <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-slate-900">
+          <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Open Positions</h3>
+          <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark dark:text-white">
             <Icon name="refresh" className="text-base" /> Refresh
           </button>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {openPositions.map((p) => (
-            <div key={p.id} className="rounded-lg border border-slate-200 p-4">
-              <p className="mb-1 font-display text-body-lg font-semibold text-slate-900">{p.title}</p>
-              <p className="text-body-sm capitalize text-slate-600">
+            <div key={p.id} className="rounded-lg border border-outline-variant dark:border-dark-outline-variant p-4">
+              <p className="mb-1 font-display text-body-lg font-semibold text-brand-dark dark:text-white">{p.title}</p>
+              <p className="text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">
                 {p.department || 'General'} · {p.location || 'Remote'} · {String(p.employment_type || 'full_time').replace('_', ' ')}
               </p>
-              <p className="mt-1 text-body-sm text-slate-600">{p.experience_required ? `Experience: ${p.experience_required}` : ''}</p>
+              <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.experience_required ? `Experience: ${p.experience_required}` : ''}</p>
             </div>
           ))}
-          {!openPositions.length && <p className="text-body-sm text-slate-600">No open positions right now.</p>}
+          {!openPositions.length && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">No open positions right now.</p>}
         </div>
       </div>
 
       {toast && (
         <p className={`rounded-lg px-4 py-2 text-body-sm ${
           toast.includes('success') || toast.includes('updated')
-            ? 'border border-green-500/30 bg-green-500/10 text-green-800'
-            : 'border border-red-500/30 bg-red-500/10 text-red-800'
+            ? 'border border-green-500/30 bg-status-success-bg0/10 text-status-success-text'
+            : 'border border-status-error/30 bg-red-500/10 text-red-800'
         }`}>{toast}</p>
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="font-label-caps text-label-caps uppercase text-slate-900">Filter:</span>
+          <span className="font-label-caps text-label-caps uppercase text-brand-dark dark:text-white">Filter:</span>
           {['all', ...APPLICATION_STATUS_OPTIONS].map((s) => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`rounded border px-3 py-1.5 font-label-caps text-label-caps uppercase transition-colors ${
-                statusFilter === s ? 'border-brand bg-brand text-white' : 'border-slate-300 text-slate-600 hover:border-brand hover:text-brand'
+                statusFilter === s ? 'border-brand bg-brand text-white' : 'border-outline-variant dark:border-dark-outline-variant text-ink-muted dark:text-dark-ink-muted hover:border-brand hover:text-brand'
               }`}>{s}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-slate-50">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-surface-container dark:bg-dark-surface-container">
         <table className="w-full text-left">
-          <thead className="bg-slate-50 font-label-caps text-label-caps uppercase text-slate-500">
+          <thead className="bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">
             <tr>
               <th className="px-stack-lg py-4">Applicant</th>
               <th className="px-stack-lg py-4">Position</th>
@@ -3582,25 +3582,25 @@ function Recruitment({ accessToken }) {
               <th className="px-stack-lg py-4">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-200">
+          <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
             {filtered.map((a) => (
-              <tr key={a.id} className="transition-colors hover:bg-blue-50">
-                <td className="px-stack-lg py-4 text-body-md text-slate-900">{a.full_name}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{positionTitle(a.career_id)}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{a.email}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-600">{(a.created_at || '').slice(0, 10) || '—'}</td>
-                <td className="px-stack-lg py-4">
+              <tr key={a.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+                <td data-label="Applicant" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-white">{a.full_name}</td>
+                <td data-label="Position" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{positionTitle(a.career_id)}</td>
+                <td data-label="Email" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{a.email}</td>
+                <td data-label="Applied" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{(a.created_at || '').slice(0, 10) || '—'}</td>
+                <td data-label="Status" className="px-stack-lg py-4">
                   <div className="flex items-center gap-2">
                     <StatusBadge variant={APPLICATION_STATUS_COLOR[a.status]}>{a.status}</StatusBadge>
                     <select value={a.status} disabled={savingId === a.id} onChange={(e) => changeStatus(a.id, e.target.value)}
-                      className="rounded border border-slate-200 bg-white px-2 py-1 text-body-sm text-slate-900">
+                      className="rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-2 py-1 text-body-sm text-brand-dark dark:text-white">
                       {APPLICATION_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
                 </td>
               </tr>
             ))}
-            {!filtered.length && <tr><td colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-slate-600">No applications found.</td></tr>}
+            {!filtered.length && <tr><td data-label="Applicant" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No applications found.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -3850,14 +3850,14 @@ export default function EmployeePortal() {
   if (loading) return <div className="bg-white/10 py-section-padding"><LoadingSpinner /></div>;
 
   return (
-    <div className="flex h-screen flex-col" style={{ backgroundColor: '#102C4F' }}>
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b px-margin-mobile py-3 md:px-margin-desktop" style={{ backgroundColor: '#0d2240', borderColor: '#1a3a5e' }}>
+    <div className="flex h-screen flex-col bg-dark-surface">
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-brand-dark/30 bg-brand-dark px-margin-mobile py-3 md:px-margin-desktop">
         <div className="flex items-center gap-4">
           <Avatar name={profile.name} size="lg" />
           <div>
-            <p className="mb-1 font-label-caps text-body-xs uppercase tracking-widest text-blue-300">{portalTitle}</p>
-            <h1 className="font-display text-headline-md font-bold text-slate-900">{profile.name}</h1>
-            <p className="text-body-sm text-blue-200">{profile.email} &middot; {profile.designation} &middot; {profile.department}</p>
+            <p className="mb-1 font-label-caps text-body-xs uppercase tracking-widest text-white/60">{portalTitle}</p>
+            <h1 className="font-display text-headline-md font-bold text-brand-dark dark:text-white">{profile.name}</h1>
+            <p className="text-body-sm text-white/70">{profile.email} &middot; {profile.designation} &middot; {profile.department}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -3868,12 +3868,12 @@ export default function EmployeePortal() {
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-56 shrink-0 overflow-y-auto border-r md:block" style={{ backgroundColor: '#0d2240', borderColor: '#1a3a5e' }}>
-          <nav className="flex flex-col gap-1 p-3">
+        <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-brand-dark/30 bg-brand-dark md:block">
+          <nav aria-label="Portal navigation" className="flex flex-col gap-1 p-3">
             {portalTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
-                  activeTab === tab.id ? 'bg-white/20 font-bold text-white' : 'text-blue-200 hover:bg-white/10 hover:text-white'
+                  activeTab === tab.id ? 'bg-white/20 font-bold text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>
@@ -3882,11 +3882,11 @@ export default function EmployeePortal() {
         </aside>
 
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b px-margin-mobile py-2 md:hidden" style={{ backgroundColor: '#0d2240', borderColor: '#1a3a5e' }}>
+          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b px-margin-mobile py-2 md:hidden">
             {portalTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
-                  activeTab === tab.id ? 'border-white font-bold text-white' : 'border-transparent text-blue-200 hover:border-blue-400 hover:text-white'
+                  activeTab === tab.id ? 'border-white font-bold text-white' : 'border-transparent text-white/70 hover:border-white/40 hover:text-white'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>

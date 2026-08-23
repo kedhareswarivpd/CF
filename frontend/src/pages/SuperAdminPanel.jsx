@@ -19,9 +19,9 @@ import {
   fetchBackups, triggerBackup, deleteBackup, backupDownloadUrl,
 } from '../api/admin.js';
 
-const TABLE_HEADER = 'bg-slate-100 font-label-caps text-label-caps uppercase text-slate-500';
+const TABLE_HEADER = 'bg-surface-container dark:bg-dark-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted';
 const TABLE_HEADER_TH = 'px-stack-lg py-4 text-left';
-const TABLE_ROW_HOVER = 'transition-colors hover:bg-slate-100';
+const TABLE_ROW_HOVER = 'transition-colors hover:bg-surface-container dark:bg-dark-surface-container';
 const superAdminTabs = [
   { id: 'overview', label: 'Overview', icon: 'dashboard' },
   { id: 'departments', label: 'Departments', icon: 'apartment' },
@@ -35,10 +35,10 @@ const superAdminTabs = [
 
 function ComingSoon({ icon, title, description }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-stack-lg py-12 text-center">
-      <Icon name={icon} className="mb-3 text-4xl text-slate-400" />
-      <h3 className="mb-2 font-display text-headline-sm text-slate-900">{title}</h3>
-      <p className="mx-auto max-w-md text-body-sm text-slate-500">{description}</p>
+    <div className="rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white p-stack-lg py-12 text-center">
+      <Icon name={icon} className="mb-3 text-4xl text-ink-muted dark:text-dark-ink-muted" />
+      <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-white">{title}</h3>
+      <p className="mx-auto max-w-md text-body-sm text-ink-muted dark:text-dark-ink-muted">{description}</p>
     </div>
   );
 }
@@ -55,7 +55,7 @@ function Overview() {
 
   if (loading) return <LoadingSpinner />;
   const cards = [
-    { label: 'Employees', value: kpis.total_employees, icon: 'badge', color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Employees', value: kpis.total_employees, icon: 'badge', color: 'text-brand', bg: 'bg-accent-cyan-pale dark:bg-blue-900/30' },
     { label: 'Clients', value: kpis.total_clients, icon: 'business', color: 'text-emerald-600', bg: 'bg-emerald-50' },
     { label: 'Projects', value: kpis.total_projects, icon: 'folder', color: 'text-violet-600', bg: 'bg-violet-50' },
     { label: 'Revenue', value: `$${(kpis.total_revenue / 1000000).toFixed(1)}M`, icon: 'payments', color: 'text-amber-600', bg: 'bg-amber-50' },
@@ -64,17 +64,17 @@ function Overview() {
     <div className="space-y-stack-lg">
       <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
         {cards.map((c) => (
-          <div key={c.label} className="flex flex-col rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+          <div key={c.label} className="flex flex-col rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
             <div className={`mb-4 inline-flex size-11 items-center justify-center rounded-xl ${c.bg}`}>
               <Icon name={c.icon} className={`text-2xl ${c.color}`} />
             </div>
-            <p className="font-stat text-3xl font-bold text-slate-900">{c.value}</p>
-            <p className="mt-1 font-label-caps text-label-caps uppercase text-slate-500">{c.label}</p>
+            <p className="font-stat text-3xl font-bold text-brand-dark dark:text-white">{c.value}</p>
+            <p className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{c.label}</p>
           </div>
         ))}
       </div>
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-body-sm text-slate-600">
+      <div className="rounded-xl border border-outline-variant dark:border-dark-outline-variant bg-white p-6 shadow-sm">
+        <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
           This company-wide summary plus every screen in Admin Panel is available here. The tabs on the left are exclusive to Super Admin:
           org structure, the global role/permission matrix, GDPR tooling, and the full audit trail.
         </p>
@@ -125,7 +125,7 @@ function Departments({ accessToken }) {
         <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Department</Button>
       </div>
       {showForm && (
-        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-slate-200 bg-white p-stack-lg shadow-sm">
+        <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white p-stack-lg shadow-sm">
           <div className="grid gap-4 sm:grid-cols-2">
             <input required type="text" placeholder="Department name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={FORM_INPUT_CLASS} />
             <input type="text" placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={FORM_INPUT_CLASS} />
@@ -136,20 +136,20 @@ function Departments({ accessToken }) {
           </div>
         </form>
       )}
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white shadow-sm">
         <table className="w-full text-left">
           <thead className={TABLE_HEADER}>
             <tr><th className={TABLE_HEADER_TH}>Name</th><th className={TABLE_HEADER_TH}>Description</th><th className={TABLE_HEADER_TH}>Actions</th></tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
             {departments.map((d) => (
               <tr key={d.id} className={TABLE_ROW_HOVER}>
-                <td className="px-stack-lg py-4 text-body-md font-medium text-slate-900">{d.name}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-500">{d.description || '—'}</td>
-                <td className="px-stack-lg py-4"><RowAction variant="danger" disabled={actingId === d.id} onClick={() => remove(d.id)}>Delete</RowAction></td>
+                <td data-label="Name" className="px-stack-lg py-4 text-body-md font-medium text-brand-dark dark:text-white">{d.name}</td>
+                <td data-label="Description" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{d.description || '—'}</td>
+                <td data-label="Actions" className="px-stack-lg py-4"><RowAction variant="danger" disabled={actingId === d.id} onClick={() => remove(d.id)}>Delete</RowAction></td>
               </tr>
             ))}
-            {!departments.length && <tr><td colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-slate-400">No departments yet.</td></tr>}
+            {!departments.length && <tr><td data-label="Name" colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No departments yet.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -197,8 +197,8 @@ function RolesPermissions({ accessToken }) {
   if (loading) return <LoadingSpinner />;
   return (
     <div className="space-y-stack-lg">
-      <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-stack-lg shadow-sm">
-        <h3 className="font-display text-headline-sm text-slate-900">Custom Roles</h3>
+      <div className="space-y-4 rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white p-stack-lg shadow-sm">
+        <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Custom Roles</h3>
         <form onSubmit={handleCreateRole} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <input required type="text" placeholder="Name" value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} className={FORM_INPUT_CLASS} />
@@ -209,22 +209,22 @@ function RolesPermissions({ accessToken }) {
             <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Adding...' : 'Add Role'}</Button>
           </div>
         </form>
-        <div className="divide-y divide-slate-100">
+        <div className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
           {roles.map((r) => (
             <div key={r.id} className="flex items-center justify-between py-3">
               <div>
-                <p className="text-body-md font-semibold text-slate-900">{r.name} {r.is_system && <StatusBadge variant="neutral">system</StatusBadge>}</p>
-                <p className="text-body-sm text-slate-500">{r.slug} — {r.description || 'No description'}</p>
+                <p className="text-body-md font-semibold text-brand-dark dark:text-white">{r.name} {r.is_system && <StatusBadge variant="neutral">system</StatusBadge>}</p>
+                <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.slug} — {r.description || 'No description'}</p>
               </div>
               {!r.is_system && <RowAction variant="danger" disabled={actingId === r.id} onClick={() => removeRole(r.id)}>Delete</RowAction>}
             </div>
           ))}
-          {!roles.length && <p className="py-6 text-center text-body-sm text-slate-400">No custom roles yet — the 13 system roles from `UserRole` cover most needs.</p>}
+          {!roles.length && <p className="py-6 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No custom roles yet — the 13 system roles from `UserRole` cover most needs.</p>}
         </div>
       </div>
 
-      <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-stack-lg shadow-sm">
-        <h3 className="font-display text-headline-sm text-slate-900">Permissions</h3>
+      <div className="space-y-4 rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white p-stack-lg shadow-sm">
+        <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Permissions</h3>
         <form onSubmit={handleCreatePermission} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-3">
             <input required type="text" placeholder="Name" value={permForm.name} onChange={(e) => setPermForm({ ...permForm, name: e.target.value })} className={FORM_INPUT_CLASS} />
@@ -237,19 +237,19 @@ function RolesPermissions({ accessToken }) {
         </form>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {permissions.map((p) => (
-            <div key={p.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white p-3 transition-colors hover:bg-slate-100">
+            <div key={p.id} className="flex items-center justify-between gap-2 rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white p-3 transition-colors hover:bg-surface-container dark:bg-dark-surface-container">
               <div>
-                <p className="text-body-sm font-semibold text-slate-900">{p.name}</p>
-                <p className="text-body-sm text-slate-500">{p.module}.{p.action}</p>
+                <p className="text-body-sm font-semibold text-brand-dark dark:text-white">{p.name}</p>
+                <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.module}.{p.action}</p>
               </div>
               <button type="button" onClick={() => removePermission(p.id)} disabled={actingId === p.id}
-                className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-red-200 text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg border border-status-error/30 text-status-error transition-colors hover:bg-status-error-bg hover:text-status-error disabled:opacity-50"
                 aria-label={`Delete permission ${p.name}`}>
                 <Icon name="delete" className="text-base" />
               </button>
             </div>
           ))}
-          {!permissions.length && <p className="py-6 text-center text-body-sm text-slate-400 sm:col-span-2 lg:col-span-3">No permissions defined yet.</p>}
+          {!permissions.length && <p className="py-6 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted sm:col-span-2 lg:col-span-3">No permissions defined yet.</p>}
         </div>
       </div>
     </div>
@@ -304,18 +304,18 @@ function DataExportGdpr({ accessToken }) {
         <input type="text" placeholder="Search by name or email" value={search} onChange={(e) => setSearch(e.target.value)} className={`flex-1 ${FORM_INPUT_CLASS}`} />
         <Button type="submit" variant="primary" size="md" disabled={searching}>{searching ? 'Searching...' : 'Search'}</Button>
       </form>
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white shadow-sm">
         <table className="w-full text-left">
           <thead className={TABLE_HEADER}>
             <tr><th className={TABLE_HEADER_TH}>Name</th><th className={TABLE_HEADER_TH}>Email</th><th className={TABLE_HEADER_TH}>Role</th><th className={TABLE_HEADER_TH}>Actions</th></tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
             {results.map((u) => (
               <tr key={u.id} className={TABLE_ROW_HOVER}>
-                <td className="px-stack-lg py-4 text-body-md font-medium text-slate-900">{u.name}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-500">{u.email}</td>
-                <td className="px-stack-lg py-4 text-body-sm capitalize text-slate-500">{u.role?.replace('_', ' ')}</td>
-                <td className="px-stack-lg py-4">
+                <td data-label="Name" className="px-stack-lg py-4 text-body-md font-medium text-brand-dark dark:text-white">{u.name}</td>
+                <td data-label="Email" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{u.email}</td>
+                <td data-label="Role" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{u.role?.replace('_', ' ')}</td>
+                <td data-label="Actions" className="px-stack-lg py-4">
                   <div className="flex gap-2">
                     <RowAction disabled={actingId === u.id} onClick={() => doExport(u.id)}>Export Data</RowAction>
                     <RowAction variant="danger" disabled={actingId === u.id} onClick={() => doAnonymize(u.id)}>Anonymize</RowAction>
@@ -323,14 +323,14 @@ function DataExportGdpr({ accessToken }) {
                 </td>
               </tr>
             ))}
-            {!results.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-slate-400">Search for a user to export or anonymize their data.</td></tr>}
+            {!results.length && <tr><td data-label="Name" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">Search for a user to export or anonymize their data.</td></tr>}
           </tbody>
         </table>
       </div>
       {exportedJson && (
-        <div className="rounded-lg border border-slate-200 bg-white p-stack-lg shadow-sm">
-          <h3 className="mb-3 font-display text-headline-sm text-slate-900">Exported Data</h3>
-          <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-4 text-body-sm text-slate-700">{JSON.stringify(exportedJson, null, 2)}</pre>
+        <div className="rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white p-stack-lg shadow-sm">
+          <h3 className="mb-3 font-display text-headline-sm text-brand-dark dark:text-white">Exported Data</h3>
+          <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-surface-container dark:bg-dark-surface-container p-4 text-body-sm text-ink dark:text-white">{JSON.stringify(exportedJson, null, 2)}</pre>
         </div>
       )}
     </div>
@@ -348,21 +348,21 @@ function AuditLogs({ accessToken }) {
 
   if (loading) return <LoadingSpinner />;
   return (
-    <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+    <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white shadow-sm">
       <table className="w-full text-left">
         <thead className={TABLE_HEADER}>
           <tr><th className={TABLE_HEADER_TH}>Action</th><th className={TABLE_HEADER_TH}>Entity</th><th className={TABLE_HEADER_TH}>IP</th><th className={TABLE_HEADER_TH}>When</th></tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
           {logs.map((l) => (
             <tr key={l.id} className={TABLE_ROW_HOVER}>
-              <td className="px-stack-lg py-4 text-body-sm font-medium text-slate-900">{l.action}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-slate-500">{l.entity_type || '—'}</td>
-              <td className="px-stack-lg py-4 font-mono text-body-xs text-slate-500">{l.ip_address || '—'}</td>
-              <td className="px-stack-lg py-4 text-body-sm text-slate-500">{l.created_at ? new Date(l.created_at).toLocaleString() : '—'}</td>
+              <td data-label="Action" className="px-stack-lg py-4 text-body-sm font-medium text-brand-dark dark:text-white">{l.action}</td>
+              <td data-label="Entity" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.entity_type || '—'}</td>
+              <td data-label="IP" className="px-stack-lg py-4 font-mono text-body-xs text-ink-muted dark:text-dark-ink-muted">{l.ip_address || '—'}</td>
+              <td data-label="When" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.created_at ? new Date(l.created_at).toLocaleString() : '—'}</td>
             </tr>
           ))}
-          {!logs.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-slate-400">No audit activity yet.</td></tr>}
+          {!logs.length && <tr><td data-label="Action" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No audit activity yet.</td></tr>}
         </tbody>
       </table>
     </div>
@@ -414,36 +414,36 @@ function Backups({ accessToken }) {
   return (
     <div className="space-y-stack-lg">
       <div className="flex items-center justify-between">
-        <p className="text-body-sm text-slate-500">Real database backups (pg_dump), triggered manually — no scheduler runs automatically yet.</p>
+        <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Real database backups (pg_dump), triggered manually — no scheduler runs automatically yet.</p>
         <Button variant="primary" size="md" onClick={runBackup} disabled={triggering} icon={<Icon name="backup" />}>
           {triggering ? 'Running backup...' : 'Trigger Backup Now'}
         </Button>
       </div>
-      {error && <p className="flex items-center gap-1 text-body-sm text-red-600"><Icon name="error" className="text-base" />{error}</p>}
-      <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white shadow-sm">
+      {error && <p className="flex items-center gap-1 text-body-sm text-status-error"><Icon name="error" className="text-base" />{error}</p>}
+      <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant dark:border-dark-outline-variant bg-white shadow-sm">
         <table className="w-full text-left">
           <thead className={TABLE_HEADER}>
             <tr><th className={TABLE_HEADER_TH}>Filename</th><th className={TABLE_HEADER_TH}>Size</th><th className={TABLE_HEADER_TH}>Created</th><th className={TABLE_HEADER_TH}></th></tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-outline-variant/50 dark:divide-dark-outline-variant/50">
             {backups.map((b) => (
               <tr key={b.filename} className={TABLE_ROW_HOVER}>
-                <td className="px-stack-lg py-4 font-mono text-body-xs text-slate-900">{b.filename}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-500">{formatSize(b.size_bytes)}</td>
-                <td className="px-stack-lg py-4 text-body-sm text-slate-500">{b.created_at ? new Date(b.created_at).toLocaleString() : '—'}</td>
-                <td className="px-stack-lg py-4">
+                <td data-label="Filename" className="px-stack-lg py-4 font-mono text-body-xs text-brand-dark dark:text-white">{b.filename}</td>
+                <td data-label="Size" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{formatSize(b.size_bytes)}</td>
+                <td data-label="Created" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{b.created_at ? new Date(b.created_at).toLocaleString() : '—'}</td>
+                <td data-label="Filename" className="px-stack-lg py-4">
                   <div className="flex gap-3">
                     <a href={backupDownloadUrl(b.filename)} aria-label={`Download backup ${b.filename}`} className="text-brand hover:text-brand-dark" title="Download">
                       <Icon name="download" className="text-xl" />
                     </a>
-                    <button onClick={() => removeBackup(b.filename)} aria-label={`Delete backup ${b.filename}`} className="text-red-600 hover:opacity-70" title="Delete">
+                    <button onClick={() => removeBackup(b.filename)} aria-label={`Delete backup ${b.filename}`} className="text-status-error hover:opacity-70" title="Delete">
                       <Icon name="delete" className="text-xl" />
                     </button>
                   </div>
                 </td>
               </tr>
             ))}
-            {!backups.length && <tr><td colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-slate-400">No backups yet — trigger one above.</td></tr>}
+            {!backups.length && <tr><td data-label="Filename" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No backups yet — trigger one above.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -469,17 +469,17 @@ export default function SuperAdminPanel() {
   // /login?returnTo=..., preserving destination) and the wrong-role case
   // (to /admin, per the redirectTo passed above) — no separate effect needed.
   if (initializing || !user || denied || currentUser === null || currentUser.role !== 'super_admin') {
-    return <div className="bg-slate-50 py-section-padding"><LoadingSpinner /></div>;
+    return <div className="bg-surface-container dark:bg-dark-surface-container py-section-padding"><LoadingSpinner /></div>;
   }
 
   return (
-    <div className="flex h-screen flex-col" style={{ backgroundColor: '#102C4F' }}>
-      <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b px-margin-mobile py-3 md:px-margin-desktop" style={{ backgroundColor: '#0d2240', borderColor: '#1a3a5e' }}>
+    <div className="flex h-screen flex-col bg-dark-surface">
+      <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-brand-dark/30 bg-brand-dark px-margin-mobile py-3 md:px-margin-desktop">
         <div className="flex items-center gap-4">
           <Avatar name={currentUser?.name || 'Super Admin'} size="lg" />
           <div>
             <h1 className="font-display text-headline-md font-bold text-white">{currentUser?.name || 'Super Admin'}</h1>
-            <p className="text-body-sm" style={{ color: '#7da0ca' }}>{currentUser?.email || ''} &middot; super admin</p>
+            <p className="text-body-sm">{currentUser?.email || ''} &middot; super admin</p>
           </div>
         </div>
         <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
@@ -488,12 +488,12 @@ export default function SuperAdminPanel() {
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-56 shrink-0 overflow-y-auto border-r md:block" style={{ backgroundColor: '#0d2240', borderColor: '#1a3a5e' }}>
-          <nav className="flex flex-col gap-1 p-3">
+        <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-brand-dark/30 bg-brand-dark md:block">
+          <nav aria-label="Portal navigation" className="flex flex-col gap-1 p-3">
             {superAdminTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left text-body-sm font-medium transition-colors ${
-                  activeTab === tab.id ? 'bg-white/20 font-semibold text-white' : 'font-medium text-blue-200 hover:bg-white/10 hover:text-white'
+                  activeTab === tab.id ? 'bg-white/20 font-semibold text-white' : 'font-medium text-white/70 hover:bg-white/10 hover:text-white'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>
@@ -502,11 +502,11 @@ export default function SuperAdminPanel() {
         </aside>
 
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b px-margin-mobile py-2 md:hidden" style={{ backgroundColor: '#0d2240', borderColor: '#1a3a5e' }}>
+          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b px-margin-mobile py-2 md:hidden">
             {superAdminTabs.map((tab) => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-body-sm font-medium transition-colors ${
-                  activeTab === tab.id ? 'border-white font-semibold text-white' : 'border-transparent text-blue-200 hover:border-blue-400 hover:text-white'
+                  activeTab === tab.id ? 'border-white font-semibold text-white' : 'border-transparent text-white/70 hover:border-white/40 hover:text-white'
                 }`}>
                 <Icon name={tab.icon} className="text-lg" />{tab.label}
               </button>

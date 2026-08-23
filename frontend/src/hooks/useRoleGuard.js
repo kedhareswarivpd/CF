@@ -36,7 +36,12 @@ export function useRoleGuard(portalKey, redirectTo = '/login') {
     } else if (wrongRole) {
       navigate(redirectTo, { replace: true });
     }
-  }, [unauthenticated, wrongRole, navigate, redirectTo, location]);
+    // NOTE: `location` is deliberately excluded from the dependency array.
+    // Including it would cause navigate() → location change → effect re-run →
+    // navigate() → infinite loop, crashing the vitest worker (and degrading
+    // real-user performance).  The returnTo path is captured from `location`
+    // at the moment the redirect fires, which is the desired behavior.
+  }, [unauthenticated, wrongRole, navigate, redirectTo]);
 
   return { role, denied, isAllowed: !denied };
 }

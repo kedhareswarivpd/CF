@@ -56,7 +56,7 @@ export default function ForgotPassword() {
 
         {submitted ? (
           <div className="flex flex-col gap-stack-md">
-            <p className="flex items-start gap-2 rounded bg-green-50 p-3 text-body-sm text-green-700">
+            <p className="flex items-start gap-2 rounded bg-status-success-bg p-3 text-body-sm text-status-success-text">
               <Icon name="check_circle" className="mt-0.5 text-base" />
               {GENERIC_MESSAGE}
             </p>

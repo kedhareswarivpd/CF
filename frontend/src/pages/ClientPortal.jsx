@@ -66,7 +66,7 @@ function Overview({ profile, projects, invoices, tickets }) {
 
 function Projects({ projects }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       {projects.length === 0
         ? <div className="p-stack-lg"><EmptyState icon="folder" title="No projects yet" description="Your projects will appear here." /></div>
         : (
@@ -83,8 +83,8 @@ function Projects({ projects }) {
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {projects.map((p) => (
                 <tr key={p.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                  <td className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{p.title}</td>
-                  <td className="px-stack-lg py-4">
+                  <td data-label="Project" className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{p.title}</td>
+                  <td data-label="Progress" className="px-stack-lg py-4">
                     <div className="flex items-center gap-3">
                       <div className="h-2 w-24 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
                         <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress}%` }} />
@@ -92,9 +92,9 @@ function Projects({ projects }) {
                       <span className="text-body-sm text-ink-muted dark:text-white">{p.progress}%</span>
                     </div>
                   </td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.deadline}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.budget}</td>
-                  <td className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[p.status] || 'neutral'}>{p.status.replace('_', ' ')}</StatusBadge></td>
+                  <td data-label="Deadline" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.deadline}</td>
+                  <td data-label="Budget" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.budget}</td>
+                  <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[p.status] || 'neutral'}>{p.status.replace('_', ' ')}</StatusBadge></td>
                 </tr>
               ))}
             </tbody>
@@ -106,7 +106,7 @@ function Projects({ projects }) {
 
 function Invoices({ invoices }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       {invoices.length === 0
         ? <div className="p-stack-lg"><EmptyState icon="receipt" title="No invoices yet" description="Your invoices will appear here." /></div>
         : (
@@ -123,11 +123,11 @@ function Invoices({ invoices }) {
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {invoices.map((inv) => (
                 <tr key={inv.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                  <td className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{inv.id}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">${inv.amount.toLocaleString()}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{inv.issueDate}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{inv.dueDate}</td>
-                  <td className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[inv.status] || 'neutral'}>{inv.status}</StatusBadge></td>
+                  <td data-label="Invoice" className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{inv.id}</td>
+                  <td data-label="Amount" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">${inv.amount.toLocaleString()}</td>
+                  <td data-label="Issued" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{inv.issueDate}</td>
+                  <td data-label="Due" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{inv.dueDate}</td>
+                  <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[inv.status] || 'neutral'}>{inv.status}</StatusBadge></td>
                 </tr>
               ))}
             </tbody>
@@ -181,7 +181,7 @@ function Tickets({ tickets, onNewTicket }) {
           </div>
         </form>
       )}
-      <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
         {tickets.length === 0
           ? <div className="p-stack-lg"><EmptyState icon="support" title="No tickets yet" description="Submit a ticket to get support." /></div>
           : (
@@ -198,11 +198,11 @@ function Tickets({ tickets, onNewTicket }) {
               <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
                 {tickets.map((t) => (
                   <tr key={t.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                    <td className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{t.id}</td>
-                    <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.subject}</td>
-                    <td className="px-stack-lg py-4"><Badge className="text-label-caps">{t.priority}</Badge></td>
-                    <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{t.createdAt}</td>
-                    <td className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[t.status] || 'neutral'}>{t.status}</StatusBadge></td>
+                    <td data-label="ID" className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{t.id}</td>
+                    <td data-label="Subject" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.subject}</td>
+                    <td data-label="Priority" className="px-stack-lg py-4"><Badge className="text-label-caps">{t.priority}</Badge></td>
+                    <td data-label="Created" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{t.createdAt}</td>
+                    <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[t.status] || 'neutral'}>{t.status}</StatusBadge></td>
                   </tr>
                 ))}
               </tbody>
@@ -215,7 +215,7 @@ function Tickets({ tickets, onNewTicket }) {
 
 function Payments({ payments }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       {payments.length === 0
         ? <div className="p-stack-lg"><EmptyState icon="payments" title="No payments yet" description="Your payment history will appear here." /></div>
         : (
@@ -233,12 +233,12 @@ function Payments({ payments }) {
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {payments.map((p) => (
                 <tr key={p.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                  <td className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{p.id}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.invoice}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">${p.amount.toLocaleString()}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.method}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.date}</td>
-                  <td className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[p.status] || 'neutral'}>{p.status}</StatusBadge></td>
+                  <td data-label="Payment ID" className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{p.id}</td>
+                  <td data-label="Invoice" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.invoice}</td>
+                  <td data-label="Amount" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">${p.amount.toLocaleString()}</td>
+                  <td data-label="Method" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.method}</td>
+                  <td data-label="Date" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.date}</td>
+                  <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[p.status] || 'neutral'}>{p.status}</StatusBadge></td>
                 </tr>
               ))}
             </tbody>
@@ -250,7 +250,7 @@ function Payments({ payments }) {
 
 function Files({ files }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       {files.length === 0
         ? <div className="p-stack-lg"><EmptyState icon="folder_open" title="No files yet" description="Shared files will appear here." /></div>
         : (
@@ -268,17 +268,17 @@ function Files({ files }) {
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {files.map((f) => (
                 <tr key={f.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                  <td className="px-stack-lg py-4">
+                  <td data-label="Name" className="px-stack-lg py-4">
                     <div className="flex items-center gap-2">
                       <Icon name="description" className="text-lg text-brand" />
                       <span className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{f.name}</span>
                     </div>
                   </td>
-                  <td className="px-stack-lg py-4"><Badge className="text-label-caps">{f.category}</Badge></td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.size}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedOn}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedBy}</td>
-                  <td className="px-stack-lg py-4">
+                  <td data-label="Category" className="px-stack-lg py-4"><Badge className="text-label-caps">{f.category}</Badge></td>
+                  <td data-label="Size" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.size}</td>
+                  <td data-label="Uploaded" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedOn}</td>
+                  <td data-label="By" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedBy}</td>
+                  <td data-label="Name" className="px-stack-lg py-4">
                     {f.file_url ? (
                       <a href={f.file_url} target="_blank" rel="noreferrer" aria-label={`Open ${f.name}`} className="text-brand hover:text-brand-dark" title="Open file">
                         <Icon name="open_in_new" className="text-xl" />
@@ -298,7 +298,7 @@ function Files({ files }) {
 
 function Meetings({ meetings }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       {meetings.length === 0
         ? <div className="p-stack-lg"><EmptyState icon="video_call" title="No meetings scheduled" description="Upcoming meetings will appear here." /></div>
         : (
@@ -316,12 +316,12 @@ function Meetings({ meetings }) {
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {meetings.map((m) => (
                 <tr key={m.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                  <td className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{m.title}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{m.date} {m.time}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{m.duration}</td>
-                  <td className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-white">{(m.attendees ?? []).join(', ') || '—'}</td>
-                  <td className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[m.status] || 'neutral'}>{m.status}</StatusBadge></td>
-                  <td className="px-stack-lg py-4">
+                  <td data-label="Meeting" className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{m.title}</td>
+                  <td data-label="Date & Time" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{m.date} {m.time}</td>
+                  <td data-label="Duration" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{m.duration}</td>
+                  <td data-label="Attendees" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-white">{(m.attendees ?? []).join(', ') || '—'}</td>
+                  <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[m.status] || 'neutral'}>{m.status}</StatusBadge></td>
+                  <td data-label="Action" className="px-stack-lg py-4">
                     {m.status === 'upcoming' && m.meeting_link && (
                       <a href={m.meeting_link} target="_blank" rel="noreferrer"
                         className="inline-flex items-center gap-1 rounded bg-brand px-3 py-1.5 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark">
@@ -340,7 +340,7 @@ function Meetings({ meetings }) {
 
 function Reports({ reports }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
       {reports.length === 0
         ? <div className="p-stack-lg"><EmptyState icon="bar_chart" title="No reports yet" description="Generated reports will appear here." /></div>
         : (
@@ -358,17 +358,17 @@ function Reports({ reports }) {
             <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
               {reports.map((r) => (
                 <tr key={r.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-                  <td className="px-stack-lg py-4">
+                  <td data-label="Report" className="px-stack-lg py-4">
                     <div className="flex items-center gap-2">
                       <Icon name="bar_chart" className="text-lg text-brand" />
                       <span className="text-body-md text-brand-dark dark:text-dark-brand">{r.title}</span>
                     </div>
                   </td>
-                  <td className="px-stack-lg py-4"><Badge className="text-label-caps">{r.type}</Badge></td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.period}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.generatedOn}</td>
-                  <td className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.size}</td>
-                  <td className="px-stack-lg py-4">
+                  <td data-label="Type" className="px-stack-lg py-4"><Badge className="text-label-caps">{r.type}</Badge></td>
+                  <td data-label="Period" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.period}</td>
+                  <td data-label="Generated" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.generatedOn}</td>
+                  <td data-label="Size" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.size}</td>
+                  <td data-label="Report" className="px-stack-lg py-4">
                     {r.file_url
                       ? <a href={r.file_url} target="_blank" rel="noreferrer" aria-label={`Download ${r.title}`} className="text-brand hover:text-brand-dark"><Icon name="download" className="text-xl" /></a>
                       : <span className="text-ink-muted/40"><Icon name="download" className="text-xl" /></span>}
@@ -529,7 +529,7 @@ export default function ClientPortal() {
 
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-outline-variant bg-brand-dark md:block">
-          <nav className="flex flex-col gap-1 p-3">
+          <nav aria-label="Portal navigation" className="flex flex-col gap-1 p-3">
             {clientPortalTabs.map((tab) => (
               <button key={tab.id} onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left font-label-caps text-label-caps uppercase transition-colors ${
@@ -542,7 +542,7 @@ export default function ClientPortal() {
         </aside>
 
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-margin-mobile py-2 md:hidden">
+          <div role="tablist" aria-label="Portal navigation" className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-margin-mobile py-2 md:hidden">
             {clientPortalTabs.map((tab) => (
               <button key={tab.id} onClick={() => handleTabChange(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
