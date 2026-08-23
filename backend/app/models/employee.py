@@ -15,7 +15,7 @@ class Employee(Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True)
     employee_code: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
-    department_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id"))
+    department_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("departments.id"), index=True)
     designation: Mapped[str | None] = mapped_column(String(150))
     date_of_joining: Mapped[date | None] = mapped_column(Date)
     date_of_birth: Mapped[date | None] = mapped_column(Date)
@@ -24,7 +24,7 @@ class Employee(Base):
     )
     status: Mapped[EmployeeStatus] = mapped_column(Enum(EmployeeStatus, name="employee_status"), default=EmployeeStatus.active)
     office_location: Mapped[str | None] = mapped_column(String(100))
-    reporting_manager_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id"))
+    reporting_manager_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id"), index=True)
     salary: Mapped[float | None] = mapped_column(Numeric(12, 2))
     address: Mapped[str | None] = mapped_column(Text)
 

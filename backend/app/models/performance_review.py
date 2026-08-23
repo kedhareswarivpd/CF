@@ -11,8 +11,8 @@ from app.core.database import Base
 class PerformanceReview(Base):
     __tablename__ = "performance_reviews"
 
-    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=False)
-    reviewer_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=False, index=True)
+    reviewer_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     review_period: Mapped[str] = mapped_column(String(50), nullable=False)
     review_date: Mapped[date] = mapped_column(Date, nullable=False)
     rating: Mapped[int | None] = mapped_column(Integer)

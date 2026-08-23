@@ -19,7 +19,7 @@ class UserSession(Base):
 
     __tablename__ = "user_sessions"
 
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), index=True)
     session_token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
     refresh_token_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
     previous_refresh_token_hash: Mapped[str | None] = mapped_column(String(64), index=True)

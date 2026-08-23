@@ -11,7 +11,7 @@ from app.models.enums import CommentStatus
 class Comment(Base):
     __tablename__ = "comments"
 
-    blog_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("blogs.id", ondelete="CASCADE"))
+    blog_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("blogs.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)

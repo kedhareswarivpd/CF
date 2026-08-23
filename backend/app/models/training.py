@@ -18,7 +18,7 @@ class Course(Base):
     duration_hours: Mapped[int | None] = mapped_column(Integer)
     cover_image: Mapped[str | None] = mapped_column(String(500))
     is_published: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
 
     enrollments = relationship("TrainingEnrollment", back_populates="course")
 
@@ -26,8 +26,8 @@ class Course(Base):
 class TrainingEnrollment(Base):
     __tablename__ = "training_enrollments"
 
-    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=False)
-    course_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("courses.id"), nullable=False)
+    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id"), nullable=False, index=True)
+    course_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("courses.id"), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(20), default="enrolled")
     enrolled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.now)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

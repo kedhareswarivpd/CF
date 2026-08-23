@@ -13,7 +13,7 @@ class Report(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     report_type: Mapped[str] = mapped_column(String(100), nullable=False)
     period: Mapped[str] = mapped_column(String(100), nullable=False)
-    generated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    generated_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
     file_url: Mapped[str | None] = mapped_column(String(500))
     size_bytes: Mapped[int | None] = mapped_column(Integer)
     summary: Mapped[str | None] = mapped_column(Text)

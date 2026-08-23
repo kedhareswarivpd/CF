@@ -15,7 +15,8 @@ logs/*
 *.egg-info/
 .DS_Store
 .seed_credentials.local.json
-scripts/CREDENTIALS.local.md
+scripts/migrations/CREDENTIALS.local.md
+scripts/migrations/creds.json
 uploads_private/
 backups/*
 !backups/.gitkeep

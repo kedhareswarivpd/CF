@@ -13,7 +13,7 @@ class Attendance(Base):
     __tablename__ = "attendance"
     __table_args__ = (UniqueConstraint("employee_id", "date", name="uq_attendance_employee_date"),)
 
-    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id", ondelete="CASCADE"))
+    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id", ondelete="CASCADE"), index=True)
     date: Mapped[date] = mapped_column(Date, nullable=False)
     check_in: Mapped[time | None] = mapped_column(Time)
     check_out: Mapped[time | None] = mapped_column(Time)

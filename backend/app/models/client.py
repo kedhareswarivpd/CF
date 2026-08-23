@@ -16,7 +16,7 @@ class Client(Base):
     country: Mapped[str | None] = mapped_column(String(100))
     website: Mapped[str | None] = mapped_column(String(255))
     billing_address: Mapped[str | None] = mapped_column(Text)
-    account_manager_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id"))
+    account_manager_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id"), index=True)
 
     user = relationship("User", back_populates="client_profile")
     projects = relationship("Project", back_populates="client")

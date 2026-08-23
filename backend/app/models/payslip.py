@@ -12,7 +12,7 @@ class Payslip(Base):
     __tablename__ = "payslips"
     __table_args__ = (UniqueConstraint("employee_id", "month", "year", name="uq_payslip_employee_period"),)
 
-    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id", ondelete="CASCADE"))
+    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id", ondelete="CASCADE"), index=True)
     month: Mapped[int] = mapped_column(Integer, nullable=False)
     year: Mapped[int] = mapped_column(Integer, nullable=False)
     basic: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)

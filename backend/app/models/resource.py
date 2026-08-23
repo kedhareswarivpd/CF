@@ -16,6 +16,6 @@ class Resource(Base):
     description: Mapped[str | None] = mapped_column(Text)
     file_url: Mapped[str | None] = mapped_column(String(500))
     cover_image: Mapped[str | None] = mapped_column(String(500))
-    author_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    author_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
     download_count: Mapped[int] = mapped_column(default=0)
     is_published: Mapped[bool] = mapped_column(Boolean, default=True)

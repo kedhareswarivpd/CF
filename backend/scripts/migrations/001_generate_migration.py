@@ -10,12 +10,14 @@ is configured in your backend/.env file.
 Requires a running PostgreSQL with the schema already existing (even if empty)
 so that Alembic can do its CREATE TABLE diff.
 """
+import os
 import subprocess
 import sys
 
 if __name__ == "__main__":
+    backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     result = subprocess.run(
         [sys.executable, "-m", "alembic", "revision", "--autogenerate", "-m", "initial"],
-        cwd=sys.path[0] if sys.path[0] else ".",
+        cwd=backend_dir,
     )
     sys.exit(result.returncode)

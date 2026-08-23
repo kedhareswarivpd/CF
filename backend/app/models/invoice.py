@@ -13,8 +13,8 @@ class Invoice(Base):
     __tablename__ = "invoices"
 
     invoice_number: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
-    client_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"))
-    project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.id"))
+    client_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), index=True)
+    project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.id"), index=True)
     amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
     tax: Mapped[float] = mapped_column(Numeric(14, 2), default=0)
     total_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)

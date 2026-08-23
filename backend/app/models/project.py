@@ -15,7 +15,7 @@ class Project(Base):
 
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     slug: Mapped[str] = mapped_column(String(220), nullable=False, unique=True)
-    client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"))
+    client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), index=True)
     overview: Mapped[str | None] = mapped_column(Text)
     challenge: Mapped[str | None] = mapped_column(Text)
     solution: Mapped[str | None] = mapped_column(Text)
@@ -27,7 +27,7 @@ class Project(Base):
     budget: Mapped[float | None] = mapped_column(Numeric(14, 2))
     status: Mapped[ProjectStatus] = mapped_column(Enum(ProjectStatus, name="project_status"), default=ProjectStatus.planning)
     progress_percent: Mapped[int] = mapped_column(Integer, default=0)
-    project_manager_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    project_manager_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
     cover_image: Mapped[str | None] = mapped_column(String(500))
     video_url: Mapped[str | None] = mapped_column(String(500))
     deliverables: Mapped[list[str] | None] = mapped_column(ARRAY(String), default=list)

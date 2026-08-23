@@ -14,7 +14,7 @@ class Gallery(Base):
     title: Mapped[str | None] = mapped_column(String(200))
     image_url: Mapped[str] = mapped_column(String(500), nullable=False)
     type: Mapped[GalleryType] = mapped_column(Enum(GalleryType, name="gallery_type"), default=GalleryType.image)
-    project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.id"))
+    project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.id"), index=True)
     album_name: Mapped[str | None] = mapped_column(String(150))
     is_published: Mapped[bool] = mapped_column(Boolean, default=True)
 

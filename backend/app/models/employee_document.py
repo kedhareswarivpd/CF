@@ -11,7 +11,7 @@ from app.models.enums import DocumentType
 class EmployeeDocument(Base):
     __tablename__ = "employee_documents"
 
-    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id", ondelete="CASCADE"))
+    employee_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("employees.id", ondelete="CASCADE"), index=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     type: Mapped[DocumentType] = mapped_column(Enum(DocumentType, name="document_type"), default=DocumentType.other)
     file_url: Mapped[str] = mapped_column(String(500), nullable=False)

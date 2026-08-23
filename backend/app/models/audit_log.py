@@ -10,7 +10,7 @@ from app.core.database import Base
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
-    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
+    user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
     action: Mapped[str] = mapped_column(String(150), nullable=False)
     entity_type: Mapped[str | None] = mapped_column(String(100))
     entity_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True))

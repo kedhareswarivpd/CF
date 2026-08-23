@@ -2,7 +2,6 @@ import asyncio
 import json
 import os
 import random
-import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -12,297 +11,91 @@ from app.core.config import settings
 from app.core.database import AsyncSessionLocal
 from app.core.password import hash_password
 from app.models.analytics import PageView
+from app.models.client import Client
 from app.models.department import Department
 from app.models.employee import Employee
+from app.models.enums import PartnerType
+from app.models.partner_account import PartnerAccount
 from app.models.setting import Setting
 from app.models.user import User
 
-# Seed passwords are generated fresh on every run (never hardcoded/guessable)
-# and written once to a local, gitignored file — never printed to stdout,
-# which may end up in CI logs. See CF-AUD-007.
-_CREDENTIALS_OUT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".seed_credentials.local.json")
+# Demo account emails/passwords/profile fields are NOT generated here — they are
+# read from scripts/migrations/creds.json, a gitignored, local-only file that is
+# the single source of truth for every seeded login. Edit that file to change a
+# demo password; this module just seeds whatever it contains. See CF-AUD-007.
+_CREDS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "scripts", "migrations", "creds.json",
+)
 _generated_credentials: dict[str, str] = {}
 
 
-def _seed_password(email_env_override: str) -> str:
-    """Use an explicit env override if provided (e.g. for CI fixtures),
-    otherwise generate a fresh random password for this seed run."""
-    override = os.environ.get(email_env_override)
-    return override if override else secrets.token_urlsafe(16)
+def _load_creds() -> dict:
+    if not os.path.exists(_CREDS_PATH):
+        raise SystemExit(
+            f"creds.json not found at {_CREDS_PATH}. This file holds the fixed demo "
+            "login/password/account details seeded locally — create it (see backend/"
+            "scripts/migrations/creds.json.example if present, or copy the structure "
+            "documented in scripts/README.md) before running the seeder."
+        )
+    with open(_CREDS_PATH, encoding="utf-8") as f:
+        data = json.load(f)
+    return {k: v for k, v in data.items() if not k.startswith("_")}
 
 
-SUPER_ADMIN_EMAIL = "superadmin@corefusiontech.com"
-SUPER_ADMIN_PASSWORD = _seed_password("SEED_SUPER_ADMIN_PASSWORD")
+CREDS = _load_creds()
 
-ADMIN_EMAIL = "admin@corefusiontech.com"
-ADMIN_PASSWORD = _seed_password("SEED_ADMIN_PASSWORD")
+DEPARTMENTS = [
+    "Engineering", "Design", "Sales", "Marketing", "Human Resources",
+    "Finance", "Quality Assurance", "DevOps", "Customer Support", "Management",
+]
 
-EMPLOYEE_EMAIL = "john.doe@corefusiontech.com"
-EMPLOYEE_PASSWORD = _seed_password("SEED_EMPLOYEE_PASSWORD")
+# Role -> UserRole enum value. Kept explicit (rather than using the creds.json
+# key directly) so a typo'd JSON key fails loudly instead of silently seeding
+# a bogus role.
+ROLE_KEYS = [
+    "super_admin", "admin", "employee", "sales", "hr", "marketing",
+    "project_manager", "developer", "qa", "support", "finance", "partner", "client",
+]
 
-SALES_EMAIL = "sales@corefusiontech.com"
-SALES_PASSWORD = _seed_password("SEED_SALES_PASSWORD")
-
-HR_EMAIL = "hr@corefusiontech.com"
-HR_PASSWORD = _seed_password("SEED_HR_PASSWORD")
-
-MARKETING_EMAIL = "marketing@corefusiontech.com"
-MARKETING_PASSWORD = _seed_password("SEED_MARKETING_PASSWORD")
-
-PM_EMAIL = "pm@corefusiontech.com"
-PM_PASSWORD = _seed_password("SEED_PM_PASSWORD")
-
-DEVELOPER_EMAIL = "developer@corefusiontech.com"
-DEVELOPER_PASSWORD = _seed_password("SEED_DEVELOPER_PASSWORD")
-
-QA_EMAIL = "qa@corefusiontech.com"
-QA_PASSWORD = _seed_password("SEED_QA_PASSWORD")
-
-SUPPORT_EMAIL = "support@corefusiontech.com"
-SUPPORT_PASSWORD = _seed_password("SEED_SUPPORT_PASSWORD")
-
-FINANCE_EMAIL = "finance@corefusiontech.com"
-FINANCE_PASSWORD = _seed_password("SEED_FINANCE_PASSWORD")
+# Back-compat module-level constants (EMAIL_DEPARTMENT lookups, credential-sheet
+# role-name derivation, etc. all key off these) — now sourced from creds.json.
+SUPER_ADMIN_EMAIL = CREDS["super_admin"]["email"]
+ADMIN_EMAIL = CREDS["admin"]["email"]
+EMPLOYEE_EMAIL = CREDS["employee"]["email"]
+SALES_EMAIL = CREDS["sales"]["email"]
+HR_EMAIL = CREDS["hr"]["email"]
+MARKETING_EMAIL = CREDS["marketing"]["email"]
+PM_EMAIL = CREDS["project_manager"]["email"]
+DEVELOPER_EMAIL = CREDS["developer"]["email"]
+QA_EMAIL = CREDS["qa"]["email"]
+SUPPORT_EMAIL = CREDS["support"]["email"]
+FINANCE_EMAIL = CREDS["finance"]["email"]
+PARTNER_EMAIL = CREDS["partner"]["email"]
+CLIENT_EMAIL = CREDS["client"]["email"]
 
 
-async def seed_super_admin(db):
-    existing = (await db.execute(select(User).where(User.email == SUPER_ADMIN_EMAIL))).scalar_one_or_none()
+async def _seed_role_user(db, role_key: str, user_role: str):
+    account = CREDS[role_key]
+    existing = (await db.execute(select(User).where(User.email == account["email"]))).scalar_one_or_none()
     if existing:
-        print("i  Super admin already exists")
-        return
-
-    admin = User(
-        id=uuid.uuid4(),
-        password_hash=hash_password(SUPER_ADMIN_PASSWORD),
-        name="CoreFusion Super Admin",
-        email=SUPER_ADMIN_EMAIL,
-        role="super_admin",
-        is_active=True,
-        is_email_verified=True,
-        email_verified_at=datetime.now(UTC),
-    )
-    db.add(admin)
-    _generated_credentials[SUPER_ADMIN_EMAIL] = SUPER_ADMIN_PASSWORD
-    print(f"Super admin created: {SUPER_ADMIN_EMAIL}")
-
-
-async def seed_admin(db):
-    existing = (await db.execute(select(User).where(User.email == ADMIN_EMAIL))).scalar_one_or_none()
-    if existing:
-        print("i  Admin already exists")
-        return
-
-    admin = User(
-        id=uuid.uuid4(),
-        password_hash=hash_password(ADMIN_PASSWORD),
-        name="CoreFusion Admin",
-        email=ADMIN_EMAIL,
-        role="admin",
-        is_active=True,
-        is_email_verified=True,
-        email_verified_at=datetime.now(UTC),
-    )
-    db.add(admin)
-    _generated_credentials[ADMIN_EMAIL] = ADMIN_PASSWORD
-    print(f"Admin created: {ADMIN_EMAIL}")
-
-
-async def seed_employee(db):
-    existing = (await db.execute(select(User).where(User.email == EMPLOYEE_EMAIL))).scalar_one_or_none()
-    if existing:
-        print("i  Employee already exists")
-        return
-
-    employee = User(
-        id=uuid.uuid4(),
-        password_hash=hash_password(EMPLOYEE_PASSWORD),
-        name="John Doe",
-        email=EMPLOYEE_EMAIL,
-        role="employee",
-        phone="+91-98765-43210",
-        is_active=True,
-        is_email_verified=True,
-        email_verified_at=datetime.now(UTC),
-    )
-    db.add(employee)
-    _generated_credentials[EMPLOYEE_EMAIL] = EMPLOYEE_PASSWORD
-    print(f"Employee created: {EMPLOYEE_EMAIL}")
-
-
-async def seed_sales(db):
-    existing = (await db.execute(select(User).where(User.email == SALES_EMAIL))).scalar_one_or_none()
-    if existing:
-        print("i  Sales user already exists")
-        return
-
-    sales = User(
-        id=uuid.uuid4(),
-        password_hash=hash_password(SALES_PASSWORD),
-        name="Sales Representative",
-        email=SALES_EMAIL,
-        role="sales",
-        phone="+91-98765-43211",
-        is_active=True,
-        is_email_verified=True,
-        email_verified_at=datetime.now(UTC),
-    )
-    db.add(sales)
-    _generated_credentials[SALES_EMAIL] = SALES_PASSWORD
-    print(f"Sales user created: {SALES_EMAIL}")
-
-
-async def seed_hr(db):
-    existing = (await db.execute(select(User).where(User.email == HR_EMAIL))).scalar_one_or_none()
-    if existing:
-        print("i  HR user already exists")
-        return
-
-    hr = User(
-        id=uuid.uuid4(),
-        password_hash=hash_password(HR_PASSWORD),
-        name="HR Manager",
-        email=HR_EMAIL,
-        role="hr",
-        phone="+91-98765-43212",
-        is_active=True,
-        is_email_verified=True,
-        email_verified_at=datetime.now(UTC),
-    )
-    db.add(hr)
-    _generated_credentials[HR_EMAIL] = HR_PASSWORD
-    print(f"HR user created: {HR_EMAIL}")
-
-
-async def seed_marketing(db):
-    existing = (await db.execute(select(User).where(User.email == MARKETING_EMAIL))).scalar_one_or_none()
-    if existing:
-        print("i  Marketing user already exists")
+        print(f"i  {user_role} user already exists")
         return
 
     user = User(
         id=uuid.uuid4(),
-        password_hash=hash_password(MARKETING_PASSWORD),
-        name="Marketing Manager",
-        email=MARKETING_EMAIL,
-        role="marketing",
-        phone="+91-98765-43213",
+        password_hash=hash_password(account["password"]),
+        name=account["name"],
+        email=account["email"],
+        role=user_role,
+        phone=account.get("phone"),
         is_active=True,
         is_email_verified=True,
         email_verified_at=datetime.now(UTC),
     )
     db.add(user)
-    _generated_credentials[MARKETING_EMAIL] = MARKETING_PASSWORD
-    print(f"Marketing user created: {MARKETING_EMAIL}")
-
-
-async def seed_project_manager(db):
-    existing = (await db.execute(select(User).where(User.email == PM_EMAIL))).scalar_one_or_none()
-    if existing:
-        print("i  Project Manager user already exists")
-        return
-
-    user = User(
-        id=uuid.uuid4(),
-        password_hash=hash_password(PM_PASSWORD),
-        name="Project Manager",
-        email=PM_EMAIL,
-        role="project_manager",
-        phone="+91-98765-43214",
-        is_active=True,
-        is_email_verified=True,
-        email_verified_at=datetime.now(UTC),
-    )
-    db.add(user)
-    _generated_credentials[PM_EMAIL] = PM_PASSWORD
-    print(f"Project Manager user created: {PM_EMAIL}")
-
-
-async def seed_developer(db):
-    existing = (await db.execute(select(User).where(User.email == DEVELOPER_EMAIL))).scalar_one_or_none()
-    if existing:
-        print("i  Developer user already exists")
-        return
-
-    user = User(
-        id=uuid.uuid4(),
-        password_hash=hash_password(DEVELOPER_PASSWORD),
-        name="Developer",
-        email=DEVELOPER_EMAIL,
-        role="developer",
-        phone="+91-98765-43215",
-        is_active=True,
-        is_email_verified=True,
-        email_verified_at=datetime.now(UTC),
-    )
-    db.add(user)
-    _generated_credentials[DEVELOPER_EMAIL] = DEVELOPER_PASSWORD
-    print(f"Developer user created: {DEVELOPER_EMAIL}")
-
-
-async def seed_qa(db):
-    existing = (await db.execute(select(User).where(User.email == QA_EMAIL))).scalar_one_or_none()
-    if existing:
-        print("i  QA user already exists")
-        return
-
-    user = User(
-        id=uuid.uuid4(),
-        password_hash=hash_password(QA_PASSWORD),
-        name="QA Engineer",
-        email=QA_EMAIL,
-        role="qa",
-        phone="+91-98765-43216",
-        is_active=True,
-        is_email_verified=True,
-        email_verified_at=datetime.now(UTC),
-    )
-    db.add(user)
-    _generated_credentials[QA_EMAIL] = QA_PASSWORD
-    print(f"QA user created: {QA_EMAIL}")
-
-
-async def seed_support(db):
-    existing = (await db.execute(select(User).where(User.email == SUPPORT_EMAIL))).scalar_one_or_none()
-    if existing:
-        print("i  Support user already exists")
-        return
-
-    user = User(
-        id=uuid.uuid4(),
-        password_hash=hash_password(SUPPORT_PASSWORD),
-        name="Support Engineer",
-        email=SUPPORT_EMAIL,
-        role="support",
-        phone="+91-98765-43217",
-        is_active=True,
-        is_email_verified=True,
-        email_verified_at=datetime.now(UTC),
-    )
-    db.add(user)
-    _generated_credentials[SUPPORT_EMAIL] = SUPPORT_PASSWORD
-    print(f"Support user created: {SUPPORT_EMAIL}")
-
-
-async def seed_finance(db):
-    existing = (await db.execute(select(User).where(User.email == FINANCE_EMAIL))).scalar_one_or_none()
-    if existing:
-        print("i  Finance user already exists")
-        return
-
-    user = User(
-        id=uuid.uuid4(),
-        password_hash=hash_password(FINANCE_PASSWORD),
-        name="Finance Manager",
-        email=FINANCE_EMAIL,
-        role="finance",
-        phone="+91-98765-43218",
-        is_active=True,
-        is_email_verified=True,
-        email_verified_at=datetime.now(UTC),
-    )
-    db.add(user)
-    _generated_credentials[FINANCE_EMAIL] = FINANCE_PASSWORD
-    print(f"Finance user created: {FINANCE_EMAIL}")
+    _generated_credentials[account["email"]] = account["password"]
+    print(f"{user_role} user created: {account['email']}")
 
 
 async def run():
@@ -313,24 +106,15 @@ async def run():
         )
 
     async with AsyncSessionLocal() as db:
-        await seed_super_admin(db)
-        await seed_admin(db)
-        await seed_employee(db)
-        await seed_sales(db)
-        await seed_hr(db)
-        await seed_marketing(db)
-        await seed_project_manager(db)
-        await seed_developer(db)
-        await seed_qa(db)
-        await seed_support(db)
-        await seed_finance(db)
+        for role_key in ROLE_KEYS:
+            await _seed_role_user(db, role_key, role_key)
+        # Flush so newly created users are visible to the `select()` lookups
+        # below regardless of whether the departments loop happens to flush
+        # too (it only does when a department doesn't already exist).
+        await db.flush()
 
-        departments = [
-            "Engineering", "Design", "Sales", "Marketing", "Human Resources",
-            "Finance", "Quality Assurance", "DevOps", "Customer Support", "Management",
-        ]
         dept_map = {}
-        for name in departments:
+        for name in DEPARTMENTS:
             exists = (await db.execute(select(Department).where(Department.name == name))).scalar_one_or_none()
             if not exists:
                 dept = Department(name=name)
@@ -341,35 +125,85 @@ async def run():
                 dept_map[name] = exists.id
         print("Departments seeded")
 
-        # Seed Employee records for employee/sales users so self-service endpoints work
-        for email, emp_code, designation, dept_name in [
-            (EMPLOYEE_EMAIL, "EMP-001", "Software Engineer", "Engineering"),
-            (SALES_EMAIL, "EMP-002", "Sales Executive", "Sales"),
-            (HR_EMAIL, "EMP-003", "HR Manager", "Human Resources"),
-            (MARKETING_EMAIL, "EMP-004", "Marketing Manager", "Marketing"),
-            (PM_EMAIL, "EMP-005", "Project Manager", "Management"),
-            (DEVELOPER_EMAIL, "EMP-006", "Software Developer", "Engineering"),
-            (QA_EMAIL, "EMP-007", "QA Engineer", "Quality Assurance"),
-            (SUPPORT_EMAIL, "EMP-008", "Support Engineer", "Customer Support"),
-            (FINANCE_EMAIL, "EMP-009", "Finance Manager", "Finance"),
-        ]:
-            user = (await db.execute(select(User).where(User.email == email))).scalar_one_or_none()
+        # Seed Employee records for every role that carries an employee_code in
+        # creds.json, so self-service endpoints (attendance, payslips, etc.) work.
+        for role_key in ROLE_KEYS:
+            account = CREDS[role_key]
+            if "employee_code" not in account:
+                continue
+            user = (await db.execute(select(User).where(User.email == account["email"]))).scalar_one_or_none()
             if not user:
                 continue
             existing_emp = (await db.execute(select(Employee).where(Employee.user_id == user.id))).scalar_one_or_none()
             if existing_emp:
-                print(f"  Employee record already exists for {email}")
+                print(f"  Employee record already exists for {account['email']}")
                 continue
             emp = Employee(
                 user_id=user.id,
-                employee_code=emp_code,
-                department_id=dept_map.get(dept_name),
-                designation=designation,
+                employee_code=account["employee_code"],
+                department_id=dept_map.get(account.get("department")),
+                designation=account.get("designation"),
                 status="active",
                 employment_type="full_time",
             )
             db.add(emp)
-            print(f"  Employee record created for {email}")
+            print(f"  Employee record created for {account['email']}")
+
+        # Seed a partner_accounts profile for the demo Partner Portal login,
+        # account-managed by the Sales employee for a realistic relationship.
+        partner_account_cfg = CREDS["partner"]
+        partner_user = (await db.execute(select(User).where(User.email == partner_account_cfg["email"]))).scalar_one_or_none()
+        if partner_user:
+            existing_partner_account = (
+                await db.execute(select(PartnerAccount).where(PartnerAccount.user_id == partner_user.id))
+            ).scalar_one_or_none()
+            if not existing_partner_account:
+                sales_user = (await db.execute(select(User).where(User.email == SALES_EMAIL))).scalar_one_or_none()
+                account_manager = None
+                if sales_user:
+                    account_manager = (
+                        await db.execute(select(Employee).where(Employee.user_id == sales_user.id))
+                    ).scalar_one_or_none()
+                db.add(PartnerAccount(
+                    user_id=partner_user.id,
+                    company_name=partner_account_cfg.get("company_name"),
+                    partnership_type=PartnerType(partner_account_cfg.get("partnership_type", "reseller")),
+                    industry=partner_account_cfg.get("industry"),
+                    country=partner_account_cfg.get("country"),
+                    website=partner_account_cfg.get("website"),
+                    account_manager_id=account_manager.id if account_manager else None,
+                ))
+                print(f"  Partner account profile created for {partner_account_cfg['email']}")
+            else:
+                print(f"  Partner account profile already exists for {partner_account_cfg['email']}")
+
+        # Seed a clients profile for the demo Client Portal login, account-managed
+        # by the Sales employee for a realistic relationship.
+        client_account_cfg = CREDS["client"]
+        client_user = (await db.execute(select(User).where(User.email == client_account_cfg["email"]))).scalar_one_or_none()
+        if client_user:
+            existing_client = (
+                await db.execute(select(Client).where(Client.user_id == client_user.id))
+            ).scalar_one_or_none()
+            if not existing_client:
+                sales_user = (await db.execute(select(User).where(User.email == SALES_EMAIL))).scalar_one_or_none()
+                account_manager = None
+                if sales_user:
+                    account_manager = (
+                        await db.execute(select(Employee).where(Employee.user_id == sales_user.id))
+                    ).scalar_one_or_none()
+                db.add(Client(
+                    user_id=client_user.id,
+                    company_name=client_account_cfg.get("company_name"),
+                    industry=client_account_cfg.get("industry"),
+                    country=client_account_cfg.get("country"),
+                    website=client_account_cfg.get("website"),
+                    billing_address=client_account_cfg.get("billing_address"),
+                    account_manager_id=account_manager.id if account_manager else None,
+                ))
+                print(f"  Client profile created for {client_account_cfg['email']}")
+            else:
+                print(f"  Client profile already exists for {client_account_cfg['email']}")
 
         settings_data = [
             ("site.title", "CoreFusion Technologies", "public"),
@@ -417,12 +251,7 @@ async def run():
         await db.commit()
 
         if _generated_credentials:
-            with open(_CREDENTIALS_OUT, "w", encoding="utf-8") as f:
-                json.dump(_generated_credentials, f, indent=2)
-            print(
-                f"\n{len(_generated_credentials)} new demo account password(s) written to "
-                f"{_CREDENTIALS_OUT} (gitignored, local-only). Rotate/delete before going to production."
-            )
+            print(f"\n{len(_generated_credentials)} new demo account(s) created this run (passwords per creds.json).")
 
         print("Seeding complete.")
 

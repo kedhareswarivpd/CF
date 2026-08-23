@@ -18,7 +18,7 @@ class MfaBackupCode(Base):
 
     __tablename__ = "mfa_backup_codes"
 
-    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"))
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), index=True)
     code_hash: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

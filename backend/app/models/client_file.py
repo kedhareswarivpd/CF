@@ -10,7 +10,7 @@ from app.core.database import Base
 class ClientFile(Base):
     __tablename__ = "client_files"
 
-    client_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id", ondelete="CASCADE"))
+    client_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     category: Mapped[str] = mapped_column(String(100), nullable=False)
     file_url: Mapped[str] = mapped_column(String(500), nullable=False)

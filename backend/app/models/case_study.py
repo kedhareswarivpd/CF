@@ -12,7 +12,7 @@ class CaseStudy(Base):
 
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(280), nullable=False, unique=True)
-    project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.id"))
+    project_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("projects.id"), index=True)
     client_name: Mapped[str | None] = mapped_column(String(200))
     industry: Mapped[str | None] = mapped_column(String(100))
     problem: Mapped[str | None] = mapped_column(Text)
