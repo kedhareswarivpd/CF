@@ -1,40 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import NavbarLogo from './NavbarLogo.jsx';
+import DesktopNavigation from './DesktopNavigation.jsx';
+import MobileNavigation from './MobileNavigation.jsx';
+import ThemeToggle from './ThemeToggle.jsx';
 import Icon from '../ui/Icon.jsx';
-import { useTheme } from '../../context/ThemeContext.jsx';
-
-
-const NAV_LINKS = [
-  { label: 'Home', to: '/' },
-  { label: 'About', to: '/about' },
-  { label: 'Services', to: '/services' },
-  { label: 'Solutions', to: '/solutions' },
-  { label: 'Industries', to: '/industries' },
-  { label: 'Portfolio', to: '/portfolio' },
-  { label: 'Resources', to: '/resources' },
-  { label: 'Blog', to: '/blog' },
-  { label: 'Careers', to: '/careers' },
-  { label: 'Contact', to: '/contact' },
-];
-
-function ThemeToggle() {
-  const { dark, toggle } = useTheme();
-  return (
-    <button
-      onClick={toggle}
-      aria-label="Toggle theme"
-      className="relative flex h-7 w-14 items-center rounded-full border border-outline-variant bg-surface-container px-1 transition-colors duration-300 dark:border-dark-outline-variant dark:bg-dark-surface-low"
-    >
-      <span
-        className={`absolute left-1 flex size-5 items-center justify-center rounded-full text-xs shadow transition-all duration-300 ${
-          dark ? 'translate-x-7 bg-brand text-white' : 'translate-x-0 bg-white text-amber-500'
-        }`}
-      >
-        <Icon name={dark ? 'dark_mode' : 'light_mode'} className="text-sm leading-none" />
-      </span>
-    </button>
-  );
-}
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -42,95 +12,60 @@ export default function Navbar() {
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  const closeMobile = useCallback(() => setMobileOpen(false), []);
+
   return (
-    <header
-      className={`fixed top-0 z-50 w-full border-b border-outline-variant transition-all duration-300 ${
-        scrolled ? 'h-16 bg-white shadow-sm dark:bg-dark-surface' : 'h-20 bg-white dark:bg-dark-surface'
-      }`}
-    >
-      <div className="flex size-full items-center justify-between px-margin-mobile md:px-margin-desktop">
-        <div className="flex items-center gap-8 md:gap-12">
-          <Link to="/" className="flex shrink-0 items-center gap-2">
-<div className="size-10 shrink-0 overflow-hidden rounded-full border-2 border-brand/20 md:size-11">
-  <img
-    src="/logo.jpeg"
-    alt="CoreFusion"
-    className="size-full scale-110 object-cover"
-  />
-</div>
-            <span className="font-display text-xl font-bold tracking-tight text-brand-dark dark:text-white">
-              Core<span className="text-brand">Fusion</span>
-            </span>
-          </Link>
-          <nav className="hidden items-center gap-6 md:flex">
-            {NAV_LINKS.map((link) => (
-              <NavLink
-                key={link.to}
-                to={link.to}
-                className={({ isActive }) =>
-                  `font-label-caps text-label-caps uppercase pb-1 border-b-2 transition-colors duration-200 ${
-                    isActive
-                      ? 'text-brand dark:text-dark-brand border-brand dark:border-dark-brand'
-                      : 'text-ink-muted dark:text-white border-transparent hover:text-brand dark:hover:text-dark-brand'
-                  }`
-                }
-              >
-                {link.label}
-              </NavLink>
-            ))}
-            <NavLink
+    <>
+      <header
+        className={`fixed top-0 z-50 w-full border-b transition-all duration-300 ${
+          scrolled
+            ? 'h-16 border-outline-variant/60 bg-white/95 shadow-sm backdrop-blur-md dark:border-dark-outline-variant/60 dark:bg-dark-surface/95'
+            : 'h-20 border-outline-variant bg-white dark:bg-dark-surface dark:border-dark-outline-variant'
+        }`}
+      >
+        <div className="mx-auto flex h-full max-w-container items-center justify-between px-4 md:px-10">
+          {/* Left: Logo + Desktop Nav */}
+          <div className="flex items-center gap-8 lg:gap-10">
+            <NavbarLogo compact={scrolled} />
+            <DesktopNavigation />
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-3">
+            <ThemeToggle className="hidden md:flex" />
+            <Link
               to="/login"
-              className="border-b-2 border-transparent pb-1 font-label-caps text-label-caps uppercase text-ink-muted transition-colors duration-200 hover:text-brand dark:text-white dark:hover:text-dark-brand"
+              className="hidden rounded-md bg-brand px-5 py-2 text-label-caps font-semibold uppercase text-white transition-colors hover:bg-brand-dark md:inline-block dark:bg-dark-brand dark:hover:bg-brand"
             >
               Login
-            </NavLink>
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <Link to="/" aria-label="Home" className="p-2 text-brand transition-colors hover:text-brand-dark dark:text-dark-brand dark:hover:text-brand">
-            <Icon name="home" />
-          </Link>
-          <ThemeToggle />
-
-          <button
-            className="p-2 text-brand md:hidden"
-            onClick={() => setMobileOpen((open) => !open)}
-            aria-label="Toggle navigation menu"
-          >
-            <Icon name={mobileOpen ? 'close' : 'menu'} />
-          </button>
-        </div>
-      </div>
-
-      {mobileOpen && (
-        <nav className="flex flex-col gap-4 border-t border-outline-variant bg-white px-margin-mobile py-stack-md dark:border-dark-outline-variant dark:bg-dark-surface md:hidden">
-          {NAV_LINKS.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) =>
-                `font-label-caps text-label-caps uppercase ${isActive ? 'text-brand dark:text-dark-brand' : 'text-ink-muted dark:text-white'}`
-              }
+            </Link>
+            <button
+              onClick={() => setMobileOpen((o) => !o)}
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileOpen}
+              className="flex size-10 items-center justify-center rounded-lg text-brand transition-colors hover:bg-surface-dim md:hidden dark:text-dark-brand dark:hover:bg-dark-surface-container"
             >
-              {link.label}
-            </NavLink>
-          ))}
-          <NavLink
-            to="/login"
-            onClick={() => setMobileOpen(false)}
-            className="font-label-caps text-label-caps uppercase text-ink-muted transition-colors hover:text-brand dark:text-white"
-          >
-            Login
-          </NavLink>
-        </nav>
-      )}
+              <Icon name={mobileOpen ? 'close' : 'menu'} className="text-xl" />
+            </button>
+          </div>
+        </div>
+      </header>
 
-    </header>
+      {/* Mobile Navigation */}
+      <MobileNavigation isOpen={mobileOpen} onClose={closeMobile} />
+
+      {/* Overlay behind mobile menu */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/30 md:hidden"
+          onClick={closeMobile}
+          aria-hidden="true"
+        />
+      )}
+    </>
   );
 }
