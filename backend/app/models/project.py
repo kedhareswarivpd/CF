@@ -16,6 +16,13 @@ class Project(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     slug: Mapped[str] = mapped_column(String(220), nullable=False, unique=True)
     client_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("clients.id"), index=True)
+    # UAT closure pass, section 1: the workflow doc requires a project to be
+    # traceable back to the proposal/lead that produced it ("Project linked
+    # to correct proposal/lead where applicable") — no such link existed at
+    # all before this. `unique=True` is the actual answer to "should the
+    # same accepted proposal be able to spawn two projects?" — no; this
+    # constraint is the enforcement, not just documentation of the rule.
+    proposal_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("proposals.id"), unique=True, index=True)
     overview: Mapped[str | None] = mapped_column(Text)
     challenge: Mapped[str | None] = mapped_column(Text)
     solution: Mapped[str | None] = mapped_column(Text)

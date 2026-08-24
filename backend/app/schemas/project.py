@@ -11,6 +11,7 @@ class ProjectCreate(BaseModel):
     title: str
     slug: str | None = None
     client_id: uuid.UUID | None = None
+    proposal_id: uuid.UUID | None = None
     overview: str | None = None
     challenge: str | None = None
     solution: str | None = None
@@ -67,6 +68,7 @@ class ProjectOut(TimestampedRead):
     title: str
     slug: str
     client_id: uuid.UUID | None = None
+    proposal_id: uuid.UUID | None = None
     overview: str | None = None
     challenge: str | None = None
     solution: str | None = None

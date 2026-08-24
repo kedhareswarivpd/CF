@@ -20,6 +20,7 @@ from app.models.lead import Lead
 from app.models.meeting import Meeting
 from app.models.payment import Payment
 from app.models.project import Project
+from app.models.project_update import ProjectUpdate as ProjectUpdateModel
 from app.models.proposal import Proposal
 from app.models.ticket import Ticket
 from app.models.user import User
@@ -34,6 +35,7 @@ from app.schemas.finance import (
 )
 from app.schemas.ops import MeetingOut, TicketOut
 from app.schemas.project import ClientProjectOut
+from app.schemas.project_update import ClientProjectUpdateOut
 from app.services.notification_service import notify_roles
 from app.utils.pagination import PageParams, bounded_select, page_params
 from app.utils.responses import build_pagination_meta, success_response
@@ -113,6 +115,31 @@ async def my_projects(db: AsyncSession = Depends(get_db), current_user: User = D
         data = ClientProjectOut.model_validate(p).model_dump()
         data["project_manager_name"] = pm_names.get(p.project_manager_id)
         out.append(data)
+    return success_response(data=out)
+
+
+@router.get("/me/projects/{project_id}/updates", response_model=dict)
+async def my_project_updates(project_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Workflow doc §8/§16: the client sees only the PM-approved subset of
+    daily updates, with no internal employee IDs/codes — see
+    ProjectUpdate's model docstring. Ownership-checked: 404 (not 403) if
+    the project isn't this client's own."""
+    client = await _get_client_for_user(db, current_user)
+    project = (await db.execute(select(Project).where(Project.id == project_id, Project.client_id == client.id))).scalar_one_or_none()
+    if project is None:
+        raise ApiError.not_found("Project not found")
+
+    result = await db.execute(
+        select(ProjectUpdateModel, User.name)
+        .join(Employee, Employee.id == ProjectUpdateModel.employee_id)
+        .join(User, User.id == Employee.user_id)
+        .where(ProjectUpdateModel.project_id == project_id, ProjectUpdateModel.client_visible.is_(True))
+        .order_by(ProjectUpdateModel.created_at.desc())
+    )
+    out = [
+        ClientProjectUpdateOut(id=u.id, update_text=u.update_text, created_at=u.created_at, author_name=name).model_dump()
+        for u, name in result.all()
+    ]
     return success_response(data=out)
 
 
