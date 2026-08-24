@@ -1,7 +1,7 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import ARRAY, Boolean, Date, Enum, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import ARRAY, Boolean, Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,6 +23,8 @@ class Project(Base):
     # same accepted proposal be able to spawn two projects?" — no; this
     # constraint is the enforcement, not just documentation of the rule.
     proposal_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("proposals.id"), unique=True, index=True)
+    service_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("services.id"), index=True)
+    industry_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("industries.id"), index=True)
     overview: Mapped[str | None] = mapped_column(Text)
     challenge: Mapped[str | None] = mapped_column(Text)
     solution: Mapped[str | None] = mapped_column(Text)
@@ -42,6 +44,17 @@ class Project(Base):
     downloads: Mapped[list | None] = mapped_column(JSONB, default=list)
     is_featured: Mapped[bool] = mapped_column(Boolean, default=False)
     is_published: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    # Final Delivery / Client Approval workflow: "Project Execution -> Final
+    # Review -> Completed -> Deliverables Shared -> Client Review -> Client
+    # Approval" had no backing state beyond the generic `status` enum — a
+    # client had no way to formally approve or request changes on a
+    # completed project's final delivery.
+    completion_submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    client_review_status: Mapped[str | None] = mapped_column(String(30))
+    client_approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    client_feedback: Mapped[str | None] = mapped_column(Text)
+    final_delivery_version: Mapped[int] = mapped_column(Integer, default=0)
 
     client = relationship("Client", back_populates="projects")
     tasks = relationship("Task", back_populates="project")

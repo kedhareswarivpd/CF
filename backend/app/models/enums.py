@@ -211,10 +211,18 @@ class LeadStatus(str, enum.Enum):
 
 class ProposalStatus(str, enum.Enum):
     draft = "draft"
+    # PM-review stage: an employee drafts a proposal, submits it for PM
+    # sign-off, and only a pm_approved (or, for staff with direct sending
+    # authority, still-draft) proposal can be sent to the client. See
+    # POST /proposals/{id}/submit-for-review and .../review.
+    submitted_for_review = "submitted_for_review"
+    pm_approved = "pm_approved"
+    pm_rejected = "pm_rejected"
     sent = "sent"
     viewed = "viewed"
     accepted = "accepted"
     rejected = "rejected"
+    superseded = "superseded"
 
 
 class ContractStatus(str, enum.Enum):

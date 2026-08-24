@@ -1,6 +1,6 @@
 """Schemas for the Sales CRM pipeline: Lead -> Proposal -> Contract."""
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -19,6 +19,8 @@ class LeadCreate(BaseModel):
     notes: str | None = None
     contact_submission_id: uuid.UUID | None = None
     owner_id: uuid.UUID | None = None
+    service_id: uuid.UUID | None = None
+    industry_id: uuid.UUID | None = None
 
 
 class LeadUpdate(BaseModel):
@@ -31,6 +33,15 @@ class LeadUpdate(BaseModel):
     estimated_value: float | None = Field(None, ge=0)
     notes: str | None = None
     owner_id: uuid.UUID | None = None
+    service_id: uuid.UUID | None = None
+    industry_id: uuid.UUID | None = None
+    # Lead Evaluation record
+    evaluation_date: date | None = None
+    meeting_notes: str | None = None
+    requirements_confirmed: bool | None = None
+    delivery_timeline: str | None = None
+    evaluation_result: str | None = None
+    rejection_reason: str | None = None
 
 
 class LeadOut(TimestampedRead):
@@ -45,6 +56,14 @@ class LeadOut(TimestampedRead):
     notes: str | None = None
     owner_id: uuid.UUID | None = None
     converted_client_id: uuid.UUID | None = None
+    service_id: uuid.UUID | None = None
+    industry_id: uuid.UUID | None = None
+    evaluation_date: date | None = None
+    meeting_notes: str | None = None
+    requirements_confirmed: bool | None = False
+    delivery_timeline: str | None = None
+    evaluation_result: str | None = None
+    rejection_reason: str | None = None
 
 
 # ---------- Proposal ----------
@@ -54,6 +73,7 @@ class ProposalCreate(BaseModel):
     price: float = Field(gt=0)
     currency: str = "USD"
     file_url: str | None = None
+    service_id: uuid.UUID | None = None
 
 
 class ProposalUpdate(BaseModel):
@@ -62,6 +82,7 @@ class ProposalUpdate(BaseModel):
     currency: str | None = None
     file_url: str | None = None
     status: ProposalStatus | None = None
+    service_id: uuid.UUID | None = None
 
 
 class ProposalOut(TimestampedRead):
@@ -77,10 +98,18 @@ class ProposalOut(TimestampedRead):
     created_by: uuid.UUID | None = None
     client_comment: str | None = None
     rejection_reason: str | None = None
+    service_id: uuid.UUID | None = None
+    review_notes: str | None = None
+    reviewed_by: uuid.UUID | None = None
 
 
 class ProposalRejectRequest(BaseModel):
     reason: str | None = None
+
+
+class ProposalReviewRequest(BaseModel):
+    approved: bool
+    review_notes: str | None = None
 
 
 # ---------- Contract ----------

@@ -146,7 +146,8 @@ class TestClientProposalAcceptUpdatesLeadStatus:
 
         with patch("app.routers.clients._get_client_for_user", new_callable=AsyncMock, return_value=client):
             with patch("app.routers.clients.notify_roles", new_callable=AsyncMock):
-                await accept_my_proposal(proposal.id, mock_db, user)
+                with patch("app.routers.clients.provision_project_for_accepted_proposal", new_callable=AsyncMock):
+                    await accept_my_proposal(proposal.id, mock_db, user)
 
         assert proposal.status == ProposalStatus.accepted
         assert lead.status == LeadStatus.proposal_approved

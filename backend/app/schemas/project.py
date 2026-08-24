@@ -1,5 +1,5 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -12,6 +12,8 @@ class ProjectCreate(BaseModel):
     slug: str | None = None
     client_id: uuid.UUID | None = None
     proposal_id: uuid.UUID | None = None
+    service_id: uuid.UUID | None = None
+    industry_id: uuid.UUID | None = None
     overview: str | None = None
     challenge: str | None = None
     solution: str | None = None
@@ -35,6 +37,8 @@ class ProjectCreate(BaseModel):
 class ProjectUpdate(BaseModel):
     title: str | None = None
     client_id: uuid.UUID | None = None
+    service_id: uuid.UUID | None = None
+    industry_id: uuid.UUID | None = None
     overview: str | None = None
     challenge: str | None = None
     solution: str | None = None
@@ -69,6 +73,13 @@ class ProjectOut(TimestampedRead):
     slug: str
     client_id: uuid.UUID | None = None
     proposal_id: uuid.UUID | None = None
+    service_id: uuid.UUID | None = None
+    industry_id: uuid.UUID | None = None
+    completion_submitted_at: datetime | None = None
+    client_review_status: str | None = None
+    client_approved_at: datetime | None = None
+    client_feedback: str | None = None
+    final_delivery_version: int | None = 0
     overview: str | None = None
     challenge: str | None = None
     solution: str | None = None
@@ -128,6 +139,11 @@ class ClientProjectOut(TimestampedRead):
     video_url: str | None = None
     deliverables: list[str] = []
     gallery: list[str] = []
+    completion_submitted_at: datetime | None = None
+    client_review_status: str | None = None
+    client_approved_at: datetime | None = None
+    client_feedback: str | None = None
+    final_delivery_version: int | None = 0
 
     @field_validator("deliverables", "gallery", mode="before")
     @classmethod

@@ -37,6 +37,7 @@ from app.schemas.ops import MeetingOut, TicketOut
 from app.schemas.project import ClientProjectOut
 from app.schemas.project_update import ClientProjectUpdateOut
 from app.services.notification_service import notify_roles
+from app.services.project_provisioning import provision_project_for_accepted_proposal
 from app.utils.pagination import PageParams, bounded_select, page_params
 from app.utils.responses import build_pagination_meta, success_response
 from app.utils.sla import compute_sla_due_at
@@ -227,6 +228,10 @@ async def accept_my_proposal(proposal_id: uuid.UUID, db: AsyncSession = Depends(
         f"{client.company_name or current_user.name} accepted proposal v{proposal.version} — ready to start the project.",
         NotificationType.success, f"/employee-portal?tab=proposals&proposal={proposal.id}",
     )
+    # Workflow doc's end-to-end diagram: "Client Accepts Proposal -> Project
+    # Created" — this is the path an actual client uses to accept, so the
+    # auto-creation has to live here too, not just the staff-side mirror.
+    await provision_project_for_accepted_proposal(db, proposal)
     return success_response(data=ProposalOut.model_validate(proposal), message="Proposal accepted")
 
 

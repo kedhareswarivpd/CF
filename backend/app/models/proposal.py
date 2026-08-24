@@ -28,6 +28,9 @@ class Proposal(Base):
     # accept/reject (app/routers/proposals.py) leave them null.
     client_comment: Mapped[str | None] = mapped_column(Text)
     rejection_reason: Mapped[str | None] = mapped_column(Text)
+    service_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("services.id"), index=True)
+    review_notes: Mapped[str | None] = mapped_column(Text)
+    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"))
 
     lead = relationship("Lead", back_populates="proposals")
     contract = relationship("Contract", back_populates="proposal", uselist=False)
