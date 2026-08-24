@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, Fragment } from 'react';
+import { useState, useEffect, useCallback, useMemo, Fragment } from 'react';
 import Icon from '../ui/Icon.jsx';
 import Button from '../ui/Button.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
 import RowAction from '../ui/RowAction.jsx';
 import { SkeletonTable } from '../ui/Skeleton.jsx';
+import Pagination from '../ui/Pagination.jsx';
 import useAsyncAction from '../../hooks/useAsyncAction.js';
 import { apiRequest } from '../../api/client.js';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
@@ -13,6 +14,12 @@ import {
  createLead, updateLead,
  createMeeting, updateMeeting,
 } from '../../api/crm.js';
+import { validateConvertToLead, validateNewLead, validateNewProposal, validateNewMeeting } from '../../schemas/crm.schema.js';
+
+// Client-side page size for the CRM sub-views whose data arrives as an
+// already-fetched props array (see EmployeePortal.jsx's refreshCrm) rather
+// than through a paginated endpoint call.
+const CLIENT_PAGE_SIZE = 10;
 
 // Extracted from EmployeePortal.jsx (Sonar M5): the Sales CRM sub-views are
 // only rendered for the "sales" role, so splitting them into their own
@@ -27,7 +34,6 @@ function Leads({ leads, onRefresh }) {
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ company: '', contact_name: '', email: '', phone: '', source: 'website', estimated_value: '' });
  const [errors, setErrors] = useState({});
- const [submitting, setSubmitting] = useState(false);
  const [savingId, setSavingId] = useState(null);
  const [expandedLeadId, setExpandedLeadId] = useState(null);
  const [activeAction, setActiveAction] = useState(null);
@@ -35,56 +41,41 @@ function Leads({ leads, onRefresh }) {
  const [proposalForm, setProposalForm] = useState({ scope_summary: '', price: '' });
  const [demoForm, setDemoForm] = useState({ scheduled_at: '', duration_minutes: 30, meeting_link: '' });
  const [toast, setToast] = useState('');
+ const [page, setPage] = useState(1);
+ const { run: runSubmit, isPending: submitting } = useAsyncAction();
+ const { run: runAction, isPending: actionPending } = useAsyncAction();
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 bg-white focus:outline-none focus:border-brand';
 
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
- const validate = () => {
-  const errs = {};
-  if (!form.contact_name || !form.contact_name.trim()) {
-   errs.contact_name = 'Contact name is required.';
-  } else if (form.contact_name.trim().length < 2) {
-   errs.contact_name = 'Contact name must be at least 2 characters.';
-  }
-  if (!form.email || !form.email.trim()) {
-   errs.email = 'Email is required.';
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
-   errs.email = 'Enter a valid email address.';
-  }
-  if (form.phone && !/^[+]?[\d\s\-()]{7,20}$/.test(form.phone.trim())) {
-   errs.phone = 'Enter a valid phone number.';
-  }
-  if (form.estimated_value && (isNaN(Number(form.estimated_value)) || Number(form.estimated_value) < 0)) {
-   errs.estimated_value = 'Enter a valid amount.';
-  }
-  setErrors(errs);
-  return Object.keys(errs).length === 0;
- };
+ const totalPages = Math.max(1, Math.ceil(leads.length / CLIENT_PAGE_SIZE));
+ const pagedLeads = leads.slice((page - 1) * CLIENT_PAGE_SIZE, page * CLIENT_PAGE_SIZE);
+ useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages, page]);
 
  const handleChange = (field, value) => {
   setForm((prev) => ({ ...prev, [field]: value }));
   if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
  };
 
- const handleSubmit = async (e) => {
+ const handleSubmit = (e) => {
   e.preventDefault();
-  if (!validate()) return;
-  setSubmitting(true);
-  try {
-   await createLead({ ...form, estimated_value: form.estimated_value ? Number(form.estimated_value) : null });
-   setForm({ company: '', contact_name: '', email: '', phone: '', source: 'website', estimated_value: '' });
-   setErrors({});
-   setShowForm(false);
-   onRefresh();
-   showToast('Lead saved successfully.');
-  } catch (err) {
-   showToast(err?.message || 'Failed to save lead.');
-  } finally {
-   setSubmitting(false);
-  }
+  const clientErrors = validateNewLead(form);
+  if (Object.keys(clientErrors).length > 0) { setErrors(clientErrors); return; }
+  setErrors({});
+  runSubmit(async () => {
+   try {
+    await createLead({ ...form, estimated_value: form.estimated_value ? Number(form.estimated_value) : null });
+    setForm({ company: '', contact_name: '', email: '', phone: '', source: 'website', estimated_value: '' });
+    setShowForm(false);
+    onRefresh();
+    showToast('Lead saved successfully.');
+   } catch (err) {
+    showToast(err?.message || 'Failed to save lead.');
+   }
+  });
  };
 
- const handleStatusChange = async (leadId, status) => {
+ const handleStatusChange = (leadId, status) => runAction(async () => {
   setSavingId(leadId);
   try {
    await updateLead(leadId, { status });
@@ -92,7 +83,7 @@ function Leads({ leads, onRefresh }) {
   } finally {
    setSavingId(null);
   }
- };
+ });
 
  const openQuickAction = (leadId, action) => {
   setExpandedLeadId(leadId);
@@ -107,7 +98,7 @@ function Leads({ leads, onRefresh }) {
   setActiveAction(null);
  };
 
- const handleLogCall = async (leadId) => {
+ const handleLogCall = (leadId) => runAction(async () => {
   if (!noteDraft.trim()) { showToast('Please enter a note.'); return; }
   setSavingId(leadId);
   try {
@@ -122,9 +113,9 @@ function Leads({ leads, onRefresh }) {
    setSavingId(null);
    closeQuickAction();
   }
- };
+ });
 
- const handleSendProposal = async (leadId) => {
+ const handleSendProposal = (leadId) => runAction(async () => {
   if (!proposalForm.scope_summary.trim() || !proposalForm.price) { showToast('Please enter scope and price.'); return; }
   setSavingId(leadId);
   try {
@@ -142,9 +133,9 @@ function Leads({ leads, onRefresh }) {
    setSavingId(null);
    closeQuickAction();
   }
- };
+ });
 
- const handleScheduleDemo = async (leadId) => {
+ const handleScheduleDemo = (leadId) => runAction(async () => {
   if (!demoForm.scheduled_at) { showToast('Please select a date and time.'); return; }
   setSavingId(leadId);
   try {
@@ -163,7 +154,7 @@ function Leads({ leads, onRefresh }) {
    setSavingId(null);
    closeQuickAction();
   }
- };
+ });
 
  return (
   <div className="space-y-stack-md">
@@ -213,7 +204,7 @@ function Leads({ leads, onRefresh }) {
       <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Est. Value</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Quick Actions</th></tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {leads.map((l) => (
+      {pagedLeads.map((l) => (
        <Fragment key={l.id}>
         <tr className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
           <td data-label="Company / Contact" className="px-stack-lg py-4">
@@ -226,7 +217,7 @@ function Leads({ leads, onRefresh }) {
          <td data-label="Status" className="px-stack-lg py-4">
           <div className="flex items-center gap-2">
            <StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge>
-           <select value={l.status} disabled={savingId === l.id} onChange={(e) => handleStatusChange(l.id, e.target.value)}
+           <select value={l.status} disabled={actionPending && savingId === l.id} onChange={(e) => handleStatusChange(l.id, e.target.value)}
             className="rounded border border-outline-variant bg-white px-2 py-1 text-body-sm disabled:opacity-50 dark:border-dark-outline-variant">
             {LEAD_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
            </select>
@@ -235,9 +226,9 @@ function Leads({ leads, onRefresh }) {
          <td data-label="Quick Actions" className="px-stack-lg py-4">
           {PIPELINE_ACTIVE_STATUSES.includes(l.status) && (
            <div className="flex flex-col gap-1">
-            <RowAction disabled={savingId === l.id} onClick={() => openQuickAction(l.id, 'log_call')}>Log Call</RowAction>
-            <RowAction variant="outline" disabled={savingId === l.id} onClick={() => openQuickAction(l.id, 'send_proposal')}>Send Proposal</RowAction>
-            <RowAction variant="outline" disabled={savingId === l.id} onClick={() => openQuickAction(l.id, 'schedule_demo')}>Schedule Demo</RowAction>
+            <RowAction disabled={actionPending && savingId === l.id} onClick={() => openQuickAction(l.id, 'log_call')}>Log Call</RowAction>
+            <RowAction variant="outline" disabled={actionPending && savingId === l.id} onClick={() => openQuickAction(l.id, 'send_proposal')}>Send Proposal</RowAction>
+            <RowAction variant="outline" disabled={actionPending && savingId === l.id} onClick={() => openQuickAction(l.id, 'schedule_demo')}>Schedule Demo</RowAction>
            </div>
           )}
          </td>
@@ -251,7 +242,7 @@ function Leads({ leads, onRefresh }) {
              <textarea placeholder="Enter call notes..." value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} rows={3}
               className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
              <div className="flex gap-2">
-              <Button type="button" variant="primary" size="md" disabled={savingId === l.id} onClick={() => handleLogCall(l.id)}>Save Note</Button>
+              <Button type="button" variant="primary" size="md" disabled={actionPending && savingId === l.id} onClick={() => handleLogCall(l.id)}>Save Note</Button>
               <Button type="button" variant="outline" size="md" onClick={closeQuickAction}>Cancel</Button>
              </div>
             </div>
@@ -264,7 +255,7 @@ function Leads({ leads, onRefresh }) {
              <input type="number" min="0" placeholder="Price ($) *" value={proposalForm.price} onChange={(e) => setProposalForm({ ...proposalForm, price: e.target.value })}
               className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
              <div className="flex gap-2">
-              <Button type="button" variant="primary" size="md" disabled={savingId === l.id} onClick={() => handleSendProposal(l.id)}>Create & Send</Button>
+              <Button type="button" variant="primary" size="md" disabled={actionPending && savingId === l.id} onClick={() => handleSendProposal(l.id)}>Create & Send</Button>
               <Button type="button" variant="outline" size="md" onClick={closeQuickAction}>Cancel</Button>
              </div>
             </div>
@@ -281,7 +272,7 @@ function Leads({ leads, onRefresh }) {
               onChange={(e) => setDemoForm({ ...demoForm, meeting_link: e.target.value })}
               className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
              <div className="flex gap-2">
-              <Button type="button" variant="primary" size="md" disabled={savingId === l.id} onClick={() => handleScheduleDemo(l.id)}>Schedule</Button>
+              <Button type="button" variant="primary" size="md" disabled={actionPending && savingId === l.id} onClick={() => handleScheduleDemo(l.id)}>Schedule</Button>
               <Button type="button" variant="outline" size="md" onClick={closeQuickAction}>Cancel</Button>
              </div>
             </div>
@@ -297,6 +288,7 @@ function Leads({ leads, onRefresh }) {
      </tbody>
     </table>
    </div>
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -308,16 +300,18 @@ function ContactSubmissionsView({ onLeadCreated }) {
  const [convertTarget, setConvertTarget] = useState(null);
  const [toast, setToast] = useState({ msg: '', type: 'success' });
  const [actingId, setActingId] = useState(null);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
  const { run, isPending } = useAsyncAction();
  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 3500); };
 
  const load = useCallback(() => {
   setLoading(true);
-  apiRequest('/contact?limit=100')
-   .then((r) => setSubmissions(r?.data || []))
+  apiRequest(`/contact?page=${page}&limit=20`)
+   .then((r) => { setSubmissions(r?.data || []); setTotalPages(r?.meta?.total_pages || 1); })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, []);
+ }, [page]);
 
  useEffect(() => { load(); }, [load]);
 
@@ -395,6 +389,7 @@ function ContactSubmissionsView({ onLeadCreated }) {
      </tbody>
     </table>
    </div>
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -403,31 +398,38 @@ function ContactSubmissionsView({ onLeadCreated }) {
 function SalesConvertModal({ submission, onClose, onSuccess }) {
  const [estimatedValue, setEstimatedValue] = useState('');
  const [notes, setNotes] = useState(submission.message || '');
- const [submitting, setSubmitting] = useState(false);
  const [error, setError] = useState('');
+ const [fieldErrors, setFieldErrors] = useState({});
+ const { run, isPending } = useAsyncAction();
  const inputClass = 'w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none';
 
- const handleSubmit = async (e) => {
+ const handleSubmit = (e) => {
   e.preventDefault();
   setError('');
-  setSubmitting(true);
-  try {
-   await createLead({
-    contact_name: submission.name,
-    email: submission.email,
-    phone: submission.phone || null,
-    company: submission.company || null,
-    source: 'contact_form',
-    contact_submission_id: submission.id,
-    estimated_value: estimatedValue ? Number(estimatedValue) : null,
-    notes: notes || null,
-   });
-   onSuccess();
-  } catch (err) {
-   setError(err.message || 'Could not convert to lead. Please try again.');
-  } finally {
-   setSubmitting(false);
+  const clientErrors = validateConvertToLead({ estimatedValue, notes });
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
   }
+  setFieldErrors({});
+  run(async () => {
+   try {
+    await createLead({
+     contact_name: submission.name,
+     email: submission.email,
+     phone: submission.phone || null,
+     company: submission.company || null,
+     source: 'contact_form',
+     contact_submission_id: submission.id,
+     estimated_value: estimatedValue ? Number(estimatedValue) : null,
+     notes: notes || null,
+    });
+    onSuccess();
+   } catch (err) {
+    setError(err.message || 'Could not convert to lead. Please try again.');
+   }
+  });
  };
 
  return (
@@ -452,16 +454,18 @@ function SalesConvertModal({ submission, onClose, onSuccess }) {
       <label className="mb-1 block text-body-sm font-medium text-ink dark:text-white">Estimated Value (USD)</label>
       <input type="number" min="0" step="0.01" placeholder="e.g. 5000" value={estimatedValue}
        onChange={(e) => setEstimatedValue(e.target.value)} className={inputClass} />
+      {fieldErrors.estimatedValue && <p className="mt-1 text-body-xs text-status-error">{fieldErrors.estimatedValue}</p>}
      </div>
      <div>
       <label className="mb-1 block text-body-sm font-medium text-ink dark:text-white">Notes</label>
       <textarea rows={3} placeholder="Internal notes about this lead..." value={notes}
        onChange={(e) => setNotes(e.target.value)} className={`${inputClass} resize-none`} />
+      {fieldErrors.notes && <p className="mt-1 text-body-xs text-status-error">{fieldErrors.notes}</p>}
      </div>
      {error && <p className="text-body-sm text-status-error">{error}</p>}
      <div className="flex gap-3 pt-1">
-      <Button type="submit" variant="primary" size="md" disabled={submitting} className="flex-1">
-       {submitting ? 'Converting...' : 'Convert to Lead'}
+      <Button type="submit" variant="primary" size="md" disabled={isPending} className="flex-1">
+       {isPending ? 'Converting...' : 'Convert to Lead'}
       </Button>
       <Button type="button" variant="outline" size="md" onClick={onClose}>Cancel</Button>
      </div>
@@ -475,34 +479,21 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ lead_id: '', scope_summary: '', price: '', currency: 'USD' });
  const [errors, setErrors] = useState({});
- const [submitting, setSubmitting] = useState(false);
  const [actingId, setActingId] = useState(null);
  const [toast, setToast] = useState({ msg: '', type: 'success' });
+ const [page, setPage] = useState(1);
+ const { run: runSubmit, isPending: submitting } = useAsyncAction();
+ const { run: runRowAction, isPending: rowActionPending } = useAsyncAction();
  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 3500); };
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 bg-white focus:outline-none focus:border-brand';
+
+ const totalPages = Math.max(1, Math.ceil(proposals.length / CLIENT_PAGE_SIZE));
+ const pagedProposals = proposals.slice((page - 1) * CLIENT_PAGE_SIZE, page * CLIENT_PAGE_SIZE);
+ useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages, page]);
 
  const leadLabel = (leadId) => {
   const lead = leads.find((l) => l.id === leadId);
   return lead ? (lead.company || lead.contact_name) : 'Unknown lead';
- };
-
- const validate = () => {
-  const errs = {};
-  if (!form.lead_id) {
-   errs.lead_id = 'Please select a lead.';
-  }
-  if (!form.scope_summary || !form.scope_summary.trim()) {
-   errs.scope_summary = 'Scope summary is required.';
-  } else if (form.scope_summary.trim().length < 10) {
-   errs.scope_summary = 'Scope summary must be at least 10 characters.';
-  }
-  if (!form.price) {
-   errs.price = 'Price is required.';
-  } else if (isNaN(Number(form.price)) || Number(form.price) <= 0) {
-   errs.price = 'Price must be a positive number.';
-  }
-  setErrors(errs);
-  return Object.keys(errs).length === 0;
  };
 
  const handleChange = (field, value) => {
@@ -510,22 +501,20 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
   if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
  };
 
- const handleSubmit = async (e) => {
+ const handleSubmit = (e) => {
   e.preventDefault();
-  if (!validate()) return;
-  setSubmitting(true);
-  try {
+  const clientErrors = validateNewProposal(form);
+  if (Object.keys(clientErrors).length > 0) { setErrors(clientErrors); return; }
+  setErrors({});
+  runSubmit(async () => {
    await createProposal({ ...form, price: Number(form.price) });
    setForm({ lead_id: '', scope_summary: '', price: '', currency: 'USD' });
-   setErrors({});
    setShowForm(false);
    onRefresh();
-  } finally {
-   setSubmitting(false);
-  }
+  });
  };
 
- const runAction = async (action, proposalId, successMsg) => {
+ const runAction = (action, proposalId, successMsg) => runRowAction(async () => {
   setActingId(proposalId);
   try {
    await action(proposalId);
@@ -536,7 +525,7 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
   } finally {
    setActingId(null);
   }
- };
+ });
 
  return (
   <div className="space-y-stack-md">
@@ -578,7 +567,7 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
       <tr><th className="px-stack-lg py-4">Lead</th><th className="px-stack-lg py-4">Price</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Sent</th><th className="px-stack-lg py-4">Actions</th></tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {proposals.map((p) => (
+      {pagedProposals.map((p) => (
        <tr key={p.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
         <td data-label="Lead" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-white">{leadLabel(p.lead_id)}</td>
         <td data-label="Price" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.currency} {Number(p.price).toLocaleString()}</td>
@@ -586,11 +575,11 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
         <td data-label="Sent" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.sent_at ? p.sent_at.slice(0, 10) : '—'}</td>
         <td data-label="Actions" className="px-stack-lg py-4">
          <div className="flex gap-2">
-          {p.status === 'draft' && <RowAction disabled={actingId === p.id} onClick={() => runAction(sendProposal, p.id, 'Proposal sent to client!')}>Send</RowAction>}
+          {p.status === 'draft' && <RowAction disabled={rowActionPending && actingId === p.id} onClick={() => runAction(sendProposal, p.id, 'Proposal sent to client!')}>Send</RowAction>}
           {(p.status === 'sent' || p.status === 'viewed') && (
            <>
-            <RowAction disabled={actingId === p.id} onClick={() => runAction(acceptProposal, p.id, 'Proposal accepted — generate a contract!')}>Accept</RowAction>
-            <RowAction variant="outline" disabled={actingId === p.id} onClick={() => runAction(rejectProposal, p.id, 'Proposal marked as rejected.')}>Reject</RowAction>
+            <RowAction disabled={rowActionPending && actingId === p.id} onClick={() => runAction(acceptProposal, p.id, 'Proposal accepted — generate a contract!')}>Accept</RowAction>
+            <RowAction variant="outline" disabled={rowActionPending && actingId === p.id} onClick={() => runAction(rejectProposal, p.id, 'Proposal marked as rejected.')}>Reject</RowAction>
            </>
           )}
           {p.status === 'accepted' && (
@@ -599,7 +588,7 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
              View in Contracts →
             </RowAction>
            ) : (
-            <RowAction disabled={actingId === p.id} onClick={() => runAction(createContract, p.id, 'Contract generated — go to Contracts tab to sign!')}>
+            <RowAction disabled={rowActionPending && actingId === p.id} onClick={() => runAction(createContract, p.id, 'Contract generated — go to Contracts tab to sign!')}>
              Generate Contract
             </RowAction>
            )
@@ -614,6 +603,7 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
      </tbody>
     </table>
    </div>
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -622,7 +612,13 @@ function Contracts({ contracts, proposals, leads, onRefresh }) {
  const [actingId, setActingId] = useState(null);
  const [confirmId, setConfirmId] = useState(null);
  const [toast, setToast] = useState({ msg: '', type: 'success' });
+ const [page, setPage] = useState(1);
+ const { run, isPending } = useAsyncAction();
  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 4000); };
+
+ const totalPages = Math.max(1, Math.ceil(contracts.length / CLIENT_PAGE_SIZE));
+ const pagedContracts = contracts.slice((page - 1) * CLIENT_PAGE_SIZE, page * CLIENT_PAGE_SIZE);
+ useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages, page]);
 
  const describe = (proposalId) => {
   const proposal = proposals.find((p) => p.id === proposalId);
@@ -631,7 +627,7 @@ function Contracts({ contracts, proposals, leads, onRefresh }) {
   return `${lead ? (lead.company || lead.contact_name) : 'Unknown lead'} — ${proposal.currency} ${Number(proposal.price).toLocaleString()}`;
  };
 
- const handleSign = async (contractId) => {
+ const handleSign = (contractId) => run(async () => {
   setConfirmId(null);
   setActingId(contractId);
   try {
@@ -643,7 +639,7 @@ function Contracts({ contracts, proposals, leads, onRefresh }) {
   } finally {
    setActingId(null);
   }
- };
+ });
 
  return (
   <div className="space-y-stack-md">
@@ -679,7 +675,7 @@ function Contracts({ contracts, proposals, leads, onRefresh }) {
       <tr><th className="px-stack-lg py-4">Deal</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Client Signed</th><th className="px-stack-lg py-4">Company Signed</th><th className="px-stack-lg py-4">Actions</th></tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {contracts.map((c) => (
+      {pagedContracts.map((c) => (
        <tr key={c.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
         <td data-label="Deal" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-white">{describe(c.proposal_id)}</td>
         <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={CONTRACT_STATUS_COLOR[c.status]}>{c.status}</StatusBadge></td>
@@ -687,8 +683,8 @@ function Contracts({ contracts, proposals, leads, onRefresh }) {
         <td data-label="Company Signed" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.signed_by_company_at ? c.signed_by_company_at.slice(0, 10) : '—'}</td>
         <td data-label="Actions" className="px-stack-lg py-4">
          {c.status === 'pending' && (
-          <RowAction disabled={actingId === c.id} onClick={() => setConfirmId(c.id)}>
-           {actingId === c.id ? 'Signing...' : 'Mark Signed'}
+          <RowAction disabled={isPending && actingId === c.id} onClick={() => setConfirmId(c.id)}>
+           {isPending && actingId === c.id ? 'Signing...' : 'Mark Signed'}
           </RowAction>
          )}
          {c.status === 'signed' && <span className="text-body-sm font-medium text-status-success-text">✓ Signed</span>}
@@ -701,6 +697,7 @@ function Contracts({ contracts, proposals, leads, onRefresh }) {
      </tbody>
     </table>
    </div>
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -846,15 +843,23 @@ function CrmDashboard({ leads, proposals, contracts }) {
 function SalesClients({ clients }) {
  const [searchTerm, setSearchTerm] = useState('');
  const [industryFilter, setIndustryFilter] = useState('');
+ const [page, setPage] = useState(1);
 
  const industries = [...new Set(clients.map((c) => c.industry).filter(Boolean))];
- const filtered = clients.filter((c) => {
+ const filtered = useMemo(() => clients.filter((c) => {
   const matchesSearch = !searchTerm ||
    (c.company_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
    (c.contact_name || '').toLowerCase().includes(searchTerm.toLowerCase());
   const matchesIndustry = !industryFilter || c.industry === industryFilter;
   return matchesSearch && matchesIndustry;
- });
+ }), [clients, searchTerm, industryFilter]);
+
+ // Search/filter changing must not leave pagination on a page number that
+ // no longer exists in the filtered result set.
+ useEffect(() => { setPage(1); }, [searchTerm, industryFilter]);
+
+ const totalPages = Math.max(1, Math.ceil(filtered.length / CLIENT_PAGE_SIZE));
+ const pagedClients = filtered.slice((page - 1) * CLIENT_PAGE_SIZE, page * CLIENT_PAGE_SIZE);
 
  const statusColor = { active: 'success', inactive: 'neutral', on_hold: 'warning' };
 
@@ -885,7 +890,7 @@ function SalesClients({ clients }) {
       </tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {filtered.map((c) => (
+      {pagedClients.map((c) => (
        <tr key={c.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
         <td data-label="Company" className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-white">{c.company_name || '—'}</td>
         <td data-label="Contact" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.contact_name || c.company_name || '—'}</td>
@@ -900,6 +905,7 @@ function SalesClients({ clients }) {
      </tbody>
     </table>
    </div>
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -910,11 +916,17 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ title: '', client_id: '', scheduled_at: '', duration_minutes: 30, meeting_link: '' });
  const [errors, setErrors] = useState({});
- const [submitting, setSubmitting] = useState(false);
  const [actingId, setActingId] = useState(null);
  const [toast, setToast] = useState('');
+ const [page, setPage] = useState(1);
+ const { run: runSubmit, isPending: submitting } = useAsyncAction();
+ const { run: runRowAction, isPending: rowActionPending } = useAsyncAction();
 
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+
+ const totalPages = Math.max(1, Math.ceil(meetings.length / CLIENT_PAGE_SIZE));
+ const pagedMeetings = meetings.slice((page - 1) * CLIENT_PAGE_SIZE, page * CLIENT_PAGE_SIZE);
+ useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages, page]);
 
  const clientName = (id) => {
   if (!id) return '—';
@@ -922,39 +934,31 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
   return client ? (client.company_name || '—') : id;
  };
 
- const validate = () => {
-  const errs = {};
-  if (!form.title.trim()) errs.title = 'Title is required.';
-  if (!form.scheduled_at) errs.scheduled_at = 'Date and time are required.';
-  setErrors(errs);
-  return Object.keys(errs).length === 0;
- };
-
- const handleCreate = async (e) => {
+ const handleCreate = (e) => {
   e.preventDefault();
-  if (!validate()) return;
-  setSubmitting(true);
-  try {
-   const payload = {
-    ...form,
-    scheduled_at: form.scheduled_at,
-    duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : 30,
-    client_id: form.client_id || undefined,
-   };
-   await createMeeting(payload);
-   setForm({ title: '', client_id: '', scheduled_at: '', duration_minutes: 30, meeting_link: '' });
-   setErrors({});
-   setShowForm(false);
-   onRefresh();
-   showToast('Meeting scheduled successfully.');
-  } catch (err) {
-   showToast(err?.message || 'Failed to schedule meeting.');
-  } finally {
-   setSubmitting(false);
-  }
+  const clientErrors = validateNewMeeting(form);
+  if (Object.keys(clientErrors).length > 0) { setErrors(clientErrors); return; }
+  setErrors({});
+  runSubmit(async () => {
+   try {
+    const payload = {
+     ...form,
+     scheduled_at: form.scheduled_at,
+     duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : 30,
+     client_id: form.client_id || undefined,
+    };
+    await createMeeting(payload);
+    setForm({ title: '', client_id: '', scheduled_at: '', duration_minutes: 30, meeting_link: '' });
+    setShowForm(false);
+    onRefresh();
+    showToast('Meeting scheduled successfully.');
+   } catch (err) {
+    showToast(err?.message || 'Failed to schedule meeting.');
+   }
+  });
  };
 
- const handleComplete = async (meetingId) => {
+ const handleComplete = (meetingId) => runRowAction(async () => {
   setActingId(meetingId);
   try {
    await updateMeeting(meetingId, { status: 'completed' });
@@ -964,9 +968,9 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
   } finally {
    setActingId(null);
   }
- };
+ });
 
- const handleCancel = async (meetingId) => {
+ const handleCancel = (meetingId) => runRowAction(async () => {
   setActingId(meetingId);
   try {
    await updateMeeting(meetingId, { status: 'cancelled' });
@@ -976,7 +980,7 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
   } finally {
    setActingId(null);
   }
- };
+ });
 
  const now = new Date().toISOString().slice(0, 16);
  const upcoming = meetings.filter((m) => m.status === 'scheduled' && new Date(m.scheduled_at) >= new Date(now));
@@ -1045,7 +1049,7 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
       </tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {meetings.map((m) => (
+      {pagedMeetings.map((m) => (
        <tr key={m.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
         <td data-label="Title" className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-white">{m.title}</td>
         <td data-label="Client / Lead" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{m.client_id ? clientName(m.client_id) : '—'}</td>
@@ -1056,8 +1060,8 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
          <div className="flex gap-2">
           {m.status === 'scheduled' && new Date(m.scheduled_at) >= new Date(now) && (
            <>
-            <RowAction disabled={actingId === m.id} onClick={() => handleComplete(m.id)}>Complete</RowAction>
-            <RowAction variant="outline" disabled={actingId === m.id} onClick={() => handleCancel(m.id)}>Cancel</RowAction>
+            <RowAction disabled={rowActionPending && actingId === m.id} onClick={() => handleComplete(m.id)}>Complete</RowAction>
+            <RowAction variant="outline" disabled={rowActionPending && actingId === m.id} onClick={() => handleCancel(m.id)}>Cancel</RowAction>
            </>
           )}
          </div>
@@ -1070,6 +1074,7 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
      </tbody>
     </table>
    </div>
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }

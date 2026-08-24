@@ -40,6 +40,11 @@ import { createLead } from '../api/crm.js';
 import { validateConvertToLead } from '../schemas/crm.schema.js';
 import { validateAddUser, validateUpdateUser } from '../schemas/employee.schema.js';
 import { validateAddProject, validateUpdateProject } from '../schemas/project.schema.js';
+import {
+ validateAddRole, validateAddPermission, validateMediaUpload,
+ validateSendNotification, validateGenerateReport, validateNewSetting,
+} from '../schemas/admin-misc.schema.js';
+import { validateNewCourse, validateNewCareer } from '../schemas/admin-content.schema.js';
 
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import ContentManager from '../components/admin/ContentManager.jsx';
@@ -267,7 +272,7 @@ function AddUserForm({ currentRole, onCreated, onCancel }) {
  const [roleError, setRoleError] = useState('');
  const [submitError, setSubmitError] = useState('');
  const [fieldErrors, setFieldErrors] = useState({});
- const [submitting, setSubmitting] = useState(false);
+ const { run, isPending: submitting } = useAsyncAction();
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
  const selectedPortal = availablePortals.find((p) => p.value === form.portal);
@@ -294,14 +299,13 @@ function AddUserForm({ currentRole, onCreated, onCancel }) {
    return;
   }
   setFieldErrors({});
-  setSubmitting(true);
   try {
-   await createUser({ name: form.name, email: form.email, password: form.password, phone: form.phone || null, role: form.role });
-   onCreated();
+   await run(async () => {
+    await createUser({ name: form.name, email: form.email, password: form.password, phone: form.phone || null, role: form.role });
+    onCreated();
+   });
   } catch (err) {
    setSubmitError(err.message || 'Could not create the account.');
-  } finally {
-   setSubmitting(false);
   }
  };
 
@@ -393,25 +397,24 @@ function UserManagement({ currentRole }) {
    return;
   }
   setUserFieldErrors({});
-  setSubmittingUser(true);
   try {
-   await updateUser(editingUser.id, {
-    name: editingUser.name,
-    email: editingUser.email,
-    phone: editingUser.phone || null,
-    role: editingUser.role,
-    is_active: editingUser.is_active,
+   await runUpdateUser(async () => {
+    await updateUser(editingUser.id, {
+     name: editingUser.name,
+     email: editingUser.email,
+     phone: editingUser.phone || null,
+     role: editingUser.role,
+     is_active: editingUser.is_active,
+    });
+    setEditingUser(null);
+    loadUsers();
    });
-   setEditingUser(null);
-   loadUsers();
   } catch (err) {
    setUserError(err.message || 'Could not update user.');
-  } finally {
-   setSubmittingUser(false);
   }
  };
 
- const [submittingUser, setSubmittingUser] = useState(false);
+ const { run: runUpdateUser, isPending: submittingUser } = useAsyncAction();
  const [userError, setUserError] = useState('');
  const [userFieldErrors, setUserFieldErrors] = useState({});
  const [successMsg, setSuccessMsg] = useState('');
@@ -630,7 +633,7 @@ function AddProjectForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ title: '', industry: '', status: 'planning', budget: '', is_published: false, is_featured: false });
  const [error, setError] = useState('');
  const [fieldErrors, setFieldErrors] = useState({});
- const [submitting, setSubmitting] = useState(false);
+ const { run, isPending: submitting } = useAsyncAction();
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
  const handleSubmit = async (e) => {
@@ -643,21 +646,20 @@ function AddProjectForm({ onCreated, onCancel }) {
    return;
   }
   setFieldErrors({});
-  setSubmitting(true);
   try {
-   await createProject({
-    title: form.title,
-    industry: form.industry || null,
-    status: form.status,
-    budget: form.budget ? Number(form.budget) : null,
-    is_published: form.is_published,
-    is_featured: form.is_featured,
+   await run(async () => {
+    await createProject({
+     title: form.title,
+     industry: form.industry || null,
+     status: form.status,
+     budget: form.budget ? Number(form.budget) : null,
+     is_published: form.is_published,
+     is_featured: form.is_featured,
+    });
+    onCreated();
    });
-   onCreated();
   } catch (err) {
    setError(err.message || 'Could not create the project.');
-  } finally {
-   setSubmitting(false);
   }
  };
 
@@ -738,27 +740,26 @@ function ProjectsManagement() {
    return;
   }
   setProjectFieldErrors({});
-  setSubmittingProject(true);
   try {
-   await updateProject(editingProject.id, {
-    title: editingProject.title,
-    industry: editingProject.industry || null,
-    status: editingProject.status,
-    budget: editingProject.budget ? Number(editingProject.budget) : null,
-    is_published: editingProject.is_published,
-    is_featured: editingProject.is_featured,
-    progress_percent: editingProject.progress_percent,
+   await runUpdateProject(async () => {
+    await updateProject(editingProject.id, {
+     title: editingProject.title,
+     industry: editingProject.industry || null,
+     status: editingProject.status,
+     budget: editingProject.budget ? Number(editingProject.budget) : null,
+     is_published: editingProject.is_published,
+     is_featured: editingProject.is_featured,
+     progress_percent: editingProject.progress_percent,
+    });
+    setEditingProject(null);
+    loadProjects();
    });
-   setEditingProject(null);
-   loadProjects();
   } catch (err) {
    setProjectError(err.message || 'Could not update project.');
-  } finally {
-   setSubmittingProject(false);
   }
  };
 
- const [submittingProject, setSubmittingProject] = useState(false);
+ const { run: runUpdateProject, isPending: submittingProject } = useAsyncAction();
  const [projectError, setProjectError] = useState('');
  const [projectFieldErrors, setProjectFieldErrors] = useState({});
  const { run: runTogglePublish, isPending: togglingPublish } = useAsyncAction();
@@ -883,28 +884,41 @@ function ProjectsManagement() {
 function AddRoleForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ name: '', slug: '', description: '' });
  const [error, setError] = useState('');
- const [submitting, setSubmitting] = useState(false);
+ const [fieldErrors, setFieldErrors] = useState({});
+ const { run, isPending: submitting } = useAsyncAction();
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
  const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
-  setSubmitting(true);
+  const clientErrors = validateAddRole(form);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
+  }
+  setFieldErrors({});
   try {
-   await createRole(form);
-   onCreated();
+   await run(async () => {
+    await createRole(form);
+    onCreated();
+   });
   } catch (err) {
    setError(err.message || 'Could not create the role.');
-  } finally {
-   setSubmitting(false);
   }
  };
 
  return (
   <form onSubmit={handleSubmit} className="space-y-4">
    <div className="grid gap-4 sm:grid-cols-2">
-    <input required type="text" placeholder="Role name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
-    <input required type="text" placeholder="Slug (e.g. content-editor)" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className={inputClass} />
+    <div>
+     <input required type="text" placeholder="Role name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.name && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.name}</p>}
+    </div>
+    <div>
+     <input required type="text" placeholder="Slug (e.g. content-editor)" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.slug && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.slug}</p>}
+    </div>
    </div>
    <textarea placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputClass} w-full`} rows={2} />
    {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
@@ -919,29 +933,45 @@ function AddRoleForm({ onCreated, onCancel }) {
 function AddPermissionForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ name: '', module: '', action: '', description: '' });
  const [error, setError] = useState('');
- const [submitting, setSubmitting] = useState(false);
+ const [fieldErrors, setFieldErrors] = useState({});
+ const { run, isPending: submitting } = useAsyncAction();
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
  const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
-  setSubmitting(true);
+  const clientErrors = validateAddPermission(form);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
+  }
+  setFieldErrors({});
   try {
-   await createPermission(form);
-   onCreated();
+   await run(async () => {
+    await createPermission(form);
+    onCreated();
+   });
   } catch (err) {
    setError(err.message || 'Could not create the permission.');
-  } finally {
-   setSubmitting(false);
   }
  };
 
  return (
   <form onSubmit={handleSubmit} className="space-y-4">
    <div className="grid gap-4 sm:grid-cols-3">
-    <input required type="text" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
-    <input required type="text" placeholder="Module (e.g. projects)" value={form.module} onChange={(e) => setForm({ ...form, module: e.target.value })} className={inputClass} />
-    <input required type="text" placeholder="Action (e.g. delete)" value={form.action} onChange={(e) => setForm({ ...form, action: e.target.value })} className={inputClass} />
+    <div>
+     <input required type="text" placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.name && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.name}</p>}
+    </div>
+    <div>
+     <input required type="text" placeholder="Module (e.g. projects)" value={form.module} onChange={(e) => setForm({ ...form, module: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.module && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.module}</p>}
+    </div>
+    <div>
+     <input required type="text" placeholder="Action (e.g. delete)" value={form.action} onChange={(e) => setForm({ ...form, action: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.action && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.action}</p>}
+    </div>
    </div>
    {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
    <div className="flex gap-2">
@@ -1089,7 +1119,7 @@ function mediaIcon(mimeType) {
 function MediaManagement() {
  const [media, setMedia] = useState([]);
  const [loading, setLoading] = useState(true);
- const [uploading, setUploading] = useState(false);
+ const { run: runUpload, isPending: uploading } = useAsyncAction();
  const [error, setError] = useState('');
  const [page, setPage] = useState(1);
  const [totalPages, setTotalPages] = useState(1);
@@ -1108,16 +1138,21 @@ function MediaManagement() {
 
  const handleUpload = async (e) => {
   const files = e.target.files;
-  if (!files?.length) return;
   setError('');
-  setUploading(true);
+  const clientErrors = validateMediaUpload(files);
+  if (Object.keys(clientErrors).length > 0) {
+   setError(clientErrors.files);
+   e.target.value = '';
+   return;
+  }
   try {
-   await uploadMedia(files, 'misc');
-   loadMedia();
+   await runUpload(async () => {
+    await uploadMedia(files, 'misc');
+    loadMedia();
+   });
   } catch (err) {
    setError(err.message || 'Upload failed.');
   } finally {
-   setUploading(false);
    e.target.value = '';
   }
  };
@@ -1143,7 +1178,7 @@ function MediaManagement() {
     </div>
     {error && <p className="flex items-center gap-1 px-stack-lg pt-4 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
     {loading ? (
-     <div className="p-stack-lg"><LoadingSpinner /></div>
+     <div className="p-stack-lg"><SkeletonTable rows={6} columns={4} /></div>
     ) : (
      <div className="grid grid-cols-2 gap-gutter p-stack-lg sm:grid-cols-3 lg:grid-cols-4">
       {media.map((m) => (
@@ -1185,32 +1220,41 @@ const NOTIFICATION_TEXT = { info: 'text-status-info-text', success: 'text-status
 function SendNotificationForm({ onSent, onCancel }) {
  const [form, setForm] = useState({ title: '', message: '', type: 'info', link: '', roles: '' });
  const [error, setError] = useState('');
- const [submitting, setSubmitting] = useState(false);
+ const [fieldErrors, setFieldErrors] = useState({});
+ const { run, isPending: submitting } = useAsyncAction();
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
  const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
-  if (!form.title.trim()) { setError('Title is required.'); return; }
-  setSubmitting(true);
+  const clientErrors = validateSendNotification(form);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
+  }
+  setFieldErrors({});
   try {
-   const roles = form.roles.split(',').map((r) => r.trim()).filter(Boolean);
-   await createNotification({
-    title: form.title, message: form.message || undefined, type: form.type,
-    link: form.link || undefined, roles: roles.length ? roles : undefined,
+   await run(async () => {
+    const roles = form.roles.split(',').map((r) => r.trim()).filter(Boolean);
+    await createNotification({
+     title: form.title, message: form.message || undefined, type: form.type,
+     link: form.link || undefined, roles: roles.length ? roles : undefined,
+    });
+    onSent();
    });
-   onSent();
   } catch (err) {
    setError(err.message || 'Could not send the notification.');
-  } finally {
-   setSubmitting(false);
   }
  };
 
  return (
   <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
    <div className="grid gap-4 sm:grid-cols-2">
-    <input required type="text" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} />
+    <div>
+     <input required type="text" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.title && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.title}</p>}
+    </div>
     <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={inputClass}>
      {['info', 'success', 'warning', 'error'].map((t) => <option key={t} value={t}>{t}</option>)}
     </select>
@@ -1229,10 +1273,16 @@ function SendNotificationForm({ onSent, onCancel }) {
  );
 }
 
+// The notifications endpoint (backend/app/routers/notification.py) has no
+// page_params support — it just returns the caller's notifications capped
+// at 50 — so pagination here is client-side over the loaded array.
+const NOTIFICATIONS_PAGE_SIZE = 10;
+
 function NotificationsManagement() {
  const [notifications, setNotifications] = useState([]);
  const [loading, setLoading] = useState(true);
  const [showSend, setShowSend] = useState(false);
+ const [page, setPage] = useState(1);
 
  const load = useCallback(() => {
   setLoading(true);
@@ -1242,6 +1292,10 @@ function NotificationsManagement() {
  useEffect(() => {
   load();
  }, [load]);
+
+ const totalPages = Math.max(1, Math.ceil(notifications.length / NOTIFICATIONS_PAGE_SIZE));
+ const safePage = Math.min(page, totalPages);
+ const pagedNotifications = notifications.slice((safePage - 1) * NOTIFICATIONS_PAGE_SIZE, safePage * NOTIFICATIONS_PAGE_SIZE);
 
  const { run: runMarkOne, isPending: markingOne } = useAsyncAction();
  const { run: runMarkAll, isPending: markingAll } = useAsyncAction();
@@ -1272,28 +1326,33 @@ function NotificationsManagement() {
      </Button>
     </div>
     {loading ? (
-     <div className="p-stack-lg"><LoadingSpinner /></div>
+     <div className="p-stack-lg"><SkeletonTable rows={6} columns={2} /></div>
     ) : (
-     <div className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {notifications.map((n) => (
-       <div key={n.id} className={`flex items-start gap-4 p-stack-lg ${n.is_read ? '' : 'bg-surface-container dark:bg-dark-surface-container'}`}>
-        <Icon name={NOTIFICATION_ICON[n.type] || 'info'} className={`mt-0.5 text-2xl ${NOTIFICATION_TEXT[n.type] || 'text-status-info-text'}`} />
-        <div className="flex-1">
-         <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{n.title}</p>
-         {n.message && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{n.message}</p>}
-         <p className="mt-1 font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{new Date(n.created_at).toLocaleString()}</p>
+     <>
+      <div className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
+       {pagedNotifications.map((n) => (
+        <div key={n.id} className={`flex items-start gap-4 p-stack-lg ${n.is_read ? '' : 'bg-surface-container dark:bg-dark-surface-container'}`}>
+         <Icon name={NOTIFICATION_ICON[n.type] || 'info'} className={`mt-0.5 text-2xl ${NOTIFICATION_TEXT[n.type] || 'text-status-info-text'}`} />
+         <div className="flex-1">
+          <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{n.title}</p>
+          {n.message && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{n.message}</p>}
+          <p className="mt-1 font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{new Date(n.created_at).toLocaleString()}</p>
+         </div>
+         {!n.is_read && (
+          <button onClick={() => markOne(n)} disabled={markingOne} aria-label="Mark as read" className="text-ink-muted transition-colors hover:text-brand disabled:opacity-50" title="Mark as read">
+           <Icon name="check" className="text-lg" />
+          </button>
+         )}
         </div>
-        {!n.is_read && (
-         <button onClick={() => markOne(n)} disabled={markingOne} aria-label="Mark as read" className="text-ink-muted transition-colors hover:text-brand disabled:opacity-50" title="Mark as read">
-          <Icon name="check" className="text-lg" />
-         </button>
-        )}
-       </div>
-      ))}
-      {!notifications.length && (
-       <p className="py-8 text-center text-body-sm text-ink-muted">No notifications.</p>
-      )}
-     </div>
+       ))}
+       {!notifications.length && (
+        <p className="py-8 text-center text-body-sm text-ink-muted">No notifications.</p>
+       )}
+      </div>
+      <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+       <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
+      </div>
+     </>
     )}
    </div>
   </div>
@@ -1303,29 +1362,45 @@ function NotificationsManagement() {
 function GenerateReportForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ title: '', report_type: '', period: '', summary: '' });
  const [error, setError] = useState('');
- const [submitting, setSubmitting] = useState(false);
+ const [fieldErrors, setFieldErrors] = useState({});
+ const { run, isPending: submitting } = useAsyncAction();
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
  const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
-  setSubmitting(true);
+  const clientErrors = validateGenerateReport(form);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
+  }
+  setFieldErrors({});
   try {
-   await generateReport(form);
-   onCreated();
+   await run(async () => {
+    await generateReport(form);
+    onCreated();
+   });
   } catch (err) {
    setError(err.message || 'Could not generate the report.');
-  } finally {
-   setSubmitting(false);
   }
  };
 
  return (
   <form onSubmit={handleSubmit} className="space-y-4">
    <div className="grid gap-4 sm:grid-cols-3">
-    <input required type="text" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} />
-    <input required type="text" placeholder="Type (e.g. financial)" value={form.report_type} onChange={(e) => setForm({ ...form, report_type: e.target.value })} className={inputClass} />
-    <input required type="text" placeholder="Period (e.g. Q1 2026)" value={form.period} onChange={(e) => setForm({ ...form, period: e.target.value })} className={inputClass} />
+    <div>
+     <input required type="text" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.title && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.title}</p>}
+    </div>
+    <div>
+     <input required type="text" placeholder="Type (e.g. financial)" value={form.report_type} onChange={(e) => setForm({ ...form, report_type: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.report_type && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.report_type}</p>}
+    </div>
+    <div>
+     <input required type="text" placeholder="Period (e.g. Q1 2026)" value={form.period} onChange={(e) => setForm({ ...form, period: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.period && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.period}</p>}
+    </div>
    </div>
    <textarea placeholder="Summary (optional)" value={form.summary} onChange={(e) => setForm({ ...form, summary: e.target.value })} className={`${inputClass} w-full`} rows={2} />
    {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
@@ -1531,7 +1606,7 @@ function ContactsManagement() {
     </div>
 
     {loading ? (
-     <div className="p-stack-lg"><LoadingSpinner /></div>
+     <div className="p-stack-lg"><SkeletonTable rows={6} columns={10} /></div>
     ) : (
      <div className="responsive-table overflow-x-auto">
       <table className="w-full text-left">
@@ -1689,14 +1764,24 @@ function AnalyticsManagement() {
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
+// The settings endpoint (backend/app/routers/settings.py) has no page_params
+// support — it just returns every setting matching the optional group filter —
+// so pagination here is client-side over the loaded array.
+const SETTINGS_PAGE_SIZE = 10;
+
 function SettingsManagement() {
  const [settings, setSettings] = useState([]);
  const [loading, setLoading] = useState(true);
  const [editingKey, setEditingKey] = useState(null);
  const [editValue, setEditValue] = useState('');
- const [saving, setSaving] = useState(false);
+ const [editError, setEditError] = useState('');
+ const { run: runSaveEdit, isPending: saving } = useAsyncAction();
  const [newKey, setNewKey] = useState({ key: '', value: '', group: 'general' });
  const [showNew, setShowNew] = useState(false);
+ const [newError, setNewError] = useState('');
+ const [newFieldErrors, setNewFieldErrors] = useState({});
+ const { run: runCreateSetting, isPending: creatingSetting } = useAsyncAction();
+ const [page, setPage] = useState(1);
 
  const load = useCallback(() => {
   setLoading(true);
@@ -1705,30 +1790,44 @@ function SettingsManagement() {
 
  useEffect(() => { load(); }, [load]);
 
- const startEdit = (s) => { setEditingKey(s.key); setEditValue(typeof s.value === 'string' ? s.value : JSON.stringify(s.value)); };
+ const totalPages = Math.max(1, Math.ceil(settings.length / SETTINGS_PAGE_SIZE));
+ const safePage = Math.min(page, totalPages);
+ const pagedSettings = settings.slice((safePage - 1) * SETTINGS_PAGE_SIZE, safePage * SETTINGS_PAGE_SIZE);
+
+ const startEdit = (s) => { setEditingKey(s.key); setEditValue(typeof s.value === 'string' ? s.value : JSON.stringify(s.value)); setEditError(''); };
 
  const saveEdit = async (group) => {
-  setSaving(true);
+  setEditError('');
   try {
-   await upsertSetting(editingKey, { value: editValue, group });
-   setEditingKey(null);
-   load();
-  } finally {
-   setSaving(false);
+   await runSaveEdit(async () => {
+    await upsertSetting(editingKey, { value: editValue, group });
+    setEditingKey(null);
+    load();
+   });
+  } catch (err) {
+   setEditError(err.message || 'Could not save the setting.');
   }
  };
 
  const createSetting = async (e) => {
   e.preventDefault();
-  if (!newKey.key.trim()) return;
-  setSaving(true);
+  setNewError('');
+  const clientErrors = validateNewSetting(newKey);
+  if (Object.keys(clientErrors).length > 0) {
+   setNewFieldErrors(clientErrors);
+   setNewError('Please fix the errors below.');
+   return;
+  }
+  setNewFieldErrors({});
   try {
-   await upsertSetting(newKey.key.trim(), { value: newKey.value, group: newKey.group || 'general' });
-   setNewKey({ key: '', value: '', group: 'general' });
-   setShowNew(false);
-   load();
-  } finally {
-   setSaving(false);
+   await runCreateSetting(async () => {
+    await upsertSetting(newKey.key.trim(), { value: newKey.value, group: newKey.group || 'general' });
+    setNewKey({ key: '', value: '', group: 'general' });
+    setShowNew(false);
+    load();
+   });
+  } catch (err) {
+   setNewError(err.message || 'Could not create the setting.');
   }
  };
 
@@ -1741,7 +1840,7 @@ function SettingsManagement() {
   });
  };
 
- if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
+ if (loading) return <div className="p-stack-lg"><SkeletonTable rows={6} columns={4} /></div>;
 
  return (
   <div className="space-y-stack-lg">
@@ -1750,15 +1849,20 @@ function SettingsManagement() {
    </div>
    {showNew && (
     <form onSubmit={createSetting} className="grid grid-cols-1 gap-3 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface sm:grid-cols-3">
-     <input placeholder="Key (e.g. site.title)" value={newKey.key} onChange={(e) => setNewKey({ ...newKey, key: e.target.value })} className={FORM_INPUT_CLASS} />
+     <div>
+      <input placeholder="Key (e.g. site.title)" value={newKey.key} onChange={(e) => setNewKey({ ...newKey, key: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+      {newFieldErrors.key && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{newFieldErrors.key}</p>}
+     </div>
      <input placeholder="Value" value={newKey.value} onChange={(e) => setNewKey({ ...newKey, value: e.target.value })} className={FORM_INPUT_CLASS} />
      <input placeholder="Group (e.g. general)" value={newKey.group} onChange={(e) => setNewKey({ ...newKey, group: e.target.value })} className={FORM_INPUT_CLASS} />
+     {newError && <p className="flex items-center gap-1 text-body-sm text-status-error-text sm:col-span-3"><Icon name="error" className="text-base" />{newError}</p>}
      <div className="flex gap-2 sm:col-span-3">
-      <Button type="submit" variant="primary" size="md" disabled={saving}>{saving ? 'Saving...' : 'Save'}</Button>
+      <Button type="submit" variant="primary" size="md" disabled={creatingSetting}>{creatingSetting ? 'Saving...' : 'Save'}</Button>
       <Button type="button" variant="outline" size="md" onClick={() => setShowNew(false)}>Cancel</Button>
      </div>
     </form>
    )}
+   {editError && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{editError}</p>}
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
     <div className="overflow-x-auto">
     <table className="w-full text-left">
@@ -1766,7 +1870,7 @@ function SettingsManagement() {
       <tr><th className="px-stack-lg py-4">Key</th><th className="px-stack-lg py-4">Group</th><th className="px-stack-lg py-4">Value</th><th className="px-stack-lg py-4"></th></tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {settings.map((s) => (
+      {pagedSettings.map((s) => (
        <tr key={s.key} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
         <td data-label="Key" className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{s.key}</td>
         <td data-label="Group" className="px-stack-lg py-4"><Badge className="text-label-caps">{s.group}</Badge></td>
@@ -1780,7 +1884,7 @@ function SettingsManagement() {
           {editingKey === s.key ? (
            <>
             <button onClick={() => saveEdit(s.group)} disabled={saving} aria-label="Save" className="text-brand hover:text-brand-dark"><Icon name="check" /></button>
-            <button onClick={() => setEditingKey(null)} aria-label="Cancel" className="text-ink-muted hover:text-ink"><Icon name="close" /></button>
+            <button onClick={() => { setEditingKey(null); setEditError(''); }} aria-label="Cancel" className="text-ink-muted hover:text-ink"><Icon name="close" /></button>
            </>
           ) : (
            <>
@@ -1798,6 +1902,9 @@ function SettingsManagement() {
      </tbody>
     </table>
     </div>
+    <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+     <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
+    </div>
    </div>
   </div>
  );
@@ -1810,36 +1917,51 @@ function SettingsManagement() {
 function NewCourseForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ title: '', category: '', duration_hours: '', description: '', is_published: true });
  const [error, setError] = useState('');
- const [submitting, setSubmitting] = useState(false);
+ const [fieldErrors, setFieldErrors] = useState({});
+ const { run, isPending: submitting } = useAsyncAction();
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
  const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
-  if (!form.title.trim()) { setError('Title is required.'); return; }
-  setSubmitting(true);
+  const clientErrors = validateNewCourse(form);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
+  }
+  setFieldErrors({});
   try {
-   await createCourse({
-    title: form.title,
-    category: form.category || undefined,
-    duration_hours: form.duration_hours ? Number(form.duration_hours) : undefined,
-    description: form.description || undefined,
-    is_published: form.is_published,
+   await run(async () => {
+    await createCourse({
+     title: form.title,
+     category: form.category || undefined,
+     duration_hours: form.duration_hours ? Number(form.duration_hours) : undefined,
+     description: form.description || undefined,
+     is_published: form.is_published,
+    });
+    onCreated();
    });
-   onCreated();
   } catch (err) {
    setError(err.message || 'Could not create the course.');
-  } finally {
-   setSubmitting(false);
   }
  };
 
  return (
   <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
    <div className="grid gap-4 sm:grid-cols-3">
-    <input required type="text" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} />
-    <input type="text" placeholder="Category (e.g. Cloud)" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={inputClass} />
-    <input type="number" min="0" placeholder="Duration (hours)" value={form.duration_hours} onChange={(e) => setForm({ ...form, duration_hours: e.target.value })} className={inputClass} />
+    <div>
+     <input required type="text" placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.title && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.title}</p>}
+    </div>
+    <div>
+     <input type="text" placeholder="Category (e.g. Cloud)" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.category && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.category}</p>}
+    </div>
+    <div>
+     <input type="number" min="0" placeholder="Duration (hours)" value={form.duration_hours} onChange={(e) => setForm({ ...form, duration_hours: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.duration_hours && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.duration_hours}</p>}
+    </div>
    </div>
    <textarea placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputClass} w-full`} rows={2} />
    <label className="flex items-center gap-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
@@ -1904,36 +2026,51 @@ function TrainingManagement() {
 function NewCareerForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ title: '', department: '', location: '', employment_type: 'full_time', description: '' });
  const [error, setError] = useState('');
- const [submitting, setSubmitting] = useState(false);
+ const [fieldErrors, setFieldErrors] = useState({});
+ const { run, isPending: submitting } = useAsyncAction();
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
  const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
-  if (!form.title.trim()) { setError('Title is required.'); return; }
-  setSubmitting(true);
+  const clientErrors = validateNewCareer(form);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
+  }
+  setFieldErrors({});
   try {
-   await careersApi.create({
-    title: form.title,
-    department: form.department || undefined,
-    location: form.location || undefined,
-    employment_type: form.employment_type,
-    description: form.description || undefined,
+   await run(async () => {
+    await careersApi.create({
+     title: form.title,
+     department: form.department || undefined,
+     location: form.location || undefined,
+     employment_type: form.employment_type,
+     description: form.description || undefined,
+    });
+    onCreated();
    });
-   onCreated();
   } catch (err) {
    setError(err.message || 'Could not create the job posting.');
-  } finally {
-   setSubmitting(false);
   }
  };
 
  return (
   <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
    <div className="grid gap-4 sm:grid-cols-3">
-    <input required type="text" placeholder="Job title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} />
-    <input type="text" placeholder="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className={inputClass} />
-    <input type="text" placeholder="Location" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputClass} />
+    <div>
+     <input required type="text" placeholder="Job title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.title && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.title}</p>}
+    </div>
+    <div>
+     <input type="text" placeholder="Department" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.department && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.department}</p>}
+    </div>
+    <div>
+     <input type="text" placeholder="Location" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.location && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.location}</p>}
+    </div>
    </div>
    <select value={form.employment_type} onChange={(e) => setForm({ ...form, employment_type: e.target.value })} className={inputClass}>
     <option value="full_time">Full-time</option>
@@ -2132,7 +2269,7 @@ function CommentsManagement() {
     ))}
    </div>
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-    {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
+    {loading ? <div className="p-stack-lg"><SkeletonTable rows={6} columns={2} /></div> : (
      <div className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
       {comments.map((c) => (
        <div key={c.id} className="flex items-start justify-between gap-4 p-stack-lg">

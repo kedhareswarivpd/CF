@@ -6,6 +6,8 @@ import Badge from '../components/ui/Badge.jsx';
 import StatusBadge from '../components/ui/StatusBadge.jsx';
 import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
+import { SkeletonTable } from '../components/ui/Skeleton.jsx';
+import Pagination from '../components/ui/Pagination.jsx';
 import { PortalTable } from '../components/ui/ResponsiveTable.jsx';
 import Tabs from '../components/ui/Tabs.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
@@ -14,12 +16,28 @@ import useAsyncAction from '../hooks/useAsyncAction.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { partnerPortalTabs } from '../data/portal.js';
 import { fetchMyProfile, fetchMyFiles, fetchMyTickets, createTicket as createTicketApi } from '../api/partnerAccounts.js';
+import { validateNewTicket } from '../schemas/client.schema.js';
 
 const STATUS_VARIANTS = {
  open: 'info', in_progress: 'info', resolved: 'success', closed: 'neutral',
 };
 
 const formClass = 'w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink';
+
+// The /partner-accounts/me/* endpoints these tables read from are
+// self-service list routes capped at SELF_SERVICE_LIST_CAP (500) — not
+// page_params-paginated, so there's no server-side page/limit/meta.total_pages
+// contract to use. Each table below instead paginates client-side.
+const PAGE_SIZE = 10;
+
+function usePagedRows(rows) {
+ const [page, setPage] = useState(1);
+ const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+ useEffect(() => { if (page > totalPages) setPage(1); }, [rows.length, totalPages, page]);
+ const start = (page - 1) * PAGE_SIZE;
+ const pageRows = rows.slice(start, start + PAGE_SIZE);
+ return { page, setPage, totalPages, pageRows };
+}
 
 // ─── Data normalizers (map backend schema → portal UI shape) ─────────────────
 const normalizeProfile = (p) => ({
@@ -72,6 +90,7 @@ function Overview({ profile, files, tickets }) {
 
 // ─── Files ─────────────────────────────────────────────────────────────────
 function Files({ files }) {
+ const { page, setPage, totalPages, pageRows } = usePagedRows(files);
  const columns = [
   {
    key: 'name', label: 'Name',
@@ -89,7 +108,12 @@ function Files({ files }) {
    ),
   },
  ];
- return <PortalTable columns={columns} rows={files} emptyMessage="No files yet. Shared files will appear here." />;
+ return (
+  <div className="space-y-stack-md">
+   <PortalTable columns={columns} rows={pageRows} emptyMessage="No files yet. Shared files will appear here." />
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+  </div>
+ );
 }
 
 // ─── Tickets ───────────────────────────────────────────────────────────────
@@ -97,12 +121,20 @@ function Tickets({ tickets, onNewTicket }) {
  const [newTicket, setNewTicket] = useState({ subject: '', description: '' });
  const [showForm, setShowForm] = useState(false);
  const [error, setError] = useState('');
+ const [fieldErrors, setFieldErrors] = useState({});
  const { run, isPending } = useAsyncAction();
+ const { page, setPage, totalPages, pageRows } = usePagedRows(tickets);
 
  const handleSubmit = (e) => {
   e.preventDefault();
-  if (!newTicket.subject.trim()) return;
   setError('');
+  const clientErrors = validateNewTicket(newTicket);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
+  }
+  setFieldErrors({});
   run(async () => {
    try {
     await onNewTicket(newTicket.subject, newTicket.description);
@@ -122,10 +154,16 @@ function Tickets({ tickets, onNewTicket }) {
    {showForm && (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
      {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
-     <input type="text" placeholder="Subject" value={newTicket.subject}
-      onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })} className={formClass} />
-     <textarea placeholder="Describe your request..." value={newTicket.description}
-      onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })} rows={3} className={formClass} />
+     <div>
+      <input type="text" placeholder="Subject" value={newTicket.subject}
+       onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })} className={formClass} />
+      {fieldErrors.subject && <p className="mt-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.subject}</p>}
+     </div>
+     <div>
+      <textarea placeholder="Describe your request..." value={newTicket.description}
+       onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })} rows={3} className={formClass} />
+      {fieldErrors.description && <p className="mt-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.description}</p>}
+     </div>
      <div className="flex gap-2">
       <Button type="submit" variant="primary" size="md" disabled={isPending}>{isPending ? 'Submitting...' : 'Submit'}</Button>
       <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -139,9 +177,10 @@ function Tickets({ tickets, onNewTicket }) {
      { key: 'createdAt', label: 'Created', className: 'text-body-md text-ink-muted dark:text-white' },
      { key: 'status', label: 'Status', render: (v) => <StatusBadge variant={STATUS_VARIANTS[v] || 'neutral'}>{v}</StatusBadge> },
     ]}
-    rows={tickets}
+    rows={pageRows}
     emptyMessage="No tickets yet. Submit a ticket to get support."
    />
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -183,7 +222,7 @@ export default function PartnerPortal() {
  // /login?returnTo=..., preserving destination) and the wrong-role case —
  // this gate just withholds rendering while that redirect is in flight.
  if (initializing || !user || denied) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
- if (loading) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
+ if (loading) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><SkeletonTable rows={6} columns={4} /></div>;
 
  return (
   <div className="flex h-screen flex-col bg-surface-container dark:bg-dark-surface-container">

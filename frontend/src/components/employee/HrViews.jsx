@@ -3,11 +3,15 @@ import Icon from '../ui/Icon.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
 import RowAction from '../ui/RowAction.jsx';
 import { SkeletonTable } from '../ui/Skeleton.jsx';
+import Pagination from '../ui/Pagination.jsx';
+import useAsyncAction from '../../hooks/useAsyncAction.js';
 import { apiRequest } from '../../api/client.js';
 import {
  fetchLeaves, reviewLeave,
  fetchApplications, updateApplicationStatus,
 } from '../../api/admin.js';
+
+const PAGE_LIMIT = 20;
 
 const APPLICATION_STATUS_OPTIONS = ['applied', 'shortlisted', 'interview', 'offered', 'rejected', 'hired'];
 const APPLICATION_STATUS_COLOR = { applied: 'neutral', shortlisted: 'info', interview: 'warning', offered: 'success', rejected: 'error', hired: 'success' };
@@ -18,18 +22,28 @@ function LeaveApprovals() {
  const [loading, setLoading] = useState(true);
  const [actingId, setActingId] = useState(null);
  const [filter, setFilter] = useState('pending');
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
  const [toast, setToast] = useState('');
+ const { run, isPending } = useAsyncAction();
 
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
  const load = useCallback(() => {
   setLoading(true);
-  const params = { limit: 100 };
+  const params = { page, limit: PAGE_LIMIT };
   if (filter !== 'all') params.status = filter;
-  fetchLeaves(params).then((r) => setLeaves(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, [filter]);
+  fetchLeaves(params)
+   .then((r) => { setLeaves(r?.data || []); setTotalPages(r?.meta?.total_pages || 1); })
+   .catch(() => {})
+   .finally(() => setLoading(false));
+ }, [filter, page]);
 
  useEffect(() => { load(); }, [load]);
+
+ // Changing the status filter must not leave the list on a page number
+ // that no longer exists in the filtered result set.
+ useEffect(() => { setPage(1); }, [filter]);
 
  // auto-refresh every 30s so new employee submissions appear
  useEffect(() => {
@@ -37,7 +51,7 @@ function LeaveApprovals() {
   return () => clearInterval(id);
  }, [load]);
 
- const review = async (id, status) => {
+ const review = (id, status) => run(async () => {
   setActingId(id);
   try {
    await reviewLeave(id, status);
@@ -48,7 +62,7 @@ function LeaveApprovals() {
   } finally {
    setActingId(null);
   }
- };
+ });
 
  const LEAVE_STATUS_COLOR = { pending: 'warning', approved: 'success', rejected: 'error', cancelled: 'neutral' };
 
@@ -111,8 +125,8 @@ function LeaveApprovals() {
          <td data-label="Actions" className="px-stack-lg py-4">
           {l.status === 'pending' && (
            <div className="flex gap-2">
-            <RowAction disabled={actingId === l.id} onClick={() => review(l.id, 'approved')}>Approve</RowAction>
-            <RowAction variant="outline" disabled={actingId === l.id} onClick={() => review(l.id, 'rejected')}>Reject</RowAction>
+            <RowAction disabled={isPending && actingId === l.id} onClick={() => review(l.id, 'approved')}>Approve</RowAction>
+            <RowAction variant="outline" disabled={isPending && actingId === l.id} onClick={() => review(l.id, 'rejected')}>Reject</RowAction>
            </div>
           )}
          </td>
@@ -123,39 +137,59 @@ function LeaveApprovals() {
      </tbody>
     </table>
    </div>
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
 
 function Recruitment() {
  const [positions, setPositions] = useState([]);
+ const [positionsPage, setPositionsPage] = useState(1);
+ const [positionsTotalPages, setPositionsTotalPages] = useState(1);
+ const [positionsTotal, setPositionsTotal] = useState(0);
  const [applications, setApplications] = useState([]);
+ const [appsPage, setAppsPage] = useState(1);
+ const [appsTotalPages, setAppsTotalPages] = useState(1);
+ const [appsTotal, setAppsTotal] = useState(0);
  const [loading, setLoading] = useState(true);
  const [savingId, setSavingId] = useState(null);
  const [statusFilter, setStatusFilter] = useState('all');
  const [toast, setToast] = useState('');
+ const { run, isPending } = useAsyncAction();
 
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
  const load = useCallback(() => {
   setLoading(true);
   Promise.allSettled([
-   apiRequest('/careers?limit=50'),
-   fetchApplications({ limit: 100 }),
+   apiRequest(`/careers?page=${positionsPage}&limit=20`),
+   fetchApplications({ page: appsPage, limit: 20, ...(statusFilter !== 'all' ? { status: statusFilter } : {}) }),
   ]).then(([positionsRes, appsRes]) => {
-   if (positionsRes.status === 'fulfilled') setPositions(positionsRes.value?.data || []);
-   if (appsRes.status === 'fulfilled') setApplications(appsRes.value?.data || []);
+   if (positionsRes.status === 'fulfilled') {
+    setPositions(positionsRes.value?.data || []);
+    setPositionsTotalPages(positionsRes.value?.meta?.total_pages || 1);
+    setPositionsTotal(positionsRes.value?.meta?.total || 0);
+   }
+   if (appsRes.status === 'fulfilled') {
+    setApplications(appsRes.value?.data || []);
+    setAppsTotalPages(appsRes.value?.meta?.total_pages || 1);
+    setAppsTotal(appsRes.value?.meta?.total || 0);
+   }
   }).finally(() => setLoading(false));
- }, []);
+ }, [positionsPage, appsPage, statusFilter]);
 
  useEffect(() => { load(); }, [load]);
+
+ // Changing the application status filter must not leave that list on a
+ // page number that no longer exists in the filtered result set.
+ useEffect(() => { setAppsPage(1); }, [statusFilter]);
 
  useEffect(() => {
   const id = setInterval(load, 30000);
   return () => clearInterval(id);
  }, [load]);
 
- const changeStatus = async (id, status) => {
+ const changeStatus = (id, status) => run(async () => {
   setSavingId(id);
   try {
    await updateApplicationStatus(id, status);
@@ -166,18 +200,23 @@ function Recruitment() {
   } finally {
    setSavingId(null);
   }
- };
+ });
 
  const positionTitle = (careerId) => positions.find((p) => p.id === careerId)?.title || 'Position';
 
- const openPositions = positions.filter((p) => p.status === 'open');
+ // /careers already filters to status=open server-side (career.py), so
+ // `positions` only ever holds open postings for the current page.
+ const openPositions = positions;
+ // In Pipeline / Hired reflect only the currently loaded page of
+ // applications once the list is paginated server-side — Open
+ // Positions / Applications use the backend's total counts instead, which
+ // stay accurate across all pages.
  const inPipeline = applications.filter((a) => ['applied', 'shortlisted', 'interview', 'offered'].includes(a.status)).length;
  const hiredCount = applications.filter((a) => a.status === 'hired').length;
- const filtered = statusFilter === 'all' ? applications : applications.filter((a) => a.status === statusFilter);
 
  const kpis = [
-  { label: 'Open Positions', value: openPositions.length, icon: 'work' },
-  { label: 'Applications', value: applications.length, icon: 'person_add' },
+  { label: 'Open Positions', value: positionsTotal, icon: 'work' },
+  { label: 'Applications', value: appsTotal, icon: 'person_add' },
   { label: 'In Pipeline', value: inPipeline, icon: 'swap_horiz' },
   { label: 'Hired', value: hiredCount, icon: 'verified' },
  ];
@@ -216,6 +255,7 @@ function Recruitment() {
      ))}
      {!openPositions.length && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">No open positions right now.</p>}
     </div>
+    <Pagination page={positionsPage} totalPages={positionsTotalPages} onChange={setPositionsPage} className="mt-4" />
    </div>
 
    {toast && (
@@ -251,7 +291,7 @@ function Recruitment() {
       </tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {filtered.map((a) => (
+      {applications.map((a) => (
        <tr key={a.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
         <td data-label="Applicant" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-white">{a.full_name}</td>
         <td data-label="Position" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{positionTitle(a.career_id)}</td>
@@ -260,7 +300,7 @@ function Recruitment() {
         <td data-label="Status" className="px-stack-lg py-4">
          <div className="flex items-center gap-2">
           <StatusBadge variant={APPLICATION_STATUS_COLOR[a.status]}>{a.status}</StatusBadge>
-          <select value={a.status} disabled={savingId === a.id} onChange={(e) => changeStatus(a.id, e.target.value)}
+          <select value={a.status} disabled={isPending && savingId === a.id} onChange={(e) => changeStatus(a.id, e.target.value)}
            className="rounded border border-outline-variant bg-white px-2 py-1 text-body-sm text-brand-dark dark:border-dark-outline-variant dark:text-white">
            {APPLICATION_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
@@ -268,10 +308,11 @@ function Recruitment() {
         </td>
        </tr>
       ))}
-      {!filtered.length && <tr><td data-label="Applicant" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No applications found.</td></tr>}
+      {!applications.length && <tr><td data-label="Applicant" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No applications found.</td></tr>}
      </tbody>
     </table>
    </div>
+   <Pagination page={appsPage} totalPages={appsTotalPages} onChange={setAppsPage} />
   </div>
  );
 }

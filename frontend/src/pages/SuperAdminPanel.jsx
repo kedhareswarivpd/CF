@@ -22,6 +22,7 @@ import {
  fetchAuditLogs, fetchDashboardOverview,
  fetchBackups, triggerBackup, deleteBackup, backupDownloadUrl,
 } from '../api/admin.js';
+import { validateCreateDepartment, validateCreateRole, validateCreatePermission } from '../schemas/super-admin.schema.js';
 
 const superAdminTabs = [
  { id: 'overview', label: 'Overview', icon: 'dashboard' },
@@ -52,7 +53,7 @@ function Overview() {
   fetchDashboardOverview().then((res) => setKpis(res?.data || {})).catch(() => {}).finally(() => setLoading(false));
  }, []);
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={4} columns={2} />;
  const cards = [
   { label: 'Employees', value: kpis.total_employees, icon: 'badge', color: 'text-brand', bg: 'bg-accent-cyan-pale dark:bg-blue-900/30' },
   { label: 'Clients', value: kpis.total_clients, icon: 'business', color: 'text-emerald-600', bg: 'bg-emerald-50' },
@@ -87,6 +88,8 @@ function Departments() {
  const [loading, setLoading] = useState(true);
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ name: '', description: '' });
+ const [fieldErrors, setFieldErrors] = useState({});
+ const [error, setError] = useState('');
  const [actingId, setActingId] = useState(null);
  const [page, setPage] = useState(1);
  const [totalPages, setTotalPages] = useState(1);
@@ -105,13 +108,24 @@ function Departments() {
 
  const handleCreate = async (e) => {
   e.preventDefault();
-  if (!form.name) return;
-  await runCreate(async () => {
-   await createDepartment(form);
-   setForm({ name: '', description: '' });
-   setShowForm(false);
-   load();
-  });
+  setError('');
+  const clientErrors = validateCreateDepartment(form);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
+  }
+  setFieldErrors({});
+  try {
+   await runCreate(async () => {
+    await createDepartment(form);
+    setForm({ name: '', description: '' });
+    setShowForm(false);
+    load();
+   });
+  } catch (err) {
+   setError(err.message || 'Could not create the department.');
+  }
  };
 
  const remove = async (id) => {
@@ -129,9 +143,13 @@ function Departments() {
    {showForm && (
     <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg shadow-sm dark:border-dark-outline-variant">
      <div className="grid gap-4 sm:grid-cols-2">
-      <input required type="text" placeholder="Department name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={FORM_INPUT_CLASS} />
+      <div>
+       <input required type="text" placeholder="Department name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+       {fieldErrors.name && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.name}</p>}
+      </div>
       <input type="text" placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={FORM_INPUT_CLASS} />
      </div>
+     {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
      <div className="flex gap-2">
       <Button type="submit" variant="primary" size="md" disabled={creating}>{creating ? 'Creating...' : 'Create'}</Button>
       <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -158,6 +176,10 @@ function RolesPermissions() {
  const [loading, setLoading] = useState(true);
  const [roleForm, setRoleForm] = useState({ name: '', slug: '', description: '' });
  const [permForm, setPermForm] = useState({ name: '', module: '', action: '' });
+ const [roleFieldErrors, setRoleFieldErrors] = useState({});
+ const [roleError, setRoleError] = useState('');
+ const [permFieldErrors, setPermFieldErrors] = useState({});
+ const [permError, setPermError] = useState('');
  const [actingId, setActingId] = useState(null);
  const [rolesPage, setRolesPage] = useState(1);
  const [rolesTotalPages, setRolesTotalPages] = useState(1);
@@ -183,30 +205,59 @@ function RolesPermissions() {
 
  const handleCreateRole = async (e) => {
   e.preventDefault();
-  if (!roleForm.name || !roleForm.slug) return;
-  await runCreateRole(async () => { await createRole(roleForm); setRoleForm({ name: '', slug: '', description: '' }); load(); });
+  setRoleError('');
+  const clientErrors = validateCreateRole(roleForm);
+  if (Object.keys(clientErrors).length > 0) {
+   setRoleFieldErrors(clientErrors);
+   setRoleError('Please fix the errors below.');
+   return;
+  }
+  setRoleFieldErrors({});
+  try {
+   await runCreateRole(async () => { await createRole(roleForm); setRoleForm({ name: '', slug: '', description: '' }); load(); });
+  } catch (err) {
+   setRoleError(err.message || 'Could not create the role.');
+  }
  };
 
  const handleCreatePermission = async (e) => {
   e.preventDefault();
-  if (!permForm.name || !permForm.module || !permForm.action) return;
-  await runCreatePermission(async () => { await createPermission(permForm); setPermForm({ name: '', module: '', action: '' }); load(); });
+  setPermError('');
+  const clientErrors = validateCreatePermission(permForm);
+  if (Object.keys(clientErrors).length > 0) {
+   setPermFieldErrors(clientErrors);
+   setPermError('Please fix the errors below.');
+   return;
+  }
+  setPermFieldErrors({});
+  try {
+   await runCreatePermission(async () => { await createPermission(permForm); setPermForm({ name: '', module: '', action: '' }); load(); });
+  } catch (err) {
+   setPermError(err.message || 'Could not create the permission.');
+  }
  };
 
  const removeRole = async (id) => { setActingId(id); await runRemoveRole(async () => { await deleteRole(id); load(); }); setActingId(null); };
  const removePermission = async (id) => { setActingId(id); await runRemovePermission(async () => { await deletePermission(id); load(); }); setActingId(null); };
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={3} />;
  return (
   <div className="space-y-stack-lg">
    <div className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg shadow-sm dark:border-dark-outline-variant">
     <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Custom Roles</h3>
     <form onSubmit={handleCreateRole} className="space-y-4">
      <div className="grid gap-4 sm:grid-cols-3">
-      <input required type="text" placeholder="Name" value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} className={FORM_INPUT_CLASS} />
-      <input required type="text" placeholder="Slug (e.g. regional-lead)" value={roleForm.slug} onChange={(e) => setRoleForm({ ...roleForm, slug: e.target.value })} className={FORM_INPUT_CLASS} />
+      <div>
+       <input required type="text" placeholder="Name" value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+       {roleFieldErrors.name && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{roleFieldErrors.name}</p>}
+      </div>
+      <div>
+       <input required type="text" placeholder="Slug (e.g. regional-lead)" value={roleForm.slug} onChange={(e) => setRoleForm({ ...roleForm, slug: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+       {roleFieldErrors.slug && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{roleFieldErrors.slug}</p>}
+      </div>
       <input type="text" placeholder="Description" value={roleForm.description} onChange={(e) => setRoleForm({ ...roleForm, description: e.target.value })} className={FORM_INPUT_CLASS} />
      </div>
+     {roleError && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{roleError}</p>}
      <div className="flex justify-end">
       <Button type="submit" variant="primary" size="md" disabled={creatingRole}>{creatingRole ? 'Adding...' : 'Add Role'}</Button>
      </div>
@@ -230,10 +281,20 @@ function RolesPermissions() {
     <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Permissions</h3>
     <form onSubmit={handleCreatePermission} className="space-y-4">
      <div className="grid gap-4 sm:grid-cols-3">
-      <input required type="text" placeholder="Name" value={permForm.name} onChange={(e) => setPermForm({ ...permForm, name: e.target.value })} className={FORM_INPUT_CLASS} />
-      <input required type="text" placeholder="Module (e.g. invoices)" value={permForm.module} onChange={(e) => setPermForm({ ...permForm, module: e.target.value })} className={FORM_INPUT_CLASS} />
-      <input required type="text" placeholder="Action (e.g. approve)" value={permForm.action} onChange={(e) => setPermForm({ ...permForm, action: e.target.value })} className={FORM_INPUT_CLASS} />
+      <div>
+       <input required type="text" placeholder="Name" value={permForm.name} onChange={(e) => setPermForm({ ...permForm, name: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+       {permFieldErrors.name && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{permFieldErrors.name}</p>}
+      </div>
+      <div>
+       <input required type="text" placeholder="Module (e.g. invoices)" value={permForm.module} onChange={(e) => setPermForm({ ...permForm, module: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+       {permFieldErrors.module && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{permFieldErrors.module}</p>}
+      </div>
+      <div>
+       <input required type="text" placeholder="Action (e.g. approve)" value={permForm.action} onChange={(e) => setPermForm({ ...permForm, action: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+       {permFieldErrors.action && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{permFieldErrors.action}</p>}
+      </div>
      </div>
+     {permError && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{permError}</p>}
      <div className="flex justify-end">
       <Button type="submit" variant="primary" size="md" disabled={creatingPermission}>{creatingPermission ? 'Adding...' : 'Add Permission'}</Button>
      </div>
@@ -270,6 +331,7 @@ function DataExportGdpr() {
  const [exportedJson, setExportedJson] = useState(null);
  const [page, setPage] = useState(1);
  const [totalPages, setTotalPages] = useState(1);
+ const { run: runExport, isPending: exporting } = useAsyncAction();
  const { run: runAnonymize, isPending: anonymizing } = useAsyncAction();
 
  useEffect(() => {
@@ -291,12 +353,11 @@ function DataExportGdpr() {
 
  const doExport = async (userId) => {
   setActingId(userId);
-  try {
+  await runExport(async () => {
    const r = await exportUserData(userId);
    setExportedJson(r?.data || null);
-  } finally {
-   setActingId(null);
-  }
+  });
+  setActingId(null);
  };
 
  const doAnonymize = async (userId) => {
@@ -324,7 +385,7 @@ function DataExportGdpr() {
       label: 'Actions',
       render: (_v, u) => (
        <div className="flex gap-2">
-        <RowAction disabled={actingId === u.id} onClick={() => doExport(u.id)}>Export Data</RowAction>
+        <RowAction disabled={exporting && actingId === u.id} onClick={() => doExport(u.id)}>Export Data</RowAction>
         <RowAction variant="danger" disabled={anonymizing && actingId === u.id} onClick={() => doAnonymize(u.id)}>Anonymize</RowAction>
        </div>
       ),
@@ -376,11 +437,17 @@ function AuditLogs() {
  );
 }
 
+// Backups are filesystem-based (backend/app/routers/backups.py just globs a
+// directory) — there's no page_params support, so pagination here is
+// client-side over the loaded array.
+const BACKUPS_PAGE_SIZE = 10;
+
 function Backups() {
  const [backups, setBackups] = useState([]);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState('');
  const [deletingFilename, setDeletingFilename] = useState(null);
+ const [page, setPage] = useState(1);
  const { run: runTrigger, isPending: triggering } = useAsyncAction();
  const { run: runDelete, isPending: deleting } = useAsyncAction();
 
@@ -390,6 +457,10 @@ function Backups() {
  }, []);
 
  useEffect(() => { load(); }, [load]);
+
+ const totalPages = Math.max(1, Math.ceil(backups.length / BACKUPS_PAGE_SIZE));
+ const safePage = Math.min(page, totalPages);
+ const pagedBackups = backups.slice((safePage - 1) * BACKUPS_PAGE_SIZE, safePage * BACKUPS_PAGE_SIZE);
 
  const runBackup = async () => {
   setError('');
@@ -445,9 +516,10 @@ function Backups() {
       ),
      },
     ]}
-    rows={backups}
+    rows={pagedBackups}
     emptyMessage="No backups yet — trigger one above."
    />
+   <Pagination page={safePage} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }

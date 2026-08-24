@@ -6,8 +6,10 @@ import StatusBadge from '../components/ui/StatusBadge.jsx';
 import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import { SkeletonTable, SkeletonCard } from '../components/ui/Skeleton.jsx';
+import Pagination from '../components/ui/Pagination.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
+import useAsyncAction from '../hooks/useAsyncAction.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
  employeeTabsForRole,
@@ -22,6 +24,7 @@ import { apiRequest } from '../api/client.js';
 import { fetchProposals, fetchContracts, fetchLeads, fetchMeetings } from '../api/crm.js';
 import { fetchClients } from '../api/admin.js';
 import { lazyWithReload as lazy } from '../utils/lazyWithReload.js';
+import { validateNewLeaveRequest, validateNewTimesheet } from '../schemas/employee-self-service.schema.js';
 
 // Sonar M5: EmployeePortal.jsx bundled every role's sub-views (sales CRM,
 // marketing, PM, dev/QA/support/finance, HR) into one 550kB+ chunk that every
@@ -61,6 +64,12 @@ const Invoices = namedLazy(opsImporter, 'Invoices');
 const hrImporter = () => import('../components/employee/HrViews.jsx');
 const LeaveApprovals = namedLazy(hrImporter, 'LeaveApprovals');
 const Recruitment = namedLazy(hrImporter, 'Recruitment');
+
+// Self-service lists (leaves/timesheets/payslips/performance/training/documents)
+// are fetched once as a capped array (SELF_SERVICE_LIST_CAP server-side, not
+// page_params) — so these tabs paginate the already-loaded array client-side
+// rather than re-fetching per page.
+const CLIENT_PAGE_SIZE = 10;
 
 function TabFallback() {
  return (
@@ -120,8 +129,8 @@ function Attendance({ attendance, onChange }) {
  const isToday = attendance.date === today;
  const [checkedIn, setCheckedIn] = useState(isToday && Boolean(attendance.checkIn));
  const [checkedOut, setCheckedOut] = useState(isToday && Boolean(attendance.checkOut));
- const [loading, setLoading] = useState(false);
  const [toast, setToast] = useState('');
+ const { run, isPending: loading } = useAsyncAction();
 
  useEffect(() => {
   const t = new Date().toISOString().slice(0, 10);
@@ -137,8 +146,7 @@ function Attendance({ attendance, onChange }) {
 
  const currentTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
- const handleCheckIn = async () => {
-  setLoading(true);
+ const handleCheckIn = () => run(async () => {
   try {
    const res = await checkInApi();
    const updated = res?.data;
@@ -150,13 +158,10 @@ function Attendance({ attendance, onChange }) {
    // Do not fabricate a check-in time on failure — the real attendance
    // record was never created, so the UI must not claim it was.
    showToast(err?.message || 'Check-in failed. Please try again.');
-  } finally {
-   setLoading(false);
   }
- };
+ });
 
- const handleCheckOut = async () => {
-  setLoading(true);
+ const handleCheckOut = () => run(async () => {
   try {
    const res = await checkOutApi();
    const updated = res?.data;
@@ -167,10 +172,8 @@ function Attendance({ attendance, onChange }) {
   } catch (err) {
    // Same as check-in: a failed request must not be reported as success.
    showToast(err?.message || 'Check-out failed. Please try again.');
-  } finally {
-   setLoading(false);
   }
- };
+ });
 
  return (
   <div className="space-y-stack-lg">
@@ -226,66 +229,47 @@ function Leaves({ leaves: initialLeaves }) {
  const [form, setForm] = useState({ type: 'earned', from: '', to: '', reason: '' });
  const [errors, setErrors] = useState({});
  const [allLeaves, setAllLeaves] = useState(initialLeaves);
- const [submitting, setSubmitting] = useState(false);
  const [toast, setToast] = useState('');
+ const [page, setPage] = useState(1);
+ const { run: runSubmit, isPending: submitting } = useAsyncAction();
+
+ const totalPages = Math.max(1, Math.ceil(allLeaves.length / CLIENT_PAGE_SIZE));
+ const pagedLeaves = allLeaves.slice((page - 1) * CLIENT_PAGE_SIZE, page * CLIENT_PAGE_SIZE);
+ useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages, page]);
 
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
-
- const validate = () => {
-  const errs = {};
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  if (!form.type) errs.type = 'Leave type is required.';
-  if (!form.from) {
-   errs.from = 'Start date is required.';
-  } else if (new Date(form.from) < today) {
-   errs.from = 'Start date cannot be in the past.';
-  }
-  if (!form.to) {
-   errs.to = 'End date is required.';
-  } else if (form.from && new Date(form.to) < new Date(form.from)) {
-   errs.to = 'End date cannot be before start date.';
-  }
-  if (!form.reason || !form.reason.trim()) {
-   errs.reason = 'Reason is required.';
-  } else if (form.reason.trim().length < 10) {
-   errs.reason = 'Reason must be at least 10 characters.';
-  }
-  setErrors(errs);
-  return Object.keys(errs).length === 0;
- };
 
  const handleChange = (field, value) => {
   setForm((prev) => ({ ...prev, [field]: value }));
   if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }));
  };
 
- const handleSubmit = async (e) => {
+ const handleSubmit = (e) => {
   e.preventDefault();
-  if (!validate()) return;
-  setSubmitting(true);
-  try {
-   let newLeave;
-   const res = await applyLeaveApi({
-    type: form.type,
-    start_date: form.from,
-    end_date: form.to,
-    reason: form.reason,
-   });
-   const d = res?.data;
-   const days = Math.ceil((new Date(d.end_date) - new Date(d.start_date)) / 86400000) + 1;
-   newLeave = { id: d.id, type: d.type, from: d.start_date, to: d.end_date, status: d.status, days };
-   setAllLeaves((prev) => [newLeave, ...prev]);
-   setForm({ type: 'earned', from: '', to: '', reason: '' });
-   setErrors({});
-   setShowForm(false);
-   showToast('Leave request submitted successfully.');
-  } catch (err) {
-   showToast(err?.message || 'Failed to submit leave request.');
-  } finally {
-   setSubmitting(false);
-  }
+  const clientErrors = validateNewLeaveRequest(form);
+  setErrors(clientErrors);
+  if (Object.keys(clientErrors).length > 0) return;
+  runSubmit(async () => {
+   try {
+    const res = await applyLeaveApi({
+     type: form.type,
+     start_date: form.from,
+     end_date: form.to,
+     reason: form.reason,
+    });
+    const d = res?.data;
+    const days = Math.ceil((new Date(d.end_date) - new Date(d.start_date)) / 86400000) + 1;
+    const newLeave = { id: d.id, type: d.type, from: d.start_date, to: d.end_date, status: d.status, days };
+    setAllLeaves((prev) => [newLeave, ...prev]);
+    setForm({ type: 'earned', from: '', to: '', reason: '' });
+    setErrors({});
+    setShowForm(false);
+    setPage(1);
+    showToast('Leave request submitted successfully.');
+   } catch (err) {
+    showToast(err?.message || 'Failed to submit leave request.');
+   }
+  });
  };
 
  return (
@@ -336,9 +320,9 @@ function Leaves({ leaves: initialLeaves }) {
       <tr><th className="px-stack-lg py-4">Type</th><th className="px-stack-lg py-4">From</th><th className="px-stack-lg py-4">To</th><th className="px-stack-lg py-4">Days</th><th className="px-stack-lg py-4">Status</th></tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {allLeaves.length === 0 ? (
+      {pagedLeaves.length === 0 ? (
        <tr><td data-label="Type" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No leave requests yet.</td></tr>
-      ) : allLeaves.map((l) => (
+      ) : pagedLeaves.map((l) => (
        <tr key={l.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
         <td data-label="Type" className="px-stack-lg py-4 text-body-md capitalize text-brand-dark dark:text-white">{l.type}</td>
         <td data-label="From" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{l.from}</td>
@@ -350,6 +334,7 @@ function Leaves({ leaves: initialLeaves }) {
      </tbody>
     </table>
    </div>
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -359,31 +344,16 @@ function Timesheets({ timesheets: initialTimesheets }) {
  const [form, setForm] = useState({ date: '', project: '', hours: '', description: '' });
  const [errors, setErrors] = useState({});
  const [allEntries, setAllEntries] = useState(initialTimesheets);
- const [submitting, setSubmitting] = useState(false);
  const [toast, setToast] = useState('');
+ const [page, setPage] = useState(1);
+ const { run: runSubmit, isPending: submitting } = useAsyncAction();
  const totalHours = allEntries.reduce((s, e) => s + (Number(e.hours) || 0), 0);
 
- const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
+ const totalPages = Math.max(1, Math.ceil(allEntries.length / CLIENT_PAGE_SIZE));
+ const pagedEntries = allEntries.slice((page - 1) * CLIENT_PAGE_SIZE, page * CLIENT_PAGE_SIZE);
+ useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages, page]);
 
- const validate = () => {
-  const errs = {};
-  const today = new Date();
-  today.setHours(23, 59, 59, 999);
-  if (!form.date) {
-   errs.date = 'Date is required.';
-  } else if (new Date(form.date) > today) {
-   errs.date = 'Date cannot be in the future.';
-  }
-  if (!form.hours) {
-   errs.hours = 'Hours are required.';
-  } else if (isNaN(Number(form.hours)) || Number(form.hours) <= 0) {
-   errs.hours = 'Hours must be a positive number.';
-  } else if (Number(form.hours) > 24) {
-   errs.hours = 'Cannot log more than 24 hours per entry.';
-  }
-  setErrors(errs);
-  return Object.keys(errs).length === 0;
- };
+ const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
  const handleChange = (field, value) => {
   setForm((prev) => ({ ...prev, [field]: value }));
@@ -394,35 +364,38 @@ function Timesheets({ timesheets: initialTimesheets }) {
   try {
    const res = await apiRequest('/employees/me/timesheets');
    setAllEntries(normalizeTimesheets(res?.data));
+   setPage(1);
    showToast('Timesheets refreshed.');
   } catch (err) {
    showToast(err?.message || 'Refresh failed.');
   }
  };
 
- const handleSubmit = async (e) => {
+ const handleSubmit = (e) => {
   e.preventDefault();
-  if (!validate()) return;
-  setSubmitting(true);
-  try {
-   const payload = {
-    date: form.date,
-    hours: parseFloat(form.hours),
-    description: form.description || null,
-   };
-   const res = await submitTimesheet(payload);
-   const d = res?.data;
-   const entry = { id: d.id, date: d.date, project: form.project || 'General', hours: Number(d.hours), description: d.description };
-   setAllEntries((prev) => [entry, ...prev]);
-   setForm({ date: '', project: '', hours: '', description: '' });
-   setErrors({});
-   setShowForm(false);
-   showToast('Hours logged successfully.');
-  } catch (err) {
-   showToast(err?.message || 'Failed to log hours.');
-  } finally {
-   setSubmitting(false);
-  }
+  const clientErrors = validateNewTimesheet(form);
+  setErrors(clientErrors);
+  if (Object.keys(clientErrors).length > 0) return;
+  runSubmit(async () => {
+   try {
+    const payload = {
+     date: form.date,
+     hours: parseFloat(form.hours),
+     description: form.description || null,
+    };
+    const res = await submitTimesheet(payload);
+    const d = res?.data;
+    const entry = { id: d.id, date: d.date, project: form.project || 'General', hours: Number(d.hours), description: d.description };
+    setAllEntries((prev) => [entry, ...prev]);
+    setForm({ date: '', project: '', hours: '', description: '' });
+    setErrors({});
+    setShowForm(false);
+    setPage(1);
+    showToast('Hours logged successfully.');
+   } catch (err) {
+    showToast(err?.message || 'Failed to log hours.');
+   }
+  });
  };
 
  return (
@@ -471,7 +444,7 @@ function Timesheets({ timesheets: initialTimesheets }) {
       <tr><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Hours</th><th className="px-stack-lg py-4">Description</th></tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {allEntries.map((e) => (
+      {pagedEntries.map((e) => (
        <tr key={e.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
         <td data-label="Date" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{e.date}</td>
         <td data-label="Project" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-white">{e.project}</td>
@@ -483,6 +456,7 @@ function Timesheets({ timesheets: initialTimesheets }) {
      </tbody>
     </table>
    </div>
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -495,6 +469,10 @@ function Payslips({ payslips }) {
   { label: 'Latest Net Pay', value: `$${latestPay.toLocaleString()}`, icon: 'account_balance_wallet' },
   { label: 'Available Payslips', value: payslips.length, icon: 'receipt_long' },
  ];
+ const [page, setPage] = useState(1);
+ const totalPages = Math.max(1, Math.ceil(payslips.length / CLIENT_PAGE_SIZE));
+ const pagedPayslips = payslips.slice((page - 1) * CLIENT_PAGE_SIZE, page * CLIENT_PAGE_SIZE);
+ useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages, page]);
 
  return (
   <div className="space-y-stack-lg">
@@ -526,9 +504,9 @@ function Payslips({ payslips }) {
       </tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {payslips.length === 0 ? (
+      {pagedPayslips.length === 0 ? (
        <tr><td data-label="Period" colSpan={6} className="px-stack-lg py-12 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No payslips available yet.</td></tr>
-      ) : payslips.map((p) => (
+      ) : pagedPayslips.map((p) => (
        <tr key={`${p.month}-${p.year}`} className="dark:bg-blue-900/30/50 transition-colors hover:bg-accent-cyan-pale">
         <td data-label="Period" className="px-stack-lg py-4 font-semibold text-brand-dark dark:text-white">
          <div className="flex items-center gap-2">
@@ -556,11 +534,12 @@ function Payslips({ payslips }) {
      </tbody>
     </table>
    </div>
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
 
-function Tasks({ tasks }) {
+function Tasks({ tasks, page, totalPages, onPageChange }) {
  const priorityColor = { urgent: 'error', high: 'warning', medium: 'info', low: 'neutral' };
  const statusColor = { done: 'success', in_progress: 'info', todo: 'neutral', blocked: 'error' };
 
@@ -621,11 +600,12 @@ function Tasks({ tasks }) {
      </tbody>
     </table>
    </div>
+   <Pagination page={page} totalPages={totalPages} onChange={onPageChange} />
   </div>
  );
 }
 
-function Projects({ projects }) {
+function Projects({ projects, page, totalPages, onPageChange }) {
  const statusColor = { completed: 'success', in_progress: 'info', on_hold: 'warning', planning: 'neutral' };
  const completed = projects.filter((p) => p.status === 'completed').length;
  const inProgress = projects.filter((p) => p.status === 'in_progress' || p.status === 'planning').length;
@@ -667,6 +647,7 @@ function Projects({ projects }) {
      ))}
     </div>
    </section>
+   <Pagination page={page} totalPages={totalPages} onChange={onPageChange} />
   </div>
  );
 }
@@ -680,6 +661,10 @@ function Performance({ reviews }) {
   { label: 'Avg Rating', value: `${avgRating}/5`, icon: 'star' },
   { label: 'Goals Achieved', value: `${totalAchieved}/${totalGoals}`, icon: 'flag' },
  ];
+ const [page, setPage] = useState(1);
+ const totalPages = Math.max(1, Math.ceil(reviews.length / CLIENT_PAGE_SIZE));
+ const pagedReviews = reviews.slice((page - 1) * CLIENT_PAGE_SIZE, page * CLIENT_PAGE_SIZE);
+ useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages, page]);
  return (
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
@@ -697,7 +682,7 @@ function Performance({ reviews }) {
     <h3 className="mb-4 font-display text-headline-sm text-white">Performance Reviews</h3>
     {reviews.length === 0 && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No performance reviews yet.</p>}
     <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
-     {reviews.map((r) => (
+     {pagedReviews.map((r) => (
       <div key={r.period} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
        <p className="font-display text-body-md font-semibold text-brand-dark dark:text-white">{r.period}</p>
        <p className="mt-1 text-body-xs uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">Goals Set: {r.goals} &middot; Achieved: {r.achieved}</p>
@@ -713,6 +698,7 @@ function Performance({ reviews }) {
      ))}
     </div>
    </section>
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -721,6 +707,10 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
  const statusColor = { completed: 'success', in_progress: 'info', pending: 'neutral', enrolled: 'info' };
  const enrolledIds = new Set(courses.map((c) => c.courseId ?? c.id));
  const available = (catalog || []).filter((c) => !enrolledIds.has(c.id));
+ const [page, setPage] = useState(1);
+ const totalPages = Math.max(1, Math.ceil(courses.length / CLIENT_PAGE_SIZE));
+ const pagedCourses = courses.slice((page - 1) * CLIENT_PAGE_SIZE, page * CLIENT_PAGE_SIZE);
+ useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages, page]);
 
  return (
   <div className="space-y-stack-lg">
@@ -771,9 +761,9 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
        </tr>
       </thead>
       <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {courses.length === 0 ? (
+       {pagedCourses.length === 0 ? (
         <tr><td data-label="Course" colSpan={5} className="px-6 py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No enrollments yet. Browse available courses above and click Enroll!</td></tr>
-       ) : courses.map((c) => (
+       ) : pagedCourses.map((c) => (
         <tr key={c.id} className="transition-colors hover:bg-surface-container dark:bg-dark-surface-container">
          <td data-label="Course" className="px-6 py-4 font-medium text-brand-dark dark:text-white">{c.title}</td>
          <td data-label="Category" className="px-6 py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.category}</td>
@@ -785,6 +775,7 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
       </tbody>
      </table>
     </div>
+    <Pagination page={page} totalPages={totalPages} onChange={setPage} />
    </section>
   </div>
  );
@@ -799,6 +790,10 @@ function Documents({ docs }) {
   { label: 'Contracts', value: contracts, icon: 'gavel' },
   { label: 'Certificates', value: certs, icon: 'workspace_premium' },
  ];
+ const [page, setPage] = useState(1);
+ const totalPages = Math.max(1, Math.ceil(docs.length / CLIENT_PAGE_SIZE));
+ const pagedDocs = docs.slice((page - 1) * CLIENT_PAGE_SIZE, page * CLIENT_PAGE_SIZE);
+ useEffect(() => { if (page > totalPages) setPage(totalPages); }, [totalPages, page]);
 
  return (
   <div className="space-y-stack-lg">
@@ -817,7 +812,7 @@ function Documents({ docs }) {
     <h3 className="mb-4 font-display text-headline-sm text-white">My Documents</h3>
     {docs.length === 0 && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No documents available yet.</p>}
     <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
-     {docs.map((d) => (
+     {pagedDocs.map((d) => (
       <div key={d.id} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
        <div className="mb-3 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
         <Icon name={typeIcon[d.type] || 'description'} className="text-2xl text-brand" />
@@ -843,6 +838,7 @@ function Documents({ docs }) {
      ))}
     </div>
    </section>
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -962,7 +958,11 @@ export default function EmployeePortal() {
  const [timesheets, setTimesheets] = useState([]);
  const [payslips, setPayslips] = useState([]);
  const [tasks, setTasks] = useState([]);
+ const [tasksPage, setTasksPage] = useState(1);
+ const [tasksTotalPages, setTasksTotalPages] = useState(1);
  const [projects, setProjects] = useState([]);
+ const [projectsPage, setProjectsPage] = useState(1);
+ const [projectsTotalPages, setProjectsTotalPages] = useState(1);
  const [performance, setPerformance] = useState([]);
  const [training, setTraining] = useState([]);
  const [catalog, setCatalog] = useState([]);
@@ -980,11 +980,17 @@ export default function EmployeePortal() {
  const portalTabs = employeeTabsForRole(effectiveRole);
 
  const refreshCrm = useCallback(() => {
+  // Leads/Proposals/Contracts/Meetings feed cross-referencing views
+  // (CrmDashboard funnel stats, SalesReports, Proposals' lead-name lookup,
+  // Contracts' proposal/lead lookup) that need the full working set, not
+  // just one page — so this fetches a large batch (matching fetchClients'
+  // limit:100 below) and the CRM sub-views (SalesCrmViews.jsx) paginate
+  // that already-fetched array client-side rather than re-fetching per page.
   Promise.allSettled([
-   fetchLeads(),
-   fetchProposals(),
-   fetchContracts(),
-   fetchMeetings(),
+   fetchLeads({ limit: 100 }),
+   fetchProposals({ limit: 100 }),
+   fetchContracts({ limit: 100 }),
+   fetchMeetings({ limit: 100 }),
    fetchClients({ limit: 100 }),
   ]).then(([l, p, c, m, cl]) => {
    if (l.status === 'fulfilled') setLeadsData(l.value?.data || []);
@@ -995,16 +1001,20 @@ export default function EmployeePortal() {
   });
  }, []);
 
- const handleEnroll = (courseId) => {
+ const { run: runEnroll } = useAsyncAction();
+
+ const handleEnroll = (courseId) => runEnroll(async () => {
   setEnrollingId(courseId);
-  enrollInCourse(courseId)
-   .then(() => fetchMyTrainingEnrollments())
-   .then((res) => {
-    setTraining(normalizeTraining(res?.data));
-   })
-   .catch(() => {})
-   .finally(() => setEnrollingId(null));
- };
+  try {
+   await enrollInCourse(courseId);
+   const res = await fetchMyTrainingEnrollments();
+   setTraining(normalizeTraining(res?.data));
+  } catch {
+   // Non-critical: enrollment list simply won't reflect the failed attempt.
+  } finally {
+   setEnrollingId(null);
+  }
+ });
 
  useEffect(() => {
   if (!user) { setLoading(false); return; }
@@ -1025,22 +1035,17 @@ export default function EmployeePortal() {
     department: p.department_name || p.department_id,
     status: p.status,
    });
-   const isPM = realRole === 'project_manager' || realRole === 'admin';
    Promise.allSettled([
     apiRequest(`/employees/me/attendance/today`),
     apiRequest(`/employees/me/leaves`),
     apiRequest(`/employees/me/timesheets`),
-    apiRequest(`/tasks?assigned_to=${p.user_id}&limit=50`),
-    apiRequest(isPM ? `/projects?project_manager_id=${p.user_id}&limit=50` : `/projects?employee_id=${p.id}&limit=50`),
-   ]).then(([attRes, lvRes, tsRes, taskRes, projRes]) => {
+   ]).then(([attRes, lvRes, tsRes]) => {
     if (attRes.status === 'fulfilled' && attRes.value?.data) {
      const a = attRes.value.data;
      setAttendance({ date: a.date, checkIn: toLocalTime(a.check_in), checkOut: toLocalTime(a.check_out), status: a.status });
     }
     if (lvRes.status === 'fulfilled') setLeaves(normalizeLeaves(lvRes.value?.data));
     if (tsRes.status === 'fulfilled') setTimesheets(normalizeTimesheets(tsRes.value?.data));
-    if (taskRes.status === 'fulfilled') setTasks(normalizeTasks(taskRes.value?.data));
-    if (projRes.status === 'fulfilled') setProjects(normalizeEmpProjects(projRes.value?.data, p.user_id));
    });
   };
 
@@ -1063,6 +1068,27 @@ export default function EmployeePortal() {
    if (docsRes.status === 'fulfilled') setDocuments(normalizeDocs(docsRes.value?.data));
   }).finally(() => { initialLoadDone.current = true; setLoading(false); });
  }, [user]);
+
+ // Tasks and Projects (unlike the /employees/me/* self-service lists above)
+ // are backed by routers (tasks.py/projects.py) that support real
+ // page_params, so these fetch one page at a time instead of a capped batch.
+ useEffect(() => {
+  if (!profile._userId) return;
+  apiRequest(`/tasks?assigned_to=${profile._userId}&page=${tasksPage}&limit=20`)
+   .then((res) => { setTasks(normalizeTasks(res?.data)); setTasksTotalPages(res?.meta?.total_pages || 1); })
+   .catch(() => {});
+ }, [profile._userId, tasksPage]);
+
+ useEffect(() => {
+  if (!profile._userId && !profile._employeeId) return;
+  const isPM = profile.role === 'project_manager' || profile.role === 'admin';
+  const url = isPM
+   ? `/projects?project_manager_id=${profile._userId}&page=${projectsPage}&limit=20`
+   : `/projects?employee_id=${profile._employeeId}&page=${projectsPage}&limit=20`;
+  apiRequest(url)
+   .then((res) => { setProjects(normalizeEmpProjects(res?.data, profile._userId)); setProjectsTotalPages(res?.meta?.total_pages || 1); })
+   .catch(() => {});
+ }, [profile._userId, profile._employeeId, profile.role, projectsPage]);
 
  useEffect(() => {
   if (!user || !CRM_ROLES.includes(effectiveRole)) return;
@@ -1157,8 +1183,8 @@ export default function EmployeePortal() {
       {activeTab === 'leaves' && <Leaves leaves={leaves} />}
       {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} />}
       {activeTab === 'payslips' && <Payslips payslips={payslips} />}
-      {activeTab === 'tasks' && <Tasks tasks={tasks} />}
-      {activeTab === 'projects' && <Projects projects={projects} />}
+      {activeTab === 'tasks' && <Tasks tasks={tasks} page={tasksPage} totalPages={tasksTotalPages} onPageChange={setTasksPage} />}
+      {activeTab === 'projects' && <Projects projects={projects} page={projectsPage} totalPages={projectsTotalPages} onPageChange={setProjectsPage} />}
       {activeTab === 'performance' && <Performance reviews={performance} />}
       {activeTab === 'training' && <Training courses={training} catalog={catalog} onEnroll={handleEnroll} enrollingId={enrollingId} />}
       {activeTab === 'documents' && <Documents docs={documents} />}

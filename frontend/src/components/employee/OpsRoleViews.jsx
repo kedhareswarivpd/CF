@@ -3,9 +3,11 @@ import Icon from '../ui/Icon.jsx';
 import Button from '../ui/Button.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
 import RowAction from '../ui/RowAction.jsx';
-import LoadingSpinner from '../ui/LoadingSpinner.jsx';
+import Pagination from '../ui/Pagination.jsx';
 import { SkeletonTable } from '../ui/Skeleton.jsx';
 import { FORM_INPUT_CLASS } from '../ui/formClasses.js';
+import useAsyncAction from '../../hooks/useAsyncAction.js';
+import { validateNewInvoice } from '../../schemas/finance.schema.js';
 import {
  fetchTasks, updateTaskStatus,
  fetchTickets, updateTicket, replyToTicket,
@@ -23,8 +25,11 @@ const INVOICE_STATUS_COLOR = { draft: 'neutral', sent: 'warning', paid: 'success
 function MyTasksBoard({ userId }) {
  const [tasks, setTasks] = useState([]);
  const [loading, setLoading] = useState(true);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
  const [savingId, setSavingId] = useState(null);
  const [toast, setToast] = useState({ msg: '', type: 'success' });
+ const { run, isPending } = useAsyncAction();
 
  const showToast = (msg, type = 'success') => {
   setToast({ msg, type });
@@ -34,15 +39,15 @@ function MyTasksBoard({ userId }) {
  const load = useCallback(() => {
   if (!userId) { setLoading(false); return; }
   setLoading(true);
-  fetchTasks({ assigned_to: userId, limit: 100 })
-   .then((r) => setTasks(r?.data || []))
+  fetchTasks({ assigned_to: userId, page, limit: 20 })
+   .then((r) => { setTasks(r?.data || []); setTotalPages(r?.meta?.total_pages || 1); })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [userId]);
+ }, [userId, page]);
 
  useEffect(() => { load(); }, [load]);
 
- const changeStatus = async (taskId, status) => {
+ const changeStatus = (taskId, status) => run(async () => {
   setSavingId(taskId);
   try {
    await updateTaskStatus(taskId, status);
@@ -53,7 +58,7 @@ function MyTasksBoard({ userId }) {
   } finally {
    setSavingId(null);
   }
- };
+ });
 
  const kpis = [
   { label: 'Assigned to Me', value: tasks.length, icon: 'assignment' },
@@ -62,7 +67,7 @@ function MyTasksBoard({ userId }) {
   { label: 'Blocked', value: tasks.filter((t) => t.status === 'blocked').length, icon: 'report' },
  ];
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={5} />;
  return (
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
@@ -108,7 +113,7 @@ function MyTasksBoard({ userId }) {
            </p>
           )}
           <div className="pt-1">
-           <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
+           <select value={t.status} disabled={isPending && savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
             className="w-full rounded border border-outline-variant bg-white px-2 py-1 text-body-xs font-medium text-ink focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white">
             {TASK_STATUS_COLUMNS.map((s) => (
              <option key={s} value={s}>Move to: {s.replace('_', ' ').toUpperCase()}</option>
@@ -127,6 +132,8 @@ function MyTasksBoard({ userId }) {
      );
     })}
    </div>
+
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -135,19 +142,22 @@ function MyTasksBoard({ userId }) {
 function TestQueue() {
  const [tasks, setTasks] = useState([]);
  const [loading, setLoading] = useState(true);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
  const [savingId, setSavingId] = useState(null);
  const [filter, setFilter] = useState('in_review');
  const [toast, setToast] = useState('');
+ const { run, isPending } = useAsyncAction();
 
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
  const load = useCallback(() => {
   setLoading(true);
-  fetchTasks({ limit: 100 })
-   .then((r) => { setTasks(r?.data || []); })
+  fetchTasks({ page, limit: 20 })
+   .then((r) => { setTasks(r?.data || []); setTotalPages(r?.meta?.total_pages || 1); })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, []);
+ }, [page]);
 
  useEffect(() => { load(); }, [load]);
 
@@ -156,7 +166,7 @@ function TestQueue() {
   return () => clearInterval(id);
  }, [load]);
 
- const resolve = async (id, status) => {
+ const resolve = (id, status) => run(async () => {
   setSavingId(id);
   try {
    await updateTaskStatus(id, status);
@@ -167,7 +177,7 @@ function TestQueue() {
   } finally {
    setSavingId(null);
   }
- };
+ });
 
  const visible = filter === 'all' ? tasks : tasks.filter((t) => t.status === filter);
  const kpis = [
@@ -238,8 +248,8 @@ function TestQueue() {
         <td data-label="Due" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.due_date || '—'}</td>
         <td data-label="Actions" className="px-stack-lg py-4">
          <div className="flex gap-2">
-          <RowAction disabled={savingId === t.id} onClick={() => resolve(t.id, 'done')}>Pass</RowAction>
-          <RowAction variant="outline" disabled={savingId === t.id} onClick={() => resolve(t.id, 'blocked')}>Fail / Log Bug</RowAction>
+          <RowAction disabled={isPending && savingId === t.id} onClick={() => resolve(t.id, 'done')}>Pass</RowAction>
+          <RowAction variant="outline" disabled={isPending && savingId === t.id} onClick={() => resolve(t.id, 'blocked')}>Fail / Log Bug</RowAction>
          </div>
         </td>
        </tr>
@@ -248,6 +258,8 @@ function TestQueue() {
      </tbody>
     </table>
    </div>
+
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -256,11 +268,14 @@ function TestQueue() {
 function TicketQueue({ userId }) {
  const [tickets, setTickets] = useState([]);
  const [loading, setLoading] = useState(true);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
  const [savingId, setSavingId] = useState(null);
  const [replyDraft, setReplyDraft] = useState({});
  const [openTicketId, setOpenTicketId] = useState(null);
  const [filter, setFilter] = useState('all');
  const [toast, setToast] = useState('');
+ const { run, isPending } = useAsyncAction();
 
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -268,11 +283,11 @@ function TicketQueue({ userId }) {
 
  const load = useCallback(() => {
   setLoading(true);
-  fetchTickets({ limit: 100 })
-   .then((r) => { setTickets(r?.data || []); })
+  fetchTickets({ page, limit: 20 })
+   .then((r) => { setTickets(r?.data || []); setTotalPages(r?.meta?.total_pages || 1); })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, []);
+ }, [page]);
 
  useEffect(() => { load(); }, [load]);
 
@@ -281,7 +296,7 @@ function TicketQueue({ userId }) {
   return () => clearInterval(id);
  }, [load]);
 
- const changeStatus = async (id, status) => {
+ const changeStatus = (id, status) => run(async () => {
   setSavingId(id);
   try {
    if (isRealId(id)) {
@@ -296,9 +311,9 @@ function TicketQueue({ userId }) {
   } finally {
    setSavingId(null);
   }
- };
+ });
 
- const assignToMe = async (id) => {
+ const assignToMe = (id) => run(async () => {
   setSavingId(id);
   try {
    if (isRealId(id)) {
@@ -313,9 +328,9 @@ function TicketQueue({ userId }) {
   } finally {
    setSavingId(null);
   }
- };
+ });
 
- const sendReply = async (id) => {
+ const sendReply = (id) => run(async () => {
   const message = replyDraft[id];
   if (!message) return;
   setSavingId(id);
@@ -331,7 +346,7 @@ function TicketQueue({ userId }) {
   } finally {
    setSavingId(null);
   }
- };
+ });
 
  const visible = filter === 'all' ? tickets : tickets.filter((t) => t.status === filter);
  const kpis = [
@@ -341,7 +356,7 @@ function TicketQueue({ userId }) {
   { label: 'Unassigned', value: tickets.filter((t) => !t.assigned_to).length, icon: 'person_off' },
  ];
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={5} />;
  return (
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
@@ -395,8 +410,8 @@ function TicketQueue({ userId }) {
       </div>
       <p className="mb-3 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.description}</p>
       <div className="flex flex-wrap items-center gap-2">
-       {!t.assigned_to && <RowAction disabled={savingId === t.id} onClick={() => assignToMe(t.id)}>Assign to me</RowAction>}
-       <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
+       {!t.assigned_to && <RowAction disabled={isPending && savingId === t.id} onClick={() => assignToMe(t.id)}>Assign to me</RowAction>}
+       <select value={t.status} disabled={isPending && savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
         className="rounded border border-outline-variant bg-white px-2 py-1.5 text-body-sm text-brand-dark dark:border-dark-outline-variant dark:text-white">
         {['open', 'in_progress', 'resolved', 'closed'].map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
        </select>
@@ -406,13 +421,15 @@ function TicketQueue({ userId }) {
        <div className="mt-3 flex gap-2">
         <textarea rows={2} value={replyDraft[t.id] || ''} onChange={(e) => setReplyDraft((prev) => ({ ...prev, [t.id]: e.target.value }))}
          placeholder="Type a reply..." className="flex-1 rounded border border-outline-variant bg-white px-3 py-2 text-body-sm text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
-        <RowAction disabled={savingId === t.id} onClick={() => sendReply(t.id)}>Send</RowAction>
+        <RowAction disabled={isPending && savingId === t.id} onClick={() => sendReply(t.id)}>Send</RowAction>
        </div>
       )}
      </div>
     ))}
     {!visible.length && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No tickets in the queue.</p>}
    </div>
+
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -422,46 +439,50 @@ function Invoices() {
  const [invoices, setInvoices] = useState([]);
  const [clients, setClients] = useState([]);
  const [loading, setLoading] = useState(true);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ client_id: '', amount: '', tax: '', currency: 'USD', issue_date: '', due_date: '' });
- const [submitting, setSubmitting] = useState(false);
+ const [fieldErrors, setFieldErrors] = useState({});
  const [actingId, setActingId] = useState(null);
+ const { run: runCreate, isPending: submitting } = useAsyncAction();
+ const { run, isPending } = useAsyncAction();
 
  const load = useCallback(() => {
   setLoading(true);
-  Promise.allSettled([fetchInvoices({ limit: 100 }), fetchClients({ limit: 100 })]).then(([i, c]) => {
-   if (i.status === 'fulfilled') setInvoices(i.value?.data || []);
+  Promise.allSettled([fetchInvoices({ page, limit: 20 }), fetchClients({ limit: 100 })]).then(([i, c]) => {
+   if (i.status === 'fulfilled') { setInvoices(i.value?.data || []); setTotalPages(i.value?.meta?.total_pages || 1); }
    if (c.status === 'fulfilled') setClients(c.value?.data || []);
   }).finally(() => setLoading(false));
- }, []);
+ }, [page]);
 
  useEffect(() => { load();  }, [load]);
 
  const clientName = (id) => clients.find((c) => c.id === id)?.company_name || '—';
 
- const handleCreate = async (e) => {
+ const handleCreate = (e) => {
   e.preventDefault();
-  if (!form.client_id || !form.amount || !form.issue_date || !form.due_date) return;
-  setSubmitting(true);
-  try {
+  const errors = validateNewInvoice(form);
+  setFieldErrors(errors);
+  if (Object.keys(errors).length > 0) return;
+  runCreate(async () => {
    await createInvoice({
     client_id: form.client_id, amount: Number(form.amount), tax: form.tax ? Number(form.tax) : 0,
     currency: form.currency, issue_date: form.issue_date, due_date: form.due_date,
    });
    setForm({ client_id: '', amount: '', tax: '', currency: 'USD', issue_date: '', due_date: '' });
+   setFieldErrors({});
    setShowForm(false);
    load();
-  } finally {
-   setSubmitting(false);
-  }
+  });
  };
 
- const send = async (id) => {
+ const send = (id) => run(async () => {
   setActingId(id);
   try { await updateInvoice(id, { status: 'sent' }); load(); } finally { setActingId(null); }
- };
+ });
 
- const markPaid = async (invoice) => {
+ const markPaid = (invoice) => run(async () => {
   setActingId(invoice.id);
   try {
    await recordPayment(invoice.id, { amount: invoice.total_amount, method: 'bank_transfer', paid_at: new Date().toISOString(), status: 'completed' });
@@ -469,7 +490,7 @@ function Invoices() {
   } finally {
    setActingId(null);
   }
- };
+ });
 
  if (loading) return <SkeletonTable rows={6} columns={6} />;
  return (
@@ -480,21 +501,36 @@ function Invoices() {
    {showForm && (
     <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
      <div className="grid gap-4 sm:grid-cols-3">
-      <select required value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className={FORM_INPUT_CLASS}>
-       <option value="" disabled>Select client</option>
-       {clients.map((c) => <option key={c.id} value={c.id}>{c.company_name || c.id}</option>)}
-      </select>
-      <input required type="number" min="0" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={FORM_INPUT_CLASS} />
-      <input type="number" min="0" placeholder="Tax" value={form.tax} onChange={(e) => setForm({ ...form, tax: e.target.value })} className={FORM_INPUT_CLASS} />
-      <input required type="date" value={form.issue_date} onChange={(e) => setForm({ ...form, issue_date: e.target.value })} className={FORM_INPUT_CLASS} />
-      <input required type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className={FORM_INPUT_CLASS} />
+      <div>
+       <select required value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className={FORM_INPUT_CLASS}>
+        <option value="" disabled>Select client</option>
+        {clients.map((c) => <option key={c.id} value={c.id}>{c.company_name || c.id}</option>)}
+       </select>
+       {fieldErrors.client_id && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.client_id}</p>}
+      </div>
+      <div>
+       <input required type="number" min="0" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={FORM_INPUT_CLASS} />
+       {fieldErrors.amount && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.amount}</p>}
+      </div>
+      <div>
+       <input type="number" min="0" placeholder="Tax" value={form.tax} onChange={(e) => setForm({ ...form, tax: e.target.value })} className={FORM_INPUT_CLASS} />
+       {fieldErrors.tax && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.tax}</p>}
+      </div>
+      <div>
+       <input required type="date" value={form.issue_date} onChange={(e) => setForm({ ...form, issue_date: e.target.value })} className={FORM_INPUT_CLASS} />
+       {fieldErrors.issue_date && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.issue_date}</p>}
+      </div>
+      <div>
+       <input required type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className={FORM_INPUT_CLASS} />
+       {fieldErrors.due_date && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.due_date}</p>}
+      </div>
       <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} className={FORM_INPUT_CLASS}>
        {['USD', 'EUR', 'GBP', 'INR'].map((c) => <option key={c} value={c}>{c}</option>)}
       </select>
      </div>
      <div className="flex gap-2">
       <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Creating...' : 'Create Invoice'}</Button>
-      <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
+      <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setFieldErrors({}); }}>Cancel</Button>
      </div>
     </form>
    )}
@@ -513,8 +549,8 @@ function Invoices() {
         <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={INVOICE_STATUS_COLOR[inv.status]}>{inv.status}</StatusBadge></td>
         <td data-label="Actions" className="px-stack-lg py-4">
          <div className="flex gap-2">
-          {inv.status === 'draft' && <RowAction disabled={actingId === inv.id} onClick={() => send(inv.id)}>Send</RowAction>}
-          {(inv.status === 'sent' || inv.status === 'overdue') && <RowAction disabled={actingId === inv.id} onClick={() => markPaid(inv)}>Record Payment</RowAction>}
+          {inv.status === 'draft' && <RowAction disabled={isPending && actingId === inv.id} onClick={() => send(inv.id)}>Send</RowAction>}
+          {(inv.status === 'sent' || inv.status === 'overdue') && <RowAction disabled={isPending && actingId === inv.id} onClick={() => markPaid(inv)}>Record Payment</RowAction>}
          </div>
         </td>
        </tr>
@@ -523,6 +559,8 @@ function Invoices() {
      </tbody>
     </table>
    </div>
+
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }

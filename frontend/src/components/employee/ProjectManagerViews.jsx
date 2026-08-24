@@ -3,7 +3,7 @@ import Icon from '../ui/Icon.jsx';
 import Button from '../ui/Button.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
 import RowAction from '../ui/RowAction.jsx';
-import LoadingSpinner from '../ui/LoadingSpinner.jsx';
+import Pagination from '../ui/Pagination.jsx';
 import { SkeletonTable } from '../ui/Skeleton.jsx';
 import { FORM_INPUT_CLASS } from '../ui/formClasses.js';
 import useAsyncAction from '../../hooks/useAsyncAction.js';
@@ -13,6 +13,8 @@ import {
  assignProjectTeam, fetchAdminProjects, createProject,
  fetchEmployees, fetchClients,
 } from '../../api/admin.js';
+import { validateAddProject } from '../../schemas/project.schema.js';
+import { validateNewTask } from '../../schemas/task.schema.js';
 
 const PROJECT_STATUS_COLOR = { planning: 'neutral', in_progress: 'info', on_hold: 'warning', completed: 'success', cancelled: 'error' };
 const TASK_STATUS_COLUMNS = ['todo', 'in_progress', 'in_review', 'done', 'blocked'];
@@ -27,11 +29,14 @@ function TeamProjects({ userId }) {
  const [loading, setLoading] = useState(true);
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ title: '', client_id: '', budget: '', start_date: '', end_date: '' });
- const [submitting, setSubmitting] = useState(false);
+ const [fieldErrors, setFieldErrors] = useState({});
  const [assigningId, setAssigningId] = useState(null);
  const [teamSelection, setTeamSelection] = useState([]);
  const [toast, setToast] = useState({ msg: '', type: 'success' });
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
  const { run: runAssign, isPending: assignPending } = useAsyncAction();
+ const { run: runCreate, isPending: creating } = useAsyncAction();
 
  const showToast = (msg, type = 'success') => {
   setToast({ msg, type });
@@ -42,42 +47,50 @@ function TeamProjects({ userId }) {
   if (!userId) { setLoading(false); return; }
   setLoading(true);
   Promise.allSettled([
-   fetchAdminProjects({ project_manager_id: userId }),
+   fetchAdminProjects({ project_manager_id: userId, page, limit: 20 }),
    fetchEmployees({ limit: 100 }),
    fetchClients({ limit: 100 }),
   ]).then(([p, e, c]) => {
-   if (p.status === 'fulfilled') setProjects(p.value?.data || []);
+   if (p.status === 'fulfilled') {
+    setProjects(p.value?.data || []);
+    setTotalPages(p.value?.meta?.total_pages || 1);
+   }
    if (e.status === 'fulfilled') setEmployees(e.value?.data || []);
    if (c.status === 'fulfilled') setClients(c.value?.data || []);
   }).finally(() => setLoading(false));
- }, [userId]);
+ }, [userId, page]);
 
  useEffect(() => { load();  }, [load]);
 
  const clientName = (id) => clients.find((c) => c.id === id)?.company_name || '—';
 
- const handleCreate = async (e) => {
+ const handleCreate = (e) => {
   e.preventDefault();
-  if (!form.title) return;
-  setSubmitting(true);
-  try {
-   await createProject({
-    title: form.title,
-    client_id: form.client_id || null,
-    budget: form.budget ? Number(form.budget) : null,
-    start_date: form.start_date || null,
-    end_date: form.end_date || null,
-    project_manager_id: userId,
-   });
-   setForm({ title: '', client_id: '', budget: '', start_date: '', end_date: '' });
-   setShowForm(false);
-   showToast('Project created successfully');
-   load();
-  } catch (err) {
-   showToast(err?.message || 'Failed to create project', 'error');
-  } finally {
-   setSubmitting(false);
+  const clientErrors = validateAddProject({ ...form, status: 'planning' });
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   showToast('Please fix the errors below.', 'error');
+   return;
   }
+  setFieldErrors({});
+  runCreate(async () => {
+   try {
+    await createProject({
+     title: form.title,
+     client_id: form.client_id || null,
+     budget: form.budget ? Number(form.budget) : null,
+     start_date: form.start_date || null,
+     end_date: form.end_date || null,
+     project_manager_id: userId,
+    });
+    setForm({ title: '', client_id: '', budget: '', start_date: '', end_date: '' });
+    setShowForm(false);
+    showToast('Project created successfully');
+    load();
+   } catch (err) {
+    showToast(err?.message || 'Failed to create project', 'error');
+   }
+  });
  };
 
  const startAssign = (project) => {
@@ -99,7 +112,7 @@ function TeamProjects({ userId }) {
   }
  });
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={4} />;
 
  return (
   <div className="space-y-stack-md">
@@ -115,19 +128,25 @@ function TeamProjects({ userId }) {
    {showForm && (
     <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
      <div className="grid gap-4 sm:grid-cols-2">
-      <input required type="text" placeholder="Project title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={FORM_INPUT_CLASS} />
+      <div>
+       <input required type="text" placeholder="Project title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={`${FORM_INPUT_CLASS} w-full`} />
+       {fieldErrors.title && <p className="mt-1 text-body-xs text-status-error">{fieldErrors.title}</p>}
+      </div>
       <select value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className={FORM_INPUT_CLASS}>
        <option value="">No client yet</option>
        {clients.map((c) => <option key={c.id} value={c.id}>{c.company_name || c.id}</option>)}
       </select>
-      <input type="number" min="0" placeholder="Budget ($)" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} className={FORM_INPUT_CLASS} />
+      <div>
+       <input type="number" min="0" placeholder="Budget ($)" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} className={`${FORM_INPUT_CLASS} w-full`} />
+       {fieldErrors.budget && <p className="mt-1 text-body-xs text-status-error">{fieldErrors.budget}</p>}
+      </div>
       <div className="grid grid-cols-2 gap-2">
        <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className={FORM_INPUT_CLASS} />
        <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className={FORM_INPUT_CLASS} />
       </div>
      </div>
      <div className="flex gap-2">
-      <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Creating...' : 'Create Project'}</Button>
+      <Button type="submit" variant="primary" size="md" disabled={creating}>{creating ? 'Creating...' : 'Create Project'}</Button>
       <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
      </div>
     </form>
@@ -187,6 +206,8 @@ function TeamProjects({ userId }) {
     ))}
     {!projects.length && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No projects assigned to you yet.</p>}
    </div>
+
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -199,9 +220,12 @@ function TaskBoard({ userId }) {
  const [loading, setLoading] = useState(true);
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ title: '', priority: 'medium', due_date: '', assigned_to: '' });
- const [submitting, setSubmitting] = useState(false);
- const [savingId, setSavingId] = useState(null);
+ const [fieldErrors, setFieldErrors] = useState({});
  const [toast, setToast] = useState({ msg: '', type: 'success' });
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
+ const { run: runCreate, isPending: creating } = useAsyncAction();
+ const { run: runChangeStatus, isPending: changingStatus } = useAsyncAction();
 
  const showToast = (msg, type = 'success') => {
   setToast({ msg, type });
@@ -211,7 +235,7 @@ function TaskBoard({ userId }) {
  useEffect(() => {
   if (!userId) { setLoading(false); return; }
   Promise.allSettled([
-   fetchAdminProjects({ project_manager_id: userId }),
+   fetchAdminProjects({ project_manager_id: userId, limit: 100 }),
    fetchEmployees({ limit: 100 }),
   ]).then(([pRes, eRes]) => {
    const pItems = pRes.status === 'fulfilled' ? pRes.value?.data || [] : [];
@@ -225,49 +249,55 @@ function TaskBoard({ userId }) {
  const loadTasks = useCallback(() => {
   if (!selectedProject) { setLoading(false); return; }
   setLoading(true);
-  fetchTasks({ project_id: selectedProject, limit: 100 })
-   .then((r) => setTasks(r?.data || []))
+  fetchTasks({ project_id: selectedProject, page, limit: 20 })
+   .then((r) => { setTasks(r?.data || []); setTotalPages(r?.meta?.total_pages || 1); })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [selectedProject]);
+ }, [selectedProject, page]);
 
  useEffect(() => { loadTasks(); }, [loadTasks]);
 
- const handleCreate = async (e) => {
+ // Switching projects must not leave the board on a page number that
+ // doesn't exist for the newly-selected project's task list.
+ useEffect(() => { setPage(1); }, [selectedProject]);
+
+ const handleCreate = (e) => {
   e.preventDefault();
-  if (!form.title || !selectedProject) return;
-  setSubmitting(true);
-  try {
-   await createTask({
-    project_id: selectedProject,
-    title: form.title,
-    priority: form.priority,
-    assigned_to: form.assigned_to || null,
-    due_date: form.due_date || null,
-   });
-   setForm({ title: '', priority: 'medium', due_date: '', assigned_to: '' });
-   setShowForm(false);
-   showToast('Task created successfully');
-   loadTasks();
-  } catch (err) {
-   showToast(err?.message || 'Failed to create task', 'error');
-  } finally {
-   setSubmitting(false);
+  if (!selectedProject) return;
+  const clientErrors = validateNewTask(form);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   return;
   }
+  setFieldErrors({});
+  runCreate(async () => {
+   try {
+    await createTask({
+     project_id: selectedProject,
+     title: form.title,
+     priority: form.priority,
+     assigned_to: form.assigned_to || null,
+     due_date: form.due_date || null,
+    });
+    setForm({ title: '', priority: 'medium', due_date: '', assigned_to: '' });
+    setShowForm(false);
+    showToast('Task created successfully');
+    loadTasks();
+   } catch (err) {
+    showToast(err?.message || 'Failed to create task', 'error');
+   }
+  });
  };
 
- const changeStatus = async (taskId, status) => {
-  setSavingId(taskId);
+ const changeStatus = (taskId, status) => runChangeStatus(async () => {
   try {
    await updateTaskStatus(taskId, status);
    showToast(`Task moved to ${status.replace('_', ' ')}`);
    loadTasks();
   } catch (err) {
    showToast(err?.message || 'Failed to update task', 'error');
-  } finally {
-   setSavingId(null);
   }
- };
+ });
 
  const assigneeLabel = (assignedUserId) => {
   if (!assignedUserId) return null;
@@ -303,7 +333,8 @@ function TaskBoard({ userId }) {
      <h4 className="font-display text-body-lg font-bold text-brand-dark dark:text-white">Add Task to {activeProjectTitle}</h4>
      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <div className="sm:col-span-2">
-       <input required type="text" placeholder="Task title *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={FORM_INPUT_CLASS} />
+       <input required type="text" placeholder="Task title *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={`${FORM_INPUT_CLASS} w-full`} />
+       {fieldErrors.title && <p className="mt-1 text-body-xs text-status-error">{fieldErrors.title}</p>}
       </div>
       <select value={form.assigned_to} onChange={(e) => setForm({ ...form, assigned_to: e.target.value })} className={FORM_INPUT_CLASS}>
        <option value="">Unassigned</option>
@@ -317,13 +348,13 @@ function TaskBoard({ userId }) {
       <input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} className={FORM_INPUT_CLASS} />
      </div>
      <div className="flex gap-2">
-      <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Creating...' : 'Add Task'}</Button>
+      <Button type="submit" variant="primary" size="md" disabled={creating}>{creating ? 'Creating...' : 'Add Task'}</Button>
       <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
      </div>
     </form>
    )}
 
-   {loading ? <LoadingSpinner /> : (
+   {loading ? <SkeletonTable rows={6} columns={4} /> : (
     <div className="grid gap-gutter md:grid-cols-4">
      {TASK_STATUS_COLUMNS.filter((c) => c !== 'blocked').map((col) => {
       const colTasks = tasks.filter((t) => t.status === col);
@@ -355,7 +386,7 @@ function TaskBoard({ userId }) {
             </p>
            )}
            <div className="pt-1">
-            <select value={t.status} disabled={savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
+            <select value={t.status} disabled={changingStatus} onChange={(e) => changeStatus(t.id, e.target.value)}
              className="w-full rounded border border-outline-variant bg-white px-2 py-1 text-body-xs font-medium text-ink focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white">
              {TASK_STATUS_COLUMNS.filter((c) => c !== 'blocked').map((s) => (
               <option key={s} value={s}>Move to: {s.replace('_', ' ').toUpperCase()}</option>
@@ -375,6 +406,8 @@ function TaskBoard({ userId }) {
      })}
     </div>
    )}
+
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -382,19 +415,36 @@ function TaskBoard({ userId }) {
 function Approvals() {
  const [timesheets, setTimesheets] = useState([]);
  const [loading, setLoading] = useState(true);
- const [actingId, setActingId] = useState(null);
  const [filter, setFilter] = useState('submitted');
  const [toast, setToast] = useState('');
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
+ const [submittedCount, setSubmittedCount] = useState(0);
+ const [approvedCount, setApprovedCount] = useState(0);
+ const [rejectedCount, setRejectedCount] = useState(0);
+ const { run: runReview, isPending: reviewing } = useAsyncAction();
 
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
  const load = useCallback(() => {
   setLoading(true);
-  fetchAllTimesheets({ limit: 100 })
-   .then((r) => { setTimesheets(r?.data || []); })
-   .catch(() => {})
-   .finally(() => setLoading(false));
- }, []);
+  const params = { page, limit: 20 };
+  if (filter !== 'all') params.status = filter;
+  Promise.allSettled([
+   fetchAllTimesheets(params),
+   fetchAllTimesheets({ limit: 1, status: 'submitted' }),
+   fetchAllTimesheets({ limit: 1, status: 'approved' }),
+   fetchAllTimesheets({ limit: 1, status: 'rejected' }),
+  ]).then(([listRes, submittedRes, approvedRes, rejectedRes]) => {
+   if (listRes.status === 'fulfilled') {
+    setTimesheets(listRes.value?.data || []);
+    setTotalPages(listRes.value?.meta?.total_pages || 1);
+   }
+   if (submittedRes.status === 'fulfilled') setSubmittedCount(submittedRes.value?.meta?.total || 0);
+   if (approvedRes.status === 'fulfilled') setApprovedCount(approvedRes.value?.meta?.total || 0);
+   if (rejectedRes.status === 'fulfilled') setRejectedCount(rejectedRes.value?.meta?.total || 0);
+  }).finally(() => setLoading(false));
+ }, [filter, page]);
 
  useEffect(() => { load(); }, [load]);
 
@@ -403,25 +453,26 @@ function Approvals() {
   return () => clearInterval(id);
  }, [load]);
 
- const review = async (id, status) => {
-  setActingId(id);
+ // Changing the status filter must not leave the view on a page number
+ // that no longer exists in the filtered result set.
+ useEffect(() => { setPage(1); }, [filter]);
+
+ const review = (id, status) => runReview(async () => {
   try {
    await reviewTimesheet(id, status);
    showToast(`Timesheet ${status}.`);
    load();
   } catch (err) {
    showToast(err?.message || 'Action failed.');
-  } finally {
-   setActingId(null);
   }
- };
+ });
 
- const visible = filter === 'all' ? timesheets : timesheets.filter((t) => t.status === filter);
+ const visible = timesheets;
  const kpis = [
-  { label: 'Pending Approval', value: timesheets.filter((t) => t.status === 'submitted').length, icon: 'pending_actions' },
-  { label: 'Approved', value: timesheets.filter((t) => t.status === 'approved').length, icon: 'task_alt' },
-  { label: 'Rejected', value: timesheets.filter((t) => t.status === 'rejected').length, icon: 'cancel' },
-  { label: 'Total Entries', value: timesheets.length, icon: 'calendar_month' },
+  { label: 'Pending Approval', value: submittedCount, icon: 'pending_actions' },
+  { label: 'Approved', value: approvedCount, icon: 'task_alt' },
+  { label: 'Rejected', value: rejectedCount, icon: 'cancel' },
+  { label: 'Total Entries', value: submittedCount + approvedCount + rejectedCount, icon: 'calendar_month' },
  ];
 
  if (loading) return <SkeletonTable rows={6} columns={6} />;
@@ -488,8 +539,8 @@ function Approvals() {
         <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={TIMESHEET_STATUS_COLOR[t.status]}>{t.status}</StatusBadge></td>
         <td data-label="Actions" className="px-stack-lg py-4">
          <div className="flex gap-2">
-          <RowAction disabled={actingId === t.id} onClick={() => review(t.id, 'approved')}>Approve</RowAction>
-          <RowAction variant="outline" disabled={actingId === t.id} onClick={() => review(t.id, 'rejected')}>Reject</RowAction>
+          <RowAction disabled={reviewing} onClick={() => review(t.id, 'approved')}>Approve</RowAction>
+          <RowAction variant="outline" disabled={reviewing} onClick={() => review(t.id, 'rejected')}>Reject</RowAction>
          </div>
         </td>
        </tr>
@@ -498,6 +549,8 @@ function Approvals() {
      </tbody>
     </table>
    </div>
+
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }

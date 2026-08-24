@@ -3,13 +3,15 @@ import Icon from '../ui/Icon.jsx';
 import Button from '../ui/Button.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
 import RowAction from '../ui/RowAction.jsx';
-import LoadingSpinner from '../ui/LoadingSpinner.jsx';
+import Pagination from '../ui/Pagination.jsx';
 import { SkeletonTable } from '../ui/Skeleton.jsx';
-import { apiRequest } from '../../api/client.js';
-import { fetchLeads, createLead } from '../../api/crm.js';
+import useAsyncAction from '../../hooks/useAsyncAction.js';
+import { fetchLeads, createLead, fetchContactSubmissions } from '../../api/crm.js';
 import {
  fetchTestimonials, createTestimonial, updateTestimonial, deleteTestimonial,
 } from '../../api/admin.js';
+import { validateConvertToLead } from '../../schemas/crm.schema.js';
+import { validateNewTestimonial } from '../../schemas/marketing.schema.js';
 
 const LEAD_STATUS_COLOR = { new: 'neutral', contacted: 'info', requirement_gathering: 'info', proposal_sent: 'warning', proposal_approved: 'success', converted: 'success', disqualified: 'error' };
 
@@ -19,31 +21,38 @@ const LEAD_STATUS_COLOR = { new: 'neutral', contacted: 'info', requirement_gathe
 function SalesConvertModal({ submission, onClose, onSuccess }) {
  const [estimatedValue, setEstimatedValue] = useState('');
  const [notes, setNotes] = useState(submission.message || '');
- const [submitting, setSubmitting] = useState(false);
  const [error, setError] = useState('');
+ const [fieldErrors, setFieldErrors] = useState({});
+ const { run, isPending } = useAsyncAction();
  const inputClass = 'w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none';
 
- const handleSubmit = async (e) => {
+ const handleSubmit = (e) => {
   e.preventDefault();
   setError('');
-  setSubmitting(true);
-  try {
-   await createLead({
-    contact_name: submission.name,
-    email: submission.email,
-    phone: submission.phone || null,
-    company: submission.company || null,
-    source: 'contact_form',
-    contact_submission_id: submission.id,
-    estimated_value: estimatedValue ? Number(estimatedValue) : null,
-    notes: notes || null,
-   });
-   onSuccess();
-  } catch (err) {
-   setError(err.message || 'Could not convert to lead. Please try again.');
-  } finally {
-   setSubmitting(false);
+  const clientErrors = validateConvertToLead({ estimatedValue, notes });
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
   }
+  setFieldErrors({});
+  run(async () => {
+   try {
+    await createLead({
+     contact_name: submission.name,
+     email: submission.email,
+     phone: submission.phone || null,
+     company: submission.company || null,
+     source: 'contact_form',
+     contact_submission_id: submission.id,
+     estimated_value: estimatedValue ? Number(estimatedValue) : null,
+     notes: notes || null,
+    });
+    onSuccess();
+   } catch (err) {
+    setError(err.message || 'Could not convert to lead. Please try again.');
+   }
+  });
  };
 
  return (
@@ -68,16 +77,18 @@ function SalesConvertModal({ submission, onClose, onSuccess }) {
       <label className="mb-1 block text-body-sm font-medium text-ink dark:text-white">Estimated Value (USD)</label>
       <input type="number" min="0" step="0.01" placeholder="e.g. 5000" value={estimatedValue}
        onChange={(e) => setEstimatedValue(e.target.value)} className={inputClass} />
+      {fieldErrors.estimatedValue && <p className="mt-1 text-body-xs text-status-error">{fieldErrors.estimatedValue}</p>}
      </div>
      <div>
       <label className="mb-1 block text-body-sm font-medium text-ink dark:text-white">Notes</label>
       <textarea rows={3} placeholder="Internal notes about this lead..." value={notes}
        onChange={(e) => setNotes(e.target.value)} className={`${inputClass} resize-none`} />
+      {fieldErrors.notes && <p className="mt-1 text-body-xs text-status-error">{fieldErrors.notes}</p>}
      </div>
      {error && <p className="text-body-sm text-status-error">{error}</p>}
      <div className="flex gap-3 pt-1">
-      <Button type="submit" variant="primary" size="md" disabled={submitting} className="flex-1">
-       {submitting ? 'Converting...' : 'Convert to Lead'}
+      <Button type="submit" variant="primary" size="md" disabled={isPending} className="flex-1">
+       {isPending ? 'Converting...' : 'Convert to Lead'}
       </Button>
       <Button type="button" variant="outline" size="md" onClick={onClose}>Cancel</Button>
      </div>
@@ -95,18 +106,28 @@ function MarketingLeadsView() {
  const [convertTarget, setConvertTarget] = useState(null);
  const [toast, setToast] = useState({ msg: '', type: 'success' });
  const [activeTab, setActiveTab] = useState('contacts'); // 'contacts' | 'leads'
+ const [contactsPage, setContactsPage] = useState(1);
+ const [contactsTotalPages, setContactsTotalPages] = useState(1);
+ const [leadsPage, setLeadsPage] = useState(1);
+ const [leadsTotalPages, setLeadsTotalPages] = useState(1);
  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 3500); };
 
  const load = useCallback(() => {
   setLoading(true);
   Promise.allSettled([
-   apiRequest('/contact?status=in_progress&limit=100'),
-   fetchLeads({ limit: 100 }),
+   fetchContactSubmissions({ status: 'in_progress', page: contactsPage, limit: 20 }),
+   fetchLeads({ page: leadsPage, limit: 20 }),
   ]).then(([cRes, lRes]) => {
-   if (cRes.status === 'fulfilled') setContacts(cRes.value?.data || []);
-   if (lRes.status === 'fulfilled') setLeads(lRes.value?.data || []);
+   if (cRes.status === 'fulfilled') {
+    setContacts(cRes.value?.data || []);
+    setContactsTotalPages(cRes.value?.meta?.total_pages || 1);
+   }
+   if (lRes.status === 'fulfilled') {
+    setLeads(lRes.value?.data || []);
+    setLeadsTotalPages(lRes.value?.meta?.total_pages || 1);
+   }
   }).finally(() => setLoading(false));
- }, []);
+ }, [contactsPage, leadsPage]);
 
  useEffect(() => { load(); }, [load]);
 
@@ -185,6 +206,9 @@ function MarketingLeadsView() {
          ))}
         </tbody>
        </table>
+       <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+        <Pagination page={contactsPage} totalPages={contactsTotalPages} onChange={setContactsPage} />
+       </div>
       </div>
      )}
     </>
@@ -211,6 +235,9 @@ function MarketingLeadsView() {
        {!leads.length && <tr><td data-label="Company / Contact" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No leads yet — convert a contact to create the first one.</td></tr>}
       </tbody>
      </table>
+     <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+      <Pagination page={leadsPage} totalPages={leadsTotalPages} onChange={setLeadsPage} />
+     </div>
     </div>
    )}
   </div>
@@ -220,107 +247,111 @@ function MarketingLeadsView() {
 function TestimonialModeration() {
  const [items, setItems] = useState([]);
  const [loading, setLoading] = useState(true);
- const [actingId, setActingId] = useState(null);
  const [filter, setFilter] = useState('pending');
  const [toast, setToast] = useState('');
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ author_name: '', author_title: '', company_name: '', rating: 5, content: '' });
  const [errors, setErrors] = useState({});
- const [submitting, setSubmitting] = useState(false);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
+ const [pendingCount, setPendingCount] = useState(0);
+ const [publishedCount, setPublishedCount] = useState(0);
+ const { run: runCreate, isPending: creating } = useAsyncAction();
+ const { run: runApprove, isPending: approving } = useAsyncAction();
+ const { run: runUnpublish, isPending: unpublishing } = useAsyncAction();
+ const { run: runRemove, isPending: removing } = useAsyncAction();
 
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
  const load = useCallback(() => {
   setLoading(true);
-  fetchTestimonials({ limit: 100 })
-   .then((r) => { setItems(r?.data || []); })
-   .catch(() => {})
-   .finally(() => setLoading(false));
- }, []);
+  const params = { page, limit: 20 };
+  if (filter !== 'all') params.is_published = filter === 'published';
+  Promise.allSettled([
+   fetchTestimonials(params),
+   fetchTestimonials({ limit: 1, is_published: false }),
+   fetchTestimonials({ limit: 1, is_published: true }),
+  ]).then(([listRes, pendingRes, publishedRes]) => {
+   if (listRes.status === 'fulfilled') {
+    setItems(listRes.value?.data || []);
+    setTotalPages(listRes.value?.meta?.total_pages || 1);
+   }
+   if (pendingRes.status === 'fulfilled') setPendingCount(pendingRes.value?.meta?.total || 0);
+   if (publishedRes.status === 'fulfilled') setPublishedCount(publishedRes.value?.meta?.total || 0);
+  }).finally(() => setLoading(false));
+ }, [filter, page]);
 
  useEffect(() => { load(); }, [load]);
 
- const validate = () => {
-  const errs = {};
-  if (!form.author_name.trim()) errs.author_name = 'Author name is required.';
-  if (!form.content.trim()) errs.content = 'Testimonial content is required.';
-  if (form.content.trim().length < 10) errs.content = 'Content must be at least 10 characters.';
-  setErrors(errs);
-  return Object.keys(errs).length === 0;
- };
+ // Changing the moderation filter must not leave the view on a page number
+ // that no longer exists in the filtered result set.
+ useEffect(() => { setPage(1); }, [filter]);
 
- const handleCreate = async (e) => {
+ const handleCreate = (e) => {
   e.preventDefault();
-  if (!validate()) return;
-  setSubmitting(true);
-  try {
-   await createTestimonial({ ...form, is_published: false });
-   setForm({ author_name: '', author_title: '', company_name: '', rating: 5, content: '' });
-   setErrors({});
-   setShowForm(false);
-   showToast('Testimonial created successfully.');
-   load();
-  } catch (err) {
-   showToast(err?.message || 'Failed to create testimonial.');
-  } finally {
-   setSubmitting(false);
+  const clientErrors = validateNewTestimonial(form);
+  if (Object.keys(clientErrors).length > 0) {
+   setErrors(clientErrors);
+   return;
   }
+  setErrors({});
+  runCreate(async () => {
+   try {
+    await createTestimonial({ ...form, is_published: false });
+    setForm({ author_name: '', author_title: '', company_name: '', rating: 5, content: '' });
+    setShowForm(false);
+    showToast('Testimonial created successfully.');
+    load();
+   } catch (err) {
+    showToast(err?.message || 'Failed to create testimonial.');
+   }
+  });
  };
 
- const approve = async (id) => {
-  setActingId(id);
+ const approve = (id) => runApprove(async () => {
   try {
    await updateTestimonial(id, { is_published: true });
    showToast('Testimonial approved and published.');
    load();
   } catch (err) {
    showToast(err?.message || 'Action failed.');
-  } finally {
-   setActingId(null);
   }
- };
+ });
 
- const unpublish = async (id) => {
-  setActingId(id);
+ const unpublish = (id) => runUnpublish(async () => {
   try {
    await updateTestimonial(id, { is_published: false });
    showToast('Testimonial unpublished.');
    load();
   } catch (err) {
    showToast(err?.message || 'Action failed.');
-  } finally {
-   setActingId(null);
   }
- };
+ });
 
- const remove = async (id) => {
-  setActingId(id);
+ const remove = (id) => runRemove(async () => {
   try {
    await deleteTestimonial(id);
    showToast('Testimonial deleted.');
    load();
   } catch (err) {
    showToast(err?.message || 'Action failed.');
-  } finally {
-   setActingId(null);
   }
- };
+ });
 
- const pending = items.filter((t) => !t.is_published);
- const published = items.filter((t) => t.is_published);
- const visible = filter === 'pending' ? pending : filter === 'published' ? published : items;
+ const visible = items;
+ const actingPending = approving || unpublishing || removing;
 
  const kpis = [
-  { label: 'Pending Moderation', value: pending.length, icon: 'rate_review' },
-  { label: 'Published', value: published.length, icon: 'publish' },
-  { label: 'Total Reviews', value: items.length, icon: 'reviews' },
+  { label: 'Pending Moderation', value: pendingCount, icon: 'rate_review' },
+  { label: 'Published', value: publishedCount, icon: 'publish' },
+  { label: 'Total Reviews', value: pendingCount + publishedCount, icon: 'reviews' },
  ];
 
  const stars = (rating) => Array.from({ length: 5 }, (_, i) => (
   <Icon key={i} name={i < (rating || 0) ? 'star' : 'star_outline'} className="text-base text-yellow-400" />
  ));
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={3} />;
  return (
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
@@ -403,7 +434,7 @@ function TestimonialModeration() {
       {errors.content && <p className="mt-1 text-body-xs text-status-error">{errors.content}</p>}
      </div>
      <div className="flex gap-2">
-      <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Saving...' : 'Save Testimonial'}</Button>
+      <Button type="submit" variant="primary" size="md" disabled={creating}>{creating ? 'Saving...' : 'Save Testimonial'}</Button>
       <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setErrors({}); }}>Cancel</Button>
      </div>
     </form>
@@ -422,15 +453,17 @@ function TestimonialModeration() {
       <div className="mt-4 flex items-center justify-between">
        <StatusBadge variant={t.is_published ? 'success' : 'warning'}>{t.is_published ? 'published' : 'pending'}</StatusBadge>
        <div className="flex items-center gap-2">
-        {!t.is_published && <RowAction disabled={actingId === t.id} onClick={() => approve(t.id)}>Approve</RowAction>}
-        {t.is_published && <RowAction variant="outline" disabled={actingId === t.id} onClick={() => unpublish(t.id)}>Unpublish</RowAction>}
-        <RowAction variant="outline" disabled={actingId === t.id} onClick={() => remove(t.id)}>Delete</RowAction>
+        {!t.is_published && <RowAction disabled={actingPending} onClick={() => approve(t.id)}>Approve</RowAction>}
+        {t.is_published && <RowAction variant="outline" disabled={actingPending} onClick={() => unpublish(t.id)}>Unpublish</RowAction>}
+        <RowAction variant="outline" disabled={actingPending} onClick={() => remove(t.id)}>Delete</RowAction>
        </div>
       </div>
      </div>
     ))}
     {!visible.length && <p className="col-span-full py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No testimonials to show.</p>}
    </div>
+
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }

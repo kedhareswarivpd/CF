@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import { PortalTable } from '../components/ui/ResponsiveTable.jsx';
 import { SkeletonTable } from '../components/ui/Skeleton.jsx';
+import Pagination from '../components/ui/Pagination.jsx';
 import Tabs from '../components/ui/Tabs.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
@@ -16,8 +17,22 @@ import useAsyncAction from '../hooks/useAsyncAction.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { clientPortalTabs } from '../data/portal.js';
 import { fetchMyProfile, fetchMyProjects, fetchMyInvoices, fetchMyTickets, fetchMyPayments, fetchMyMeetings, fetchMyFiles, fetchMyReports, createTicket as createTicketApi } from '../api/clients.js';
+import { validateNewTicket } from '../schemas/client.schema.js';
 
+// The /clients/me/* endpoints these tables read from are self-service list
+// routes capped at SELF_SERVICE_LIST_CAP (500) — not page_params-paginated,
+// so there's no server-side page/limit/meta.total_pages contract to use.
+// Each table below instead paginates the already-loaded array client-side.
+const PAGE_SIZE = 10;
 
+function usePagedRows(rows) {
+ const [page, setPage] = useState(1);
+ const totalPages = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+ useEffect(() => { if (page > totalPages) setPage(1); }, [rows.length, totalPages, page]);
+ const start = (page - 1) * PAGE_SIZE;
+ const pageRows = rows.slice(start, start + PAGE_SIZE);
+ return { page, setPage, totalPages, pageRows };
+}
 
 const STATUS_VARIANTS = {
  in_progress: 'info', completed: 'success', planning: 'warning', on_hold: 'neutral',
@@ -69,6 +84,7 @@ function Overview({ profile, projects, invoices, tickets }) {
 }
 
 function Projects({ projects }) {
+ const { page, setPage, totalPages, pageRows } = usePagedRows(projects);
  if (projects.length === 0) {
   return (
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -77,6 +93,7 @@ function Projects({ projects }) {
   );
  }
  return (
+  <div className="space-y-stack-md">
   <PortalTable
    columns={[
     { key: 'title', label: 'Project', className: 'font-body text-body-md text-brand-dark dark:text-dark-brand' },
@@ -98,12 +115,15 @@ function Projects({ projects }) {
      render: (val) => <StatusBadge variant={STATUS_VARIANTS[val] || 'neutral'}>{val.replace('_', ' ')}</StatusBadge>,
     },
    ]}
-   rows={projects}
+   rows={pageRows}
   />
+  <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+  </div>
  );
 }
 
 function Invoices({ invoices }) {
+ const { page, setPage, totalPages, pageRows } = usePagedRows(invoices);
  if (invoices.length === 0) {
   return (
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -112,6 +132,7 @@ function Invoices({ invoices }) {
   );
  }
  return (
+  <div className="space-y-stack-md">
   <PortalTable
    columns={[
     { key: 'id', label: 'Invoice', className: 'font-body text-body-md text-brand-dark dark:text-dark-brand' },
@@ -120,8 +141,10 @@ function Invoices({ invoices }) {
     { key: 'dueDate', label: 'Due', className: 'text-body-md text-ink-muted dark:text-white' },
     { key: 'status', label: 'Status', render: (val) => <StatusBadge variant={STATUS_VARIANTS[val] || 'neutral'}>{val}</StatusBadge> },
    ]}
-   rows={invoices}
+   rows={pageRows}
   />
+  <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+  </div>
  );
 }
 
@@ -129,12 +152,20 @@ function Tickets({ tickets, onNewTicket }) {
  const [newTicket, setNewTicket] = useState({ subject: '', description: '' });
  const [showForm, setShowForm] = useState(false);
  const [error, setError] = useState('');
+ const [fieldErrors, setFieldErrors] = useState({});
  const { run, isPending: submitting } = useAsyncAction();
+ const { page, setPage, totalPages, pageRows } = usePagedRows(tickets);
 
  const handleSubmit = async (e) => {
   e.preventDefault();
-  if (!newTicket.subject.trim()) return;
   setError('');
+  const clientErrors = validateNewTicket(newTicket);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
+  }
+  setFieldErrors({});
   await run(async () => {
    try {
     await onNewTicket(newTicket.subject, newTicket.description);
@@ -156,12 +187,18 @@ function Tickets({ tickets, onNewTicket }) {
      {error && (
       <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>
      )}
-     <input type="text" placeholder="Subject" value={newTicket.subject}
-      onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
-      className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
-     <textarea placeholder="Describe your issue..." value={newTicket.description}
-      onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
-      rows={3} className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
+     <div>
+      <input type="text" placeholder="Subject" value={newTicket.subject}
+       onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
+       className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
+      {fieldErrors.subject && <p className="mt-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.subject}</p>}
+     </div>
+     <div>
+      <textarea placeholder="Describe your issue..." value={newTicket.description}
+       onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
+       rows={3} className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink" />
+      {fieldErrors.description && <p className="mt-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.description}</p>}
+     </div>
      <div className="flex gap-2">
       <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit'}</Button>
       <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
@@ -175,6 +212,7 @@ function Tickets({ tickets, onNewTicket }) {
      </div>
     )
     : (
+     <>
      <PortalTable
       columns={[
        { key: 'id', label: 'ID', className: 'font-label-caps text-label-caps text-brand' },
@@ -183,14 +221,17 @@ function Tickets({ tickets, onNewTicket }) {
        { key: 'createdAt', label: 'Created', className: 'text-body-md text-ink-muted dark:text-white' },
        { key: 'status', label: 'Status', render: (val) => <StatusBadge variant={STATUS_VARIANTS[val] || 'neutral'}>{val}</StatusBadge> },
       ]}
-      rows={tickets}
+      rows={pageRows}
      />
+     <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+     </>
     )}
   </div>
  );
 }
 
 function Payments({ payments }) {
+ const { page, setPage, totalPages, pageRows } = usePagedRows(payments);
  if (payments.length === 0) {
   return (
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -199,6 +240,7 @@ function Payments({ payments }) {
   );
  }
  return (
+  <div className="space-y-stack-md">
   <PortalTable
    columns={[
     { key: 'id', label: 'Payment ID', className: 'font-label-caps text-label-caps text-brand' },
@@ -208,12 +250,15 @@ function Payments({ payments }) {
     { key: 'date', label: 'Date', className: 'text-body-md text-ink-muted dark:text-white' },
     { key: 'status', label: 'Status', render: (val) => <StatusBadge variant={STATUS_VARIANTS[val] || 'neutral'}>{val}</StatusBadge> },
    ]}
-   rows={payments}
+   rows={pageRows}
   />
+  <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+  </div>
  );
 }
 
 function Files({ files }) {
+ const { page, setPage, totalPages, pageRows } = usePagedRows(files);
  if (files.length === 0) {
   return (
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -222,6 +267,7 @@ function Files({ files }) {
   );
  }
  return (
+  <div className="space-y-stack-md">
   <PortalTable
    columns={[
     {
@@ -250,12 +296,15 @@ function Files({ files }) {
      ),
     },
    ]}
-   rows={files}
+   rows={pageRows}
   />
+  <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+  </div>
  );
 }
 
 function Meetings({ meetings }) {
+ const { page, setPage, totalPages, pageRows } = usePagedRows(meetings);
  if (meetings.length === 0) {
   return (
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -264,6 +313,7 @@ function Meetings({ meetings }) {
   );
  }
  return (
+  <div className="space-y-stack-md">
   <PortalTable
    columns={[
     { key: 'title', label: 'Meeting', className: 'font-body text-body-md text-brand-dark dark:text-dark-brand' },
@@ -289,12 +339,15 @@ function Meetings({ meetings }) {
      ),
     },
    ]}
-   rows={meetings}
+   rows={pageRows}
   />
+  <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+  </div>
  );
 }
 
 function Reports({ reports }) {
+ const { page, setPage, totalPages, pageRows } = usePagedRows(reports);
  if (reports.length === 0) {
   return (
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -303,6 +356,7 @@ function Reports({ reports }) {
   );
  }
  return (
+  <div className="space-y-stack-md">
   <PortalTable
    columns={[
     {
@@ -327,8 +381,10 @@ function Reports({ reports }) {
      ),
     },
    ]}
-   rows={reports}
+   rows={pageRows}
   />
+  <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+  </div>
  );
 }
 
@@ -398,6 +454,7 @@ export default function ClientPortal() {
  const navigate = useNavigate();
  const [activeTab, setActiveTab] = useState('overview');
  const [loading, setLoading] = useState(true);
+ const [tabLoading, setTabLoading] = useState(false);
  const initialLoadDone = useRef(false);
  const [profile, setProfile] = useState({ contact_name: '', email: '', company_name: '', industry: '', country: '' });
  const [projects, setProjects] = useState([]);
@@ -440,7 +497,13 @@ export default function ClientPortal() {
    meetings: () => fetchMyMeetings().then((res) => { if (res?.data) setMeetings(normalizeMeetings(res.data)); }),
    reports: () => fetchMyReports().then((res) => { if (res?.data) setReports(normalizeReports(res.data)); }),
   };
-  if (fetchers[tabId]) await fetchers[tabId]();
+  if (!fetchers[tabId]) return;
+  setTabLoading(true);
+  try {
+   await fetchers[tabId]();
+  } finally {
+   setTabLoading(false);
+  }
  };
 
  const handleTabChange = (tabId) => {
@@ -507,14 +570,20 @@ export default function ClientPortal() {
      />
 
      <div className="min-w-0 flex-1 overflow-y-auto px-4 py-stack-lg sm:px-6 lg:px-10 xl:px-12 ">
-      {activeTab === 'overview' && <Overview profile={profile} projects={projects} invoices={invoices} tickets={tickets} />}
-      {activeTab === 'projects' && <Projects projects={projects} />}
-      {activeTab === 'invoices' && <Invoices invoices={invoices} />}
-      {activeTab === 'payments' && <Payments payments={payments} />}
-      {activeTab === 'files' && <Files files={files} />}
-      {activeTab === 'meetings' && <Meetings meetings={meetings} />}
-      {activeTab === 'reports' && <Reports reports={reports} />}
-      {activeTab === 'tickets' && <Tickets tickets={tickets} onNewTicket={handleNewTicket} />}
+      {tabLoading && ['payments', 'files', 'meetings', 'reports'].includes(activeTab)
+       ? <SkeletonTable rows={6} columns={5} />
+       : (
+        <>
+         {activeTab === 'overview' && <Overview profile={profile} projects={projects} invoices={invoices} tickets={tickets} />}
+         {activeTab === 'projects' && <Projects projects={projects} />}
+         {activeTab === 'invoices' && <Invoices invoices={invoices} />}
+         {activeTab === 'payments' && <Payments payments={payments} />}
+         {activeTab === 'files' && <Files files={files} />}
+         {activeTab === 'meetings' && <Meetings meetings={meetings} />}
+         {activeTab === 'reports' && <Reports reports={reports} />}
+         {activeTab === 'tickets' && <Tickets tickets={tickets} onNewTicket={handleNewTicket} />}
+        </>
+       )}
      </div>
     </div>
    </div>
