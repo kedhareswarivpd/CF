@@ -299,3 +299,132 @@ class TestClientCannotSeeInternalProjectsList:
             await list_projects(request, mock_db, PageParams(page=1, limit=20), client_user)
 
         assert captured_filters.get("is_published") is True
+
+
+class TestFinalDeliveryClientApproval:
+    """Project Tracker / Final Delivery workflow: Project Execution -> Final
+    Review -> Completed -> Deliverables Shared -> Client Review -> Client
+    Approval had no backing fields or endpoints at all."""
+
+    @pytest.mark.asyncio
+    async def test_submit_for_client_review_requires_completed_status(self):
+        from app.routers.projects import submit_project_for_client_review
+
+        user = _make_user("admin")
+        project = Project(id=uuid.uuid4(), title="X", slug="x", status="in_progress", **_project_defaults())
+        mock_db = AsyncMock()
+
+        with patch("app.routers.projects.crud.get", new_callable=AsyncMock, return_value=project):
+            with pytest.raises(ApiError) as exc_info:
+                await submit_project_for_client_review(project.id, mock_db, user)
+        assert exc_info.value.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_submit_for_client_review_succeeds_when_completed(self):
+        from app.routers.projects import submit_project_for_client_review
+
+        user = _make_user("admin")
+        project = Project(id=uuid.uuid4(), title="X", slug="x", status="completed", client_id=None, **_project_defaults())
+        mock_db = AsyncMock()
+
+        with patch("app.routers.projects.crud.get", new_callable=AsyncMock, return_value=project):
+            result = await submit_project_for_client_review(project.id, mock_db, user)
+        assert project.client_review_status == "pending"
+        assert project.completion_submitted_at is not None
+        assert result["message"] == "Project submitted for client review"
+
+    @pytest.mark.asyncio
+    async def test_approve_delivery_requires_pending_review(self):
+        from app.models.client import Client
+        from app.routers.clients import approve_project_delivery
+
+        user = _make_user("client")
+        client = Client(id=uuid.uuid4(), user_id=user.id, company_name="Acme")
+        project = Project(
+            id=uuid.uuid4(), title="X", slug="x", status="completed",
+            client_id=client.id, client_review_status=None, **_project_defaults(),
+        )
+        mock_db = AsyncMock()
+        project_row = MagicMock(scalar_one_or_none=MagicMock(return_value=project))
+        mock_db.execute.side_effect = [project_row]
+
+        with patch("app.routers.clients._get_client_for_user", new_callable=AsyncMock, return_value=client):
+            with pytest.raises(ApiError) as exc_info:
+                await approve_project_delivery(project.id, mock_db, user)
+        assert exc_info.value.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_approve_delivery_succeeds_when_pending(self):
+        from app.models.client import Client
+        from app.routers.clients import approve_project_delivery
+
+        user = _make_user("client")
+        client = Client(id=uuid.uuid4(), user_id=user.id, company_name="Acme")
+        project = Project(
+            id=uuid.uuid4(), title="X", slug="x", status="completed",
+            client_id=client.id, client_review_status="pending", final_delivery_version=0, **_project_defaults(),
+        )
+        mock_db = AsyncMock()
+        project_row = MagicMock(scalar_one_or_none=MagicMock(return_value=project))
+        mock_db.execute.side_effect = [project_row]
+
+        with patch("app.routers.clients._get_client_for_user", new_callable=AsyncMock, return_value=client):
+            with patch("app.routers.clients.notify_roles", new_callable=AsyncMock):
+                result = await approve_project_delivery(project.id, mock_db, user)
+        assert project.client_review_status == "approved"
+        assert project.final_delivery_version == 1
+        assert project.client_approved_at is not None
+        assert result["message"] == "Delivery approved"
+
+
+class TestMilestonesAndDeliverables:
+    @pytest.mark.asyncio
+    async def test_pm_can_create_milestone_for_own_project(self):
+        from app.routers.projects import create_milestone
+        from app.schemas.project_milestone import ProjectMilestoneCreate
+
+        pm_id = uuid.uuid4()
+        user = _make_user("project_manager", id=pm_id)
+        project = Project(id=uuid.uuid4(), title="X", slug="x", status="planning", project_manager_id=pm_id, **_project_defaults())
+        mock_db = AsyncMock()
+        mock_db.refresh.side_effect = _stamp_on_refresh
+
+        with patch("app.routers.projects.crud.get", new_callable=AsyncMock, return_value=project):
+            result = await create_milestone(
+                project.id, ProjectMilestoneCreate(title="Phase 1", due_date=None), mock_db, user,
+            )
+        assert result["message"] == "Milestone created"
+
+    @pytest.mark.asyncio
+    async def test_pm_cannot_create_milestone_for_other_project(self):
+        from app.routers.projects import create_milestone
+        from app.schemas.project_milestone import ProjectMilestoneCreate
+
+        user = _make_user("project_manager", id=uuid.uuid4())
+        project = Project(id=uuid.uuid4(), title="X", slug="x", status="planning", project_manager_id=uuid.uuid4(), **_project_defaults())
+        mock_db = AsyncMock()
+
+        with patch("app.routers.projects.crud.get", new_callable=AsyncMock, return_value=project):
+            with pytest.raises(ApiError) as exc_info:
+                await create_milestone(project.id, ProjectMilestoneCreate(title="Phase 1"), mock_db, user)
+        assert exc_info.value.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_deliverable_only_visible_to_client_once_submitted(self):
+        from app.models.client import Client
+        from app.models.project_deliverable import ProjectDeliverable
+        from app.routers.clients import my_project_deliverables
+
+        user = _make_user("client")
+        client = Client(id=uuid.uuid4(), user_id=user.id, company_name="Acme")
+        project = Project(id=uuid.uuid4(), title="X", slug="x", client_id=client.id, status="in_progress", **_project_defaults())
+        deliverable = ProjectDeliverable(id=uuid.uuid4(), project_id=project.id, title="Doc", status="submitted", **_stamps())
+
+        mock_db = AsyncMock()
+        project_row = MagicMock(scalar_one_or_none=MagicMock(return_value=project))
+        items_row = MagicMock(scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[deliverable]))))
+        mock_db.execute.side_effect = [project_row, items_row]
+
+        with patch("app.routers.clients._get_client_for_user", new_callable=AsyncMock, return_value=client):
+            result = await my_project_deliverables(project.id, mock_db, user)
+        assert result["data"][0].status == "submitted"

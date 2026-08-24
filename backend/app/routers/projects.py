@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request, Response
 from slugify import slugify
@@ -11,13 +12,25 @@ from app.core.errors import ApiError
 from app.core.logger import logger
 from app.crud.base import CRUDBase
 from app.models.associations import project_members
+from app.models.enums import NotificationType, ProjectStatus
 from app.models.lead import Lead
 from app.models.project import Project
+from app.models.project_deliverable import ProjectDeliverable
+from app.models.project_milestone import ProjectMilestone
 from app.models.project_update import ProjectUpdate as ProjectUpdateModel
 from app.models.proposal import Proposal
 from app.models.user import User
 from app.schemas.project import AssignTeamRequest, ProjectCreate, ProjectOut, ProjectUpdate
+from app.schemas.project_milestone import (
+    ProjectDeliverableCreate,
+    ProjectDeliverableOut,
+    ProjectDeliverableUpdate,
+    ProjectMilestoneCreate,
+    ProjectMilestoneOut,
+    ProjectMilestoneUpdate,
+)
 from app.schemas.project_update import ProjectUpdateCreate, ProjectUpdateOut, ProjectUpdateVisibility
+from app.services.notification_service import notify_user
 from app.utils.pagination import PageParams, apply_sort, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
@@ -292,3 +305,133 @@ async def set_update_visibility(
     await db.commit()
     await db.refresh(update)
     return success_response(data=ProjectUpdateOut.model_validate(update), message="Update visibility changed")
+
+
+# ---------- Milestones & Deliverables (Project Tracker) ----------
+@router.post("/{project_id}/milestones", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "project_manager"))])
+async def create_milestone(project_id: uuid.UUID, payload: ProjectMilestoneCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    project = await crud.get(db, project_id)
+    _require_own_project_or_admin(current_user, project)
+    milestone = ProjectMilestone(project_id=project_id, **payload.model_dump())
+    db.add(milestone)
+    await db.commit()
+    await db.refresh(milestone)
+    return success_response(data=ProjectMilestoneOut.model_validate(milestone), message="Milestone created", status_code=201)
+
+
+@router.get("/{project_id}/milestones", response_model=dict)
+async def list_milestones(project_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    project = await crud.get(db, project_id)
+    employee = await _employee_on_project(db, project_id, current_user)
+    is_pm_or_admin = current_user.role in ("admin", "super_admin") or (current_user.role == "project_manager" and project.project_manager_id == current_user.id)
+    if employee is None and not is_pm_or_admin:
+        raise ApiError.forbidden("You are not assigned to this project")
+    result = await db.execute(select(ProjectMilestone).where(ProjectMilestone.project_id == project_id).order_by(ProjectMilestone.order, ProjectMilestone.due_date))
+    return success_response(data=[ProjectMilestoneOut.model_validate(m) for m in result.scalars().all()])
+
+
+@router.patch("/{project_id}/milestones/{milestone_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "project_manager"))])
+async def update_milestone(project_id: uuid.UUID, milestone_id: uuid.UUID, payload: ProjectMilestoneUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    project = await crud.get(db, project_id)
+    _require_own_project_or_admin(current_user, project)
+    milestone = (await db.execute(select(ProjectMilestone).where(ProjectMilestone.id == milestone_id, ProjectMilestone.project_id == project_id))).scalar_one_or_none()
+    if milestone is None:
+        raise ApiError.not_found("Milestone not found")
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(milestone, field, value)
+    await db.commit()
+    await db.refresh(milestone)
+    return success_response(data=ProjectMilestoneOut.model_validate(milestone), message="Milestone updated")
+
+
+@router.delete("/{project_id}/milestones/{milestone_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "project_manager"))])
+async def delete_milestone(project_id: uuid.UUID, milestone_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    project = await crud.get(db, project_id)
+    _require_own_project_or_admin(current_user, project)
+    milestone = (await db.execute(select(ProjectMilestone).where(ProjectMilestone.id == milestone_id, ProjectMilestone.project_id == project_id))).scalar_one_or_none()
+    if milestone is None:
+        raise ApiError.not_found("Milestone not found")
+    await db.delete(milestone)
+    await db.commit()
+    return success_response(message="Milestone removed")
+
+
+@router.post("/{project_id}/deliverables", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "project_manager"))])
+async def create_deliverable(project_id: uuid.UUID, payload: ProjectDeliverableCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    project = await crud.get(db, project_id)
+    _require_own_project_or_admin(current_user, project)
+    deliverable = ProjectDeliverable(project_id=project_id, **payload.model_dump())
+    db.add(deliverable)
+    await db.commit()
+    await db.refresh(deliverable)
+    return success_response(data=ProjectDeliverableOut.model_validate(deliverable), message="Deliverable created", status_code=201)
+
+
+@router.get("/{project_id}/deliverables", response_model=dict)
+async def list_deliverables(project_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    project = await crud.get(db, project_id)
+    employee = await _employee_on_project(db, project_id, current_user)
+    is_pm_or_admin = current_user.role in ("admin", "super_admin") or (current_user.role == "project_manager" and project.project_manager_id == current_user.id)
+    if employee is None and not is_pm_or_admin:
+        raise ApiError.forbidden("You are not assigned to this project")
+    result = await db.execute(select(ProjectDeliverable).where(ProjectDeliverable.project_id == project_id).order_by(ProjectDeliverable.created_at.desc()))
+    return success_response(data=[ProjectDeliverableOut.model_validate(d) for d in result.scalars().all()])
+
+
+@router.patch("/{project_id}/deliverables/{deliverable_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "project_manager"))])
+async def update_deliverable(project_id: uuid.UUID, deliverable_id: uuid.UUID, payload: ProjectDeliverableUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    project = await crud.get(db, project_id)
+    _require_own_project_or_admin(current_user, project)
+    deliverable = (await db.execute(select(ProjectDeliverable).where(ProjectDeliverable.id == deliverable_id, ProjectDeliverable.project_id == project_id))).scalar_one_or_none()
+    if deliverable is None:
+        raise ApiError.not_found("Deliverable not found")
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(deliverable, field, value)
+    await db.commit()
+    await db.refresh(deliverable)
+    return success_response(data=ProjectDeliverableOut.model_validate(deliverable), message="Deliverable updated")
+
+
+@router.post("/{project_id}/deliverables/{deliverable_id}/submit", response_model=dict, dependencies=[Depends(require_roles("admin", "project_manager"))])
+async def submit_deliverable(project_id: uuid.UUID, deliverable_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """PM marks a deliverable ready for client review — distinct from just
+    creating/editing it, mirrors the doc's "Deliverables Shared -> Client
+    Review" step."""
+    project = await crud.get(db, project_id)
+    _require_own_project_or_admin(current_user, project)
+    deliverable = (await db.execute(select(ProjectDeliverable).where(ProjectDeliverable.id == deliverable_id, ProjectDeliverable.project_id == project_id))).scalar_one_or_none()
+    if deliverable is None:
+        raise ApiError.not_found("Deliverable not found")
+    deliverable.status = "submitted"
+    deliverable.submitted_at = datetime.now(UTC)
+    await db.commit()
+    await db.refresh(deliverable)
+    return success_response(data=ProjectDeliverableOut.model_validate(deliverable), message="Deliverable submitted for client review")
+
+
+# ---------- Final Delivery / Client Approval ----------
+@router.post("/{project_id}/submit-for-client-review", response_model=dict, dependencies=[Depends(require_roles("admin", "project_manager"))])
+async def submit_project_for_client_review(project_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Project Execution -> Final Review -> Completed -> Deliverables Shared
+    -> Client Review -> Client Approval: this is the "deliverables shared,
+    ready for client review" step. Requires the project to actually be
+    marked completed first — a half-finished project shouldn't be sent for
+    sign-off."""
+    project = await crud.get(db, project_id)
+    _require_own_project_or_admin(current_user, project)
+    if project.status != ProjectStatus.completed:
+        raise ApiError.bad_request("The project must be marked completed before submitting for client review")
+    project.completion_submitted_at = datetime.now(UTC)
+    project.client_review_status = "pending"
+    await db.commit()
+    await db.refresh(project)
+    if project.client_id:
+        from app.models.client import Client
+        client = await db.get(Client, project.client_id)
+        if client and client.user_id:
+            await notify_user(
+                db, client.user_id, "Project ready for your review",
+                f"'{project.title}' is complete and ready for your final approval.",
+                NotificationType.info, "/client?tab=projects",
+            )
+    return success_response(data=ProjectOut.model_validate(project), message="Project submitted for client review")

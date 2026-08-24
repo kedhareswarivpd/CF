@@ -57,6 +57,8 @@ from app.models.permission import Permission  # noqa: F401
 from app.models.portfolio import Portfolio  # noqa: F401
 from app.models.product import Product  # noqa: F401
 from app.models.project import Project  # noqa: F401
+from app.models.project_deliverable import ProjectDeliverable  # noqa: F401
+from app.models.project_milestone import ProjectMilestone  # noqa: F401
 from app.models.project_update import ProjectUpdate  # noqa: F401
 from app.models.proposal import Proposal  # noqa: F401
 from app.models.report import Report  # noqa: F401

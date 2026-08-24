@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
 from sqlalchemy import select
@@ -20,6 +20,8 @@ from app.models.lead import Lead
 from app.models.meeting import Meeting
 from app.models.payment import Payment
 from app.models.project import Project
+from app.models.project_deliverable import ProjectDeliverable
+from app.models.project_milestone import ProjectMilestone
 from app.models.project_update import ProjectUpdate as ProjectUpdateModel
 from app.models.proposal import Proposal
 from app.models.ticket import Ticket
@@ -35,6 +37,11 @@ from app.schemas.finance import (
 )
 from app.schemas.ops import MeetingOut, TicketOut
 from app.schemas.project import ClientProjectOut
+from app.schemas.project_milestone import (
+    ProjectDeliverableOut,
+    ProjectDeliverableReviewRequest,
+    ProjectMilestoneOut,
+)
 from app.schemas.project_update import ClientProjectUpdateOut
 from app.services.notification_service import notify_roles
 from app.services.project_provisioning import provision_project_for_accepted_proposal
@@ -142,6 +149,104 @@ async def my_project_updates(project_id: uuid.UUID, db: AsyncSession = Depends(g
         for u, name in result.all()
     ]
     return success_response(data=out)
+
+
+async def _get_own_project(db: AsyncSession, client: Client, project_id: uuid.UUID) -> Project:
+    project = (await db.execute(select(Project).where(Project.id == project_id, Project.client_id == client.id))).scalar_one_or_none()
+    if project is None:
+        raise ApiError.not_found("Project not found")
+    return project
+
+
+@router.get("/me/projects/{project_id}/milestones", response_model=dict)
+async def my_project_milestones(project_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    client = await _get_client_for_user(db, current_user)
+    await _get_own_project(db, client, project_id)
+    result = await db.execute(
+        select(ProjectMilestone)
+        .where(ProjectMilestone.project_id == project_id, ProjectMilestone.client_visible.is_(True))
+        .order_by(ProjectMilestone.order, ProjectMilestone.due_date)
+    )
+    return success_response(data=[ProjectMilestoneOut.model_validate(m) for m in result.scalars().all()])
+
+
+@router.get("/me/projects/{project_id}/deliverables", response_model=dict)
+async def my_project_deliverables(project_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    client = await _get_client_for_user(db, current_user)
+    await _get_own_project(db, client, project_id)
+    # Only deliverables actually submitted for review are shown — a
+    # deliverable staff are still drafting internally isn't "shared" yet.
+    result = await db.execute(
+        select(ProjectDeliverable)
+        .where(ProjectDeliverable.project_id == project_id, ProjectDeliverable.status != "pending")
+        .order_by(ProjectDeliverable.created_at.desc())
+    )
+    return success_response(data=[ProjectDeliverableOut.model_validate(d) for d in result.scalars().all()])
+
+
+@router.post("/me/projects/{project_id}/deliverables/{deliverable_id}/review", response_model=dict)
+async def review_deliverable(
+    project_id: uuid.UUID, deliverable_id: uuid.UUID, payload: ProjectDeliverableReviewRequest,
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    client = await _get_client_for_user(db, current_user)
+    await _get_own_project(db, client, project_id)
+    deliverable = (await db.execute(
+        select(ProjectDeliverable).where(ProjectDeliverable.id == deliverable_id, ProjectDeliverable.project_id == project_id)
+    )).scalar_one_or_none()
+    if deliverable is None:
+        raise ApiError.not_found("Deliverable not found")
+    if deliverable.status != "submitted":
+        raise ApiError.bad_request("Only a submitted deliverable can be reviewed")
+    deliverable.status = "approved" if payload.approved else "rejected"
+    deliverable.client_comment = payload.client_comment
+    if payload.approved:
+        deliverable.approved_at = datetime.now(UTC)
+    await db.commit()
+    await db.refresh(deliverable)
+    return success_response(data=ProjectDeliverableOut.model_validate(deliverable), message=f"Deliverable {deliverable.status}")
+
+
+@router.post("/me/projects/{project_id}/approve-delivery", response_model=dict)
+async def approve_project_delivery(project_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Client Review -> Client Approval: the final sign-off on a completed
+    project's delivery."""
+    client = await _get_client_for_user(db, current_user)
+    project = await _get_own_project(db, client, project_id)
+    if project.client_review_status != "pending":
+        raise ApiError.bad_request("This project is not currently awaiting your review")
+    project.client_review_status = "approved"
+    project.client_approved_at = datetime.now(UTC)
+    project.final_delivery_version += 1
+    await db.commit()
+    await db.refresh(project)
+    await notify_roles(
+        db, ["admin", "project_manager"], "Client approved project delivery",
+        f"{client.company_name or current_user.name} approved the final delivery of '{project.title}'.",
+        NotificationType.success, f"/employee-portal?tab=projects&project={project.id}",
+    )
+    return success_response(data=ClientProjectOut.model_validate(project).model_dump(), message="Delivery approved")
+
+
+@router.post("/me/projects/{project_id}/request-changes", response_model=dict)
+async def request_project_changes(project_id: uuid.UUID, payload: ProposalRejectRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Client Review -> Request Changes: the workflow doc's alternate
+    branch to Client Approval. Reuses ProposalRejectRequest's shape
+    (an optional `reason`) rather than defining a near-identical schema."""
+    client = await _get_client_for_user(db, current_user)
+    project = await _get_own_project(db, client, project_id)
+    if project.client_review_status != "pending":
+        raise ApiError.bad_request("This project is not currently awaiting your review")
+    project.client_review_status = "changes_requested"
+    project.client_feedback = payload.reason
+    await db.commit()
+    await db.refresh(project)
+    await notify_roles(
+        db, ["admin", "project_manager"], "Client requested changes to project delivery",
+        f"{client.company_name or current_user.name} requested changes on '{project.title}'" + (f": {payload.reason}" if payload.reason else "."),
+        NotificationType.warning, f"/employee-portal?tab=projects&project={project.id}",
+    )
+    return success_response(data=ClientProjectOut.model_validate(project).model_dump(), message="Change request submitted")
 
 
 @router.get("/me/invoices", response_model=dict)
