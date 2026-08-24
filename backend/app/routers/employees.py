@@ -371,12 +371,21 @@ async def list_leaves(request: Request, db: AsyncSession = Depends(get_db), page
 
 @router.patch("/leaves/{leave_id}/approve", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
 async def review_leave(leave_id: uuid.UUID, payload: LeaveStatusUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    target = await leave_crud.get(db, leave_id)
     if current_user.role == "project_manager":
-        target = await leave_crud.get(db, leave_id)
         team_ids = await _pm_team_employee_ids(db, current_user)
         if target.employee_id not in team_ids:
             raise ApiError.forbidden("You can only approve leave requests for your own team")
+
+    # UAT closure pass (P3 follow-up): a repeated/concurrent approve call
+    # re-ran the notification every time even though the leave was already
+    # decided — the state itself stayed correct (idempotent), but the
+    # employee got a duplicate notification per repeat click. Only the
+    # request that actually moves the leave out of "pending" notifies.
+    already_decided = target.status != LeaveStatus.pending
     leave = await leave_crud.update(db, leave_id, {"status": payload.status, "approved_by": current_user.id})
+    if already_decided:
+        return success_response(data=LeaveOut.model_validate(leave), message="Leave request updated")
 
     # Workflow doc §15: "The employee should receive the corresponding
     # notification" — approve_leave only updated the row, no notification

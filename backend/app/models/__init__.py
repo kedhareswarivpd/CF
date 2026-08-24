@@ -1,5 +1,6 @@
 from app.core.database import Base  # noqa: F401
 from app.models.analytics import PageView  # noqa: F401
+from app.models.announcement import Announcement  # noqa: F401
 from app.models.application import Application  # noqa: F401
 from app.models.associations import project_members, role_permissions  # noqa: F401
 from app.models.attendance import Attendance  # noqa: F401

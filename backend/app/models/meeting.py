@@ -22,6 +22,14 @@ class Meeting(Base):
     organizer_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), index=True)
     status: Mapped[MeetingStatus] = mapped_column(Enum(MeetingStatus, name="meeting_status"), default=MeetingStatus.scheduled)
     notes: Mapped[str | None] = mapped_column(Text)
+    # UAT closure pass §8: doc §13 — "If meetings are recorded, the
+    # recording and/or meeting notes should be stored according to the
+    # applicable access permissions." Notes already had a field/access path;
+    # recordings had none at all. Stored as a URL (the recording file itself
+    # lives in existing private object storage, same as EmployeeDocument/
+    # ClientFile), shares the same staff-write/participant-read visibility
+    # notes already uses rather than inventing a separate access path.
+    recording_url: Mapped[str | None] = mapped_column(String(500))
 
     project = relationship("Project", back_populates="meetings")
     client = relationship("Client", back_populates="meetings")

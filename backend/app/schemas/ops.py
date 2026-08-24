@@ -70,6 +70,7 @@ class MeetingUpdate(BaseModel):
     scheduled_at: datetime | None = None
     status: MeetingStatus | None = None
     notes: str | None = None
+    recording_url: str | None = None
 
 
 class MeetingOut(TimestampedRead):
@@ -83,6 +84,7 @@ class MeetingOut(TimestampedRead):
     organizer_id: uuid.UUID | None = None
     status: MeetingStatus
     notes: str | None = None
+    recording_url: str | None = None
 
 
 # ---------- Notification ----------

@@ -426,12 +426,22 @@ function Meetings({ meetings }) {
     {
      key: 'meeting_link', label: 'Action',
      render: (val, row) => (
-      row.status === 'upcoming' && row.meeting_link && (
+      row.status === 'upcoming' && row.meeting_link ? (
        <a href={row.meeting_link} target="_blank" rel="noreferrer"
         className="inline-flex items-center gap-1 rounded bg-brand px-3 py-1.5 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark">
         <Icon name="videocam" className="text-base" /> Join
        </a>
-      )
+      ) : (row.notes || row.recording_url) ? (
+       <div className="max-w-xs space-y-1 text-body-sm text-ink-muted dark:text-white">
+        {row.notes && <p className="line-clamp-2">{row.notes}</p>}
+        {row.recording_url && (
+         <a href={row.recording_url} target="_blank" rel="noreferrer"
+          className="inline-flex items-center gap-1 text-brand hover:underline">
+          <Icon name="play_circle" className="text-base" /> Recording
+         </a>
+        )}
+       </div>
+      ) : '—'
      ),
     },
    ]}
@@ -530,6 +540,8 @@ const normalizeMeeting = (m) => ({
  meeting_link: m.meeting_link,
  attendees: m.attendees ?? [],
  status: m.status === 'scheduled' ? 'upcoming' : (m.status ?? 'upcoming'),
+ notes: m.notes,
+ recording_url: m.recording_url,
 });
 const normalizeMeetings = (arr) => (Array.isArray(arr) ? arr.map(normalizeMeeting) : []);
 

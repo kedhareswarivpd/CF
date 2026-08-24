@@ -919,8 +919,11 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
  const [actingId, setActingId] = useState(null);
  const [toast, setToast] = useState('');
  const [page, setPage] = useState(1);
+ const [recapId, setRecapId] = useState(null);
+ const [recapForm, setRecapForm] = useState({ notes: '', recording_url: '' });
  const { run: runSubmit, isPending: submitting } = useAsyncAction();
  const { run: runRowAction, isPending: rowActionPending } = useAsyncAction();
+ const { run: runRecap, isPending: recapPending } = useAsyncAction();
 
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -979,6 +982,22 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
    showToast(err?.message || 'Action failed.');
   } finally {
    setActingId(null);
+  }
+ });
+
+ const openRecap = (m) => {
+  setRecapId(m.id);
+  setRecapForm({ notes: m.notes || '', recording_url: m.recording_url || '' });
+ };
+
+ const handleSaveRecap = (meetingId) => runRecap(async () => {
+  try {
+   await updateMeeting(meetingId, { notes: recapForm.notes || null, recording_url: recapForm.recording_url || null });
+   setRecapId(null);
+   onRefresh();
+   showToast('Meeting notes saved.');
+  } catch (err) {
+   showToast(err?.message || 'Could not save meeting notes.');
   }
  });
 
@@ -1050,7 +1069,8 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
       {pagedMeetings.map((m) => (
-       <tr key={m.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+       <Fragment key={m.id}>
+       <tr className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
         <td data-label="Title" className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-white">{m.title}</td>
         <td data-label="Client / Lead" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{m.client_id ? clientName(m.client_id) : '—'}</td>
         <td data-label="Date & Time" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{m.scheduled_at ? new Date(m.scheduled_at).toLocaleString() : '—'}</td>
@@ -1064,9 +1084,35 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
             <RowAction variant="outline" disabled={rowActionPending && actingId === m.id} onClick={() => handleCancel(m.id)}>Cancel</RowAction>
            </>
           )}
+          {m.status === 'completed' && (
+           <RowAction variant="outline" onClick={() => openRecap(m)}>
+            {m.notes || m.recording_url ? 'Edit Notes/Recording' : 'Add Notes/Recording'}
+           </RowAction>
+          )}
          </div>
         </td>
        </tr>
+       {recapId === m.id && (
+        <tr>
+         <td colSpan={6} className="bg-surface-container px-stack-lg py-4 dark:bg-dark-surface-container">
+          <div className="space-y-3">
+           <textarea placeholder="Meeting notes (visible to the client)" value={recapForm.notes}
+            onChange={(e) => setRecapForm({ ...recapForm, notes: e.target.value })} rows={3}
+            className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+           <input type="url" placeholder="Recording URL (optional)" value={recapForm.recording_url}
+            onChange={(e) => setRecapForm({ ...recapForm, recording_url: e.target.value })}
+            className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+           <div className="flex gap-2">
+            <Button size="md" variant="primary" disabled={recapPending} onClick={() => handleSaveRecap(m.id)}>
+             {recapPending ? 'Saving...' : 'Save'}
+            </Button>
+            <Button size="md" variant="outline" onClick={() => setRecapId(null)}>Cancel</Button>
+           </div>
+          </div>
+         </td>
+        </tr>
+       )}
+       </Fragment>
       ))}
       {!meetings.length && (
        <tr><td data-label="Title" colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No meetings scheduled yet.</td></tr>

@@ -98,8 +98,6 @@ async def create_course(payload: CourseCreate, db: AsyncSession = Depends(get_db
     data = payload.model_dump()
     if not data.get("slug"):
         data["slug"] = slugify(payload.title)
-    if "is_published" not in data or data["is_published"] is None:
-        data["is_published"] = True
     course = await course_crud.create(db, data)
     return success_response(data=CourseOut.model_validate(course), message="Course created successfully", status_code=201)
 

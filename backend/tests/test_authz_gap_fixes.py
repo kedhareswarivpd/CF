@@ -188,9 +188,32 @@ class TestPmTeamScoping:
         mock_db = AsyncMock()
         mock_db.add = MagicMock()
 
-        with patch("app.routers.employees.leave_crud.update", new_callable=AsyncMock, return_value=target_leave):
-            result = await review_leave(uuid.uuid4(), LeaveStatusUpdate(status="approved"), mock_db, hr)
+        with patch("app.routers.employees.leave_crud.get", new_callable=AsyncMock, return_value=target_leave):
+            with patch("app.routers.employees.leave_crud.update", new_callable=AsyncMock, return_value=target_leave):
+                result = await review_leave(uuid.uuid4(), LeaveStatusUpdate(status="approved"), mock_db, hr)
         assert result["message"] == "Leave request updated"
+
+    @pytest.mark.asyncio
+    async def test_reapproving_decided_leave_does_not_renotify(self):
+        """P3 follow-up from the UAT closure pass: a repeated/concurrent
+        approve call re-sent the employee notification every time even
+        though the leave was already decided. Only the request that
+        actually moves the leave out of "pending" should notify."""
+        from datetime import date
+
+        hr = _make_user("hr")
+        already_approved = Leave(
+            id=uuid.uuid4(), employee_id=uuid.uuid4(), type="casual",
+            start_date=date.today(), end_date=date.today(), status="approved", **_stamps(),
+        )
+        mock_db = AsyncMock()
+
+        with patch("app.routers.employees.leave_crud.get", new_callable=AsyncMock, return_value=already_approved):
+            with patch("app.routers.employees.leave_crud.update", new_callable=AsyncMock, return_value=already_approved):
+                with patch("app.routers.employees.notify_user", new_callable=AsyncMock) as mock_notify:
+                    result = await review_leave(uuid.uuid4(), LeaveStatusUpdate(status="approved"), mock_db, hr)
+        assert result["message"] == "Leave request updated"
+        mock_notify.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_pm_cannot_approve_timesheet_outside_their_team(self):

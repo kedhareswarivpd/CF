@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
+import AnnouncementBar from './AnnouncementBar.jsx';
 import Breadcrumbs from '../ui/Breadcrumbs.jsx';
 import useScrollToTop from '../../hooks/useScrollToTop.js';
 import useSeoMeta from '../../hooks/useSeoMeta.js';
@@ -33,6 +34,7 @@ export default function Layout() {
   <div className="flex min-h-screen flex-col bg-surface-white dark:bg-dark-surface">
    {!isPortal && <Navbar />}
    <main ref={mainRef} className={`flex-1 ${isPortal ? '' : 'pt-20'}`}>
+    {!isPortal && <AnnouncementBar />}
     {!isPortal && pathname !== '/' && (
      <div className="mx-auto max-w-container px-4 pt-4 sm:px-6 lg:px-10 xl:px-12">
       <Breadcrumbs />

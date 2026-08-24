@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from app.routers import (
     # Phase 2
     analytics,
+    announcement,
     audit_log,
     auth,
     award,
@@ -84,6 +85,7 @@ api_router.include_router(download.router)
 api_router.include_router(event.router)
 api_router.include_router(ticket.router)
 api_router.include_router(award.router)
+api_router.include_router(announcement.router)
 api_router.include_router(category.router)
 api_router.include_router(faq.router)
 api_router.include_router(gallery.router)

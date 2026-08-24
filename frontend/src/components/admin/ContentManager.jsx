@@ -7,7 +7,7 @@ import {
  servicesApi, eventsApi, blogsApi, solutionsApi, caseStudiesApi, downloadsApi,
  industriesApi, technologiesApi, productsApi, awardsApi, faqsApi, galleryApi,
  resourcesApi, testimonialsApi, categoriesApi, partnersApi, seoApi, pageContentApi,
- leadershipApi, officesApi, companyInfoApi, aboutContentApi,
+ leadershipApi, officesApi, companyInfoApi, aboutContentApi, announcementsApi,
 } from '../../api/cms.js';
 
 import { FORM_INPUT_CLASS as BASE_INPUT_CLASS } from '../ui/formClasses.js';
@@ -130,6 +130,14 @@ const RESOURCES = [
   title: (i) => i.title, fields: [
    { name: 'title', label: 'Title', ...TEXT }, { name: 'issued_by', label: 'Issued by', ...TEXT },
    { name: 'year', label: 'Year', ...NUMBER }, { name: 'description', label: 'Description', ...TEXTAREA }, PUBLISHED,
+  ],
+ },
+ {
+  key: 'announcements', label: 'Announcements', icon: 'campaign', api: announcementsApi,
+  title: (i) => i.title, fields: [
+   { name: 'title', label: 'Title', ...TEXT }, { name: 'body', label: 'Body', ...TEXTAREA },
+   { name: 'order', label: 'Display Order', ...NUMBER },
+   { name: 'expires_at', label: 'Expires at', kind: 'datetime' }, PUBLISHED,
   ],
  },
  {

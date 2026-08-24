@@ -16,6 +16,10 @@ export function fetchAwards(params = {}) {
   return apiRequest(`/awards${toQueryString({ is_published: true, ...params })}`);
 }
 
+export function fetchAnnouncements(params = {}) {
+  return apiRequest(`/announcements${toQueryString({ is_published: true, ...params })}`);
+}
+
 export function fetchFaqs(params = {}) {
   return apiRequest(`/faqs${toQueryString({ is_published: true, ...params })}`);
 }
@@ -97,6 +101,7 @@ export const industriesApi = crudApi('/industries');
 export const technologiesApi = crudApi('/technologies');
 export const productsApi = crudApi('/products');
 export const awardsApi = crudApi('/awards');
+export const announcementsApi = crudApi('/announcements');
 export const faqsApi = crudApi('/faqs');
 export const galleryApi = crudApi('/gallery');
 export const portfolioApi = crudApi('/portfolio');

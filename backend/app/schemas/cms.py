@@ -275,6 +275,31 @@ class AwardOut(TimestampedRead):
     is_published: bool
 
 
+# ---------- Announcement ----------
+class AnnouncementCreate(BaseModel):
+    title: str
+    body: str
+    order: int = 0
+    is_published: bool = True
+    expires_at: datetime | None = None
+
+
+class AnnouncementUpdate(BaseModel):
+    title: str | None = None
+    body: str | None = None
+    order: int | None = None
+    is_published: bool | None = None
+    expires_at: datetime | None = None
+
+
+class AnnouncementOut(TimestampedRead):
+    title: str
+    body: str
+    order: int
+    is_published: bool
+    expires_at: datetime | None = None
+
+
 # ---------- FAQ ----------
 class FaqCreate(BaseModel):
     question: str

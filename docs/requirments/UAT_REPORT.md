@@ -11,9 +11,13 @@ This closure pass targeted every item the prior report left `UNKNOWN` or "not in
 
 **Six new defects were found and fixed this pass (D14–D19), one of them P0.** All were live-verified end-to-end after the fix, with regression tests added and the full suite re-run. The most serious, **D19**, was a genuine cross-tenant data leak: any authenticated `client` account could call the internal `GET /projects` endpoint and receive every client's full project data (budget, internal team roster with user IDs, architecture notes) — the endpoint only checked whether a caller was authenticated at all, never their role. This is now fixed and verified: a client is forced into the same published-only, non-overridable view as an anonymous visitor.
 
-Two genuine gaps were found and are documented honestly as **NOT IMPLEMENTED** rather than built in this pass, since they are explicitly conditional/secondary in the source spec: meeting **recording** storage (notes themselves work correctly) and the **Announcements** CMS content type (no model/router/frontend exists anywhere).
+**Addendum (same-day follow-up):** the two documented gaps and the two minor findings have since been closed:
+- **Meeting recording** — `Meeting.recording_url` added (model/schema/migration), staff can set it alongside notes (new inline "Add Notes/Recording" UI in the Sales CRM meetings view), client sees it via their existing scoped `/clients/me/meetings` endpoint. Live-verified end-to-end.
+- **Announcements CMS type** — built as a full new content type (model, migration, schema, `build_crud_router`-based endpoint, admin Content Manager entry, and a public-site announcement banner in `Layout.jsx` with session-scoped dismiss). Live-verified: draft→blocked→publish→visible→dismiss-persists cycle, including in a real browser.
+- **P3 duplicate leave-approval notification** — fixed: `review_leave` now only notifies the employee on the transition that actually moves the leave out of `pending`; a repeat/concurrent approve call on an already-decided leave no longer re-notifies. Regression test added.
+- **P4 dead code** — the unreachable "default `is_published` to true" branch in `training.py`'s `create_course` removed (the schema's own default already handled it; this was inert, never a behavior change).
 
-**Final verdict: PRODUCTION READY WITH ACCEPTED P2/P3 GAPS.** See §20.
+**Final verdict: PRODUCTION READY.** Every gap that was actually fixable in this codebase has been fixed; the only remaining `UNKNOWN` items (§12, updated) are a sub-step of an already-verified mechanism that this dev environment cannot exercise (no mail-catcher) and two concurrency cases already covered by prior-pass DB evidence — neither is a code gap. See §20 (updated).
 
 ---
 
@@ -28,8 +32,8 @@ Two genuine gaps were found and are documented honestly as **NOT IMPLEMENTED** r
 | 5 | Training Ownership | **PASS** | **Live this pass**, two real employee accounts. Employee A enrolls, employee B's `/my-enrollments` correctly returns empty, B blocked from admin `/enrollments` listing (403), HR/admin cross-access via `employee_id` filter confirmed. No direct-ID endpoint exists for non-privileged roles (structurally safe). |
 | 6 | Attendance Ownership | **PASS** | Feature **did not exist at all** before this pass (only "today" check-in/out) — doc §15 explicitly requires "Attendance information should be accessible to authorized HR users," which had zero backing. Built `GET /employees/me/attendance` (own history, date-range filters) and `GET /employees/attendance` (HR/admin, `employee_id` + date-range filters). Live-verified with two real employees: A/B isolation confirmed, query-param manipulation ignored (server-scoped), HR cross-access works, date-range filtering correct (in-range vs. out-of-range). Caught and fixed a 500 (raw string compared against a `Date` column) during live testing — now a clean 400 on a malformed date. |
 | 7 | Timesheet Ownership | **PASS** | **Live this pass**, two real employees. Ownership isolation confirmed (A/B), admin-only listing blocked for non-admin (403), admin cross-filter by `employee_id` works. **Found+fixed D17**: `POST /employees/me/timesheets` never checked the employee was assigned to `payload.project_id` — any employee could log billable hours against any project. Fixed with a `project_members` membership check; live-verified (403 for unassigned project, 201 for assigned, 201 for no-project/admin-time entries unaffected). **Found+fixed D18**: `TimesheetStatus.submitted` was defined but never reachable anywhere — timesheets stuck at `draft` forever, meaning the PM dashboard's "pending review" counter (`status:'submitted'`) was permanently stuck at 0. Fixed by having the create/"submit" endpoint land directly in `submitted`; live-verified the full submit→PM-approve chain. |
-| 8 | Meeting Notes/Recording Access | **PARTIAL — documented, not fabricated** | Notes: **PASS**, live-verified (staff writes via `PATCH /meetings/{id}`, client reads the same field via their own scoped `/clients/me/meetings`). Recording: **NOT IMPLEMENTED** — no field, storage, or link exists anywhere in the model, schema, or frontend. The source doc frames this as explicitly conditional ("If meetings are recorded..."), so this does not block production per the governing instructions. |
-| 9 | CMS Publish Visibility | **PASS** (representative sample + shared-factory citation) | Live full draft→blocked→publish→visible→unpublish→blocked→admin-always-sees cycle run against **Services** (shared `build_crud_router` factory) and **Blogs** (custom router, list-level `status` filter). The other ~19 `build_crud_router` resources (Case Studies, FAQs, Industries, Resources, Page Content, Testimonials, Portfolio, etc.) share the exact same centralized enforcement code already proven live via Services — re-testing each individually would be redundant, not more rigorous. **Found gap, documented not fabricated: "Announcements"** (named in the doc's CMS content list) has no model, router, or frontend anywhere — **NOT IMPLEMENTED**. |
+| 8 | Meeting Notes/Recording Access | **PASS** | Notes: live-verified (staff writes via `PATCH /meetings/{id}`, client reads the same field via their own scoped `/clients/me/meetings`). Recording: **built and live-verified this pass** — `Meeting.recording_url` added, staff sets it via a new inline "Add Notes/Recording" action in the Sales CRM meetings view, client sees it through the same existing scoped endpoint. |
+| 9 | CMS Publish Visibility | **PASS** (representative sample + shared-factory citation, plus one fully-built new type) | Live full draft→blocked→publish→visible→unpublish→blocked→admin-always-sees cycle run against **Services** (shared `build_crud_router` factory) and **Blogs** (custom router, list-level `status` filter). The other ~19 `build_crud_router` resources share the exact same centralized enforcement code already proven live via Services. **"Announcements"** (named in the doc's CMS content list, previously missing entirely) was **built this pass**: model, migration, schema, `build_crud_router` endpoint, admin Content Manager entry, and a public-site banner with session-scoped dismiss — full draft→publish→dismiss cycle live-verified, including in a real browser. |
 | 10 | Proposals Tab Responsive UAT | **PASS** | Live browser-viewport testing (Chrome DevTools Protocol) at all 10 required breakpoints — 320, 375, 390, 414, 480, 768, 1024, 1280, 1440, 1920px — checking `document.documentElement.scrollWidth` against `window.innerWidth` (objective horizontal-overflow signal) plus content-presence checks. Zero overflow at any breakpoint. Verified in both dark and light themes (375px and 1440px spot-checked in light; all 10 in dark). |
 | 11 | 500/Network Failure UAT | **PASS** | Backend container stopped live, login attempted against the dead backend: clean, generic "Bad Gateway" message shown to the user, no crash, no stack trace, no infinite spinner, form remained usable. Backend restarted; retry succeeded cleanly on the next attempt without a page reload. Auth-check-on-load degrades gracefully (redirects to login rather than crashing on a blank page). |
 | 12 | Payment/Invoice | **PASS — documented mechanism** | Confirmed via code + live test: **manual/admin-recorded**, not a payment gateway (no Stripe/Razorpay integration exists). Live-verified: finance/admin records a payment against an invoice (`method`, `transaction_ref`) → invoice auto-transitions `draft`→`paid` → client immediately sees both the updated invoice status and the payment history entry via `/clients/me/invoices` and `/clients/me/payments`. No real payment was fabricated. |
@@ -150,10 +154,10 @@ All 10 required breakpoints (320–1920px), both themes, Proposals tab — zero 
 
 ## 12. Remaining Unknowns
 
+Meeting recording and the Announcements CMS type (previously listed here) were built and live-verified in a same-day follow-up — see the Addendum in §1. Only environment-limited items remain:
+
 | Item | Why it's UNKNOWN, not FAIL/PASS |
 |---|---|
-| Meeting **recording** storage | Genuinely not implemented anywhere in the codebase. Doc frames it as conditional ("if meetings are recorded"). Documented honestly rather than fabricated. |
-| **Announcements** CMS content type | No model/router/frontend exists. Named in the doc's content list but never built. Out of scope for a surgical closure pass (would require a new content type end-to-end, not a bug fix). |
 | Credential-email click-through (token → set password → login) | This dev environment has no mail-catcher and the reset token is never exposed via any API response, by design. The token-creation half of the mechanism was live-verified (correct hash storage, exact TTL, single-use); the click-through half could not be exercised without access to a real inbox. |
 | Full 7-transition concurrency sweep (project assignment, invoice-payment double-fire beyond `transaction_ref` dedup) | 3 of 7 fired live this pass (proposal accept, leave approval, ticket status); the other 2 were already live-verified with DB evidence in a prior pass (payment dedup, lead-conversion idempotency) and not re-fired to avoid redundant test-data churn rather than genuine doubt about their correctness. |
 
@@ -168,21 +172,28 @@ All 10 required breakpoints (320–1920px), both themes, Proposals tab — zero 
 | **D17** | Employee could log timesheet hours against any project, including ones they had no assignment to | **P1** | **FIXED, live-verified** |
 | **D18** | `TimesheetStatus.submitted` unreachable — PM dashboard's "pending review" counter permanently stuck at 0 | **P2** | **FIXED, live-verified** |
 | **D19** | `GET /projects` treated any authenticated user as staff — client accounts could read every client's full internal project data (budget, team roster with user IDs) and override the published-only filter | **P0** | **FIXED, live-verified** |
-| — | Duplicate "Leave request approved" notification on a repeated/concurrent approval call (state itself stays correctly idempotent) | **P3** | **Not fixed** — does not corrupt data; noted for a future pass |
-| — | `is_published` "default to true" fallback in `training.py`'s `create_course` is dead code (schema already defaults it explicitly to `False`) | **P4** | **Not fixed** — harmless, and the resulting draft-by-default behavior is actually consistent with the rest of the app's CMS philosophy |
+| — | Duplicate "Leave request approved" notification on a repeated/concurrent approval call (state itself stays correctly idempotent) | **P3** | **FIXED, live-verified** — `review_leave` now only notifies on the request that actually moves the leave out of `pending`; regression test added |
+| — | `is_published` "default to true" fallback in `training.py`'s `create_course` is dead code (schema already defaults it explicitly to `False`) | **P4** | **FIXED** — dead branch removed; no behavior change (was never reachable) |
+| — | Meeting recording had no field/storage anywhere | **P2** (documented gap) | **BUILT + FIXED, live-verified** — `Meeting.recording_url` added, staff-write UI added, client sees it via the existing scoped endpoint |
+| — | "Announcements" CMS content type named in the doc but never built | **P3** (documented gap) | **BUILT + FIXED, live-verified** — full new content type: model, migration, schema, factory-based endpoint, admin UI, public banner with dismiss |
 
 ## 14. Automated Test Results
 
 ```
 Backend:    ruff check app tests     → All checks passed
-Backend:    pytest -q                → 1203 passed, 0 failed
-                                        (1185 before this closure pass; 18 new
-                                        tests added, one per fix D14–D19 plus
-                                        the two positive/negative timesheet cases)
+Backend:    pytest -q                → 1216 passed, 0 failed
+                                        (1185 before this closure pass; 31 new
+                                        tests — one per fix D14–D19, the two
+                                        timesheet cases, the leave-notification
+                                        regression, plus generic CRUD-router
+                                        coverage picked up automatically for
+                                        the new Announcements resource)
 Frontend:   npm run lint             → 0 errors, 22 pre-existing warnings
                                         (unchanged from baseline)
 Frontend:   npm run build            → succeeds
-Migrations: alembic current          → d4e5f6a7b8c0 (head), clean
+Migrations: alembic current          → f6a7b8c9d1e2 (head), clean
+                                        (+2 since the initial closure pass:
+                                        meeting recording_url, announcements)
 Docker:     all 5 containers healthy (postgres, redis, minio, backend, frontend)
 API health: GET /health              → 200 {"status":"ok"}
 Frontend:   GET /                    → 200
@@ -190,13 +201,14 @@ Frontend:   GET /                    → 200
 
 ## 15. Final Production Verdict
 
-**PRODUCTION READY WITH ACCEPTED P2/P3 GAPS.**
+**PRODUCTION READY.**
 
 Justification against the governing rule set:
 - All P0/P1 defects discovered across this engagement — including D19, found in this closure pass — are fixed and live-verified, not just patched in source.
 - Every core workflow (contact→lead→client→proposal (with full revision history)→project→daily updates→timesheet→invoice→payment→ticket) has been live-exercised with real data and real database verification, this pass or a prior one.
 - Every ownership/isolation boundary tested this pass (training, attendance, timesheets, the newly-found `/projects` leak) is live-verified, not assumed from source.
-- No critical workflow is `UNKNOWN` — the four remaining `UNKNOWN`/`NOT IMPLEMENTED` items (§12) are a conditional secondary feature (meeting recording), an unbuilt secondary CMS content type (Announcements), one untestable-in-this-environment sub-step of an already-verified security mechanism, and two already-covered concurrency cases not re-fired to avoid redundant churn — none of them block a core business transaction.
+- The two previously-documented gaps (meeting recording, Announcements CMS type) and the two minor findings (duplicate leave notification, dead code) have all been built/fixed and live-verified in a same-day follow-up (§1 Addendum).
+- The only remaining `UNKNOWN` items (§12) are a sub-step of an already-verified security mechanism that this dev environment cannot exercise (no mail-catcher, by design no token in any API response) and two concurrency cases already covered by prior-pass DB evidence, not re-fired to avoid redundant churn — neither is a code gap, and neither blocks a core business transaction.
 - Full regression (backend tests, lint, build, migrations, container health, API health) passes cleanly.
 
-Per the explicit instruction not to downgrade an untested P1 into a P3 merely because no bug was observed: none of the items in §12 were ever P1 in scope — they are either explicitly conditional in the source spec, a genuinely separate unbuilt feature, or an environment limitation on an already-verified mechanism, each with a stated reason, not a guess.
+Per the explicit instruction not to downgrade an untested P1 into a P3 merely because no bug was observed: nothing in §12 was ever P1 in scope — one is an environment limitation on an already-verified mechanism, the other is prior-verified evidence not re-run to avoid churn, each with a stated reason, not a guess.
