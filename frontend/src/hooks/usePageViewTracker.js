@@ -9,6 +9,6 @@ export default function usePageViewTracker() {
   useEffect(() => {
     if (pathname === lastPath.current) return;
     lastPath.current = pathname;
-    trackPageView({ path: pathname }).catch(() => {});
+    trackPageView({ path: pathname }).catch((e) => console.debug('[analytics]', e));
   }, [pathname]);
 }
