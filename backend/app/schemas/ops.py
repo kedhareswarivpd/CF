@@ -14,6 +14,7 @@ class TicketUpdate(BaseModel):
     status: TicketStatus | None = None
     priority: TicketPriority | None = None
     assigned_to: uuid.UUID | None = None
+    resolution: str | None = None
 
 
 class TicketOut(TimestampedRead):
@@ -25,6 +26,10 @@ class TicketOut(TimestampedRead):
     priority: TicketPriority
     status: TicketStatus
     assigned_to: uuid.UUID | None = None
+    sla_due_at: datetime | None = None
+    resolution: str | None = None
+    resolved_at: datetime | None = None
+    closed_at: datetime | None = None
 
 
 class TicketReplyCreate(BaseModel):

@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
@@ -8,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
 from app.crud.base import CRUDBase
+from app.models.enums import TicketStatus
 from app.models.ticket import Ticket
 from app.models.ticket_reply import TicketReply
 from app.models.user import User
@@ -40,7 +42,16 @@ async def get_ticket(ticket_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 @router.patch("/{ticket_id}", response_model=dict)
 async def update_ticket(ticket_id: uuid.UUID, payload: TicketUpdate, db: AsyncSession = Depends(get_db)):
-    ticket = await crud.update(db, ticket_id, payload.model_dump(exclude_unset=True))
+    data = payload.model_dump(exclude_unset=True)
+    # Workflow doc §12: "Resolution", "Closed date" — stamp these
+    # automatically on the transition into that state rather than requiring
+    # the caller to set the timestamp itself (which a client could otherwise
+    # backdate/misreport).
+    if data.get("status") == TicketStatus.resolved:
+        data.setdefault("resolved_at", datetime.now(UTC))
+    if data.get("status") == TicketStatus.closed:
+        data.setdefault("closed_at", datetime.now(UTC))
+    ticket = await crud.update(db, ticket_id, data)
     return success_response(data=TicketOut.model_validate(ticket), message="Ticket updated")
 
 

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -14,7 +14,7 @@ from app.models.client import Client
 from app.models.client_file import ClientFile
 from app.models.client_report import ClientReport
 from app.models.employee import Employee
-from app.models.enums import NotificationType, ProposalStatus
+from app.models.enums import NotificationType, ProposalStatus, TicketPriority
 from app.models.invoice import Invoice
 from app.models.lead import Lead
 from app.models.meeting import Meeting
@@ -26,7 +26,6 @@ from app.models.user import User
 from app.schemas.client import ClientCreate, ClientOut, TicketCreate
 from app.schemas.crm import ProposalOut, ProposalRejectRequest
 from app.schemas.finance import (
-    ClientFileCreate,
     ClientFileOut,
     ClientPaymentOut,
     ClientReportCreate,
@@ -34,10 +33,12 @@ from app.schemas.finance import (
     InvoiceOut,
 )
 from app.schemas.ops import MeetingOut, TicketOut
-from app.schemas.project import ProjectOut
+from app.schemas.project import ClientProjectOut
 from app.services.notification_service import notify_roles
 from app.utils.pagination import PageParams, bounded_select, page_params
 from app.utils.responses import build_pagination_meta, success_response
+from app.utils.sla import compute_sla_due_at
+from app.utils.uploads import load_private_file, save_upload
 
 router = APIRouter(prefix="/clients", tags=["Clients"], dependencies=[Depends(get_current_user)])
 
@@ -45,6 +46,15 @@ crud = CRUDBase(Client, searchable_fields=["company_name", "country"])
 
 
 async def _get_client_for_user(db: AsyncSession, user: User) -> Client:
+    # D5 (UAT_REPORT.md): this router's /me/* routes are only gated by
+    # get_current_user, not require_roles("client") — restricting the whole
+    # router would break the staff-facing routes declared further down in
+    # this same file, so the guard lives here instead. Without it, any
+    # authenticated staff member hitting a /me/* route (e.g. testing in
+    # Swagger) would silently get a junk Client profile auto-created and
+    # tied to their own admin/employee account.
+    if user.role != "client":
+        raise ApiError.forbidden("This endpoint is only available to client accounts")
     client = (await db.execute(select(Client).where(Client.user_id == user.id))).scalar_one_or_none()
     if not client:
         client = Client(user_id=user.id, company_name=user.name)
@@ -82,17 +92,28 @@ async def my_profile(db: AsyncSession = Depends(get_db), current_user: User = De
 @router.get("/me/projects", response_model=dict)
 async def my_projects(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
-    # ProjectOut serializes `team` — must be eager-loaded or Pydantic's lazy
-    # attribute access crashes with MissingGreenlet on any project that has
-    # team members assigned (found via tests/e2e_workflows.py against a real
-    # Postgres session; mocked tests can't reproduce this).
     result = await db.execute(
         bounded_select(
-            select(Project).options(selectinload(Project.team))
-            .where(Project.client_id == client.id).order_by(Project.created_at.desc())
+            select(Project).where(Project.client_id == client.id).order_by(Project.created_at.desc())
         )
     )
-    return success_response(data=[ProjectOut.model_validate(p) for p in result.scalars().unique().all()])
+    projects = result.scalars().unique().all()
+
+    # D12 (UAT_REPORT.md): the client view must not include the internal
+    # team roster (see ClientProjectOut's docstring) — just resolve the PM's
+    # name as the one designated point of contact the doc calls for.
+    pm_ids = {p.project_manager_id for p in projects if p.project_manager_id}
+    pm_names: dict = {}
+    if pm_ids:
+        pm_result = await db.execute(select(User.id, User.name).where(User.id.in_(pm_ids)))
+        pm_names = dict(pm_result.all())
+
+    out = []
+    for p in projects:
+        data = ClientProjectOut.model_validate(p).model_dump()
+        data["project_manager_name"] = pm_names.get(p.project_manager_id)
+        out.append(data)
+    return success_response(data=out)
 
 
 @router.get("/me/invoices", response_model=dict)
@@ -115,7 +136,10 @@ async def my_tickets(db: AsyncSession = Depends(get_db), current_user: User = De
 async def create_ticket(payload: TicketCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
     ticket_number = f"TCK-{int(datetime.utcnow().timestamp())}"
-    ticket = Ticket(**payload.model_dump(), client_id=client.id, ticket_number=ticket_number)
+    ticket = Ticket(
+        **payload.model_dump(), client_id=client.id, ticket_number=ticket_number,
+        sla_due_at=compute_sla_due_at(TicketPriority(payload.priority)),
+    )
     db.add(ticket)
     await db.commit()
     await db.refresh(ticket)
@@ -242,11 +266,73 @@ async def my_files(db: AsyncSession = Depends(get_db), current_user: User = Depe
     return success_response(data=[ClientFileOut.model_validate(f) for f in result.scalars().all()])
 
 
-@router.post("/me/files", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "project_manager"))])
-async def upload_client_file(client_id: uuid.UUID, payload: ClientFileCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+# Workflow doc §11 requires document exchange in BOTH directions (Company ->
+# Client and Client -> Company). Previously there was no working upload path
+# at all here — this "/me/files" POST existed but only accepted a pre-existing
+# file_url in a JSON body (no actual byte-upload endpoint ever produced one
+# for this flow), and there was no client-facing upload route whatsoever. Both
+# gaps fixed below using the same private-storage + ownership-checked-download
+# pattern already established for career-application resumes
+# (app/utils/uploads.py's save_upload/load_private_file, app/routers/career.py).
+CLIENT_FILE_SUBFOLDER = "client-files"
+
+
+# NOTE ON ORDERING: fixed-string routes ("/me/files", "/files/...") MUST be
+# declared before the dynamic "/{client_id}/files" route below. FastAPI/
+# Starlette matches path patterns in registration order, and "me" is a
+# syntactically valid value for {client_id} — declaring the dynamic route
+# first previously caused every request to "/clients/me/files" to be
+# swallowed by "/{client_id}/files" (client_id="me"), hitting that route's
+# staff-only require_roles dependency and 403ing real clients. Caught via
+# live UAT (see UAT_REPORT.md), not by the unit tests, since those call the
+# handler functions directly and never exercise Starlette's own routing.
+@router.post("/me/files", response_model=dict, status_code=201)
+async def upload_my_file(
+    name: str = Form(...), category: str = Form(...), file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    """Client -> Company direction: the client uploads their own file."""
+    client = await _get_client_for_user(db, current_user)
+    reference = await save_upload(file, CLIENT_FILE_SUBFOLDER)
+    f = ClientFile(
+        client_id=client.id, name=name, category=category, file_url=reference,
+        size_bytes=file.size, uploaded_by=current_user.name,
+    )
+    db.add(f)
+    await db.commit()
+    await db.refresh(f)
+    return success_response(data=ClientFileOut.model_validate(f), message="File uploaded", status_code=201)
+
+
+@router.get("/files/{file_id}/download")
+async def download_client_file(file_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    record = (await db.execute(select(ClientFile).where(ClientFile.id == file_id))).scalar_one_or_none()
+    if record is None:
+        raise ApiError.not_found("File not found")
+    client = (await db.execute(select(Client).where(Client.id == record.client_id))).scalar_one_or_none()
+    is_owner = client is not None and client.user_id == current_user.id
+    if not is_owner and current_user.role not in ("admin", "super_admin"):
+        if current_user.role == "project_manager":
+            await _require_assigned_account_manager(db, current_user, client)
+        else:
+            raise ApiError.not_found("File not found")
+    content, filename, content_type = await load_private_file(record.file_url, CLIENT_FILE_SUBFOLDER)
+    return Response(content=content, media_type=content_type, headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+@router.post("/{client_id}/files", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "project_manager"))])
+async def staff_upload_client_file(
+    client_id: uuid.UUID, name: str = Form(...), category: str = Form(...),
+    file: UploadFile = File(...), db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    """Company -> Client direction: staff attaches a file to a specific client's record."""
     client = await crud.get(db, client_id)
     await _require_assigned_account_manager(db, current_user, client)
-    f = ClientFile(**payload.model_dump(), client_id=client_id)
+    reference = await save_upload(file, CLIENT_FILE_SUBFOLDER)
+    f = ClientFile(
+        client_id=client_id, name=name, category=category, file_url=reference,
+        size_bytes=file.size, uploaded_by=current_user.name,
+    )
     db.add(f)
     await db.commit()
     await db.refresh(f)

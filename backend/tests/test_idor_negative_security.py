@@ -27,12 +27,11 @@ from app.models.lead import Lead
 from app.models.partner_account import PartnerAccount
 from app.models.project import Project
 from app.models.user import User
-from app.routers.clients import upload_client_file
+from app.routers.clients import staff_upload_client_file
 from app.routers.leads import get_lead, list_leads, update_lead
 from app.routers.partner_account import upload_partner_file
 from app.routers.projects import assign_team, update_project
 from app.schemas.crm import LeadUpdate
-from app.schemas.finance import ClientFileCreate
 from app.schemas.partner_account import PartnerFileCreate
 from app.schemas.project import AssignTeamRequest, ProjectUpdate
 
@@ -163,9 +162,8 @@ class TestClientPartnerFileIDORAttackSurface:
 
         with patch("app.routers.clients.crud.get", new_callable=AsyncMock, return_value=unassigned_client):
             with pytest.raises(ApiError) as exc_info:
-                await upload_client_file(
-                    unassigned_client.id, ClientFileCreate(name="x", category="contract", file_url="http://x/y.pdf"),
-                    mock_db, pm_a,
+                await staff_upload_client_file(
+                    unassigned_client.id, "x", "contract", MagicMock(), mock_db, pm_a,
                 )
         assert exc_info.value.status_code == 403
 

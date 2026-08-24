@@ -51,6 +51,8 @@ ALLOWED_SUBFOLDERS = {
     "events",
     "blog",
     "downloads",
+    "client-files",
+    "employee-documents",
 }
 
 # Maps a declared MIME type to a predicate over the file's leading bytes.
@@ -87,7 +89,7 @@ UPLOAD_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__fil
 # Subfolders whose files must never be served by the public `/uploads` static
 # mount (main.py) — e.g. career-application resumes contain personal data.
 # These are written to a sibling directory outside the public root instead.
-PRIVATE_SUBFOLDERS = {"careers"}
+PRIVATE_SUBFOLDERS = {"careers", "client-files", "employee-documents"}
 PRIVATE_UPLOAD_ROOT = os.path.join(os.path.dirname(UPLOAD_ROOT), "uploads_private")
 
 

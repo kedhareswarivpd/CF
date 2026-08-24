@@ -10,6 +10,7 @@ from app.core.dependencies import get_current_user, require_roles
 from app.core.errors import ApiError
 from app.crud.base import CRUDBase
 from app.models.employee import Employee
+from app.models.enums import TicketPriority
 from app.models.partner_account import PartnerAccount
 from app.models.partner_file import PartnerFile
 from app.models.ticket import Ticket
@@ -25,6 +26,7 @@ from app.schemas.partner_account import (
 )
 from app.utils.pagination import PageParams, bounded_select, page_params
 from app.utils.responses import build_pagination_meta, success_response
+from app.utils.sla import compute_sla_due_at
 
 # Partner Portal — a login-gated self-service portal for an actual partner
 # organization (reseller/technology/business partner), mirroring Client
@@ -116,7 +118,10 @@ async def my_tickets(db: AsyncSession = Depends(get_db), current_user: User = De
 async def create_ticket(payload: TicketCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     partner = await _get_partner_account_for_user(db, current_user)
     ticket_number = f"TCK-{int(datetime.utcnow().timestamp())}"
-    ticket = Ticket(**payload.model_dump(), partner_account_id=partner.id, ticket_number=ticket_number)
+    ticket = Ticket(
+        **payload.model_dump(), partner_account_id=partner.id, ticket_number=ticket_number,
+        sla_due_at=compute_sla_due_at(TicketPriority(payload.priority)),
+    )
     db.add(ticket)
     await db.commit()
     await db.refresh(ticket)

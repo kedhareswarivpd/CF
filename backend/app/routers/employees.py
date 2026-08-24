@@ -1,7 +1,7 @@
 import uuid
 from datetime import UTC, date, datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, File, Form, Request, Response, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -14,6 +14,7 @@ from app.models.attendance import Attendance
 from app.models.department import Department
 from app.models.employee import Employee
 from app.models.employee_document import EmployeeDocument
+from app.models.enums import DocumentType
 from app.models.leave import Leave
 from app.models.payslip import Payslip
 from app.models.performance_review import PerformanceReview
@@ -35,6 +36,7 @@ from app.schemas.employee import (
 from app.schemas.performance import PerformanceReviewOut
 from app.utils.pagination import PageParams, bounded_select, page_params, paginate_query
 from app.utils.responses import build_pagination_meta, success_response
+from app.utils.uploads import load_private_file, save_upload
 
 router = APIRouter(prefix="/employees", tags=["Employees"], dependencies=[Depends(get_current_user)])
 
@@ -172,6 +174,56 @@ async def my_documents(db: AsyncSession = Depends(get_db), current_user: User = 
     employee = await _get_employee_for_user(db, current_user)
     result = await db.execute(bounded_select(select(EmployeeDocument).where(EmployeeDocument.employee_id == employee.id)))
     return success_response(data=[EmployeeDocumentOut.model_validate(d) for d in result.scalars().all()])
+
+
+# Workflow doc §20 requires employees to "upload or download documents based
+# on their permissions" — no create/upload endpoint existed at all for
+# EmployeeDocument before this (only the list route above), meaning these
+# records could never actually be produced through the app. Two directions,
+# same private-storage pattern as career resumes and client files.
+EMPLOYEE_DOCUMENT_SUBFOLDER = "employee-documents"
+
+
+@router.post("/me/documents", response_model=dict, status_code=201)
+async def upload_my_document(
+    title: str = Form(...), type: DocumentType = Form(DocumentType.other),
+    file: UploadFile = File(...), db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    """Employee self-upload (e.g. certificates)."""
+    employee = await _get_employee_for_user(db, current_user)
+    reference = await save_upload(file, EMPLOYEE_DOCUMENT_SUBFOLDER)
+    doc = EmployeeDocument(employee_id=employee.id, title=title, type=type, file_url=reference)
+    db.add(doc)
+    await db.commit()
+    await db.refresh(doc)
+    return success_response(data=EmployeeDocumentOut.model_validate(doc), message="Document uploaded", status_code=201)
+
+
+@router.post("/{employee_id}/documents", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr"))])
+async def assign_employee_document(
+    employee_id: uuid.UUID, title: str = Form(...), type: DocumentType = Form(DocumentType.other),
+    file: UploadFile = File(...), db: AsyncSession = Depends(get_db),
+):
+    """HR/admin assigns a document to an employee (policies, contracts, etc.)."""
+    reference = await save_upload(file, EMPLOYEE_DOCUMENT_SUBFOLDER)
+    doc = EmployeeDocument(employee_id=employee_id, title=title, type=type, file_url=reference)
+    db.add(doc)
+    await db.commit()
+    await db.refresh(doc)
+    return success_response(data=EmployeeDocumentOut.model_validate(doc), message="Document uploaded", status_code=201)
+
+
+@router.get("/documents/{document_id}/download")
+async def download_employee_document(document_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    doc = (await db.execute(select(EmployeeDocument).where(EmployeeDocument.id == document_id))).scalar_one_or_none()
+    if doc is None:
+        raise ApiError.not_found("Document not found")
+    if current_user.role not in ("admin", "hr", "super_admin"):
+        employee = await _get_employee_for_user(db, current_user)
+        if employee.id != doc.employee_id:
+            raise ApiError.not_found("Document not found")
+    content, filename, content_type = await load_private_file(doc.file_url, EMPLOYEE_DOCUMENT_SUBFOLDER)
+    return Response(content=content, media_type=content_type, headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
 
 @router.get("/me/performance-reviews", response_model=dict)

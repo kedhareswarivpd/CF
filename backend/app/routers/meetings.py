@@ -1,14 +1,20 @@
 import uuid
 
 from fastapi import APIRouter, Depends, Request
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
+from app.core.logger import logger
 from app.crud.base import CRUDBase
+from app.models.client import Client
+from app.models.enums import NotificationType
 from app.models.meeting import Meeting
 from app.models.user import User
 from app.schemas.ops import MeetingCreate, MeetingOut, MeetingUpdate
+from app.services.email_service import send_meeting_scheduled_email
+from app.services.notification_service import notify_user
 from app.utils.pagination import PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
@@ -36,7 +42,39 @@ async def create_meeting(payload: MeetingCreate, db: AsyncSession = Depends(get_
     data = payload.model_dump()
     data["organizer_id"] = current_user.id
     meeting = await crud.create(db, data)
+
+    if meeting.client_id:
+        await _notify_client_of_meeting(db, meeting)
+
     return success_response(data=MeetingOut.model_validate(meeting), message="Meeting created", status_code=201)
+
+
+async def _notify_client_of_meeting(db: AsyncSession, meeting: Meeting) -> None:
+    """Best-effort, mirrors the pattern used elsewhere in this codebase for
+    post-commit notification/email side effects (e.g. contracts.py's
+    _send_client_welcome) — the meeting itself is already created by the
+    time this runs, so a delivery failure here shouldn't undo it or fail the
+    request."""
+    try:
+        result = await db.execute(
+            select(Client, User).join(User, User.id == Client.user_id).where(Client.id == meeting.client_id)
+        )
+        row = result.first()
+        if row is None:
+            return
+        client, user = row
+        await notify_user(
+            db, user.id, f"Meeting scheduled: {meeting.title}",
+            f"A meeting has been scheduled for {meeting.scheduled_at.strftime('%B %d, %Y at %I:%M %p')}.",
+            NotificationType.info, "/client?tab=meetings",
+        )
+        await send_meeting_scheduled_email(
+            user.name, user.email, meeting.title,
+            meeting.scheduled_at.strftime("%B %d, %Y at %I:%M %p"),
+            meeting.duration_minutes, meeting.meeting_link, meeting.agenda,
+        )
+    except Exception as exc:  # noqa: BLE001 — meeting creation must not fail over notification/email delivery
+        logger.warning("Failed to notify client of meeting %s: %s", meeting.id, exc)
 
 
 @router.patch("/{meeting_id}", response_model=dict)

@@ -18,12 +18,12 @@ from app.models.employee import Employee
 from app.models.meeting import Meeting
 from app.models.partner_account import PartnerAccount
 from app.models.user import User
-from app.routers.clients import create_client_report, upload_client_file
+from app.routers.clients import create_client_report, staff_upload_client_file
 from app.routers.finance import sweep_overdue_invoices
 from app.routers.meetings import cancel_meeting
 from app.routers.partner_account import upload_partner_file
 from app.routers.training import enroll
-from app.schemas.finance import ClientFileCreate, ClientReportCreate
+from app.schemas.finance import ClientReportCreate
 from app.schemas.partner_account import PartnerFileCreate
 
 
@@ -55,10 +55,10 @@ class TestClientFileOwnership:
         mock_db.refresh.side_effect = _stamp_on_refresh
 
         with patch("app.routers.clients.crud.get", new_callable=AsyncMock, return_value=client):
-            result = await upload_client_file(
-                client.id, ClientFileCreate(name="doc", category="contract", file_url="http://x/doc.pdf"),
-                mock_db, admin,
-            )
+            with patch("app.routers.clients.save_upload", new_callable=AsyncMock, return_value="client-files/x.pdf"):
+                result = await staff_upload_client_file(
+                    client.id, "doc", "contract", MagicMock(), mock_db, admin,
+                )
         assert result["message"] == "File uploaded"
 
     @pytest.mark.asyncio
@@ -73,10 +73,10 @@ class TestClientFileOwnership:
         mock_db.refresh.side_effect = _stamp_on_refresh
 
         with patch("app.routers.clients.crud.get", new_callable=AsyncMock, return_value=client):
-            result = await upload_client_file(
-                client.id, ClientFileCreate(name="doc", category="contract", file_url="http://x/doc.pdf"),
-                mock_db, pm,
-            )
+            with patch("app.routers.clients.save_upload", new_callable=AsyncMock, return_value="client-files/x.pdf"):
+                result = await staff_upload_client_file(
+                    client.id, "doc", "contract", MagicMock(), mock_db, pm,
+                )
         assert result["message"] == "File uploaded"
 
     @pytest.mark.asyncio
@@ -94,9 +94,8 @@ class TestClientFileOwnership:
 
         with patch("app.routers.clients.crud.get", new_callable=AsyncMock, return_value=client):
             with pytest.raises(ApiError) as exc_info:
-                await upload_client_file(
-                    client.id, ClientFileCreate(name="doc", category="contract", file_url="http://x/doc.pdf"),
-                    mock_db, pm,
+                await staff_upload_client_file(
+                    client.id, "doc", "contract", MagicMock(), mock_db, pm,
                 )
         assert exc_info.value.status_code == 403
 

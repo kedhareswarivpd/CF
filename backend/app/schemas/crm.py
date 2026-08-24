@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 from app.models.enums import ContractStatus, LeadSource, LeadStatus, ProposalStatus
 from app.schemas.common import TimestampedRead
@@ -15,7 +15,7 @@ class LeadCreate(BaseModel):
     email: EmailStr
     phone: str | None = None
     source: LeadSource = LeadSource.other
-    estimated_value: float | None = None
+    estimated_value: float | None = Field(None, ge=0)
     notes: str | None = None
     contact_submission_id: uuid.UUID | None = None
     owner_id: uuid.UUID | None = None
@@ -28,7 +28,7 @@ class LeadUpdate(BaseModel):
     phone: str | None = None
     source: LeadSource | None = None
     status: LeadStatus | None = None
-    estimated_value: float | None = None
+    estimated_value: float | None = Field(None, ge=0)
     notes: str | None = None
     owner_id: uuid.UUID | None = None
 
@@ -51,14 +51,14 @@ class LeadOut(TimestampedRead):
 class ProposalCreate(BaseModel):
     lead_id: uuid.UUID
     scope_summary: str
-    price: float
+    price: float = Field(gt=0)
     currency: str = "USD"
     file_url: str | None = None
 
 
 class ProposalUpdate(BaseModel):
     scope_summary: str | None = None
-    price: float | None = None
+    price: float | None = Field(None, gt=0)
     currency: str | None = None
     file_url: str | None = None
     status: ProposalStatus | None = None

@@ -109,6 +109,27 @@ async def send_mfa_disabled_notification(name: str, email: str) -> None:
     )
 
 
+async def send_meeting_scheduled_email(
+    name: str, email: str, title: str, scheduled_at_display: str, duration_minutes: int, meeting_link: str | None, agenda: str | None,
+) -> None:
+    """Workflow doc §13: "Meeting Scheduled -> Client Notification + Email
+    Notification" — the client "should receive: In-app notification, Email
+    notification". This was entirely missing (create_meeting only wrote the
+    row, no notify_user/email call at all)."""
+    safe_name = _esc(name)
+    link_html = f'<p><strong>Join:</strong> <a href="{_esc(meeting_link)}">{_esc(meeting_link)}</a></p>' if meeting_link else ""
+    agenda_html = f"<p><strong>Agenda:</strong> {_esc(agenda)}</p>" if agenda else ""
+    await send_email(
+        email,
+        f"Meeting scheduled: {title}",
+        f"<p>Hi {safe_name},</p>"
+        f"<p>A meeting has been scheduled with you.</p>"
+        f"<p><strong>{_esc(title)}</strong></p>"
+        f"<p><strong>When:</strong> {_esc(scheduled_at_display)} ({duration_minutes} min)</p>"
+        f"{link_html}{agenda_html}",
+    )
+
+
 async def send_contact_notification(name: str, email: str, message: str, subject: str | None) -> None:
     await send_email(
         settings.brevo_sender_email,
