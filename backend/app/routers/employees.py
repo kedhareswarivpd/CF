@@ -9,12 +9,13 @@ from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
 from app.core.errors import ApiError
+from app.core.logger import logger
 from app.crud.base import CRUDBase
 from app.models.attendance import Attendance
 from app.models.department import Department
 from app.models.employee import Employee
 from app.models.employee_document import EmployeeDocument
-from app.models.enums import DocumentType
+from app.models.enums import DocumentType, LeaveStatus, NotificationType
 from app.models.leave import Leave
 from app.models.payslip import Payslip
 from app.models.performance_review import PerformanceReview
@@ -34,6 +35,7 @@ from app.schemas.employee import (
     TimesheetStatusUpdate,
 )
 from app.schemas.performance import PerformanceReviewOut
+from app.services.notification_service import notify_user
 from app.utils.pagination import PageParams, bounded_select, page_params, paginate_query
 from app.utils.responses import build_pagination_meta, success_response
 from app.utils.uploads import load_private_file, save_upload
@@ -301,6 +303,24 @@ async def review_leave(leave_id: uuid.UUID, payload: LeaveStatusUpdate, db: Asyn
         if target.employee_id not in team_ids:
             raise ApiError.forbidden("You can only approve leave requests for your own team")
     leave = await leave_crud.update(db, leave_id, {"status": payload.status, "approved_by": current_user.id})
+
+    # Workflow doc §15: "The employee should receive the corresponding
+    # notification" — approve_leave only updated the row, no notification
+    # was ever sent. Best-effort: the leave decision itself already
+    # committed by the time this runs, so a notify failure shouldn't undo it.
+    try:
+        employee = await db.get(Employee, leave.employee_id)
+        if employee and employee.user_id:
+            verb = "approved" if payload.status == LeaveStatus.approved else "rejected"
+            await notify_user(
+                db, employee.user_id, f"Leave request {verb}",
+                f"Your {leave.type.value} leave request ({leave.start_date} to {leave.end_date}) was {verb}.",
+                NotificationType.success if payload.status == LeaveStatus.approved else NotificationType.warning,
+                "/employee-portal?tab=leaves",
+            )
+    except Exception as exc:  # noqa: BLE001 — the leave decision must not fail over notification delivery
+        logger.warning("Failed to notify employee of leave review %s: %s", leave_id, exc)
+
     return success_response(data=LeaveOut.model_validate(leave), message="Leave request updated")
 
 

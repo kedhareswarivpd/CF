@@ -105,6 +105,13 @@ export const categoriesApi = crudApi('/categories');
 export const testimonialsApi = crudApi('/testimonials');
 export const partnersApi = crudApi('/partners');
 export const seoApi = crudApi('/seo');
+
+// D11 (UAT_REPORT.md): the admin "SEO" resource existed and was editable,
+// but nothing on the public site ever read from it — this is the fetch the
+// new useSeoMeta hook (hooks/useSeoMeta.js) uses to actually apply it.
+export function fetchSeoForPath(pagePath) {
+  return apiRequest(`/seo${toQueryString({ page_path: pagePath })}`);
+}
 export const pageContentApi = crudApi('/page-content');
 export const careersApi = crudApi('/careers');
 export const leadershipApi = crudApi('/leadership');

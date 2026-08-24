@@ -4,12 +4,18 @@ import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
 import Breadcrumbs from '../ui/Breadcrumbs.jsx';
 import useScrollToTop from '../../hooks/useScrollToTop.js';
+import useSeoMeta from '../../hooks/useSeoMeta.js';
 import { portalPaths } from '../../data/portal.js';
 
 export default function Layout() {
  const { pathname } = useLocation();
  const mainRef = useRef(null);
  useScrollToTop();
+ const isPortal = portalPaths.some((p) => pathname.startsWith(`/${p}`));
+ // Only public routes have admin-managed SEO metadata — portal pages
+ // (client/employee/admin/etc.) are login-gated, not indexed, and don't
+ // have SEO records in the CMS.
+ useSeoMeta(isPortal ? null : pathname);
 
  // Theme init/persistence is owned exclusively by ThemeProvider (see
  // context/ThemeContext.jsx) — do not re-read localStorage/prefers-color-scheme here.
@@ -22,8 +28,6 @@ export default function Layout() {
    el.style.transform = 'translateY(0)';
   }
  }, [pathname]);
-
- const isPortal = portalPaths.some((p) => pathname.startsWith(`/${p}`));
 
  return (
   <div className="flex min-h-screen flex-col bg-surface-white dark:bg-dark-surface">
