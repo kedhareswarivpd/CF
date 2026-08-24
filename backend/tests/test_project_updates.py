@@ -9,8 +9,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from app.core.errors import ApiError
+from app.models.attendance import Attendance
 from app.models.employee import Employee
+from app.models.enums import LeadStatus, ProposalStatus
+from app.models.lead import Lead
 from app.models.project import Project
+from app.models.proposal import Proposal
+from app.models.timesheet import Timesheet
 from app.models.user import User
 from app.routers.projects import create_project, post_project_update
 from app.schemas.project import ProjectCreate
@@ -33,6 +38,8 @@ def _stamp_on_refresh(obj) -> None:
     obj.updated_at = now
     if getattr(obj, "client_visible", None) is None:
         obj.client_visible = False
+    if isinstance(obj, Timesheet) and obj.status is None:
+        obj.status = "draft"
 
 
 def _project_defaults() -> dict:
@@ -109,3 +116,185 @@ class TestProjectProposalLinkage:
         )
         assert mock_response.status_code == 200
         assert result["message"] == "A project already exists for this proposal"
+
+
+class TestClientProposalAcceptUpdatesLeadStatus:
+    """UAT closure pass §3: a client accepting their own proposal via
+    POST /clients/me/proposals/{id}/accept never advanced Lead.status to
+    proposal_approved (unlike the staff-facing /proposals/{id}/accept, which
+    does) — live UAT caught the lead stuck at proposal_sent after acceptance."""
+
+    @pytest.mark.asyncio
+    async def test_client_accept_advances_lead_to_proposal_approved(self):
+        from app.models.client import Client
+        from app.routers.clients import accept_my_proposal
+
+        user = _make_user("client")
+        client = Client(id=uuid.uuid4(), user_id=user.id, company_name="Acme")
+        lead_id = uuid.uuid4()
+        proposal = Proposal(
+            id=uuid.uuid4(), lead_id=lead_id, version=2, scope_summary="revised",
+            price=22000, currency="USD", status=ProposalStatus.sent, **_stamps(),
+        )
+        lead = Lead(id=lead_id, contact_name="Acme Contact", email="acme@example.com", status=LeadStatus.proposal_sent)
+
+        mock_db = AsyncMock()
+        mock_db.refresh.side_effect = _stamp_on_refresh
+        proposal_row = MagicMock(scalar_one_or_none=MagicMock(return_value=proposal))
+        lead_row = MagicMock(scalar_one_or_none=MagicMock(return_value=lead))
+        mock_db.execute.side_effect = [proposal_row, lead_row]
+
+        with patch("app.routers.clients._get_client_for_user", new_callable=AsyncMock, return_value=client):
+            with patch("app.routers.clients.notify_roles", new_callable=AsyncMock):
+                await accept_my_proposal(proposal.id, mock_db, user)
+
+        assert proposal.status == ProposalStatus.accepted
+        assert lead.status == LeadStatus.proposal_approved
+
+
+class TestDisqualifiedLeadCannotBeConverted:
+    """UAT closure pass §4: POST /leads/{id}/convert never checked for a
+    disqualified (rejected/closed) lead — live UAT converted one straight
+    into a real client account + login credentials, violating "Unsuccessful
+    Lead -> Reject/Close" (no client/credentials should ever be created)."""
+
+    @pytest.mark.asyncio
+    async def test_convert_disqualified_lead_is_rejected(self):
+        from app.routers.leads import convert_lead
+
+        lead = Lead(
+            id=uuid.uuid4(), contact_name="Nope", email="nope@example.com",
+            status=LeadStatus.disqualified, **_stamps(),
+        )
+        mock_db = AsyncMock()
+
+        with patch("app.routers.leads.crud.get", new_callable=AsyncMock, return_value=lead):
+            with pytest.raises(ApiError) as exc_info:
+                await convert_lead(lead.id, mock_db)
+        assert exc_info.value.status_code == 400
+        mock_db.execute.assert_not_called()
+
+
+class TestAttendanceHistoryAndHrAccess:
+    """UAT closure pass §6: GET /employees/me/attendance (own history) and
+    GET /employees/attendance (HR/admin cross-employee view) did not exist
+    at all — only "today" check-in/out was ever readable. Workflow doc §15
+    requires "Attendance information should be accessible to authorized
+    HR users"."""
+
+    @pytest.mark.asyncio
+    async def test_my_attendance_scoped_to_own_employee(self):
+        from fastapi import Request
+
+        from app.routers.employees import my_attendance
+        from app.utils.pagination import PageParams
+
+        user = _make_user("developer")
+        employee = Employee(id=uuid.uuid4(), user_id=user.id, employee_code="EMP-1")
+        record = Attendance(id=uuid.uuid4(), employee_id=employee.id, date=datetime.now(UTC).date(), status="present", **_stamps())
+
+        mock_db = AsyncMock()
+        emp_row = MagicMock(scalar_one_or_none=MagicMock(return_value=employee))
+        items_row = MagicMock(scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[record]))))
+        count_row = MagicMock(scalar_one=MagicMock(return_value=1))
+        mock_db.execute.side_effect = [emp_row, items_row, count_row]
+
+        request = Request(scope={"type": "http", "query_string": b"", "headers": []})
+        result = await my_attendance(request, mock_db, PageParams(page=1, limit=20), user)
+        assert result["data"][0].employee_id == employee.id
+
+    @pytest.mark.asyncio
+    async def test_hr_can_filter_attendance_by_employee_id(self):
+        from fastapi import Request
+
+        from app.routers.employees import list_attendance
+        from app.utils.pagination import PageParams
+
+        employee_id = uuid.uuid4()
+        record = Attendance(id=uuid.uuid4(), employee_id=employee_id, date=datetime.now(UTC).date(), status="present", **_stamps())
+
+        mock_db = AsyncMock()
+        items_row = MagicMock(scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[record]))))
+        count_row = MagicMock(scalar_one=MagicMock(return_value=1))
+        mock_db.execute.side_effect = [items_row, count_row]
+
+        request = Request(scope={"type": "http", "query_string": f"employee_id={employee_id}".encode(), "headers": []})
+        result = await list_attendance(request, mock_db, PageParams(page=1, limit=20))
+        assert result["data"][0]["employee_id"] == employee_id
+
+
+class TestTimesheetRequiresProjectMembership:
+    """UAT closure pass §7: POST /employees/me/timesheets never checked that
+    the employee was actually assigned to payload.project_id — live UAT
+    logged billable hours against a project the employee had zero
+    assignment to."""
+
+    @pytest.mark.asyncio
+    async def test_timesheet_for_unassigned_project_is_rejected(self):
+        from app.routers.employees import submit_timesheet
+        from app.schemas.employee import TimesheetCreate
+
+        user = _make_user("developer")
+        employee = Employee(id=uuid.uuid4(), user_id=user.id, employee_code="EMP-3")
+        project_id = uuid.uuid4()
+
+        mock_db = AsyncMock()
+        emp_row = MagicMock(scalar_one_or_none=MagicMock(return_value=employee))
+        not_a_member = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
+        mock_db.execute.side_effect = [emp_row, not_a_member]
+
+        payload = TimesheetCreate(project_id=project_id, date=datetime.now(UTC).date(), hours=8)
+        with pytest.raises(ApiError) as exc_info:
+            await submit_timesheet(payload, mock_db, user)
+        assert exc_info.value.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_timesheet_for_assigned_project_succeeds(self):
+        from app.routers.employees import submit_timesheet
+        from app.schemas.employee import TimesheetCreate
+
+        user = _make_user("developer")
+        employee = Employee(id=uuid.uuid4(), user_id=user.id, employee_code="EMP-4")
+        project_id = uuid.uuid4()
+
+        mock_db = AsyncMock()
+        mock_db.refresh.side_effect = _stamp_on_refresh
+        emp_row = MagicMock(scalar_one_or_none=MagicMock(return_value=employee))
+        is_member = MagicMock(scalar_one_or_none=MagicMock(return_value=employee.id))
+        mock_db.execute.side_effect = [emp_row, is_member]
+
+        payload = TimesheetCreate(project_id=project_id, date=datetime.now(UTC).date(), hours=8)
+        result = await submit_timesheet(payload, mock_db, user)
+        assert result["message"] == "Timesheet entry logged"
+        assert result["data"].status == "submitted"
+
+
+class TestClientCannotSeeInternalProjectsList:
+    """UAT closure pass §14 (RBAC matrix): GET /projects only special-cased
+    current_user is None as "public/restricted" — ANY authenticated caller,
+    including a client, was treated as staff and got is_published left
+    unfiltered (full internal ProjectOut for every client's projects, no
+    scoping). Live UAT caught a real client account pulling every project
+    in the system, budget/team roster included."""
+
+    @pytest.mark.asyncio
+    async def test_client_role_forced_to_published_only(self):
+        from fastapi import Request
+
+        from app.routers.projects import list_projects
+        from app.utils.pagination import PageParams
+
+        client_user = _make_user("client")
+        mock_db = AsyncMock()
+
+        captured_filters = {}
+
+        async def fake_list(db, page, filters):
+            captured_filters.update(filters)
+            return [], 0
+
+        with patch("app.routers.projects.crud.list", new_callable=AsyncMock, side_effect=fake_list):
+            request = Request(scope={"type": "http", "query_string": b"is_published=false", "headers": []})
+            await list_projects(request, mock_db, PageParams(page=1, limit=20), client_user)
+
+        assert captured_filters.get("is_published") is True

@@ -37,8 +37,17 @@ async def list_projects(
     filters = {k: request.query_params.get(k) for k in ("status", "client_id", "industry", "project_manager_id") if request.query_params.get(k)}
     if is_featured := request.query_params.get("is_featured"):
         filters["is_featured"] = is_featured.lower() == "true"
-    if current_user is None:
-        filters["is_published"] = True  # public callers only ever see published projects
+    # UAT closure pass §14 (RBAC matrix): this branch only checked
+    # `current_user is None` — ANY authenticated caller, including a
+    # `client`, was treated as staff and got the full internal ProjectOut
+    # (budget, team roster with user_ids, architecture_notes, every
+    # client's projects, not scoped to their own) with no role check at
+    # all. Live UAT caught a client account pulling this endpoint
+    # unfiltered. Clients have their own scoped `/clients/me/projects`
+    # (ClientProjectOut) — they must never reach this one as anything but
+    # the public/anonymous view.
+    if current_user is None or current_user.role == "client":
+        filters["is_published"] = True  # public/client callers only ever see published projects
     elif is_published := request.query_params.get("is_published"):
         filters["is_published"] = is_published.lower() == "true"
 

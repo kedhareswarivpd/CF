@@ -11,11 +11,12 @@ from app.core.dependencies import get_current_user, require_roles
 from app.core.errors import ApiError
 from app.core.logger import logger
 from app.crud.base import CRUDBase
+from app.models.associations import project_members
 from app.models.attendance import Attendance
 from app.models.department import Department
 from app.models.employee import Employee
 from app.models.employee_document import EmployeeDocument
-from app.models.enums import DocumentType, LeaveStatus, NotificationType
+from app.models.enums import DocumentType, LeaveStatus, NotificationType, TimesheetStatus
 from app.models.leave import Leave
 from app.models.payslip import Payslip
 from app.models.performance_review import PerformanceReview
@@ -50,6 +51,16 @@ timesheet_crud = CRUDBase(Timesheet)
 EMPLOYEE_ROLES = {"employee", "developer", "sales", "marketing", "project_manager", "qa", "support", "finance", "hr", "admin", "super_admin"}
 
 
+def _parse_date_param(request: Request, name: str) -> date | None:
+    raw = request.query_params.get(name)
+    if not raw:
+        return None
+    try:
+        return date.fromisoformat(raw)
+    except ValueError:
+        raise ApiError.bad_request(f"Invalid {name}, expected YYYY-MM-DD") from None
+
+
 async def _get_employee_for_user(db: AsyncSession, user: User) -> Employee:
     employee = (await db.execute(select(Employee).where(Employee.user_id == user.id))).scalar_one_or_none()
     if not employee:
@@ -76,6 +87,25 @@ async def my_profile(db: AsyncSession = Depends(get_db), current_user: User = De
         dept = (await db.execute(select(Department).where(Department.id == employee.department_id))).scalar_one_or_none()
         emp_data["department_name"] = dept.name if dept else None
     return success_response(data=emp_data)
+
+
+@router.get("/me/attendance", response_model=dict)
+async def my_attendance(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params), current_user: User = Depends(get_current_user)):
+    # UAT closure pass §6: only "today" existed — an employee had no way to
+    # see their own attendance history at all, let alone HR (workflow doc
+    # §15: "Attendance information should be accessible to authorized HR
+    # users" was entirely unimplemented; see list_attendance below).
+    employee = await _get_employee_for_user(db, current_user)
+    stmt = select(Attendance).where(Attendance.employee_id == employee.id)
+    count_stmt = select(func.count()).select_from(Attendance).where(Attendance.employee_id == employee.id)
+    start_date, end_date = _parse_date_param(request, "start_date"), _parse_date_param(request, "end_date")
+    if start_date:
+        stmt, count_stmt = stmt.where(Attendance.date >= start_date), count_stmt.where(Attendance.date >= start_date)
+    if end_date:
+        stmt, count_stmt = stmt.where(Attendance.date <= end_date), count_stmt.where(Attendance.date <= end_date)
+    stmt = stmt.order_by(Attendance.date.desc())
+    items, meta = await paginate_query(db, stmt, count_stmt, page)
+    return success_response(data=[AttendanceOut.model_validate(a) for a in items], message="Attendance fetched", meta=meta)
 
 
 @router.get("/me/attendance/today", response_model=dict)
@@ -154,7 +184,26 @@ async def my_timesheets(db: AsyncSession = Depends(get_db), current_user: User =
 @router.post("/me/timesheets", response_model=dict, status_code=201)
 async def submit_timesheet(payload: TimesheetCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
-    entry = Timesheet(**payload.model_dump(), employee_id=employee.id)
+    # UAT closure pass §7: nothing checked that the employee was actually
+    # assigned to payload.project_id — any employee could log (and get
+    # paid/billed for) hours against a project they have no assignment to.
+    if payload.project_id:
+        is_member = (await db.execute(
+            select(project_members.c.employee_id).where(
+                project_members.c.project_id == payload.project_id, project_members.c.employee_id == employee.id,
+            )
+        )).scalar_one_or_none()
+        if is_member is None:
+            raise ApiError.forbidden("You can only log timesheet hours against a project you're assigned to")
+    # UAT closure pass §7: TimesheetStatus.submitted was defined but nothing
+    # ever set it — this endpoint left every entry at the ORM default
+    # (draft) forever, since there's no separate employee-facing edit/submit
+    # action to advance it later. The PM dashboard's "pending review" widget
+    # (frontend fetchAllTimesheets({status:'submitted'})) was permanently
+    # stuck at 0 as a result. This endpoint IS the employee's submit action
+    # (the frontend already calls it submitTimesheet), so it should land the
+    # entry directly in "submitted", not an unreachable "draft".
+    entry = Timesheet(**payload.model_dump(), employee_id=employee.id, status=TimesheetStatus.submitted)
     db.add(entry)
     await db.commit()
     await db.refresh(entry)
@@ -253,6 +302,31 @@ async def _pm_team_employee_ids(db: AsyncSession, pm_user: User) -> list[uuid.UU
         return []
     result = await db.execute(select(Employee.id).where(Employee.reporting_manager_id == pm_employee.id))
     return list(result.scalars().all())
+
+
+@router.get("/attendance", response_model=dict, dependencies=[Depends(require_roles("admin", "hr"))])
+async def list_attendance(request: Request, db: AsyncSession = Depends(get_db), page: PageParams = Depends(page_params)):
+    # UAT closure pass §6: workflow doc §15 — "Attendance information
+    # should be accessible to authorized HR users" — had no backing
+    # endpoint at all.
+    stmt = select(Attendance).options(selectinload(Attendance.employee))
+    count_stmt = select(func.count()).select_from(Attendance)
+    emp_id = request.query_params.get("employee_id")
+    start_date, end_date = _parse_date_param(request, "start_date"), _parse_date_param(request, "end_date")
+    if emp_id:
+        stmt, count_stmt = stmt.where(Attendance.employee_id == emp_id), count_stmt.where(Attendance.employee_id == emp_id)
+    if start_date:
+        stmt, count_stmt = stmt.where(Attendance.date >= start_date), count_stmt.where(Attendance.date >= start_date)
+    if end_date:
+        stmt, count_stmt = stmt.where(Attendance.date <= end_date), count_stmt.where(Attendance.date <= end_date)
+    stmt = stmt.order_by(Attendance.date.desc())
+    items, meta = await paginate_query(db, stmt, count_stmt, page)
+    data = []
+    for a in items:
+        out_dict = AttendanceOut.model_validate(a).model_dump()
+        out_dict["employee_code"] = a.employee.employee_code if a.employee else None
+        data.append(out_dict)
+    return success_response(data=data, message="Attendance fetched", meta=meta)
 
 
 @router.get("/leaves", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])

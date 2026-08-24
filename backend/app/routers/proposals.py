@@ -2,6 +2,7 @@ import uuid
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, Request
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
@@ -36,7 +37,16 @@ async def list_proposals(request: Request, db: AsyncSession = Depends(get_db), p
 
 @router.post("", response_model=dict, status_code=201)
 async def create_proposal(payload: ProposalCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    proposal = await crud.create(db, {**payload.model_dump(), "created_by": current_user.id})
+    # UAT closure pass §3: `version` defaulted to 1 at the model level and
+    # nothing ever computed a real one — every proposal for the same lead,
+    # including an explicit revision after a rejection, silently got
+    # version=1 again (ProposalCreate doesn't even expose `version` as a
+    # settable field). A revised proposal must outrank the one it replaces.
+    max_version = (await db.execute(
+        select(func.max(Proposal.version)).where(Proposal.lead_id == payload.lead_id)
+    )).scalar_one()
+    next_version = (max_version or 0) + 1
+    proposal = await crud.create(db, {**payload.model_dump(), "created_by": current_user.id, "version": next_version})
     return success_response(data=ProposalOut.model_validate(proposal), message="Proposal drafted", status_code=201)
 
 

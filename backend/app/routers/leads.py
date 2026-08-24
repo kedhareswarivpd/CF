@@ -107,6 +107,14 @@ async def convert_lead(lead_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     """
     lead = await crud.get(db, lead_id)
 
+    # UAT closure pass §4: nothing blocked converting a disqualified
+    # (rejected/closed) lead — it would happily provision a real client
+    # account + login credentials for a lead the business already decided
+    # not to pursue, violating "Unsuccessful Lead → Reject/Close" (no
+    # client/credentials should ever be created on that branch).
+    if lead.status == LeadStatus.disqualified:
+        raise ApiError.bad_request("This lead was disqualified and cannot be converted to a client")
+
     if lead.status == LeadStatus.converted and lead.converted_client_id:
         existing = (await db.execute(select(Client).where(Client.id == lead.converted_client_id))).scalar_one_or_none()
         if existing is not None:

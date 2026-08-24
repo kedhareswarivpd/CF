@@ -14,7 +14,7 @@ from app.models.client import Client
 from app.models.client_file import ClientFile
 from app.models.client_report import ClientReport
 from app.models.employee import Employee
-from app.models.enums import NotificationType, ProposalStatus, TicketPriority
+from app.models.enums import LeadStatus, NotificationType, ProposalStatus, TicketPriority
 from app.models.invoice import Invoice
 from app.models.lead import Lead
 from app.models.meeting import Meeting
@@ -213,6 +213,13 @@ async def accept_my_proposal(proposal_id: uuid.UUID, db: AsyncSession = Depends(
     client = await _get_client_for_user(db, current_user)
     proposal = await _get_own_sent_proposal(db, client, proposal_id)
     proposal.status = ProposalStatus.accepted
+    # UAT closure pass §3: the staff-facing POST /proposals/{id}/accept updates
+    # Lead.status to proposal_approved, but this client-facing mirror never did
+    # — a client accepting their own proposal left the lead stuck at
+    # proposal_sent forever, invisible to the sales pipeline.
+    lead = (await db.execute(select(Lead).where(Lead.id == proposal.lead_id))).scalar_one_or_none()
+    if lead is not None:
+        lead.status = LeadStatus.proposal_approved
     await db.commit()
     await db.refresh(proposal)
     await notify_roles(
