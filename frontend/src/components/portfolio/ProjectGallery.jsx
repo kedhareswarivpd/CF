@@ -38,14 +38,14 @@ export default function ProjectGallery({ industry, activeServices = [] }) {
   <section className="px-4 pb-stack-xl sm:px-6 lg:px-10 xl:px-12 ">
    <div className="mx-auto max-w-container">
     {isFallback && !loading && (
-     <p className="mb-6 text-center text-body-sm text-ink-muted">
+     <p className="mb-6 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">
       Showing sample projects — connect a live backend to see real portfolio data here.
      </p>
     )}
     {loading ? (
      <GallerySkeleton />
     ) : filteredProjects.length === 0 ? (
-     <p className="py-16 text-center text-ink-muted">No projects match this filter yet — check back soon.</p>
+     <p className="py-16 text-center text-ink-muted dark:text-dark-ink-muted">No projects match this filter yet — check back soon.</p>
     ) : (
      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
       {visibleProjects.map((project, i) => (

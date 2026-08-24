@@ -80,7 +80,7 @@ export default function ApplyForm({ job, onClose }) {
 
       <div>
        <label htmlFor="apply-cover_letter" className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
-        Cover Letter <span className="text-ink-muted/60">(optional)</span>
+        Cover Letter <span className="text-ink-muted/60 dark:text-dark-ink-muted/60">(optional)</span>
        </label>
        <textarea
         id="apply-cover_letter"

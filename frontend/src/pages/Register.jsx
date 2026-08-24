@@ -57,20 +57,20 @@ export default function Register() {
 
     <form onSubmit={handleSubmit} className="flex flex-col gap-stack-md">
      <label className="flex flex-col gap-1.5">
-      <span className="font-label-caps text-label-caps uppercase text-ink-muted">Full Name</span>
+      <span className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Full Name</span>
       <input required type="text" name="name" value={form.name} onChange={handleChange} placeholder="John Smith" className={inputClass} />
      </label>
 
      <label className="flex flex-col gap-1.5">
-      <span className="font-label-caps text-label-caps uppercase text-ink-muted">Email</span>
+      <span className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Email</span>
       <input required type="email" name="email" value={form.email} onChange={handleChange} placeholder="you@company.com" autoComplete="username" className={inputClass} />
      </label>
 
      <label className="flex flex-col gap-1.5">
-      <span className="font-label-caps text-label-caps uppercase text-ink-muted">Password</span>
+      <span className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Password</span>
       <div className="relative">
        <input required type={showPassword ? 'text' : 'password'} name="password" value={form.password} onChange={handleChange} placeholder="Min. 8 chars, 1 upper, 1 lower, 1 number, 1 symbol" autoComplete="new-password" className={inputClass} />
-       <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink">
+       <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? 'Hide password' : 'Show password'} className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:hover:text-dark-ink">
         <Icon name={showPassword ? 'visibility_off' : 'visibility'} />
        </button>
       </div>
@@ -83,7 +83,7 @@ export default function Register() {
      </div>
 
      <label className="flex flex-col gap-1.5">
-      <span className="font-label-caps text-label-caps uppercase text-ink-muted">Confirm Password</span>
+      <span className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Confirm Password</span>
       <input required type={showPassword ? 'text' : 'password'} name="confirm" value={form.confirm} onChange={handleChange} placeholder="Re-enter password" autoComplete="new-password" className={inputClass} />
      </label>
 

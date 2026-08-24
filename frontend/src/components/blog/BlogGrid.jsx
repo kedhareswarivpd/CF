@@ -38,7 +38,7 @@ export default function BlogGrid({ posts, categories }) {
    <div className="mx-auto max-w-container px-4 sm:px-6 lg:px-10 xl:px-12">
     <div className="mb-stack-lg flex justify-center">
      <div className="relative w-full max-w-md">
-      <Icon name="search" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted" />
+      <Icon name="search" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-muted dark:text-dark-ink-muted" />
       <input
        type="search"
        value={query}

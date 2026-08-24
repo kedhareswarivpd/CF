@@ -69,13 +69,13 @@ export default function SuccessStory() {
       {project.challenge && (
        <div className="rounded-lg border border-outline-variant bg-white p-8 dark:border-dark-outline-variant dark:bg-dark-surface">
         <h2 className="mb-4 font-display text-headline-sm text-brand">The Challenge</h2>
-        <p className="font-body text-body-md text-ink-muted">{project.challenge}</p>
+        <p className="font-body text-body-md text-ink-muted dark:text-dark-ink-muted">{project.challenge}</p>
        </div>
       )}
       {project.solution && (
        <div className="rounded-lg border border-outline-variant bg-white p-8 dark:border-dark-outline-variant dark:bg-dark-surface">
         <h2 className="mb-4 font-display text-headline-sm text-brand">Our Solution</h2>
-        <p className="font-body text-body-md text-ink-muted">{project.solution}</p>
+        <p className="font-body text-body-md text-ink-muted dark:text-dark-ink-muted">{project.solution}</p>
        </div>
       )}
      </div>

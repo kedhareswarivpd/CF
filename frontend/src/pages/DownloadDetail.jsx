@@ -50,7 +50,7 @@ export default function DownloadDetail() {
    <section className="min-h-screen bg-surface-white px-4 py-section-padding dark:bg-dark-surface sm:px-6 lg:px-10 xl:px-12 ">
     <div className="mx-auto max-w-container rounded-3xl border border-outline-variant bg-white p-8 text-center dark:border-dark-outline-variant dark:bg-dark-surface">
      <h1 className="mb-4 font-display text-display-md text-brand">Download not found</h1>
-     <p className="mb-6 text-ink-muted">The requested document could not be found — it may have been removed or unpublished.</p>
+     <p className="mb-6 text-ink-muted dark:text-dark-ink-muted">The requested document could not be found — it may have been removed or unpublished.</p>
      <Link to="/downloads" className="inline-flex items-center gap-2 font-label-caps text-label-caps uppercase text-brand hover:text-brand-dark">
       <Icon name="arrow_back" /> Back to Downloads
      </Link>

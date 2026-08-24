@@ -167,14 +167,14 @@ export default function BlogDetail() {
 
     {/* Sharing */}
     <div className="mt-10 flex items-center gap-4 border-t border-outline-variant pt-6 dark:border-dark-outline-variant">
-     <span className="font-label-caps text-label-caps uppercase text-ink-muted">Share:</span>
-     <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noreferrer" aria-label="Share on LinkedIn" className="text-ink-muted hover:text-brand">
+     <span className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Share:</span>
+     <a href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`} target="_blank" rel="noreferrer" aria-label="Share on LinkedIn" className="text-ink-muted hover:text-brand dark:text-dark-ink-muted">
       <Icon name="share" />
      </a>
-     <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(post.title)}`} target="_blank" rel="noreferrer" aria-label="Share on X" className="text-ink-muted hover:text-brand">
+     <a href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(post.title)}`} target="_blank" rel="noreferrer" aria-label="Share on X" className="text-ink-muted hover:text-brand dark:text-dark-ink-muted">
       <Icon name="alternate_email" />
      </a>
-     <a href={`mailto:?subject=${encodeURIComponent(post.title)}&body=${encodeURIComponent(shareUrl)}`} aria-label="Share via email" className="text-ink-muted hover:text-brand">
+     <a href={`mailto:?subject=${encodeURIComponent(post.title)}&body=${encodeURIComponent(shareUrl)}`} aria-label="Share via email" className="text-ink-muted hover:text-brand dark:text-dark-ink-muted">
       <Icon name="mail" />
      </a>
     </div>
@@ -189,7 +189,7 @@ export default function BlogDetail() {
         <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.content}</p>
        </div>
       ))}
-      {!comments.length && <p className="text-body-sm text-ink-muted">Be the first to comment.</p>}
+      {!comments.length && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Be the first to comment.</p>}
      </div>
      <CommentForm blogId={post.id} onPosted={loadComments} />
     </div>

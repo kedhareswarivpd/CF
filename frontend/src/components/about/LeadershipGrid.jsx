@@ -46,7 +46,7 @@ export default function LeadershipGrid() {
         <div className="absolute inset-0 bg-brand/10 transition-colors group-hover:bg-transparent" />
        </div>
        <h4 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{leader.name}</h4>
-       <p className="mb-4 font-label-caps text-label-caps uppercase text-ink-muted">{leader.title}</p>
+       <p className="mb-4 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{leader.title}</p>
        <div className="flex gap-3">
         <a href={leader.linkedin} target="_blank" rel="noopener noreferrer" className="flex size-8 cursor-pointer items-center justify-center rounded bg-surface-container text-brand transition-colors hover:bg-brand hover:text-white dark:bg-dark-surface-container">
          <LinkedInIcon />

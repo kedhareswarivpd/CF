@@ -7,7 +7,7 @@ function AnimatedStat({ value, label }) {
  return (
   <div ref={ref}>
    <div className="font-stat text-stat-lg text-brand">{display}</div>
-   <div className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted">{label}</div>
+   <div className="mt-1 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{label}</div>
   </div>
  );
 }

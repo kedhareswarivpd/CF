@@ -53,7 +53,7 @@ export default function AwardsGrid({ awards, yearFilters }) {
          <span className="font-stat text-stat-lg text-brand">{award.year}</span>
         </div>
         <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-dark-brand">{award.title}</h3>
-        <p className="mb-3 font-label-caps text-label-caps uppercase text-ink-muted">{award.issuedBy}</p>
+        <p className="mb-3 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">{award.issuedBy}</p>
         <p className="flex-1 text-body-md text-ink-muted dark:text-dark-ink-muted">{award.description}</p>
         <div className="mt-4 border-t border-outline-variant pt-4">
          <StatusBadge variant="warning">{award.category}</StatusBadge>

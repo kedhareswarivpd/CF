@@ -21,7 +21,7 @@ export default function AboutHero({ stats }) {
      <h1 className="animate-hero-2 mb-6 font-display text-display-lg-mobile text-brand-dark dark:text-dark-brand md:text-display-lg">
       Innovating at the Core of <span className="text-brand">Global Scale</span>
      </h1>
-     <p className="animate-hero-3 mb-stack-lg max-w-xl font-body text-body-lg text-ink-muted">
+     <p className="animate-hero-3 mb-stack-lg max-w-xl font-body text-body-lg text-ink-muted dark:text-dark-ink-muted">
       CoreFusion Technologies is a global engineering powerhouse focused on driving digital
       transformation through precise technical excellence and strategic innovation.
      </p>
