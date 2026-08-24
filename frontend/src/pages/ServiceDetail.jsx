@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import Icon from '../components/ui/Icon.jsx';
-import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
+import Pulse, { SkeletonHeading, SkeletonText, SkeletonCard } from '../components/ui/Skeleton.jsx';
 import NotFound from './NotFound.jsx';
 import CtaBanner from '../components/home/CtaBanner.jsx';
 import { fetchServices } from '../api/services.js';
@@ -102,8 +102,20 @@ export default function ServiceDetail() {
 
  if (service === undefined) {
   return (
-   <main className="flex min-h-screen items-center justify-center bg-surface dark:bg-dark-surface">
-    <LoadingSpinner />
+   <main className="min-h-screen bg-surface dark:bg-dark-surface">
+    <div className="mx-auto max-w-container px-4 py-section-padding sm:px-6 lg:px-10 xl:px-12 ">
+     <div className="mb-12 flex items-center gap-4">
+      <Pulse className="size-16" rounded="rounded-xl" />
+      <SkeletonHeading width="w-1/3" className="h-10" />
+     </div>
+     <SkeletonText lines={3} className="mb-12 max-w-3xl" />
+     <div className="mb-12 grid gap-6 sm:grid-cols-2">
+      <SkeletonCard />
+      <SkeletonCard />
+      <SkeletonCard />
+      <SkeletonCard />
+     </div>
+    </div>
    </main>
   );
  }

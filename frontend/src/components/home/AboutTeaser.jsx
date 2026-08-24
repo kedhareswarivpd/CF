@@ -27,7 +27,7 @@ export default function AboutTeaser() {
       { icon: 'business_center', label: '120+ Clients' },
       { icon: 'public', label: '18+ Countries' },
      ].map((item) => (
-      <div key={item.label} className="flex flex-col items-center gap-2 rounded-lg border border-outline-variant bg-white p-6 text-center dark:border-dark-outline-variant dark:bg-dark-surface">
+      <div key={item.label} className="flex min-w-0 flex-col items-center gap-2 rounded-lg border border-outline-variant bg-white p-6 text-center dark:border-dark-outline-variant dark:bg-dark-surface">
        <Icon name={item.icon} className="text-3xl text-brand" />
        <span className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{item.label}</span>
       </div>

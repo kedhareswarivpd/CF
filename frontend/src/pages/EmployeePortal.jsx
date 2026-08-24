@@ -5,6 +5,7 @@ import Avatar from '../components/ui/Avatar.jsx';
 import StatusBadge from '../components/ui/StatusBadge.jsx';
 import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
+import { SkeletonTable } from '../components/ui/Skeleton.jsx';
 import RowAction from '../components/ui/RowAction.jsx';
 import { FORM_INPUT_CLASS } from '../components/ui/formClasses.js';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
@@ -1138,7 +1139,7 @@ function ContactSubmissionsView({ onLeadCreated }) {
 
  const statusColor = { new: 'neutral', in_progress: 'info', resolved: 'success', spam: 'error' };
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={5} />;
  return (
   <div className="space-y-stack-md">
    {toast.msg && (
@@ -2024,7 +2025,7 @@ function MarketingLeadsView() {
 
  const inProgressContacts = contacts.filter((c) => c.status === 'in_progress');
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={5} />;
  return (
   <div className="space-y-stack-md">
    {toast.msg && (
@@ -2746,7 +2747,7 @@ function Approvals() {
   { label: 'Total Entries', value: timesheets.length, icon: 'calendar_month' },
  ];
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={6} />;
  return (
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
@@ -2984,7 +2985,7 @@ function TestQueue() {
 
  const TASK_STATUS_COLOR = { todo: 'neutral', in_progress: 'info', in_review: 'warning', done: 'success', blocked: 'error' };
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={5} />;
  return (
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
@@ -3276,7 +3277,7 @@ function Invoices() {
   }
  };
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={6} />;
  return (
   <div className="space-y-stack-md">
    <div className="flex justify-end">
@@ -3372,7 +3373,7 @@ function LeaveApprovals() {
 
  const LEAVE_STATUS_COLOR = { pending: 'warning', approved: 'success', rejected: 'error', cancelled: 'neutral' };
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={8} />;
  return (
   <div className="space-y-stack-md">
    <div className="flex flex-wrap items-center justify-between gap-3">
@@ -3502,7 +3503,7 @@ function Recruitment() {
   { label: 'Hired', value: hiredCount, icon: 'verified' },
  ];
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={5} />;
  return (
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">

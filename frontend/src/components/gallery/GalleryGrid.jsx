@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import LoadingSpinner from '../ui/LoadingSpinner.jsx';
+import { SkeletonCard } from '../ui/Skeleton.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Reveal from '../ui/Reveal.jsx';
 import Icon from '../ui/Icon.jsx';
@@ -24,7 +24,17 @@ export default function GalleryGrid({ albums }) {
   };
  }, [lightbox, lightboxRef]);
 
- if (!albums) return <LoadingSpinner />;
+ if (!albums) {
+  return (
+   <section className="py-section-padding">
+    <div className="mx-auto max-w-container px-4 sm:px-6 lg:px-10 xl:px-12">
+     <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)}
+     </div>
+    </div>
+   </section>
+  );
+ }
  if (!albums.length) return <EmptyState icon="photo_library" title="No albums available" description="Gallery is empty." />;
  const album = albums[activeAlbum];
 

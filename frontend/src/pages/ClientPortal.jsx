@@ -8,6 +8,7 @@ import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
 import { PortalTable } from '../components/ui/ResponsiveTable.jsx';
+import { SkeletonTable } from '../components/ui/Skeleton.jsx';
 import Tabs from '../components/ui/Tabs.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
@@ -459,7 +460,7 @@ export default function ClientPortal() {
  // no separate effect needed here. This gate just withholds rendering while
  // that redirect is in flight.
  if (initializing || !user || denied) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
- if (loading) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
+ if (loading) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><SkeletonTable rows={6} columns={5} /></div>;
 
  return (
   <div className="flex h-screen flex-col bg-surface-container dark:bg-dark-surface-container">

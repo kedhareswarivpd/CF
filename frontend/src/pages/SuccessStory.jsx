@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import Icon from '../components/ui/Icon.jsx';
-import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
+import Pulse, { SkeletonText, SkeletonCard } from '../components/ui/Skeleton.jsx';
 import NotFound from './NotFound.jsx';
 import { fetchProjectBySlug } from '../api/projects.js';
 
@@ -22,8 +22,15 @@ export default function SuccessStory() {
 
  if (project === undefined) {
   return (
-   <main className="flex min-h-screen items-center justify-center bg-surface dark:bg-dark-surface">
-    <LoadingSpinner />
+   <main className="min-h-screen bg-surface dark:bg-dark-surface">
+    <Pulse className="h-80 w-full md:h-[420px]" rounded="rounded-none" />
+    <div className="mx-auto flex max-w-container flex-col gap-stack-xl px-4 py-stack-xl sm:px-6 lg:px-10 xl:px-12 ">
+     <SkeletonText lines={2} className="max-w-3xl" />
+     <div className="grid gap-8 md:grid-cols-2">
+      <SkeletonCard />
+      <SkeletonCard />
+     </div>
+    </div>
    </main>
   );
  }

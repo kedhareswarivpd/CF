@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import LoadingSpinner from '../ui/LoadingSpinner.jsx';
+import { SkeletonCard } from '../ui/Skeleton.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Icon from '../ui/Icon.jsx';
 import Reveal from '../ui/Reveal.jsx';
@@ -8,7 +8,17 @@ import BlogCard from './BlogCard.jsx';
 export default function BlogGrid({ posts, categories }) {
  const [activeCategory, setActiveCategory] = useState('All');
  const [query, setQuery] = useState('');
- if (!posts) return <LoadingSpinner />;
+ if (!posts) {
+  return (
+   <section className="py-section-padding">
+    <div className="mx-auto max-w-container px-4 sm:px-6 lg:px-10 xl:px-12">
+     <div className="grid gap-gutter md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)}
+     </div>
+    </div>
+   </section>
+  );
+ }
  if (!posts.length) return <EmptyState icon="article" title="No blog posts yet" description="Stay tuned!" />;
 
  const byCategory = activeCategory === 'All'

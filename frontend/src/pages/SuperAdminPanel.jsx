@@ -5,6 +5,7 @@ import Avatar from '../components/ui/Avatar.jsx';
 import Button from '../components/ui/Button.jsx';
 import StatusBadge from '../components/ui/StatusBadge.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
+import { SkeletonTable } from '../components/ui/Skeleton.jsx';
 import RowAction from '../components/ui/RowAction.jsx';
 import { PortalTable } from '../components/ui/ResponsiveTable.jsx';
 import Pagination from '../components/ui/Pagination.jsx';
@@ -119,7 +120,7 @@ function Departments() {
   setActingId(null);
  };
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={3} />;
  return (
   <div className="space-y-stack-md">
    <div className="flex justify-end">
@@ -305,7 +306,7 @@ function DataExportGdpr() {
   setActingId(null);
  };
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={4} />;
 
  return (
   <div className="space-y-stack-md">
@@ -357,7 +358,7 @@ function AuditLogs() {
    .finally(() => setLoading(false));
  }, [page]);
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={4} />;
  return (
   <div className="space-y-stack-md">
    <PortalTable
@@ -413,7 +414,7 @@ function Backups() {
   return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
  };
 
- if (loading) return <LoadingSpinner />;
+ if (loading) return <SkeletonTable rows={6} columns={4} />;
 
  return (
   <div className="space-y-stack-lg">

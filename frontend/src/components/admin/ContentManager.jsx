@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import Icon from '../ui/Icon.jsx';
 import Button from '../ui/Button.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
-import LoadingSpinner from '../ui/LoadingSpinner.jsx';
+import { SkeletonTable } from '../ui/Skeleton.jsx';
 import {
  servicesApi, eventsApi, blogsApi, solutionsApi, caseStudiesApi, downloadsApi,
  industriesApi, technologiesApi, productsApi, awardsApi, faqsApi, galleryApi,
@@ -457,7 +457,7 @@ export default function ContentManager() {
     )}
 
     {loading ? (
-     <div className="p-stack-lg"><LoadingSpinner /></div>
+     <div className="p-stack-lg"><SkeletonTable rows={6} columns={3} /></div>
     ) : (
      <div className="responsive-table overflow-x-auto">
       <table className="w-full text-left">

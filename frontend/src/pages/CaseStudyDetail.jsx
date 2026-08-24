@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import Icon from '../components/ui/Icon.jsx';
 import Badge from '../components/ui/Badge.jsx';
-import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
+import Pulse, { SkeletonHeading, SkeletonCard } from '../components/ui/Skeleton.jsx';
 import NotFound from './NotFound.jsx';
 import CtaBanner from '../components/home/CtaBanner.jsx';
 import { fetchCaseStudies } from '../api/cms.js';
@@ -35,8 +35,16 @@ export default function CaseStudyDetail() {
 
  if (study === undefined) {
   return (
-   <main className="flex min-h-screen items-center justify-center bg-surface dark:bg-dark-surface">
-    <LoadingSpinner />
+   <main className="min-h-screen bg-surface dark:bg-dark-surface">
+    <Pulse className="h-80 w-full md:h-[420px]" rounded="rounded-none" />
+    <div className="mx-auto max-w-container px-4 py-section-padding sm:px-6 lg:px-10 xl:px-12 ">
+     <SkeletonHeading width="w-2/3" className="mb-8 h-10" />
+     <div className="space-y-6">
+      <SkeletonCard />
+      <SkeletonCard />
+      <SkeletonCard />
+     </div>
+    </div>
    </main>
   );
  }

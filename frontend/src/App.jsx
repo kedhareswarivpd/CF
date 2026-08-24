@@ -69,44 +69,48 @@ export default function App() {
     <Routes>
      <Route element={<Layout />}>
       <Route index element={<Home />} />
-      <Route path="services" element={<Services />} />
-      <Route path="services/:slug" element={<ServiceDetail />} />
-      <Route path="portfolio" element={<Portfolio />} />
-      <Route path="portfolio/success/:slug" element={<SuccessStory />} />
+      <Route path="services" element={<ErrorBoundary pageName="Services"><Services /></ErrorBoundary>} />
+      <Route path="services/:slug" element={<ErrorBoundary pageName="Service"><ServiceDetail /></ErrorBoundary>} />
+      <Route path="portfolio" element={<ErrorBoundary pageName="Portfolio"><Portfolio /></ErrorBoundary>} />
+      <Route path="portfolio/success/:slug" element={<ErrorBoundary pageName="Success Story"><SuccessStory /></ErrorBoundary>} />
       <Route path="about" element={<About />} />
       <Route path="contact" element={<Contact />} />
-      <Route path="solutions" element={<Solutions />} />
-      <Route path="products" element={<Products />} />
+      <Route path="solutions" element={<ErrorBoundary pageName="Solutions"><Solutions /></ErrorBoundary>} />
+      <Route path="products" element={<ErrorBoundary pageName="Products"><Products /></ErrorBoundary>} />
       <Route path="technologies" element={<Technologies />} />
       <Route path="industries" element={<Industries />} />
-      <Route path="case-studies" element={<CaseStudies />} />
-      <Route path="case-studies/:slug" element={<CaseStudyDetail />} />
+      <Route path="case-studies" element={<ErrorBoundary pageName="Case Studies"><CaseStudies /></ErrorBoundary>} />
+      <Route path="case-studies/:slug" element={<ErrorBoundary pageName="Case Study"><CaseStudyDetail /></ErrorBoundary>} />
       <Route path="careers" element={<Careers />} />
-      <Route path="blog" element={<Blog />} />
-      <Route path="blog/:slug" element={<BlogDetail />} />
-      <Route path="events" element={<Events />} />
-      <Route path="gallery" element={<Gallery />} />
-      <Route path="awards" element={<Awards />} />
-      <Route path="downloads" element={<Downloads />} />
-      <Route path="resources" element={<Resources />} />
+      <Route path="blog" element={<ErrorBoundary pageName="Blog"><Blog /></ErrorBoundary>} />
+      <Route path="blog/:slug" element={<ErrorBoundary pageName="Blog Post"><BlogDetail /></ErrorBoundary>} />
+      <Route path="events" element={<ErrorBoundary pageName="Events"><Events /></ErrorBoundary>} />
+      <Route path="gallery" element={<ErrorBoundary pageName="Gallery"><Gallery /></ErrorBoundary>} />
+      <Route path="awards" element={<ErrorBoundary pageName="Awards"><Awards /></ErrorBoundary>} />
+      <Route path="downloads" element={<ErrorBoundary pageName="Downloads"><Downloads /></ErrorBoundary>} />
+      <Route path="resources" element={<ErrorBoundary pageName="Resources"><Resources /></ErrorBoundary>} />
       <Route path="faq" element={<Faq />} />
       <Route path="privacy" element={<Privacy />} />
       <Route path="terms" element={<Terms />} />
       <Route path="cookies" element={<Cookies />} />
-      <Route path="client" element={<ClientPortal />} />
-      <Route path="partner" element={<PartnerPortal />} />
+      <Route path="client" element={<ErrorBoundary pageName="Client Portal"><ClientPortal /></ErrorBoundary>} />
+      <Route path="partner" element={<ErrorBoundary pageName="Partner Portal"><PartnerPortal /></ErrorBoundary>} />
       {employeePortalPaths.map((portalPath) => (
-       <Route key={portalPath} path={portalPath} element={<EmployeePortal />} />
+       <Route
+        key={portalPath}
+        path={portalPath}
+        element={<ErrorBoundary pageName="Employee Portal"><EmployeePortal /></ErrorBoundary>}
+       />
       ))}
-      <Route path="admin" element={<AdminPanel />} />
-      <Route path="super-admin" element={<SuperAdminPanel />} />
+      <Route path="admin" element={<ErrorBoundary pageName="Admin Panel"><AdminPanel /></ErrorBoundary>} />
+      <Route path="super-admin" element={<ErrorBoundary pageName="Super Admin Panel"><SuperAdminPanel /></ErrorBoundary>} />
       <Route path="super-admin/login" element={<SuperAdminLogin />} />
       <Route path="login" element={<LoginPage />} />
       <Route path="register" element={<Register />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="reset-password" element={<ResetPassword />} />
       <Route path="brochure" element={<BrochurePage />} />
-      <Route path="download/:slug" element={<DownloadDetail />} />
+      <Route path="download/:slug" element={<ErrorBoundary pageName="Download"><DownloadDetail /></ErrorBoundary>} />
       <Route path="*" element={<NotFound />} />
      </Route>
     </Routes>

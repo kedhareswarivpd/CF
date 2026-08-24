@@ -3,7 +3,7 @@ import Icon from '../ui/Icon.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
 import Badge from '../ui/Badge.jsx';
 import Button from '../ui/Button.jsx';
-import LoadingSpinner from '../ui/LoadingSpinner.jsx';
+import { SkeletonCard } from '../ui/Skeleton.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Reveal from '../ui/Reveal.jsx';
 import { submitContactForm } from '../../api/contact.js';
@@ -103,7 +103,17 @@ function RegisterModal({ event, onClose }) {
 export default function EventsGrid({ events, typeFilters }) {
  const [activeType, setActiveType] = useState('All');
  const [registerEvent, setRegisterEvent] = useState(null);
- if (!events) return <LoadingSpinner />;
+ if (!events) {
+  return (
+   <section className="py-section-padding">
+    <div className="mx-auto max-w-container px-4 sm:px-6 lg:px-10 xl:px-12">
+     <div className="grid gap-gutter md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)}
+     </div>
+    </div>
+   </section>
+  );
+ }
  if (!events.length) return <EmptyState icon="event" title="No events scheduled" description="Check back later." />;
 
  const filtered = activeType === 'All' ? events : events.filter((e) => e.type === activeType);

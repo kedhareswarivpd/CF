@@ -6,6 +6,7 @@ import Button from '../components/ui/Button.jsx';
 import StatusBadge from '../components/ui/StatusBadge.jsx';
 import Badge from '../components/ui/Badge.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
+import { SkeletonTable } from '../components/ui/Skeleton.jsx';
 import { PortalTable } from '../components/ui/ResponsiveTable.jsx';
 import Modal from '../components/ui/Modal.jsx';
 import Tabs from '../components/ui/Tabs.jsx';
@@ -516,7 +517,7 @@ function UserManagement({ currentRole }) {
      </div>
     )}
     {loadingUsers ? (
-     <div className="p-stack-lg"><LoadingSpinner /></div>
+     <div className="p-stack-lg"><SkeletonTable rows={6} columns={5} /></div>
     ) : (
      <>
       <PortalTable columns={userColumns} rows={users} emptyMessage="No users found." />
@@ -556,7 +557,7 @@ function EmployeeManagement() {
    <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
     <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Employees ({employees.length})</h3>
    </div>
-   {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
+   {loading ? <div className="p-stack-lg"><SkeletonTable rows={6} columns={7} /></div> : (
     <>
      <PortalTable
       emptyMessage="No employees found."
@@ -599,7 +600,7 @@ function ClientManagement() {
    <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
     <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Clients</h3>
    </div>
-   {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
+   {loading ? <div className="p-stack-lg"><SkeletonTable rows={6} columns={4} /></div> : (
     <>
      <PortalTable
       emptyMessage="No clients found."
@@ -865,7 +866,7 @@ function ProjectsManagement() {
      </div>
     )}
     {loading ? (
-     <div className="p-stack-lg"><LoadingSpinner /></div>
+     <div className="p-stack-lg"><SkeletonTable rows={6} columns={6} /></div>
     ) : (
      <>
       <PortalTable columns={projectColumns} rows={projects} emptyMessage="No projects found." />
@@ -977,7 +978,7 @@ function RolesManagement() {
   });
  };
 
- if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
+ if (loading) return <div className="p-stack-lg"><SkeletonTable rows={6} columns={4} /></div>;
 
  const roleColumns = [
   { key: 'name', label: 'Name', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
@@ -1040,7 +1041,7 @@ function PermissionsManagement() {
   });
  };
 
- if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
+ if (loading) return <div className="p-stack-lg"><SkeletonTable rows={6} columns={4} /></div>;
 
  const permColumns = [
   { key: 'name', label: 'Name', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
@@ -1399,7 +1400,7 @@ function ReportsManagement() {
      </div>
     )}
     {loading ? (
-     <div className="p-stack-lg"><LoadingSpinner /></div>
+     <div className="p-stack-lg"><SkeletonTable rows={6} columns={4} /></div>
     ) : (
      <>
       <PortalTable columns={reportColumns} rows={reports} emptyMessage="No reports generated yet." />
@@ -1654,7 +1655,7 @@ function AnalyticsManagement() {
    .finally(() => setLoading(false));
  }, []);
 
- if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
+ if (loading) return <div className="p-stack-lg"><SkeletonTable rows={6} columns={2} /></div>;
  if (error) return <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>;
  if (!summary) return <p className="text-body-sm text-ink-muted">No analytics data yet.</p>;
 
@@ -1877,7 +1878,7 @@ function TrainingManagement() {
    </div>
    {showNew && <NewCourseForm onCreated={() => { setShowNew(false); load(); }} onCancel={() => setShowNew(false)} />}
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-    {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
+    {loading ? <div className="p-stack-lg"><SkeletonTable rows={6} columns={4} /></div> : (
      <>
       <PortalTable
        emptyMessage="No courses yet."
@@ -2002,7 +2003,7 @@ function CareersManagement() {
     </div>
     {showNew && <NewCareerForm onCreated={() => { setShowNew(false); load(); }} onCancel={() => setShowNew(false)} />}
     <div className="responsive-table mt-4 overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-     {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
+     {loading ? <div className="p-stack-lg"><SkeletonTable rows={6} columns={4} /></div> : (
       <>
        <PortalTable
         emptyMessage="No open positions — this list only shows currently-open postings."
@@ -2035,7 +2036,7 @@ function CareersManagement() {
      </div>
     </div>
     <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-     {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
+     {loading ? <div className="p-stack-lg"><SkeletonTable rows={6} columns={4} /></div> : (
       <>
       <PortalTable
        emptyMessage={`No applications${statusFilter ? ` with status "${statusFilter}"` : ''} yet.`}
@@ -2178,7 +2179,7 @@ function NewsletterManagement() {
    .finally(() => setLoading(false));
  }, [page]);
 
- if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
+ if (loading) return <div className="p-stack-lg"><SkeletonTable rows={6} columns={3} /></div>;
 
  return (
   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -2222,7 +2223,7 @@ function AuditLogsManagement() {
      <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Audit Logs</h3>
     </div>
     {loading ? (
-     <div className="p-stack-lg"><LoadingSpinner /></div>
+     <div className="p-stack-lg"><SkeletonTable rows={6} columns={4} /></div>
     ) : (
      <>
       <PortalTable

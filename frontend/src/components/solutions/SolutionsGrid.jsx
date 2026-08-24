@@ -1,11 +1,21 @@
 import Icon from '../ui/Icon.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
-import LoadingSpinner from '../ui/LoadingSpinner.jsx';
+import { SkeletonCard } from '../ui/Skeleton.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Reveal from '../ui/Reveal.jsx';
 
 export default function SolutionsGrid({ solutions }) {
- if (!solutions) return <LoadingSpinner />;
+ if (!solutions) {
+  return (
+   <section className="py-section-padding">
+    <div className="mx-auto max-w-container px-4 sm:px-6 lg:px-10 xl:px-12">
+     <div className="grid gap-gutter md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)}
+     </div>
+    </div>
+   </section>
+  );
+ }
  if (!solutions.length) return <EmptyState icon="cloud" title="No solutions listed" description="Solutions will appear here." />;
  return (
   <section className="py-section-padding">

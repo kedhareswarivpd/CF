@@ -1,6 +1,6 @@
 import Icon from '../ui/Icon.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
-import LoadingSpinner from '../ui/LoadingSpinner.jsx';
+import { SkeletonCard } from '../ui/Skeleton.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Reveal from '../ui/Reveal.jsx';
 
@@ -11,7 +11,17 @@ const STATUS_VARIANTS = {
 };
 
 export default function ProductsGrid({ products }) {
- if (!products) return <LoadingSpinner />;
+ if (!products) {
+  return (
+   <section className="py-section-padding">
+    <div className="mx-auto max-w-container px-4 sm:px-6 lg:px-10 xl:px-12">
+     <div className="grid gap-gutter md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)}
+     </div>
+    </div>
+   </section>
+  );
+ }
  if (!products.length) return <EmptyState icon="inventory_2" title="No products available" description="Products will appear here." />;
  return (
   <section className="py-section-padding">

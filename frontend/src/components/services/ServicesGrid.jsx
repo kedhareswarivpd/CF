@@ -4,6 +4,7 @@ import { adaptService } from '../../api/adapters.js';
 import useApiResource from '../../hooks/useApiResource.js';
 import ServiceCard from './ServiceCard.jsx';
 import Reveal from '../ui/Reveal.jsx';
+import { SkeletonCard } from '../ui/Skeleton.jsx';
 
 export default function ServicesGrid() {
  const { items: services, loading, isFallback } = useApiResource(fetchServices, adaptService, fallbackServices);
@@ -36,10 +37,8 @@ export default function ServicesGrid() {
 
 function ServicesGridSkeleton() {
  return (
-  <div className="grid animate-pulse gap-gutter md:grid-cols-2 lg:grid-cols-3">
-   {[0, 1, 2].map((i) => (
-    <div key={i} className="h-80 rounded-lg bg-surface-container" />
-   ))}
+  <div className="grid gap-gutter md:grid-cols-2 lg:grid-cols-3">
+   {Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)}
   </div>
  );
 }

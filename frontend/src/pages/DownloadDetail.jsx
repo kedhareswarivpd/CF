@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Icon from '../components/ui/Icon.jsx';
-import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
+import Pulse, { SkeletonHeading, SkeletonText, SkeletonButton } from '../components/ui/Skeleton.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { fetchDownloads } from '../api/cms.js';
 
@@ -31,8 +31,16 @@ export default function DownloadDetail() {
 
  if (loading) {
   return (
-   <section className="flex min-h-screen items-center justify-center bg-surface-white dark:bg-dark-surface">
-    <LoadingSpinner />
+   <section className="min-h-screen bg-surface-white px-4 py-section-padding dark:bg-dark-surface sm:px-6 lg:px-10 xl:px-12 ">
+    <div className="mx-auto max-w-3xl rounded-[2rem] border border-outline-variant bg-white p-8 shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface md:p-12">
+     <Pulse className="mb-4 h-4 w-32" />
+     <SkeletonHeading width="w-3/4" className="mb-6 h-10" />
+     <SkeletonText lines={3} className="mb-8 max-w-2xl" />
+     <div className="flex flex-wrap gap-4">
+      <SkeletonButton width="w-40" />
+      <SkeletonButton width="w-40" />
+     </div>
+    </div>
    </section>
   );
  }

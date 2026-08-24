@@ -3,13 +3,23 @@ import { Link } from 'react-router-dom';
 import Icon from '../ui/Icon.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
 import Button from '../ui/Button.jsx';
-import LoadingSpinner from '../ui/LoadingSpinner.jsx';
+import { SkeletonCard } from '../ui/Skeleton.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Reveal from '../ui/Reveal.jsx';
 
 export default function DownloadsGrid({ downloads, categoryFilters }) {
  const [activeCategory, setActiveCategory] = useState('All');
- if (!downloads) return <LoadingSpinner />;
+ if (!downloads) {
+  return (
+   <section className="py-section-padding">
+    <div className="mx-auto max-w-container px-4 sm:px-6 lg:px-10 xl:px-12">
+     <div className="grid gap-gutter md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: 6 }, (_, i) => <SkeletonCard key={i} />)}
+     </div>
+    </div>
+   </section>
+  );
+ }
  if (!downloads.length) return <EmptyState icon="download" title="No downloads available" description="No resources to download." />;
 
  const filtered = activeCategory === 'All'

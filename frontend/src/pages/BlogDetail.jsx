@@ -4,7 +4,7 @@ import DOMPurify from 'dompurify';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import Icon from '../components/ui/Icon.jsx';
 import Badge from '../components/ui/Badge.jsx';
-import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
+import Pulse, { SkeletonHeading, SkeletonText } from '../components/ui/Skeleton.jsx';
 import NotFound from './NotFound.jsx';
 import { apiRequest } from '../api/client.js';
 import { fetchBlogComments, submitComment } from '../api/cms.js';
@@ -123,8 +123,17 @@ export default function BlogDetail() {
 
  if (post === undefined) {
   return (
-   <main className="flex min-h-screen items-center justify-center bg-surface dark:bg-dark-surface">
-    <LoadingSpinner />
+   <main className="min-h-screen bg-surface dark:bg-dark-surface">
+    <article className="mx-auto max-w-3xl px-4 py-section-padding sm:px-6 lg:px-10 xl:px-12 ">
+     <Pulse className="mb-4 h-6 w-24" rounded="rounded-full" />
+     <SkeletonHeading width="w-3/4" className="mb-4 h-10" />
+     <div className="mb-8 flex gap-4 border-b border-outline-variant pb-6 dark:border-dark-outline-variant">
+      <Pulse className="h-4 w-32" />
+      <Pulse className="h-4 w-24" />
+     </div>
+     <Pulse className="mb-8 h-72 w-full" />
+     <SkeletonText lines={6} />
+    </article>
    </main>
   );
  }

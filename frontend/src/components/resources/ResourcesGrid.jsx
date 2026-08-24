@@ -2,13 +2,23 @@ import { useState } from 'react';
 import Badge from '../ui/Badge.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
 import Icon from '../ui/Icon.jsx';
-import LoadingSpinner from '../ui/LoadingSpinner.jsx';
+import { SkeletonCard } from '../ui/Skeleton.jsx';
 import EmptyState from '../ui/EmptyState.jsx';
 import Reveal from '../ui/Reveal.jsx';
 
 export default function ResourcesGrid({ resources, typeFilters }) {
  const [activeType, setActiveType] = useState('All');
- if (!resources) return <LoadingSpinner />;
+ if (!resources) {
+  return (
+   <section className="py-section-padding">
+    <div className="mx-auto max-w-container px-4 sm:px-6 lg:px-10 xl:px-12">
+     <div className="grid gap-gutter md:grid-cols-2">
+      {Array.from({ length: 4 }, (_, i) => <SkeletonCard key={i} />)}
+     </div>
+    </div>
+   </section>
+  );
+ }
  if (!resources.length) return <EmptyState icon="menu_book" title="No resources found" description="Resources will appear here." />;
 
  const filtered = activeType === 'All'
