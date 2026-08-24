@@ -4,6 +4,10 @@ export function login(email, password) {
   return apiRequest('/auth/login', { method: 'POST', body: { email, password } });
 }
 
+export function mfaVerifyLogin(mfaToken, code) {
+  return apiRequest('/auth/mfa/verify-login', { method: 'POST', body: { mfa_token: mfaToken, code } });
+}
+
 export function register(name, email, password) {
   return apiRequest('/auth/register', { method: 'POST', body: { name, email, password } });
 }

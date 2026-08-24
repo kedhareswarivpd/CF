@@ -9,12 +9,12 @@ import { loginSchema, parseWithSchema } from '../schemas/auth.schema.js';
 // `/foo`, never `//host/foo` (protocol-relative) or `https://...`/`javascript:...`,
 // which would otherwise let a crafted `?returnTo=` query param send a logged-in
 // user off-site (open redirect).
-function sanitizeReturnTo(raw) {
+export function sanitizeReturnTo(raw) {
  if (typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//')) return null;
  return raw;
 }
 
-const ROLE_PORTAL_MAP = {
+export const ROLE_PORTAL_MAP = {
  client: '/client',
  employee: '/employee',
  developer: '/developer',
@@ -53,9 +53,15 @@ export default function LoginPage() {
 
   setSubmitting(true);
   try {
-   const userData = await login(email, password);
-   const role = userData?.role;
+   const result = await login(email, password);
 
+   if (result?.mfaRequired) {
+    const returnTo = sanitizeReturnTo(searchParams.get('returnTo'));
+    navigate('/verify-mfa', { state: { mfaToken: result.mfaToken, returnTo } });
+    return;
+   }
+
+   const role = result?.role;
    const target = ROLE_PORTAL_MAP[role];
    if (!target) {
     throw new Error('Your account does not have access to any portal.');

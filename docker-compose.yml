@@ -59,6 +59,14 @@ services:
       - '${BACKEND_PORT:-8000}:8000' # direct access for API testing/Swagger docs; safe to remove in production if only the frontend proxy should be reachable
     networks:
       - corefusion-net
+    # SONAR M2: without a cap, a runaway process in this container (e.g. a
+    # pg_dump-backed backup request, or a leak in a long-lived worker) can
+    # consume all host memory/CPU and take down every other container on the
+    # same host. mem_limit/cpus (Compose v2 top-level keys, honored by
+    # `docker compose up` without requiring swarm mode) bound the blast
+    # radius; tune upward if gunicorn worker count or traffic grows.
+    mem_limit: 1g
+    cpus: 1.5
 
   redis:
     image: redis:7-alpine
@@ -68,6 +76,8 @@ services:
       - redis_data:/data
     networks:
       - corefusion-net
+    mem_limit: 256m
+    cpus: 0.5
 
   frontend:
     build:
@@ -83,6 +93,8 @@ services:
       - '${FRONTEND_PORT:-80}:80'
     networks:
       - corefusion-net
+    mem_limit: 128m
+    cpus: 0.5
 
 networks:
   corefusion-net:

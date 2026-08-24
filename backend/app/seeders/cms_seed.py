@@ -872,7 +872,7 @@ async def seed_portfolio(db: AsyncSession, projects: list[Project]) -> list[Port
 
 async def seed_gallery(db: AsyncSession, projects: list[Project]) -> list[Gallery]:
     created = []
-    for i, project in enumerate(projects[:10]):
+    for _i, project in enumerate(projects[:10]):
         for j, image_url in enumerate(project.gallery or [project.cover_image]):
             item, _ = await _get_or_create(
                 db, Gallery, {"image_url": image_url, "project_id": project.id},

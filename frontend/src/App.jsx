@@ -49,6 +49,7 @@ const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const Register = lazy(() => import('./pages/Register.jsx'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword.jsx'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword.jsx'));
+const VerifyMfa = lazy(() => import('./pages/VerifyMfa.jsx'));
 const BrochurePage = lazy(() => import('./pages/BrochurePage.jsx'));
 const DownloadDetail = lazy(() => import('./pages/DownloadDetail.jsx'));
 
@@ -109,6 +110,7 @@ export default function App() {
       <Route path="register" element={<Register />} />
       <Route path="forgot-password" element={<ForgotPassword />} />
       <Route path="reset-password" element={<ResetPassword />} />
+      <Route path="verify-mfa" element={<VerifyMfa />} />
       <Route path="brochure" element={<BrochurePage />} />
       <Route path="download/:slug" element={<ErrorBoundary pageName="Download"><DownloadDetail /></ErrorBoundary>} />
       <Route path="*" element={<NotFound />} />

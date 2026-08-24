@@ -40,6 +40,8 @@ services:
       retries: 10
     networks:
       - corefusion-net
+    mem_limit: 1g
+    cpus: 1.0
 
   minio:
     image: minio/minio:latest
@@ -50,11 +52,15 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin123}
     command: server /data --console-address ":9001"
     ports:
-      # 9000 = S3 API (what the backend talks to); 9001 = MinIO's own web
-      # console (http://localhost:9001, login with the credentials above) —
-      # both configurable in case either port is already taken locally.
+      # 9000 = S3 API (what the backend talks to) stays reachable from
+      # anywhere on the host's network since the backend may run outside
+      # this compose network too. 9001 is MinIO's own admin web console —
+      # SONAR L5: bound to loopback only by default (127.0.0.1) since it's a
+      # full admin UI with no purpose being reachable from other machines on
+      # the network; override MINIO_CONSOLE_BIND if you need it reachable
+      # elsewhere (e.g. '0.0.0.0' on a trusted internal network).
       - '${MINIO_PORT:-9000}:9000'
-      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+      - '${MINIO_CONSOLE_BIND:-127.0.0.1}:${MINIO_CONSOLE_PORT:-9001}:9001'
     volumes:
       - minio_data:/data
     healthcheck:
@@ -64,6 +70,8 @@ services:
       retries: 10
     networks:
       - corefusion-net
+    mem_limit: 512m
+    cpus: 0.5
 
   backend:
     environment:

@@ -4,6 +4,7 @@ import {
  register as registerApi,
  logout as logoutApi,
  fetchCurrentUser,
+ mfaVerifyLogin as mfaVerifyLoginApi,
 } from '../api/auth.js';
 
 const AuthContext = createContext(null);
@@ -69,14 +70,24 @@ export function AuthProvider({ children }) {
   const res = await loginApi(email, password);
   const data = res?.data;
   if (data?.mfa_token) {
-   // MFA is off by default for every account (see backend
-   // app/routers/auth.py) — this branch exists so a future MFA-enabled
-   // account fails loudly instead of silently, rather than because the
-   // frontend implements a verification step today.
-   throw new Error('This account requires multi-factor verification, which is not yet supported here.');
+   // Password was correct but the account has MFA enabled — no session
+   // cookies are set yet. The caller (LoginPage) navigates to /verify-mfa
+   // with this token so the flow can be completed via verifyMfa() below.
+   return { mfaRequired: true, mfaToken: data.mfa_token };
   }
   if (!data?.user) {
    throw new Error('Login failed. Please try again.');
+  }
+  setUser(data.user);
+  setStatus('authenticated');
+  return data.user;
+ }, []);
+
+ const verifyMfa = useCallback(async (mfaToken, code) => {
+  const res = await mfaVerifyLoginApi(mfaToken, code);
+  const data = res?.data;
+  if (!data?.user) {
+   throw new Error('Verification failed. Please try again.');
   }
   setUser(data.user);
   setStatus('authenticated');
@@ -103,9 +114,10 @@ export function AuthProvider({ children }) {
    login,
    logout,
    register,
+   verifyMfa,
    refresh: hydrate,
   }),
-  [user, status, login, logout, register, hydrate]
+  [user, status, login, logout, register, verifyMfa, hydrate]
  );
 
  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -124,6 +136,7 @@ export function useAuth() {
    login: async () => null,
    logout: async () => {},
    register: async () => null,
+   verifyMfa: async () => null,
    refresh: async () => {},
   };
  }
