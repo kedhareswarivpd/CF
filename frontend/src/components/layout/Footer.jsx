@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import Icon from '../ui/Icon.jsx';
 import FooterMap from './FooterMap.jsx';
-import { COMPANY as COMPANY_INFO } from '../../data/company.js';
+import { COMPANY as staticCompany } from '../../data/company.js';
+import { fetchCompanyInfo } from '../../api/cms.js';
 
 const SOLUTIONS = [
  { label: 'Solutions', to: '/solutions' },
@@ -25,11 +27,21 @@ const COMPANY = [
  { label: 'Careers', to: '/careers' },
  { label: 'Contact', to: '/contact' },
 ];
-const { hq: HQ, offices: OFFICES } = COMPANY_INFO;
-
 export default function Footer() {
  const { pathname } = useLocation();
  const showMap = pathname === '/';
+ const [companyInfo, setCompanyInfo] = useState(staticCompany);
+
+ useEffect(() => {
+  fetchCompanyInfo()
+   .then((res) => {
+    const info = res?.data;
+    if (info && typeof info === 'object' && Object.keys(info).length) setCompanyInfo({ ...staticCompany, ...info });
+   })
+   .catch(() => {});
+ }, []);
+
+ const { hq: HQ, offices: OFFICES } = companyInfo;
 
  return (
   <footer className="relative w-full bg-white px-4 pb-stack-lg text-ink dark:bg-dark-surface dark:text-dark-ink sm:px-6 lg:px-10 xl:px-12">

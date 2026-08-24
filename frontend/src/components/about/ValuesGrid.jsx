@@ -1,8 +1,21 @@
-import { coreValues } from '../../data/about.js';
+import { useEffect, useState } from 'react';
+import { coreValues as staticCoreValues } from '../../data/about.js';
+import { fetchAboutContent } from '../../api/cms.js';
 import Icon from '../ui/Icon.jsx';
 import Reveal from '../ui/Reveal.jsx';
 
 export default function ValuesGrid() {
+ const [coreValues, setCoreValues] = useState(staticCoreValues);
+
+ useEffect(() => {
+  fetchAboutContent()
+   .then((res) => {
+    const values = res?.data?.coreValues;
+    if (Array.isArray(values) && values.length) setCoreValues(values);
+   })
+   .catch(() => {});
+ }, []);
+
  return (
   <section className="bg-white py-section-padding dark:bg-dark-surface">
    <div className="mx-auto max-w-container px-4 sm:px-6 lg:px-10 xl:px-12">

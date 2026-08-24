@@ -6,7 +6,8 @@ import { SkeletonTable } from '../ui/Skeleton.jsx';
 import {
  servicesApi, eventsApi, blogsApi, solutionsApi, caseStudiesApi, downloadsApi,
  industriesApi, technologiesApi, productsApi, awardsApi, faqsApi, galleryApi,
- portfolioApi, resourcesApi, testimonialsApi, categoriesApi, partnersApi, seoApi, pageContentApi,
+ resourcesApi, testimonialsApi, categoriesApi, partnersApi, seoApi, pageContentApi,
+ leadershipApi, officesApi, companyInfoApi, aboutContentApi,
 } from '../../api/cms.js';
 
 import { FORM_INPUT_CLASS as BASE_INPUT_CLASS } from '../ui/formClasses.js';
@@ -147,15 +148,6 @@ const RESOURCES = [
   ],
  },
  {
-  key: 'portfolio', label: 'Portfolio', icon: 'folder', api: portfolioApi,
-  title: (i) => i.title, fields: [
-   { name: 'title', label: 'Title', ...TEXT }, { name: 'slug', label: 'Slug', ...TEXT },
-   { name: 'category', label: 'Category', ...TEXT }, { name: 'thumbnail', label: 'Thumbnail URL', ...TEXT },
-   { name: 'description', label: 'Description', ...TEXTAREA },
-   { name: 'is_featured', label: 'Featured', kind: 'checkbox' }, { name: 'order', label: 'Order', ...NUMBER },
-  ],
- },
- {
   key: 'resources', label: 'Resources', icon: 'menu_book', api: resourcesApi,
   title: (i) => i.title, fields: [
    { name: 'title', label: 'Title', ...TEXT }, { name: 'slug', label: 'Slug', ...TEXT },
@@ -205,7 +197,34 @@ const RESOURCES = [
    { name: 'content', label: 'Content', ...TEXTAREA }, PUBLISHED,
   ],
  },
+ {
+  key: 'leadership', label: 'Leadership', icon: 'groups', api: leadershipApi,
+  title: (i) => i.name, fields: [
+   { name: 'name', label: 'Name', ...TEXT }, { name: 'title', label: 'Title', ...TEXT },
+   { name: 'bio', label: 'Bio', ...TEXTAREA }, { name: 'photo_url', label: 'Photo URL', ...TEXT },
+   { name: 'linkedin', label: 'LinkedIn URL', ...TEXT }, { name: 'order', label: 'Order', ...NUMBER }, PUBLISHED,
+  ],
+ },
+ {
+  key: 'offices', label: 'Offices', icon: 'location_on', api: officesApi,
+  title: (i) => i.city, fields: [
+   { name: 'city', label: 'City', ...TEXT }, { name: 'country', label: 'Country', ...TEXT },
+   { name: 'description', label: 'Description (e.g. "HQ & Innovation Lab")', ...TEXT },
+   { name: 'address', label: 'Full Address', ...TEXTAREA },
+   { name: 'is_headquarters', label: 'Headquarters', kind: 'checkbox' },
+   { name: 'order', label: 'Order', ...NUMBER }, PUBLISHED,
+  ],
+ },
 ];
+
+// Singleton settings-style content ("Company & About") — company profile
+// (name/tagline/HQ/contact — Footer.jsx) and about-page copy (mission,
+// core values, timeline, certifications, stats). Both are stored as a
+// single JSON blob per key on the existing `settings` table (see
+// backend/app/routers/site_content.py), so they don't fit the generic
+// list-CRUD `RESOURCES` shape above (no id, no list of rows) — they get
+// their own small get/update panel instead.
+const SITE_CONTENT_KEY = 'siteContent';
 
 // Best-effort singularization for the "New {X}" button label. A blind
 // "chop the last character" (the previous implementation) silently
@@ -301,9 +320,99 @@ function Field({ field, value, onChange }) {
  return <input type={field.kind === 'datetime' ? 'datetime-local' : field.kind === 'number' ? 'number' : 'text'} placeholder={field.label} value={value} onChange={(e) => onChange(field.name, e.target.value)} className={FORM_INPUT_CLASS} />;
 }
 
+// A single "Save" section for one singleton JSON blob (company info or
+// about-page content). `value` is edited as raw JSON text — simplest UI
+// that still round-trips arbitrary structured content (arrays of core
+// values, timeline entries, etc.) without a bespoke editor per shape.
+function JsonBlobEditor({ title, description, api }) {
+ const [text, setText] = useState('');
+ const [loading, setLoading] = useState(true);
+ const [saving, setSaving] = useState(false);
+ const [error, setError] = useState('');
+ const [saved, setSaved] = useState(false);
+
+ useEffect(() => {
+  setLoading(true);
+  api.get()
+   .then((res) => setText(JSON.stringify(res?.data ?? {}, null, 2)))
+   .catch(() => setText('{}'))
+   .finally(() => setLoading(false));
+ }, [api]);
+
+ const handleSave = async () => {
+  setError('');
+  setSaved(false);
+  let parsed;
+  try {
+   parsed = JSON.parse(text);
+  } catch {
+   setError('Invalid JSON — please fix the syntax before saving.');
+   return;
+  }
+  setSaving(true);
+  try {
+   await api.update(parsed);
+   setSaved(true);
+  } catch (err) {
+   setError(err.message || 'Could not save.');
+  } finally {
+   setSaving(false);
+  }
+ };
+
+ return (
+  <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+   <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+    <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">{title}</h3>
+    <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{description}</p>
+   </div>
+   <div className="space-y-4 p-stack-lg">
+    {loading ? (
+     <SkeletonTable rows={4} columns={1} />
+    ) : (
+     <textarea
+      rows={14}
+      value={text}
+      onChange={(e) => { setText(e.target.value); setSaved(false); }}
+      spellCheck={false}
+      className={`${FORM_INPUT_CLASS} font-mono text-body-xs`}
+     />
+    )}
+    {error && (
+     <p className="flex items-center gap-1 text-body-sm font-semibold text-status-error-text"><Icon name="error" className="text-base" />{error}</p>
+    )}
+    {saved && !error && (
+     <p className="flex items-center gap-1 text-body-sm font-semibold text-status-success-text"><Icon name="check_circle" className="text-base" />Saved.</p>
+    )}
+    <Button variant="primary" size="md" onClick={handleSave} disabled={loading || saving}>
+     {saving ? 'Saving...' : 'Save'}
+    </Button>
+   </div>
+  </div>
+ );
+}
+
+function SiteContentEditor() {
+ return (
+  <div className="space-y-stack-lg">
+   <JsonBlobEditor
+    title="Company Info"
+    description="Name, tagline, HQ address, contact details — rendered in the site Footer. Edited as JSON (name, legalName, tagline, website, email, founded, hq, offices)."
+    api={companyInfoApi}
+   />
+   <JsonBlobEditor
+    title="About Page Content"
+    description="Core values, company timeline, certifications, and impact stats shown on the About page. Edited as JSON (coreValues, timeline, certifications, aboutStats)."
+    api={aboutContentApi}
+   />
+  </div>
+ );
+}
+
 export default function ContentManager() {
  const [activeKey, setActiveKey] = useState('services');
  const resource = useMemo(() => RESOURCES.find((r) => r.key === activeKey), [activeKey]);
+ const isSiteContent = activeKey === SITE_CONTENT_KEY;
 
  const [items, setItems] = useState([]);
  const [loading, setLoading] = useState(true);
@@ -315,6 +424,7 @@ export default function ContentManager() {
  const [submitting, setSubmitting] = useState(false);
 
  const load = useCallback(() => {
+  if (!resource) return;
   setLoading(true);
   resource.api.list()
    .then((res) => setItems(Array.isArray(res?.data) ? res.data : []))
@@ -323,8 +433,8 @@ export default function ContentManager() {
  }, [resource]);
 
  useEffect(() => {
-  load();
- }, [load]);
+  if (resource) load();
+ }, [resource, load]);
 
  const startCreate = () => {
   setForm(toForm({}, resource.fields));
@@ -394,7 +504,7 @@ export default function ContentManager() {
   } catch { /* keep row on failure */ }
  };
 
- const hasPublish = resource.fields.some((f) => f.name === 'is_published');
+ const hasPublish = !!resource && resource.fields.some((f) => f.name === 'is_published');
 
  return (
   <div className="space-y-stack-lg">
@@ -410,8 +520,19 @@ export default function ContentManager() {
       <Icon name={r.icon} className="text-lg" />{r.label}
      </button>
     ))}
+    <button
+     onClick={() => { setActiveKey(SITE_CONTENT_KEY); setShowForm(false); }}
+     className={`flex items-center gap-2 rounded-full px-4 py-2 font-label-caps text-label-caps uppercase transition-all ${
+      isSiteContent ? 'bg-brand text-white' : 'bg-surface-container text-ink-muted hover:bg-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted'
+     }`}
+    >
+     <Icon name="apartment" className="text-lg" />Company & About
+    </button>
    </div>
 
+   {isSiteContent ? (
+    <SiteContentEditor />
+   ) : (
    <div className="overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
     <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
      <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">
@@ -501,6 +622,7 @@ export default function ContentManager() {
      </div>
     )}
    </div>
+   )}
   </div>
  );
 }

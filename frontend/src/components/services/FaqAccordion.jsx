@@ -1,39 +1,34 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { faqs } from '../../data/services.js';
+import { faqs as fallbackFaqs } from '../../data/services.js';
+import { fetchFaqs } from '../../api/cms.js';
 import Icon from '../ui/Icon.jsx';
 
-function FaqItem({ faq, isOpen, onToggle, index }) {
- const id = `faq-${index}`;
- const buttonId = `faq-btn-${index}`;
- return (
-  <div className="rounded-lg border border-outline-variant bg-surface-low p-stack-md dark:border-dark-outline-variant dark:bg-dark-surface-low">
-   <button
-    id={buttonId}
-    onClick={onToggle}
-    aria-expanded={isOpen}
-    aria-controls={id}
-    className="flex w-full cursor-pointer items-center justify-between text-left font-display text-body-lg font-semibold text-ink dark:text-white"
-   >
-    {faq.question}
-    <Icon name="expand_more" className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-   </button>
-   {isOpen && (
-    <div
-     id={id}
-     role="region"
-     aria-labelledby={buttonId}
-     className="pt-4 text-body-md text-ink-muted dark:text-white"
-    >
-     {faq.answer}
-    </div>
-   )}
-  </div>
- );
+// This section sits on the Services *listing* page (pages/Services.jsx),
+// not any single service's detail page — there's no one Service record in
+// scope here, so it can't render a particular service's own `faqs` field
+// (that's what ServiceDetail.jsx's own inline FaqSection already does).
+// It's a generic "Common Questions" block about engaging with CoreFusion,
+// which is exactly what the global FAQ resource's "services" category is
+// for (see backend/app/seeders/cms_seed.py's FAQS list) — same live,
+// admin-editable resource pages/Faq.jsx already reads, just scoped to the
+// services-engagement questions instead of every category.
+function toFrontend(apiItems) {
+ return apiItems.map((item) => ({ question: item.question, answer: item.answer }));
 }
 
 export default function FaqAccordion() {
  const [openIndex, setOpenIndex] = useState(0);
+ const [faqs, setFaqs] = useState(fallbackFaqs);
+
+ useEffect(() => {
+  fetchFaqs({ category: 'services' })
+   .then((res) => {
+    const items = res?.data;
+    if (Array.isArray(items) && items.length) setFaqs(toFrontend(items));
+   })
+   .catch(() => {});
+ }, []);
 
  return (
   <section className="mx-auto max-w-container px-4 py-section-padding sm:px-6 lg:px-10 xl:px-12 ">
@@ -63,5 +58,34 @@ export default function FaqAccordion() {
     </div>
    </div>
   </section>
+ );
+}
+
+function FaqItem({ faq, isOpen, onToggle, index }) {
+ const id = `faq-${index}`;
+ const buttonId = `faq-btn-${index}`;
+ return (
+  <div className="rounded-lg border border-outline-variant bg-surface-low p-stack-md dark:border-dark-outline-variant dark:bg-dark-surface-low">
+   <button
+    id={buttonId}
+    onClick={onToggle}
+    aria-expanded={isOpen}
+    aria-controls={id}
+    className="flex w-full cursor-pointer items-center justify-between text-left font-display text-body-lg font-semibold text-ink dark:text-white"
+   >
+    {faq.question}
+    <Icon name="expand_more" className={`transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+   </button>
+   {isOpen && (
+    <div
+     id={id}
+     role="region"
+     aria-labelledby={buttonId}
+     className="pt-4 text-body-md text-ink-muted dark:text-white"
+    >
+     {faq.answer}
+    </div>
+   )}
+  </div>
  );
 }

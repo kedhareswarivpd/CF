@@ -1,6 +1,19 @@
-import { aboutStats } from '../../data/about.js';
+import { useEffect, useState } from 'react';
+import { aboutStats as staticAboutStats } from '../../data/about.js';
+import { fetchAboutContent } from '../../api/cms.js';
 
 export default function AboutHero({ stats }) {
+ const [aboutStats, setAboutStats] = useState(staticAboutStats);
+
+ useEffect(() => {
+  fetchAboutContent()
+   .then((res) => {
+    const items = res?.data?.aboutStats;
+    if (Array.isArray(items) && items.length) setAboutStats(items);
+   })
+   .catch(() => {});
+ }, []);
+
  const items = stats
   ? [
     { value: `${stats.total_clients}+`, label: 'Global Clients' },

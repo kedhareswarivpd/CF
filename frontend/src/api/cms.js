@@ -20,6 +20,14 @@ export function fetchFaqs(params = {}) {
   return apiRequest(`/faqs${toQueryString({ is_published: true, ...params })}`);
 }
 
+// Single CMS page-content section by slug (e.g. legal pages) — the
+// `page-content` router filters server-side on `slug` (see
+// backend/app/routers/page_content.py's allowed_filters), so this returns
+// at most one row in `data`.
+export function fetchPageContent(slug) {
+  return apiRequest(`/page-content${toQueryString({ slug, is_published: true })}`);
+}
+
 export function fetchGallery(params = {}) {
   return apiRequest(`/gallery${toQueryString({ is_published: true, limit: 100, ...params })}`);
 }
@@ -56,6 +64,22 @@ export function fetchPartners(params = {}) {
   return apiRequest(`/partners${toQueryString({ is_published: true, ...params })}`);
 }
 
+export function fetchLeadership(params = {}) {
+  return apiRequest(`/leadership${toQueryString({ is_published: true, ...params })}`);
+}
+
+export function fetchOffices(params = {}) {
+  return apiRequest(`/offices${toQueryString({ is_published: true, ...params })}`);
+}
+
+export function fetchCompanyInfo() {
+  return apiRequest('/site-content/company-info');
+}
+
+export function fetchAboutContent() {
+  return apiRequest('/site-content/about-content');
+}
+
 const crudApi = (endpoint) => ({
   list: (params = {}) => apiRequest(`${endpoint}${toQueryString({ limit: 100, ...params })}`),
   create: (body) => apiRequest(endpoint, { method: 'POST', body }),
@@ -83,6 +107,20 @@ export const partnersApi = crudApi('/partners');
 export const seoApi = crudApi('/seo');
 export const pageContentApi = crudApi('/page-content');
 export const careersApi = crudApi('/careers');
+export const leadershipApi = crudApi('/leadership');
+export const officesApi = crudApi('/offices');
+
+// Company info / about-page content — singleton settings-style resources
+// (not a list), so they get a dedicated get/update pair rather than the
+// generic list-CRUD `crudApi()` shape used above.
+export const companyInfoApi = {
+  get: () => apiRequest('/site-content/company-info'),
+  update: (value) => apiRequest('/site-content/company-info', { method: 'PUT', body: { value } }),
+};
+export const aboutContentApi = {
+  get: () => apiRequest('/site-content/about-content'),
+  update: (value) => apiRequest('/site-content/about-content', { method: 'PUT', body: { value } }),
+};
 
 // Blog comments — public read (approved only, scoped to one post) and
 // public create (rate-limited 5/min server-side); moderation itself is

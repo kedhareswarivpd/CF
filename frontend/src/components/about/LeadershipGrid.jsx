@@ -1,6 +1,12 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { leadership } from '../../data/about.js';
+import { leadership as staticLeadership } from '../../data/about.js';
+import { fetchLeadership } from '../../api/cms.js';
 import Reveal from '../ui/Reveal.jsx';
+
+function toFrontend(l) {
+ return { name: l.name, title: l.title, image: l.photo_url || null, linkedin: l.linkedin || 'https://www.linkedin.com/' };
+}
 
 function LinkedInIcon() {
  return (
@@ -23,6 +29,17 @@ function LeaderAvatar({ name, image }) {
 }
 
 export default function LeadershipGrid() {
+ const [leadership, setLeadership] = useState(staticLeadership);
+
+ useEffect(() => {
+  fetchLeadership()
+   .then((res) => {
+    const items = res?.data;
+    if (Array.isArray(items) && items.length) setLeadership(items.map(toFrontend));
+   })
+   .catch(() => {});
+ }, []);
+
  return (
   <section className="bg-white py-section-padding dark:bg-dark-surface">
    <div className="mx-auto max-w-container px-4 sm:px-6 lg:px-10 xl:px-12">

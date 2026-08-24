@@ -1,8 +1,21 @@
-import { certifications } from '../../data/about.js';
+import { useEffect, useState } from 'react';
+import { certifications as staticCertifications } from '../../data/about.js';
+import { fetchAboutContent } from '../../api/cms.js';
 import Icon from '../ui/Icon.jsx';
 import Reveal from '../ui/Reveal.jsx';
 
 export default function Certifications() {
+ const [certifications, setCertifications] = useState(staticCertifications);
+
+ useEffect(() => {
+  fetchAboutContent()
+   .then((res) => {
+    const items = res?.data?.certifications;
+    if (Array.isArray(items) && items.length) setCertifications(items);
+   })
+   .catch(() => {});
+ }, []);
+
  return (
   <section className="mx-auto max-w-container px-4 py-section-padding text-center sm:px-6 lg:px-10 xl:px-12 ">
    <Reveal>

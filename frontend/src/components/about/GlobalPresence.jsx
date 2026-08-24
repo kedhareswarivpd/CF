@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
  ComposableMap,
  Geographies,
@@ -6,7 +6,8 @@ import {
  Marker,
  ZoomableGroup,
 } from 'react-simple-maps';
-import { globalOffices } from '../../data/about.js';
+import { globalOffices as staticGlobalOffices } from '../../data/about.js';
+import { fetchOffices } from '../../api/cms.js';
 import Icon from '../ui/Icon.jsx';
 import Reveal from '../ui/Reveal.jsx';
 
@@ -26,6 +27,22 @@ const DEFAULT_POSITION = { coordinates: [20, 15], zoom: 1 };
 export default function GlobalPresence() {
  const [position, setPosition] = useState(DEFAULT_POSITION);
  const [active, setActive] = useState(null);
+ const [globalOffices, setGlobalOffices] = useState(staticGlobalOffices);
+
+ useEffect(() => {
+  fetchOffices()
+   .then((res) => {
+    const items = res?.data;
+    if (Array.isArray(items) && items.length) {
+     setGlobalOffices(
+      [...items]
+       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+       .map((o) => ({ city: o.city, description: o.description || '' }))
+     );
+    }
+   })
+   .catch(() => {});
+ }, []);
 
  function handleMarkerClick(office) {
   const coords = COORDS[office.city];

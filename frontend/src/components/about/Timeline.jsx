@@ -1,4 +1,6 @@
-import { timeline } from '../../data/about.js';
+import { useEffect, useState } from 'react';
+import { timeline as staticTimeline } from '../../data/about.js';
+import { fetchAboutContent } from '../../api/cms.js';
 import Icon from '../ui/Icon.jsx';
 import Reveal from '../ui/Reveal.jsx';
 
@@ -22,6 +24,17 @@ function TimelineCard({ entry }) {
 }
 
 export default function Timeline() {
+ const [timeline, setTimeline] = useState(staticTimeline);
+
+ useEffect(() => {
+  fetchAboutContent()
+   .then((res) => {
+    const items = res?.data?.timeline;
+    if (Array.isArray(items) && items.length) setTimeline(items);
+   })
+   .catch(() => {});
+ }, []);
+
  return (
   <section className="mx-auto max-w-container overflow-hidden px-4 py-section-padding sm:px-6 lg:px-10 xl:px-12 ">
    <div className="mb-20 text-center">
