@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import { PortalTable } from '../components/ui/ResponsiveTable.jsx';
 import Modal from '../components/ui/Modal.jsx';
 import Tabs from '../components/ui/Tabs.jsx';
+import Pagination from '../components/ui/Pagination.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import useAsyncAction from '../hooks/useAsyncAction.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -35,6 +36,9 @@ import {
 } from '../api/admin.js';
 import { careersApi } from '../api/cms.js';
 import { createLead } from '../api/crm.js';
+import { validateConvertToLead } from '../schemas/crm.schema.js';
+import { validateAddUser, validateUpdateUser } from '../schemas/employee.schema.js';
+import { validateAddProject, validateUpdateProject } from '../schemas/project.schema.js';
 
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import ContentManager from '../components/admin/ContentManager.jsx';
@@ -73,11 +77,19 @@ function ConvertToLeadModal({ submission, onClose, onSuccess }) {
  const [estimatedValue, setEstimatedValue] = useState('');
  const [notes, setNotes] = useState(submission.message || '');
  const [error, setError] = useState('');
+ const [fieldErrors, setFieldErrors] = useState({});
  const { run, isPending } = useAsyncAction();
 
  const handleConvert = async (e) => {
   e.preventDefault();
   setError('');
+  const clientErrors = validateConvertToLead({ estimatedValue, notes });
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
+  }
+  setFieldErrors({});
   try {
    await run(async () => {
     await createLead({
@@ -117,6 +129,9 @@ function ConvertToLeadModal({ submission, onClose, onSuccess }) {
       value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)}
       className={FORM_INPUT_CLASS + ' w-full'}
      />
+     {fieldErrors.estimatedValue && (
+      <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.estimatedValue}</p>
+     )}
     </div>
     <div>
      <label className="mb-1 block text-body-sm font-medium text-ink dark:text-dark-ink">Notes</label>
@@ -125,6 +140,9 @@ function ConvertToLeadModal({ submission, onClose, onSuccess }) {
       value={notes} onChange={(e) => setNotes(e.target.value)}
       className={FORM_INPUT_CLASS + ' w-full resize-none'}
      />
+     {fieldErrors.notes && (
+      <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.notes}</p>
+     )}
     </div>
     {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
     <div className="flex gap-3 pt-1">
@@ -247,6 +265,7 @@ function AddUserForm({ currentRole, onCreated, onCancel }) {
  const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', portal: '', role: '' });
  const [roleError, setRoleError] = useState('');
  const [submitError, setSubmitError] = useState('');
+ const [fieldErrors, setFieldErrors] = useState({});
  const [submitting, setSubmitting] = useState(false);
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
@@ -267,6 +286,13 @@ function AddUserForm({ currentRole, onCreated, onCancel }) {
    return;
   }
   setSubmitError('');
+  const clientErrors = validateAddUser(form);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setSubmitError('Please fix the errors below.');
+   return;
+  }
+  setFieldErrors({});
   setSubmitting(true);
   try {
    await createUser({ name: form.name, email: form.email, password: form.password, phone: form.phone || null, role: form.role });
@@ -281,10 +307,22 @@ function AddUserForm({ currentRole, onCreated, onCancel }) {
  return (
   <form onSubmit={handleSubmit} className="space-y-4">
    <div className="grid gap-4 sm:grid-cols-2">
-    <input required type="text" placeholder="Full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass} />
-    <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputClass} />
-    <input required type="password" minLength={8} placeholder="Temporary password (min. 8 characters)" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputClass} />
-    <input type="text" placeholder="Phone (optional)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} />
+    <div>
+     <input required type="text" placeholder="Full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.name && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.name}</p>}
+    </div>
+    <div>
+     <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.email && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.email}</p>}
+    </div>
+    <div>
+     <input required type="password" minLength={8} placeholder="Temporary password (min. 8 characters)" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.password && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.password}</p>}
+    </div>
+    <div>
+     <input type="text" placeholder="Phone (optional)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.phone && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.phone}</p>}
+    </div>
    </div>
 
    <label className="flex flex-col gap-1.5">
@@ -321,11 +359,16 @@ function UserManagement({ currentRole }) {
  const [loadingUsers, setLoadingUsers] = useState(true);
  const [showAddForm, setShowAddForm] = useState(false);
  const [editingUser, setEditingUser] = useState(null);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  const loadUsers = useCallback(() => {
   setLoadingUsers(true);
-  fetchUsers().then((res) => setUsers(res?.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
- }, []);
+  fetchUsers({ page, limit: 20 })
+   .then((res) => { setUsers(res?.data || []); setTotalPages(res?.meta?.total_pages || 1); })
+   .catch(() => {})
+   .finally(() => setLoadingUsers(false));
+ }, [page]);
 
  useEffect(() => {
   loadUsers();
@@ -334,11 +377,21 @@ function UserManagement({ currentRole }) {
  const handleEdit = (user) => {
   setEditingUser(user);
   setShowAddForm(false);
+  setUserError('');
+  setUserFieldErrors({});
  };
 
  const handleUpdate = async (e) => {
   e.preventDefault();
   if (!editingUser) return;
+  setUserError('');
+  const clientErrors = validateUpdateUser(editingUser);
+  if (Object.keys(clientErrors).length > 0) {
+   setUserFieldErrors(clientErrors);
+   setUserError('Please fix the errors below.');
+   return;
+  }
+  setUserFieldErrors({});
   setSubmittingUser(true);
   try {
    await updateUser(editingUser.id, {
@@ -359,6 +412,7 @@ function UserManagement({ currentRole }) {
 
  const [submittingUser, setSubmittingUser] = useState(false);
  const [userError, setUserError] = useState('');
+ const [userFieldErrors, setUserFieldErrors] = useState({});
  const [successMsg, setSuccessMsg] = useState('');
  const { run: runDeactivate, isPending: deactivating } = useAsyncAction();
 
@@ -418,12 +472,24 @@ function UserManagement({ currentRole }) {
       {editingUser ? (
        <form onSubmit={handleUpdate} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-         <input required type="text" placeholder="Full name" value={editingUser.name} onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })} className={FORM_INPUT_CLASS} />
-         <input required type="email" placeholder="Email" value={editingUser.email} onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })} className={FORM_INPUT_CLASS} />
-         <input type="text" placeholder="Phone (optional)" value={editingUser.phone || ''} onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })} className={FORM_INPUT_CLASS} />
-         <select value={editingUser.role} onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })} className={FORM_INPUT_CLASS}>
-          {PORTAL_ROLE_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-         </select>
+         <div>
+          <input required type="text" placeholder="Full name" value={editingUser.name} onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+          {userFieldErrors.name && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{userFieldErrors.name}</p>}
+         </div>
+         <div>
+          <input required type="email" placeholder="Email" value={editingUser.email} onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+          {userFieldErrors.email && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{userFieldErrors.email}</p>}
+         </div>
+         <div>
+          <input type="text" placeholder="Phone (optional)" value={editingUser.phone || ''} onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+          {userFieldErrors.phone && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{userFieldErrors.phone}</p>}
+         </div>
+         <div>
+          <select value={editingUser.role} onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'}>
+           {PORTAL_ROLE_OPTIONS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+          </select>
+          {userFieldErrors.role && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{userFieldErrors.role}</p>}
+         </div>
         </div>
         <label className="flex items-center gap-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
          <input type="checkbox" checked={editingUser.is_active} onChange={(e) => setEditingUser({ ...editingUser, is_active: e.target.checked })} />
@@ -432,7 +498,7 @@ function UserManagement({ currentRole }) {
         {userError && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{userError}</p>}
         <div className="flex gap-2">
          <Button type="submit" variant="primary" size="md" disabled={submittingUser}>{submittingUser ? 'Updating...' : 'Update User'}</Button>
-         <Button type="button" variant="outline" size="md" onClick={() => { setEditingUser(null); setUserError(''); }}>Cancel</Button>
+         <Button type="button" variant="outline" size="md" onClick={() => { setEditingUser(null); setUserError(''); setUserFieldErrors({}); }}>Cancel</Button>
         </div>
        </form>
       ) : (
@@ -452,7 +518,12 @@ function UserManagement({ currentRole }) {
     {loadingUsers ? (
      <div className="p-stack-lg"><LoadingSpinner /></div>
     ) : (
-     <PortalTable columns={userColumns} rows={users} emptyMessage="No users found." />
+     <>
+      <PortalTable columns={userColumns} rows={users} emptyMessage="No users found." />
+      <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+      </div>
+     </>
     )}
    </div>
 
@@ -469,13 +540,16 @@ function UserManagement({ currentRole }) {
 function EmployeeManagement() {
  const [employees, setEmployees] = useState([]);
  const [loading, setLoading] = useState(true);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  useEffect(() => {
-  fetchEmployees({ limit: 100 })
-   .then((res) => setEmployees(res?.data || []))
+  setLoading(true);
+  fetchEmployees({ page, limit: 20 })
+   .then((res) => { setEmployees(res?.data || []); setTotalPages(res?.meta?.total_pages || 1); })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, []);
+ }, [page]);
 
  return (
   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -483,19 +557,24 @@ function EmployeeManagement() {
     <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Employees ({employees.length})</h3>
    </div>
    {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
-    <PortalTable
-     emptyMessage="No employees found."
-     rows={employees}
-     columns={[
-      { key: 'name', label: 'Name', className: 'text-body-md font-semibold text-brand-dark dark:text-dark-brand', render: (v) => v || '—' },
-      { key: 'employee_code', label: 'Code', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
-      { key: 'email', label: 'Email', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
-      { key: 'designation', label: 'Designation', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
-      { key: 'department_name', label: 'Department', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
-      { key: 'employment_type', label: 'Employment', className: 'text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted', render: (v) => (v || '—').replace('_', ' ') },
-      { key: 'status', label: 'Status', render: (v) => <StatusBadge variant={v === 'active' ? 'success' : 'neutral'}>{v}</StatusBadge> },
-     ]}
-    />
+    <>
+     <PortalTable
+      emptyMessage="No employees found."
+      rows={employees}
+      columns={[
+       { key: 'name', label: 'Name', className: 'text-body-md font-semibold text-brand-dark dark:text-dark-brand', render: (v) => v || '—' },
+       { key: 'employee_code', label: 'Code', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+       { key: 'email', label: 'Email', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+       { key: 'designation', label: 'Designation', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+       { key: 'department_name', label: 'Department', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+       { key: 'employment_type', label: 'Employment', className: 'text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted', render: (v) => (v || '—').replace('_', ' ') },
+       { key: 'status', label: 'Status', render: (v) => <StatusBadge variant={v === 'active' ? 'success' : 'neutral'}>{v}</StatusBadge> },
+      ]}
+     />
+     <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+     </div>
+    </>
    )}
   </div>
  );
@@ -504,13 +583,16 @@ function EmployeeManagement() {
 function ClientManagement() {
  const [clients, setClients] = useState([]);
  const [loading, setLoading] = useState(true);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  useEffect(() => {
-  fetchClients({ limit: 100 })
-   .then((res) => setClients(res?.data || []))
+  setLoading(true);
+  fetchClients({ page, limit: 20 })
+   .then((res) => { setClients(res?.data || []); setTotalPages(res?.meta?.total_pages || 1); })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, []);
+ }, [page]);
 
  return (
   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -518,16 +600,21 @@ function ClientManagement() {
     <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Clients</h3>
    </div>
    {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
-    <PortalTable
-     emptyMessage="No clients found."
-     rows={clients}
-     columns={[
-      { key: 'company_name', label: 'Company', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
-      { key: 'industry', label: 'Industry', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
-      { key: 'country', label: 'Country', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
-      { key: 'status', label: 'Status', render: (v) => <StatusBadge variant={v === 'active' ? 'success' : 'neutral'}>{v || 'active'}</StatusBadge> },
-     ]}
-    />
+    <>
+     <PortalTable
+      emptyMessage="No clients found."
+      rows={clients}
+      columns={[
+       { key: 'company_name', label: 'Company', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+       { key: 'industry', label: 'Industry', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+       { key: 'country', label: 'Country', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+       { key: 'status', label: 'Status', render: (v) => <StatusBadge variant={v === 'active' ? 'success' : 'neutral'}>{v || 'active'}</StatusBadge> },
+      ]}
+     />
+     <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+     </div>
+    </>
    )}
   </div>
  );
@@ -541,12 +628,20 @@ const PROJECT_STATUS_VARIANT = {
 function AddProjectForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ title: '', industry: '', status: 'planning', budget: '', is_published: false, is_featured: false });
  const [error, setError] = useState('');
+ const [fieldErrors, setFieldErrors] = useState({});
  const [submitting, setSubmitting] = useState(false);
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
  const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
+  const clientErrors = validateAddProject(form);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
+  }
+  setFieldErrors({});
   setSubmitting(true);
   try {
    await createProject({
@@ -568,12 +663,24 @@ function AddProjectForm({ onCreated, onCancel }) {
  return (
   <form onSubmit={handleSubmit} className="space-y-4">
    <div className="grid gap-4 sm:grid-cols-2">
-    <input required type="text" placeholder="Project title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass} />
-    <input type="text" placeholder="Industry (optional)" value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} className={inputClass} />
-    <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputClass}>
-     {PROJECT_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-    </select>
-    <input type="number" min="0" placeholder="Budget (optional)" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} className={inputClass} />
+    <div>
+     <input required type="text" placeholder="Project title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.title && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.title}</p>}
+    </div>
+    <div>
+     <input type="text" placeholder="Industry (optional)" value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.industry && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.industry}</p>}
+    </div>
+    <div>
+     <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={inputClass + ' w-full'}>
+      {PROJECT_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+     </select>
+     {fieldErrors.status && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.status}</p>}
+    </div>
+    <div>
+     <input type="number" min="0" placeholder="Budget (optional)" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} className={inputClass + ' w-full'} />
+     {fieldErrors.budget && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.budget}</p>}
+    </div>
    </div>
    <div className="flex items-center gap-6">
     <label className="flex items-center gap-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
@@ -597,11 +704,16 @@ function ProjectsManagement() {
  const [loading, setLoading] = useState(true);
  const [showAddForm, setShowAddForm] = useState(false);
  const [editingProject, setEditingProject] = useState(null);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  const loadProjects = useCallback(() => {
   setLoading(true);
-  fetchAdminProjects({ limit: 50 }).then((res) => setProjects(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, []);
+  fetchAdminProjects({ page, limit: 20 })
+   .then((res) => { setProjects(res?.data || []); setTotalPages(res?.meta?.total_pages || 1); })
+   .catch(() => {})
+   .finally(() => setLoading(false));
+ }, [page]);
 
  useEffect(() => {
   loadProjects();
@@ -610,11 +722,21 @@ function ProjectsManagement() {
  const handleEdit = (project) => {
   setEditingProject(project);
   setShowAddForm(false);
+  setProjectError('');
+  setProjectFieldErrors({});
  };
 
  const handleUpdate = async (e) => {
   e.preventDefault();
   if (!editingProject) return;
+  setProjectError('');
+  const clientErrors = validateUpdateProject(editingProject);
+  if (Object.keys(clientErrors).length > 0) {
+   setProjectFieldErrors(clientErrors);
+   setProjectError('Please fix the errors below.');
+   return;
+  }
+  setProjectFieldErrors({});
   setSubmittingProject(true);
   try {
    await updateProject(editingProject.id, {
@@ -637,6 +759,7 @@ function ProjectsManagement() {
 
  const [submittingProject, setSubmittingProject] = useState(false);
  const [projectError, setProjectError] = useState('');
+ const [projectFieldErrors, setProjectFieldErrors] = useState({});
  const { run: runTogglePublish, isPending: togglingPublish } = useAsyncAction();
  const { run: runRemove, isPending: removing } = useAsyncAction();
 
@@ -699,13 +822,28 @@ function ProjectsManagement() {
       {editingProject ? (
        <form onSubmit={handleUpdate} className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
-         <input required type="text" placeholder="Project title" value={editingProject.title} onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })} className={FORM_INPUT_CLASS} />
-         <input type="text" placeholder="Industry (optional)" value={editingProject.industry || ''} onChange={(e) => setEditingProject({ ...editingProject, industry: e.target.value })} className={FORM_INPUT_CLASS} />
-         <select value={editingProject.status} onChange={(e) => setEditingProject({ ...editingProject, status: e.target.value })} className={FORM_INPUT_CLASS}>
-          {PROJECT_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-         </select>
-         <input type="number" min="0" max="100" placeholder="Progress %" value={editingProject.progress_percent ?? 0} onChange={(e) => setEditingProject({ ...editingProject, progress_percent: Number(e.target.value) })} className={FORM_INPUT_CLASS} />
-         <input type="number" min="0" placeholder="Budget (optional)" value={editingProject.budget || ''} onChange={(e) => setEditingProject({ ...editingProject, budget: e.target.value })} className={FORM_INPUT_CLASS} />
+         <div>
+          <input required type="text" placeholder="Project title" value={editingProject.title} onChange={(e) => setEditingProject({ ...editingProject, title: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+          {projectFieldErrors.title && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{projectFieldErrors.title}</p>}
+         </div>
+         <div>
+          <input type="text" placeholder="Industry (optional)" value={editingProject.industry || ''} onChange={(e) => setEditingProject({ ...editingProject, industry: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+          {projectFieldErrors.industry && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{projectFieldErrors.industry}</p>}
+         </div>
+         <div>
+          <select value={editingProject.status} onChange={(e) => setEditingProject({ ...editingProject, status: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'}>
+           {PROJECT_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+          </select>
+          {projectFieldErrors.status && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{projectFieldErrors.status}</p>}
+         </div>
+         <div>
+          <input type="number" min="0" max="100" placeholder="Progress %" value={editingProject.progress_percent ?? 0} onChange={(e) => setEditingProject({ ...editingProject, progress_percent: Number(e.target.value) })} className={FORM_INPUT_CLASS + ' w-full'} />
+          {projectFieldErrors.progress_percent && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{projectFieldErrors.progress_percent}</p>}
+         </div>
+         <div>
+          <input type="number" min="0" placeholder="Budget (optional)" value={editingProject.budget || ''} onChange={(e) => setEditingProject({ ...editingProject, budget: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
+          {projectFieldErrors.budget && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{projectFieldErrors.budget}</p>}
+         </div>
         </div>
         <div className="flex items-center gap-6">
          <label className="flex items-center gap-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
@@ -718,7 +856,7 @@ function ProjectsManagement() {
         {projectError && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{projectError}</p>}
         <div className="flex gap-2">
          <Button type="submit" variant="primary" size="md" disabled={submittingProject}>{submittingProject ? 'Updating...' : 'Update Project'}</Button>
-         <Button type="button" variant="outline" size="md" onClick={() => { setEditingProject(null); setProjectError(''); }}>Cancel</Button>
+         <Button type="button" variant="outline" size="md" onClick={() => { setEditingProject(null); setProjectError(''); setProjectFieldErrors({}); }}>Cancel</Button>
         </div>
        </form>
       ) : (
@@ -729,7 +867,12 @@ function ProjectsManagement() {
     {loading ? (
      <div className="p-stack-lg"><LoadingSpinner /></div>
     ) : (
-     <PortalTable columns={projectColumns} rows={projects} emptyMessage="No projects found." />
+     <>
+      <PortalTable columns={projectColumns} rows={projects} emptyMessage="No projects found." />
+      <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+      </div>
+     </>
     )}
    </div>
   </div>
@@ -812,13 +955,15 @@ function RolesManagement() {
  const [roles, setRoles] = useState([]);
  const [loading, setLoading] = useState(true);
  const [showRoleForm, setShowRoleForm] = useState(false);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  const load = useCallback(() => {
   setLoading(true);
-  fetchRoles({ limit: 50 })
-   .then((r) => setRoles(r?.data || []))
+  fetchRoles({ page, limit: 20 })
+   .then((r) => { setRoles(r?.data || []); setTotalPages(r?.meta?.total_pages || 1); })
    .finally(() => setLoading(false));
- }, []);
+ }, [page]);
 
  useEffect(() => {
   load();
@@ -862,6 +1007,9 @@ function RolesManagement() {
     </div>
    )}
    <PortalTable columns={roleColumns} rows={roles} emptyMessage="No custom roles yet." />
+   <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+    <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+   </div>
   </div>
  );
 }
@@ -870,13 +1018,15 @@ function PermissionsManagement() {
  const [permissions, setPermissions] = useState([]);
  const [loading, setLoading] = useState(true);
  const [showPermForm, setShowPermForm] = useState(false);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  const load = useCallback(() => {
   setLoading(true);
-  fetchPermissions({ limit: 100 })
-   .then((p) => setPermissions(p?.data || []))
+  fetchPermissions({ page, limit: 20 })
+   .then((p) => { setPermissions(p?.data || []); setTotalPages(p?.meta?.total_pages || 1); })
    .finally(() => setLoading(false));
- }, []);
+ }, [page]);
 
  useEffect(() => {
   load();
@@ -920,6 +1070,9 @@ function PermissionsManagement() {
     </div>
    )}
    <PortalTable columns={permColumns} rows={permissions} emptyMessage="No permissions yet." />
+   <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+    <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+   </div>
   </div>
  );
 }
@@ -937,11 +1090,16 @@ function MediaManagement() {
  const [loading, setLoading] = useState(true);
  const [uploading, setUploading] = useState(false);
  const [error, setError] = useState('');
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  const loadMedia = useCallback(() => {
   setLoading(true);
-  fetchMedia({ limit: 60 }).then((res) => setMedia(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, []);
+  fetchMedia({ page, limit: 24 })
+   .then((res) => { setMedia(res?.data || []); setTotalPages(res?.meta?.total_pages || 1); })
+   .catch(() => {})
+   .finally(() => setLoading(false));
+ }, [page]);
 
  useEffect(() => {
   loadMedia();
@@ -1008,6 +1166,11 @@ function MediaManagement() {
       {!media.length && (
        <p className="col-span-full py-8 text-center text-body-sm text-ink-muted">No media uploaded yet.</p>
       )}
+     </div>
+    )}
+    {!loading && (
+     <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
      </div>
     )}
    </div>
@@ -1177,11 +1340,16 @@ function ReportsManagement() {
  const [reports, setReports] = useState([]);
  const [loading, setLoading] = useState(true);
  const [showForm, setShowForm] = useState(false);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  const load = useCallback(() => {
   setLoading(true);
-  fetchReports({ limit: 50 }).then((res) => setReports(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, []);
+  fetchReports({ page, limit: 20 })
+   .then((res) => { setReports(res?.data || []); setTotalPages(res?.meta?.total_pages || 1); })
+   .catch(() => {})
+   .finally(() => setLoading(false));
+ }, [page]);
 
  useEffect(() => {
   load();
@@ -1233,7 +1401,12 @@ function ReportsManagement() {
     {loading ? (
      <div className="p-stack-lg"><LoadingSpinner /></div>
     ) : (
-     <PortalTable columns={reportColumns} rows={reports} emptyMessage="No reports generated yet." />
+     <>
+      <PortalTable columns={reportColumns} rows={reports} emptyMessage="No reports generated yet." />
+      <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+      </div>
+     </>
     )}
    </div>
   </div>
@@ -1254,15 +1427,17 @@ function ContactsManagement() {
  const [loading, setLoading] = useState(true);
  const [statusFilter, setStatusFilter] = useState('all');
  const [convertTarget, setConvertTarget] = useState(null);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
  const { toasts, toast } = useToast();
 
  const load = useCallback(() => {
   setLoading(true);
   const start = Date.now();
-  const params = { limit: 100 };
+  const params = { page, limit: 20 };
   if (statusFilter !== 'all') params.status = statusFilter;
   fetchContactSubmissions(params)
-   .then((res) => setSubmissions(res?.data || []))
+   .then((res) => { setSubmissions(res?.data || []); setTotalPages(res?.meta?.total_pages || 1); })
    .catch(() => setSubmissions([]))
    .finally(() => {
     const elapsed = Date.now() - start;
@@ -1273,11 +1448,17 @@ function ContactsManagement() {
      setLoading(false);
     }
    });
- }, [statusFilter]);
+ }, [statusFilter, page]);
 
  useEffect(() => {
   load();
  }, [load]);
+
+ // Changing the status filter must not leave the view on a page number that
+ // no longer exists in the filtered result set.
+ useEffect(() => {
+  setPage(1);
+ }, [statusFilter]);
 
  const { run: runStatusChange, isPending: statusChanging } = useAsyncAction();
 
@@ -1447,6 +1628,11 @@ function ContactsManagement() {
         )}
        </tbody>
       </table>
+     </div>
+    )}
+    {!loading && (
+     <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
      </div>
     )}
    </div>
@@ -1671,11 +1857,16 @@ function TrainingManagement() {
  const [courses, setCourses] = useState([]);
  const [loading, setLoading] = useState(true);
  const [showNew, setShowNew] = useState(false);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  const load = useCallback(() => {
   setLoading(true);
-  fetchCourses().then((res) => setCourses(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, []);
+  fetchCourses({ page, limit: 20 })
+   .then((res) => { setCourses(res?.data || []); setTotalPages(res?.meta?.total_pages || 1); })
+   .catch(() => {})
+   .finally(() => setLoading(false));
+ }, [page]);
 
  useEffect(() => { load(); }, [load]);
 
@@ -1687,16 +1878,21 @@ function TrainingManagement() {
    {showNew && <NewCourseForm onCreated={() => { setShowNew(false); load(); }} onCancel={() => setShowNew(false)} />}
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
     {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
-     <PortalTable
-      emptyMessage="No courses yet."
-      rows={courses}
-      columns={[
-       { key: 'title', label: 'Title', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
-       { key: 'category', label: 'Category', render: (v) => <Badge className="text-label-caps">{v || '—'}</Badge> },
-       { key: 'duration_hours', label: 'Duration', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => (v ? `${v}h` : '—') },
-       { key: 'is_published', label: 'Status', render: (v) => <StatusBadge variant={v ? 'success' : 'neutral'}>{v ? 'published' : 'draft'}</StatusBadge> },
-      ]}
-     />
+     <>
+      <PortalTable
+       emptyMessage="No courses yet."
+       rows={courses}
+       columns={[
+        { key: 'title', label: 'Title', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+        { key: 'category', label: 'Category', render: (v) => <Badge className="text-label-caps">{v || '—'}</Badge> },
+        { key: 'duration_hours', label: 'Duration', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => (v ? `${v}h` : '—') },
+        { key: 'is_published', label: 'Status', render: (v) => <StatusBadge variant={v ? 'success' : 'neutral'}>{v ? 'published' : 'draft'}</StatusBadge> },
+       ]}
+      />
+      <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+      </div>
+     </>
     )}
    </div>
   </div>
@@ -1760,19 +1956,34 @@ function CareersManagement() {
  const [loading, setLoading] = useState(true);
  const [showNew, setShowNew] = useState(false);
  const [statusFilter, setStatusFilter] = useState('');
+ const [careersPage, setCareersPage] = useState(1);
+ const [careersTotalPages, setCareersTotalPages] = useState(1);
+ const [appsPage, setAppsPage] = useState(1);
+ const [appsTotalPages, setAppsTotalPages] = useState(1);
 
  const load = useCallback(() => {
   setLoading(true);
   Promise.all([
-   careersApi.list({ limit: 100 }),
-   fetchApplications(statusFilter ? { status: statusFilter } : {}),
+   careersApi.list({ page: careersPage, limit: 20 }),
+   fetchApplications({ page: appsPage, limit: 20, ...(statusFilter ? { status: statusFilter } : {}) }),
   ])
-   .then(([c, a]) => { setCareers(c?.data || []); setApplications(a?.data || []); })
+   .then(([c, a]) => {
+    setCareers(c?.data || []);
+    setCareersTotalPages(c?.meta?.total_pages || 1);
+    setApplications(a?.data || []);
+    setAppsTotalPages(a?.meta?.total_pages || 1);
+   })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [statusFilter]);
+ }, [statusFilter, careersPage, appsPage]);
 
  useEffect(() => { load(); }, [load]);
+
+ // Changing the application status filter must not leave the applications
+ // list on a page number that no longer exists in the filtered result set.
+ useEffect(() => {
+  setAppsPage(1);
+ }, [statusFilter]);
 
  const careerTitleById = Object.fromEntries(careers.map((c) => [c.id, c.title]));
 
@@ -1792,16 +2003,21 @@ function CareersManagement() {
     {showNew && <NewCareerForm onCreated={() => { setShowNew(false); load(); }} onCancel={() => setShowNew(false)} />}
     <div className="responsive-table mt-4 overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
      {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
-      <PortalTable
-       emptyMessage="No open positions — this list only shows currently-open postings."
-       rows={careers}
-       columns={[
-        { key: 'title', label: 'Title', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
-        { key: 'department', label: 'Department', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => v || '—' },
-        { key: 'location', label: 'Location', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => v || '—' },
-        { key: 'employment_type', label: 'Type', render: (v) => <Badge className="text-label-caps">{v?.replace('_', ' ')}</Badge> },
-       ]}
-      />
+      <>
+       <PortalTable
+        emptyMessage="No open positions — this list only shows currently-open postings."
+        rows={careers}
+        columns={[
+         { key: 'title', label: 'Title', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+         { key: 'department', label: 'Department', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => v || '—' },
+         { key: 'location', label: 'Location', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => v || '—' },
+         { key: 'employment_type', label: 'Type', render: (v) => <Badge className="text-label-caps">{v?.replace('_', ' ')}</Badge> },
+        ]}
+       />
+       <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+        <Pagination page={careersPage} totalPages={careersTotalPages} onChange={setCareersPage} />
+       </div>
+      </>
      )}
     </div>
    </div>
@@ -1820,6 +2036,7 @@ function CareersManagement() {
     </div>
     <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
      {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
+      <>
       <PortalTable
        emptyMessage={`No applications${statusFilter ? ` with status "${statusFilter}"` : ''} yet.`}
        rows={applications}
@@ -1860,6 +2077,10 @@ function CareersManagement() {
         },
        ]}
       />
+      <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+       <Pagination page={appsPage} totalPages={appsTotalPages} onChange={setAppsPage} />
+      </div>
+      </>
      )}
     </div>
    </div>
@@ -1872,13 +2093,24 @@ function CommentsManagement() {
  const [comments, setComments] = useState([]);
  const [loading, setLoading] = useState(true);
  const [filter, setFilter] = useState('pending');
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  const load = useCallback(() => {
   setLoading(true);
-  fetchComments(filter ? { status: filter } : {}).then((res) => setComments(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, [filter]);
+  fetchComments({ page, limit: 20, ...(filter ? { status: filter } : {}) })
+   .then((res) => { setComments(res?.data || []); setTotalPages(res?.meta?.total_pages || 1); })
+   .catch(() => {})
+   .finally(() => setLoading(false));
+ }, [filter, page]);
 
  useEffect(() => { load(); }, [load]);
+
+ // Changing the moderation filter must not leave the view on a page number
+ // that no longer exists in the filtered result set.
+ useEffect(() => {
+  setPage(1);
+ }, [filter]);
 
  const { run: runModerate, isPending: moderating } = useAsyncAction();
  const { run: runRemoveComment, isPending: removingComment } = useAsyncAction();
@@ -1921,6 +2153,11 @@ function CommentsManagement() {
       {!comments.length && <p className="py-8 text-center text-body-sm text-ink-muted">No {filter} comments.</p>}
      </div>
     )}
+    {!loading && (
+     <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+      <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+     </div>
+    )}
    </div>
   </div>
  );
@@ -1930,10 +2167,16 @@ function CommentsManagement() {
 function NewsletterManagement() {
  const [subscribers, setSubscribers] = useState([]);
  const [loading, setLoading] = useState(true);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  useEffect(() => {
-  fetchNewsletterSubscribers({ is_active: true }).then((res) => setSubscribers(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, []);
+  setLoading(true);
+  fetchNewsletterSubscribers({ is_active: true, page, limit: 20 })
+   .then((res) => { setSubscribers(res?.data || []); setTotalPages(res?.meta?.total_pages || 1); })
+   .catch(() => {})
+   .finally(() => setLoading(false));
+ }, [page]);
 
  if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
 
@@ -1951,6 +2194,9 @@ function NewsletterManagement() {
      { key: 'subscribed_at', label: 'Subscribed', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => (v ? new Date(v).toLocaleDateString() : '—') },
     ]}
    />
+   <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+    <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+   </div>
   </div>
  );
 }
@@ -1958,12 +2204,16 @@ function NewsletterManagement() {
 function AuditLogsManagement() {
  const [logs, setLogs] = useState([]);
  const [loading, setLoading] = useState(true);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  useEffect(() => {
   setLoading(true);
-  fetchAuditLogs({ limit: 50 }).then((res) => setLogs(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
-
- }, []);
+  fetchAuditLogs({ page, limit: 20 })
+   .then((res) => { setLogs(res?.data || []); setTotalPages(res?.meta?.total_pages || 1); })
+   .catch(() => {})
+   .finally(() => setLoading(false));
+ }, [page]);
 
  return (
   <div className="space-y-stack-lg">
@@ -1974,16 +2224,21 @@ function AuditLogsManagement() {
     {loading ? (
      <div className="p-stack-lg"><LoadingSpinner /></div>
     ) : (
-     <PortalTable
-      emptyMessage="No audit log entries yet."
-      rows={logs}
-      columns={[
-       { key: 'action', label: 'Action', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
-       { key: 'entity_type', label: 'Entity', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
-       { key: 'ip_address', label: 'IP Address', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
-       { key: 'created_at', label: 'When', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => new Date(v).toLocaleString() },
-      ]}
-     />
+     <>
+      <PortalTable
+       emptyMessage="No audit log entries yet."
+       rows={logs}
+       columns={[
+        { key: 'action', label: 'Action', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+        { key: 'entity_type', label: 'Entity', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+        { key: 'ip_address', label: 'IP Address', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+        { key: 'created_at', label: 'When', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => new Date(v).toLocaleString() },
+       ]}
+      />
+      <div className="border-t border-outline-variant p-stack-lg dark:border-dark-outline-variant">
+       <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+      </div>
+     </>
     )}
    </div>
   </div>

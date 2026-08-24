@@ -7,6 +7,7 @@ import StatusBadge from '../components/ui/StatusBadge.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import RowAction from '../components/ui/RowAction.jsx';
 import { PortalTable } from '../components/ui/ResponsiveTable.jsx';
+import Pagination from '../components/ui/Pagination.jsx';
 import { FORM_INPUT_CLASS } from '../components/ui/formClasses.js';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
@@ -86,13 +87,18 @@ function Departments() {
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ name: '', description: '' });
  const [actingId, setActingId] = useState(null);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
  const { run: runCreate, isPending: creating } = useAsyncAction();
  const { run: runDelete, isPending: deleting } = useAsyncAction();
 
  const load = useCallback(() => {
   setLoading(true);
-  fetchDepartments().then((r) => setDepartments(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, []);
+  fetchDepartments({ page, limit: 20 })
+   .then((r) => { setDepartments(r?.data || []); setTotalPages(r?.meta?.total_pages || 1); })
+   .catch(() => {})
+   .finally(() => setLoading(false));
+ }, [page]);
 
  useEffect(() => { load(); }, [load]);
 
@@ -140,6 +146,7 @@ function Departments() {
     rows={departments}
     emptyMessage="No departments yet."
    />
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -151,6 +158,10 @@ function RolesPermissions() {
  const [roleForm, setRoleForm] = useState({ name: '', slug: '', description: '' });
  const [permForm, setPermForm] = useState({ name: '', module: '', action: '' });
  const [actingId, setActingId] = useState(null);
+ const [rolesPage, setRolesPage] = useState(1);
+ const [rolesTotalPages, setRolesTotalPages] = useState(1);
+ const [permsPage, setPermsPage] = useState(1);
+ const [permsTotalPages, setPermsTotalPages] = useState(1);
  const { run: runCreateRole, isPending: creatingRole } = useAsyncAction();
  const { run: runCreatePermission, isPending: creatingPermission } = useAsyncAction();
  const { run: runRemoveRole, isPending: removingRole } = useAsyncAction();
@@ -158,11 +169,14 @@ function RolesPermissions() {
 
  const load = useCallback(() => {
   setLoading(true);
-  Promise.allSettled([fetchRoles(), fetchPermissions()]).then(([r, p]) => {
-   if (r.status === 'fulfilled') setRoles(r.value?.data || []);
-   if (p.status === 'fulfilled') setPermissions(p.value?.data || []);
+  Promise.allSettled([
+   fetchRoles({ page: rolesPage, limit: 20 }),
+   fetchPermissions({ page: permsPage, limit: 20 }),
+  ]).then(([r, p]) => {
+   if (r.status === 'fulfilled') { setRoles(r.value?.data || []); setRolesTotalPages(r.value?.meta?.total_pages || 1); }
+   if (p.status === 'fulfilled') { setPermissions(p.value?.data || []); setPermsTotalPages(p.value?.meta?.total_pages || 1); }
   }).finally(() => setLoading(false));
- }, []);
+ }, [rolesPage, permsPage]);
 
  useEffect(() => { load(); }, [load]);
 
@@ -208,6 +222,7 @@ function RolesPermissions() {
      ))}
      {!roles.length && <p className="py-6 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No custom roles yet — the 13 system roles from `UserRole` cover most needs.</p>}
     </div>
+    <Pagination page={rolesPage} totalPages={rolesTotalPages} onChange={setRolesPage} />
    </div>
 
    <div className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg shadow-sm dark:border-dark-outline-variant">
@@ -238,6 +253,7 @@ function RolesPermissions() {
      ))}
      {!permissions.length && <p className="py-6 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted sm:col-span-2 lg:col-span-3">No permissions defined yet.</p>}
     </div>
+    <Pagination page={permsPage} totalPages={permsTotalPages} onChange={setPermsPage} />
    </div>
   </div>
  );
@@ -245,26 +261,31 @@ function RolesPermissions() {
 
 function DataExportGdpr() {
  const [search, setSearch] = useState('');
+ const [appliedSearch, setAppliedSearch] = useState('');
  const [results, setResults] = useState([]);
  const [loading, setLoading] = useState(true);
  const [searching, setSearching] = useState(false);
  const [actingId, setActingId] = useState(null);
  const [exportedJson, setExportedJson] = useState(null);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
  const { run: runAnonymize, isPending: anonymizing } = useAsyncAction();
 
  useEffect(() => {
-  fetchUsers({ limit: 50 }).then((r) => setResults(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, []);
+  setLoading(true);
+  fetchUsers({ search: appliedSearch.trim() || undefined, page, limit: 20 })
+   .then((r) => { setResults(r?.data || []); setTotalPages(r?.meta?.total_pages || 1); })
+   .catch(() => {})
+   .finally(() => { setLoading(false); setSearching(false); });
+ }, [appliedSearch, page]);
 
- const runSearch = async (e) => {
+ const runSearch = (e) => {
   e.preventDefault();
   setSearching(true);
-  try {
-   const r = await fetchUsers({ search: search.trim() || undefined, limit: 50 });
-   setResults(r?.data || []);
-  } finally {
-   setSearching(false);
-  }
+  // A new search must not leave the view on a page number that no longer
+  // exists in the new result set.
+  setPage(1);
+  setAppliedSearch(search);
  };
 
  const doExport = async (userId) => {
@@ -311,6 +332,7 @@ function DataExportGdpr() {
     rows={results}
     emptyMessage="Search for a user to export or anonymize their data."
    />
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
    {exportedJson && (
     <div className="rounded-lg border border-outline-variant bg-white p-stack-lg shadow-sm dark:border-dark-outline-variant">
      <h3 className="mb-3 font-display text-headline-sm text-brand-dark dark:text-white">Exported Data</h3>
@@ -324,23 +346,32 @@ function DataExportGdpr() {
 function AuditLogs() {
  const [logs, setLogs] = useState([]);
  const [loading, setLoading] = useState(true);
+ const [page, setPage] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 
  useEffect(() => {
-  fetchAuditLogs({ limit: 50 }).then((r) => setLogs(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, []);
+  setLoading(true);
+  fetchAuditLogs({ page, limit: 20 })
+   .then((r) => { setLogs(r?.data || []); setTotalPages(r?.meta?.total_pages || 1); })
+   .catch(() => {})
+   .finally(() => setLoading(false));
+ }, [page]);
 
  if (loading) return <LoadingSpinner />;
  return (
-  <PortalTable
-   columns={[
-    { key: 'action', label: 'Action', className: 'text-body-sm font-medium text-brand-dark dark:text-white' },
-    { key: 'entity_type', label: 'Entity', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
-    { key: 'ip_address', label: 'IP', className: 'font-mono text-body-xs text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
-    { key: 'created_at', label: 'When', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => (v ? new Date(v).toLocaleString() : '—') },
-   ]}
-   rows={logs}
-   emptyMessage="No audit activity yet."
-  />
+  <div className="space-y-stack-md">
+   <PortalTable
+    columns={[
+     { key: 'action', label: 'Action', className: 'text-body-sm font-medium text-brand-dark dark:text-white' },
+     { key: 'entity_type', label: 'Entity', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+     { key: 'ip_address', label: 'IP', className: 'font-mono text-body-xs text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+     { key: 'created_at', label: 'When', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => (v ? new Date(v).toLocaleString() : '—') },
+    ]}
+    rows={logs}
+    emptyMessage="No audit activity yet."
+   />
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+  </div>
  );
 }
 
