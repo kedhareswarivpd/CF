@@ -33,7 +33,7 @@ from app.schemas.employee import (
     TimesheetStatusUpdate,
 )
 from app.schemas.performance import PerformanceReviewOut
-from app.utils.pagination import SELF_SERVICE_LIST_CAP, PageParams, page_params, paginate_query
+from app.utils.pagination import PageParams, bounded_select, page_params, paginate_query
 from app.utils.responses import build_pagination_meta, success_response
 
 router = APIRouter(prefix="/employees", tags=["Employees"], dependencies=[Depends(get_current_user)])
@@ -119,7 +119,7 @@ async def check_out(db: AsyncSession = Depends(get_db), current_user: User = Dep
 @router.get("/me/leaves", response_model=dict)
 async def my_leaves(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
-    result = await db.execute(select(Leave).where(Leave.employee_id == employee.id).order_by(Leave.id.desc()).limit(SELF_SERVICE_LIST_CAP))
+    result = await db.execute(bounded_select(select(Leave).where(Leave.employee_id == employee.id).order_by(Leave.id.desc())))
     return success_response(data=[LeaveOut.model_validate(leave) for leave in result.scalars().all()])
 
 
@@ -143,7 +143,7 @@ async def apply_leave(payload: LeaveApply, db: AsyncSession = Depends(get_db), c
 @router.get("/me/timesheets", response_model=dict)
 async def my_timesheets(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
-    result = await db.execute(select(Timesheet).where(Timesheet.employee_id == employee.id).order_by(Timesheet.date.desc()).limit(SELF_SERVICE_LIST_CAP))
+    result = await db.execute(bounded_select(select(Timesheet).where(Timesheet.employee_id == employee.id).order_by(Timesheet.date.desc())))
     return success_response(data=[TimesheetOut.model_validate(t) for t in result.scalars().all()])
 
 
@@ -161,7 +161,7 @@ async def submit_timesheet(payload: TimesheetCreate, db: AsyncSession = Depends(
 async def my_payslips(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
     result = await db.execute(
-        select(Payslip).where(Payslip.employee_id == employee.id).order_by(Payslip.year.desc(), Payslip.month.desc()).limit(SELF_SERVICE_LIST_CAP)
+        bounded_select(select(Payslip).where(Payslip.employee_id == employee.id).order_by(Payslip.year.desc(), Payslip.month.desc()))
     )
     payslips = result.scalars().all()
     return success_response(data=[PayslipOut.model_validate(p) for p in payslips])
@@ -170,7 +170,7 @@ async def my_payslips(db: AsyncSession = Depends(get_db), current_user: User = D
 @router.get("/me/documents", response_model=dict)
 async def my_documents(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
-    result = await db.execute(select(EmployeeDocument).where(EmployeeDocument.employee_id == employee.id).limit(SELF_SERVICE_LIST_CAP))
+    result = await db.execute(bounded_select(select(EmployeeDocument).where(EmployeeDocument.employee_id == employee.id)))
     return success_response(data=[EmployeeDocumentOut.model_validate(d) for d in result.scalars().all()])
 
 
@@ -178,7 +178,7 @@ async def my_documents(db: AsyncSession = Depends(get_db), current_user: User = 
 async def my_performance_reviews(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
     result = await db.execute(
-        select(PerformanceReview).where(PerformanceReview.employee_id == employee.id).order_by(PerformanceReview.review_date.desc()).limit(SELF_SERVICE_LIST_CAP)
+        bounded_select(select(PerformanceReview).where(PerformanceReview.employee_id == employee.id).order_by(PerformanceReview.review_date.desc()))
     )
     return success_response(data=[PerformanceReviewOut.model_validate(r) for r in result.scalars().all()])
 

@@ -136,6 +136,7 @@ class TestNotifyUser:
     @pytest.mark.asyncio
     async def test_creates_notification(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         user_id = uuid.uuid4()
 
         await notify_user(mock_db, user_id, "Test Title", "Test Message")
@@ -153,6 +154,7 @@ class TestNotifyUser:
     @pytest.mark.asyncio
     async def test_creates_notification_with_link(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         user_id = uuid.uuid4()
 
         await notify_user(
@@ -168,6 +170,7 @@ class TestNotifyRoles:
     @pytest.mark.asyncio
     async def test_fans_out_to_matching_users(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         user_ids = [uuid.uuid4(), uuid.uuid4()]
 
         mock_result = MagicMock()
@@ -182,6 +185,7 @@ class TestNotifyRoles:
     @pytest.mark.asyncio
     async def test_no_commit_when_no_matching_users(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = []

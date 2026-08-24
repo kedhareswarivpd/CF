@@ -14,7 +14,7 @@ from app.crud.base import CRUDBase
 from app.models.training import Course, TrainingEnrollment
 from app.models.user import User
 from app.schemas.training import CourseCreate, CourseOut, TrainingEnrollmentOut
-from app.utils.pagination import SELF_SERVICE_LIST_CAP, PageParams, page_params, paginate_query
+from app.utils.pagination import PageParams, bounded_select, page_params, paginate_query
 from app.utils.responses import build_pagination_meta, success_response
 
 router = APIRouter(prefix="/trainings", tags=["Training"])
@@ -81,10 +81,11 @@ async def my_enrollments(db: AsyncSession = Depends(get_db), current_user: User 
     if not employee:
         raise ApiError.not_found("Employee profile not found")
     result = await db.execute(
-        select(TrainingEnrollment).options(selectinload(TrainingEnrollment.course))
-        .where(TrainingEnrollment.employee_id == employee.id)
-        .order_by(TrainingEnrollment.enrolled_at.desc())
-        .limit(SELF_SERVICE_LIST_CAP)
+        bounded_select(
+            select(TrainingEnrollment).options(selectinload(TrainingEnrollment.course))
+            .where(TrainingEnrollment.employee_id == employee.id)
+            .order_by(TrainingEnrollment.enrolled_at.desc())
+        )
     )
     return success_response(data=[TrainingEnrollmentOut.model_validate(e) for e in result.scalars().all()])
 

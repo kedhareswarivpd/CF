@@ -89,6 +89,7 @@ class TestGlobalSwitch:
         monkeypatch.setattr(settings, "mfa_enabled", False)
         user = _make_user(mfa_enabled=True, mfa_secret_encrypted=encrypt_secret(generate_totp_secret()))
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = user
         mock_db.execute.return_value = mock_result
@@ -106,6 +107,7 @@ class TestLoginWithMfaEnabled:
         secret = generate_totp_secret()
         user = _make_user(mfa_enabled=True, mfa_secret_encrypted=encrypt_secret(secret))
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = user
         mock_db.execute.return_value = mock_result
@@ -123,6 +125,7 @@ class TestLoginWithMfaEnabled:
         secret = generate_totp_secret()
         user = _make_user(mfa_enabled=True, mfa_secret_encrypted=encrypt_secret(secret))
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = user
         mock_db.execute.return_value = mock_result
@@ -143,6 +146,7 @@ class TestMfaVerifyLogin:
         )
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         challenge_result = MagicMock()
         challenge_result.scalar_one_or_none.return_value = challenge
         mock_db.execute.return_value = challenge_result
@@ -171,6 +175,7 @@ class TestMfaVerifyLogin:
         )
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         challenge_result = MagicMock()
         challenge_result.scalar_one_or_none.return_value = challenge
         # Second execute() call (backup-code lookup) finds nothing.
@@ -202,6 +207,7 @@ class TestMfaVerifyLogin:
         )
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         challenge_result = MagicMock(scalar_one_or_none=MagicMock(return_value=challenge))
         no_backup = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
         mock_db.execute.side_effect = [challenge_result, no_backup, challenge_result]
@@ -234,6 +240,7 @@ class TestMfaVerifyLogin:
             expires_at=datetime.now(UTC) - timedelta(minutes=1),  # already expired
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         challenge_result = MagicMock()
         challenge_result.scalar_one_or_none.return_value = challenge
         mock_db.execute.return_value = challenge_result
@@ -262,6 +269,7 @@ class TestMfaSetupEnableDisable:
     async def test_setup_returns_secret_and_otpauth_url(self):
         user = _make_user()
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         result = await mfa_setup(_mock_request(), mock_db, user)
         assert result["data"].secret
         assert result["data"].otpauth_url.startswith("otpauth://totp/")
@@ -280,6 +288,7 @@ class TestMfaSetupEnableDisable:
         secret = generate_totp_secret()
         user = _make_user(mfa_secret_encrypted=encrypt_secret(secret))
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         code = pyotp.totp.TOTP(secret).now()
         result = await mfa_enable(_mock_request(), MfaEnableRequest(code=code), mock_db, user)
@@ -319,6 +328,7 @@ class TestMfaSetupEnableDisable:
         secret = generate_totp_secret()
         user = _make_user(mfa_enabled=True, mfa_secret_encrypted=encrypt_secret(secret))
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         await mfa_disable(MfaDisableRequest(password="password123"), mock_db, user)
         assert user.mfa_enabled is False
         assert user.mfa_secret_encrypted is None

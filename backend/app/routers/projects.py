@@ -60,7 +60,24 @@ async def list_projects(
             count_query = select(func.count()).select_from(project_members).where(project_members.c.employee_id == employee_filter)
 
         query = crud._with_relationships(query)
-        query = apply_sort(query, Project, page.sort)
+        query = apply_sort(
+            query,
+            Project,
+            page.sort,
+            allowed_fields={
+                "title",
+                "status",
+                "created_at",
+                "updated_at",
+                "start_date",
+                "end_date",
+                "budget",
+                "progress_percent",
+                "industry",
+                "is_featured",
+                "is_published",
+            },
+        )
         query = query.limit(page.limit).offset(page.offset)
         result = await db.execute(query)
         total = (await db.execute(count_query)).scalar_one()

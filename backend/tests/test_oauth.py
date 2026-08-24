@@ -132,6 +132,7 @@ class TestCallbackAccountCreationAndLinking:
     async def test_new_google_identity_creates_a_new_local_user(self):
         request = _mock_request({OAUTH_STATE_COOKIE: "s"})
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         no_existing_oauth = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
         no_existing_user = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
         mock_db.execute.side_effect = [no_existing_oauth, no_existing_user]
@@ -158,6 +159,7 @@ class TestCallbackAccountCreationAndLinking:
         existing_user = _make_user(email="existing@example.com", is_email_verified=False)
         request = _mock_request({OAUTH_STATE_COOKIE: "s"})
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         no_existing_oauth = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
         found_user = MagicMock(scalar_one_or_none=MagicMock(return_value=existing_user))
         mock_db.execute.side_effect = [no_existing_oauth, found_user]
@@ -184,6 +186,7 @@ class TestCallbackAccountCreationAndLinking:
         link = OAuthAccount(id=uuid.uuid4(), user_id=user.id, provider="google", provider_account_id="google-1", email=user.email)
         request = _mock_request({OAUTH_STATE_COOKIE: "s"})
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         found_link = MagicMock(scalar_one_or_none=MagicMock(return_value=link))
         mock_db.execute.return_value = found_link
         mock_db.get.return_value = user
@@ -215,6 +218,7 @@ class TestCallbackAccountCreationAndLinking:
         link = OAuthAccount(id=uuid.uuid4(), user_id=user.id, provider="google", provider_account_id="google-1", email=user.email)
         request = _mock_request({OAUTH_STATE_COOKIE: "s"})
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         found_link = MagicMock(scalar_one_or_none=MagicMock(return_value=link))
         mock_db.execute.return_value = found_link
         mock_db.get.return_value = user
@@ -238,6 +242,7 @@ class TestCallbackAccountCreationAndLinking:
     async def test_token_exchange_failure_redirects_to_failure_not_500(self):
         request = _mock_request({OAUTH_STATE_COOKIE: "s"})
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         failed_token_resp = MagicMock(status_code=400, text="invalid_grant")
 

@@ -59,6 +59,7 @@ class TestLeadIDORAttackSurface:
         sales_a = _make_user("sales")
         sales_b_lead = Lead(id=uuid.uuid4(), contact_name="B's Lead", email="b@example.com", owner_id=uuid.uuid4(), source="website", status="new", **_stamps())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.leads.crud.get", new_callable=AsyncMock, return_value=sales_b_lead):
             with pytest.raises(ApiError) as exc_info:
@@ -70,6 +71,7 @@ class TestLeadIDORAttackSurface:
         sales_a = _make_user("sales")
         sales_b_lead = Lead(id=uuid.uuid4(), contact_name="B's Lead", email="b@example.com", owner_id=uuid.uuid4(), source="website", status="new", **_stamps())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.leads.crud.get", new_callable=AsyncMock, return_value=sales_b_lead):
             with pytest.raises(ApiError) as exc_info:
@@ -84,6 +86,7 @@ class TestLeadIDORAttackSurface:
         sales_a = _make_user("sales")
         sales_b_lead = Lead(id=uuid.uuid4(), contact_name="B's Lead", email="b@example.com", owner_id=uuid.uuid4(), source="website", status="new", **_stamps())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.leads.crud.get", new_callable=AsyncMock, return_value=sales_b_lead):
             with pytest.raises(ApiError):
@@ -99,6 +102,7 @@ class TestLeadIDORAttackSurface:
         sales_a = _make_user("sales")
         sales_b_id = uuid.uuid4()
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute.return_value = MagicMock(scalars=MagicMock(return_value=MagicMock(all=MagicMock(return_value=[]))))
         mock_db.execute.return_value.scalar_one = MagicMock(return_value=0)
 
@@ -128,6 +132,7 @@ class TestLeadIDORAttackSurface:
         admin = _make_user("admin")
         target_owner_id = uuid.uuid4()
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         request = MagicMock()
         request.query_params = {"owner_id": str(target_owner_id)}
         page = MagicMock(page=1, limit=20, offset=0, sort=None, search=None)
@@ -153,6 +158,7 @@ class TestClientPartnerFileIDORAttackSurface:
         pm_a = _make_user("project_manager")
         unassigned_client = Client(id=uuid.uuid4(), user_id=uuid.uuid4(), company_name="Not Mine", account_manager_id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute.return_value = MagicMock(scalar_one_or_none=MagicMock(return_value=None))  # pm_a has no Employee row matching
 
         with patch("app.routers.clients.crud.get", new_callable=AsyncMock, return_value=unassigned_client):
@@ -168,6 +174,7 @@ class TestClientPartnerFileIDORAttackSurface:
         sales_a = _make_user("sales")
         unassigned_partner = PartnerAccount(id=uuid.uuid4(), user_id=uuid.uuid4(), company_name="Not Mine", account_manager_id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute.return_value = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
 
         with patch("app.routers.partner_account.crud.get", new_callable=AsyncMock, return_value=unassigned_partner):
@@ -188,6 +195,7 @@ class TestProjectIDORAttackSurface:
         pm_a = _make_user("project_manager")
         pm_b_project = Project(id=uuid.uuid4(), title="B's Project", slug="b", project_manager_id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.projects.crud.get", new_callable=AsyncMock, return_value=pm_b_project):
             with pytest.raises(ApiError) as exc_info:
@@ -201,6 +209,7 @@ class TestProjectIDORAttackSurface:
         pm_a = _make_user("project_manager")
         pm_b_project = Project(id=uuid.uuid4(), title="B's Project", slug="b", project_manager_id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute.return_value = MagicMock(scalar_one_or_none=MagicMock(return_value=pm_b_project))
 
         with pytest.raises(ApiError) as exc_info:
@@ -216,6 +225,7 @@ class TestProjectIDORAttackSurface:
         pm_a = _make_user("project_manager")
         pm_b_project = Project(id=uuid.uuid4(), title="B's Project", slug="b", project_manager_id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.projects.crud.get", new_callable=AsyncMock, return_value=pm_b_project):
             with patch("app.routers.projects.crud.update", new_callable=AsyncMock) as mock_update:

@@ -71,6 +71,7 @@ class TestRecordPaymentIdempotency:
             created_at=datetime.now(UTC), updated_at=datetime.now(UTC),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         payment_check_result = MagicMock()
         payment_check_result.scalar_one_or_none.return_value = existing_payment
         mock_db.execute.side_effect = [payment_check_result]
@@ -91,6 +92,7 @@ class TestRecordPaymentIdempotency:
     async def test_new_reference_creates_a_payment(self):
         invoice = _make_invoice()
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.refresh.side_effect = _refresh_side_effect
         payment_check_result = MagicMock()
         payment_check_result.scalar_one_or_none.return_value = None
@@ -116,6 +118,7 @@ class TestRecordPaymentIdempotency:
         skipped, not treated as a match against other no-reference payments."""
         invoice = _make_invoice()
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.refresh.side_effect = _refresh_side_effect
         paid_total_result = MagicMock()
         paid_total_result.scalar_one.return_value = 500
@@ -134,6 +137,7 @@ class TestRecordPaymentIdempotency:
     async def test_invoice_marked_paid_once_total_covers_it(self):
         invoice = _make_invoice(total_amount=500)
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.refresh.side_effect = _refresh_side_effect
         payment_check_result = MagicMock()
         payment_check_result.scalar_one_or_none.return_value = None

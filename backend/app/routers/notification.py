@@ -12,6 +12,7 @@ from app.models.notification import Notification
 from app.models.user import User
 from app.schemas.ops import NotificationCreate, NotificationOut
 from app.services.notification_service import notify_roles, notify_user
+from app.utils.pagination import bounded_select
 from app.utils.responses import success_response
 
 router = APIRouter(prefix="/notifications", tags=["Notifications"], dependencies=[Depends(get_current_user)])
@@ -20,7 +21,7 @@ router = APIRouter(prefix="/notifications", tags=["Notifications"], dependencies
 @router.get("", response_model=dict)
 async def list_notifications(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     result = await db.execute(
-        select(Notification).where(Notification.user_id == current_user.id).order_by(Notification.created_at.desc()).limit(50)
+        bounded_select(select(Notification).where(Notification.user_id == current_user.id).order_by(Notification.created_at.desc()), cap=50)
     )
     return success_response(data=[NotificationOut.model_validate(n) for n in result.scalars().all()])
 

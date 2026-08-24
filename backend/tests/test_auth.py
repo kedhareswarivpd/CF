@@ -41,6 +41,7 @@ class TestRegister:
     @pytest.mark.asyncio
     async def test_rejects_duplicate_email(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = User(
             id="00000000-0000-0000-0000-000000000000", name="Existing", email="test@example.com",
@@ -51,7 +52,7 @@ class TestRegister:
         with pytest.raises(ApiError) as exc_info:
             await register(
                 _fake_request(),
-                RegisterRequest(name="Test User", email="test@example.com", password="password123"),
+                RegisterRequest(name="Test User", email="test@example.com", password="Password123!"),
                 db=mock_db,
             )
         assert exc_info.value.status_code == 409
@@ -59,6 +60,7 @@ class TestRegister:
     @pytest.mark.asyncio
     async def test_creates_account_with_hashed_password_and_issues_verification_email(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.refresh.side_effect = _refresh_side_effect
         no_existing = MagicMock()
         no_existing.scalar_one_or_none.return_value = None
@@ -67,7 +69,7 @@ class TestRegister:
         with patch("app.routers.auth._issue_verification_email", new_callable=AsyncMock) as mock_issue:
             result = await register(
                 _fake_request(),
-                RegisterRequest(name="Test User", email="new@example.com", password="password123"),
+                RegisterRequest(name="Test User", email="new@example.com", password="Password123!"),
                 db=mock_db,
             )
 
@@ -77,6 +79,6 @@ class TestRegister:
         created_user = mock_db.add.call_args[0][0]
         assert isinstance(created_user, User)
         # The plaintext password is never stored — only its hash.
-        assert created_user.password_hash != "password123"
-        assert verify_password("password123", created_user.password_hash)
+        assert created_user.password_hash != "Password123!"
+        assert verify_password("Password123!", created_user.password_hash)
         mock_issue.assert_awaited_once()

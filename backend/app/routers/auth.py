@@ -67,6 +67,14 @@ from app.services.email_service import (
 )
 from app.utils.responses import success_response
 
+# Fixed dummy hash for the login timing-safety comparison below — computed
+# once at import time (not per-request; argon2 hashing is deliberately slow)
+# via the real `hash_password()` so it always tracks whatever cost params
+# `app.core.password` is configured with. A literal hash string here would
+# silently drift out of sync if those params ever changed, subtly weakening
+# the timing-equalization it exists for.
+_DUMMY_PASSWORD_HASH = hash_password("dummy")
+
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 EMAIL_VERIFICATION_TOKEN_TTL = timedelta(hours=24)
@@ -207,8 +215,7 @@ async def login(request: Request, response: Response, payload: LoginRequest, db:
     # Always run the hash comparison, even on a not-found user, against a
     # fixed dummy hash — otherwise "no such user" returns faster than "wrong
     # password", which is a timing side-channel for email enumeration.
-    dummy_hash = "$argon2id$v=19$m=19456,t=2,p=1$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
-    password_ok = verify_password(payload.password, user.password_hash if user else dummy_hash)
+    password_ok = verify_password(payload.password, user.password_hash if user else _DUMMY_PASSWORD_HASH)
 
     if user is None or not password_ok:
         if user is not None:

@@ -57,6 +57,7 @@ class TestGetCurrentUser:
         request = _mock_request({ACCESS_TOKEN_COOKIE: "valid-token"})
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.get.return_value = mock_user
 
         with patch("app.core.dependencies.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
@@ -72,6 +73,7 @@ class TestGetCurrentUser:
         request = _mock_request({ACCESS_TOKEN_COOKIE: "valid-token"})
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.get.return_value = mock_user
 
         with patch("app.core.dependencies.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
@@ -87,6 +89,7 @@ class TestGetCurrentUser:
         must reject cleanly."""
         request = _mock_request({ACCESS_TOKEN_COOKIE: "valid-token"})
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.get.return_value = None
 
         with patch("app.core.dependencies.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
@@ -117,6 +120,7 @@ class TestGetOptionalUser:
         request = _mock_request({ACCESS_TOKEN_COOKIE: "valid-token"})
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.get.return_value = mock_user
 
         with patch("app.core.dependencies.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
@@ -132,6 +136,7 @@ class TestGetOptionalUser:
         request = _mock_request({ACCESS_TOKEN_COOKIE: "valid-token"})
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.get.return_value = mock_user
 
         with patch("app.core.dependencies.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:

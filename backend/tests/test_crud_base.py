@@ -15,6 +15,7 @@ class TestCrudBaseList:
     @pytest.mark.asyncio
     async def test_list_returns_items_and_total(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         mock_result = MagicMock()
@@ -31,6 +32,7 @@ class TestCrudBaseList:
     @pytest.mark.asyncio
     async def test_list_with_filters(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         mock_result = MagicMock()
@@ -46,6 +48,7 @@ class TestCrudBaseList:
     @pytest.mark.asyncio
     async def test_list_with_search(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User, searchable_fields=["name", "email"])
 
         mock_result = MagicMock()
@@ -61,6 +64,7 @@ class TestCrudBaseList:
     @pytest.mark.asyncio
     async def test_list_skips_none_filter_values(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         mock_result = MagicMock()
@@ -76,6 +80,7 @@ class TestCrudBaseList:
     @pytest.mark.asyncio
     async def test_list_handles_db_error(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute.side_effect = SQLAlchemyError("connection lost")
         crud = CRUDBase(User)
 
@@ -88,6 +93,7 @@ class TestCrudBaseGet:
     @pytest.mark.asyncio
     async def test_get_returns_object(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         user_id = uuid.uuid4()
@@ -103,6 +109,7 @@ class TestCrudBaseGet:
     @pytest.mark.asyncio
     async def test_get_raises_not_found(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         mock_result = MagicMock()
@@ -116,6 +123,7 @@ class TestCrudBaseGet:
     @pytest.mark.asyncio
     async def test_get_handles_db_error(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute.side_effect = SQLAlchemyError("connection lost")
         crud = CRUDBase(User)
 
@@ -128,6 +136,7 @@ class TestCrudBaseGetOptional:
     @pytest.mark.asyncio
     async def test_get_optional_returns_object(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         mock_user = User(id=uuid.uuid4(), name="Test", email="test@example.com", role="client")
@@ -142,6 +151,7 @@ class TestCrudBaseGetOptional:
     @pytest.mark.asyncio
     async def test_get_optional_returns_none_when_not_found(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         mock_result = MagicMock()
@@ -156,6 +166,7 @@ class TestCrudBaseCreate:
     @pytest.mark.asyncio
     async def test_create_returns_object(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         await crud.create(
@@ -169,6 +180,7 @@ class TestCrudBaseCreate:
     @pytest.mark.asyncio
     async def test_create_rollback_on_error(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.commit.side_effect = SQLAlchemyError("constraint violation")
         crud = CRUDBase(User)
 
@@ -182,6 +194,7 @@ class TestCrudBaseUpdate:
     @pytest.mark.asyncio
     async def test_update_modifies_object(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         user_id = uuid.uuid4()
@@ -198,6 +211,7 @@ class TestCrudBaseUpdate:
     @pytest.mark.asyncio
     async def test_update_raises_not_found(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         mock_result = MagicMock()
@@ -213,6 +227,7 @@ class TestCrudBaseDelete:
     @pytest.mark.asyncio
     async def test_delete_removes_object(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         user_id = uuid.uuid4()
@@ -229,6 +244,7 @@ class TestCrudBaseDelete:
     @pytest.mark.asyncio
     async def test_delete_raises_not_found(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         mock_result = MagicMock()
@@ -242,6 +258,7 @@ class TestCrudBaseDelete:
     @pytest.mark.asyncio
     async def test_delete_rollback_on_error(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         crud = CRUDBase(User)
 
         user_id = uuid.uuid4()

@@ -23,7 +23,7 @@ from app.schemas.partner_account import (
     PartnerFileCreate,
     PartnerFileOut,
 )
-from app.utils.pagination import SELF_SERVICE_LIST_CAP, PageParams, page_params
+from app.utils.pagination import PageParams, bounded_select, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
 # Partner Portal — a login-gated self-service portal for an actual partner
@@ -81,8 +81,10 @@ async def update_my_profile(payload: PartnerAccountUpdate, db: AsyncSession = De
 async def my_files(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     partner = await _get_partner_account_for_user(db, current_user)
     result = await db.execute(
-        select(PartnerFile).where(PartnerFile.partner_account_id == partner.id)
-        .order_by(PartnerFile.created_at.desc()).limit(SELF_SERVICE_LIST_CAP)
+        bounded_select(
+            select(PartnerFile).where(PartnerFile.partner_account_id == partner.id)
+            .order_by(PartnerFile.created_at.desc())
+        )
     )
     return success_response(data=[PartnerFileOut.model_validate(f) for f in result.scalars().all()])
 
@@ -102,8 +104,10 @@ async def upload_partner_file(partner_account_id: uuid.UUID, payload: PartnerFil
 async def my_tickets(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     partner = await _get_partner_account_for_user(db, current_user)
     result = await db.execute(
-        select(Ticket).where(Ticket.partner_account_id == partner.id)
-        .order_by(Ticket.created_at.desc()).limit(SELF_SERVICE_LIST_CAP)
+        bounded_select(
+            select(Ticket).where(Ticket.partner_account_id == partner.id)
+            .order_by(Ticket.created_at.desc())
+        )
     )
     return success_response(data=[TicketOut.model_validate(t) for t in result.scalars().all()])
 

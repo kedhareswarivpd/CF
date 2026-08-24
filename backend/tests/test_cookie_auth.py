@@ -57,6 +57,7 @@ class TestLoginSetsCookies:
     async def test_successful_login_sets_httponly_session_cookies_not_body_tokens(self):
         user = _make_user()
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = user
         mock_db.execute.return_value = mock_result
@@ -85,6 +86,7 @@ class TestLoginSetsCookies:
     async def test_wrong_password_raises_unauthorized_without_setting_cookies(self):
         user = _make_user()
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = user
         mock_db.execute.return_value = mock_result
@@ -103,6 +105,7 @@ class TestLoginSetsCookies:
         """No email-enumeration oracle: unknown-email and wrong-password both
         surface as the identical 401."""
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = mock_result
@@ -120,6 +123,7 @@ class TestLoginSetsCookies:
     async def test_deactivated_account_rejected_after_password_check(self):
         user = _make_user(is_active=False)
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = user
         mock_db.execute.return_value = mock_result
@@ -135,6 +139,7 @@ class TestLoginSetsCookies:
     async def test_locked_account_rejected_even_with_correct_password(self):
         user = _make_user(is_locked=True, locked_until=datetime.now(UTC) + timedelta(minutes=10))
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = user
         mock_db.execute.return_value = mock_result
@@ -158,6 +163,7 @@ class TestLogoutClearsCookies:
         session = _live_session(user_id)
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         with patch("app.routers.auth.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
             mock_lookup.return_value = session
             await logout(request, response, mock_db, current_user)
@@ -176,6 +182,7 @@ class TestLogoutClearsCookies:
         current_user = _make_user()
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         with patch("app.routers.auth.get_session_by_access_token", new_callable=AsyncMock) as mock_lookup:
             mock_lookup.return_value = None
             await logout(request, response, mock_db, current_user)  # must not raise
@@ -196,6 +203,7 @@ class TestRefreshEndpoint:
         session = _live_session(user.id, refresh_hash="hash-of-old-refresh")
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         found = MagicMock()
         found.scalar_one_or_none.return_value = session
         mock_db.execute.return_value = found
@@ -214,6 +222,7 @@ class TestRefreshEndpoint:
     @pytest.mark.asyncio
     async def test_unknown_refresh_token_clears_cookies_and_401s(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         no_match = MagicMock()
         no_match.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = no_match

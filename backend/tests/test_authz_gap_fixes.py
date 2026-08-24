@@ -57,6 +57,7 @@ class TestLeadUpdateIDOR:
         attacker = _make_user("sales")
         lead = Lead(id=uuid.uuid4(), contact_name="X", email="x@example.com", owner_id=owner_id)
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.leads.crud.get", new_callable=AsyncMock, return_value=lead):
             with pytest.raises(ApiError) as exc_info:
@@ -68,6 +69,7 @@ class TestLeadUpdateIDOR:
         owner = _make_user("sales")
         lead = Lead(id=uuid.uuid4(), contact_name="X", email="x@example.com", owner_id=owner.id, source="website", status="new", **_stamps())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.leads.crud.get", new_callable=AsyncMock, return_value=lead):
             with patch("app.routers.leads.crud.update", new_callable=AsyncMock, return_value=lead):
@@ -79,6 +81,7 @@ class TestLeadUpdateIDOR:
         admin = _make_user("admin")
         lead = Lead(id=uuid.uuid4(), contact_name="X", email="x@example.com", owner_id=uuid.uuid4(), source="website", status="new", **_stamps())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.leads.crud.get", new_callable=AsyncMock, return_value=lead):
             with patch("app.routers.leads.crud.update", new_callable=AsyncMock, return_value=lead):
@@ -92,6 +95,7 @@ class TestUserEscalationBoundary:
         hr = _make_user("hr")
         target_admin = _make_user("admin", id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.users.crud.get", new_callable=AsyncMock, return_value=target_admin):
             with pytest.raises(ApiError) as exc_info:
@@ -103,6 +107,7 @@ class TestUserEscalationBoundary:
         super_admin = _make_user("super_admin")
         target_admin = _make_user("admin", id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.users.crud.get", new_callable=AsyncMock, return_value=target_admin):
             with patch("app.routers.users.crud.update", new_callable=AsyncMock, return_value=target_admin):
@@ -118,6 +123,7 @@ class TestUserEscalationBoundary:
         hr = _make_user("hr")
         target_admin = _make_user("admin", id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.users.crud.get", new_callable=AsyncMock, return_value=target_admin):
             with pytest.raises(ApiError) as exc_info:
@@ -129,6 +135,7 @@ class TestUserEscalationBoundary:
         hr = _make_user("hr")
         target = _make_user("employee", id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.users.crud.get", new_callable=AsyncMock, return_value=target):
             with patch("app.routers.users.crud.update", new_callable=AsyncMock, return_value=target):
@@ -142,6 +149,7 @@ class TestPmTeamScoping:
         pm = _make_user("project_manager")
         other_leave = MagicMock(employee_id=uuid.uuid4())  # not in PM's team
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.employees.leave_crud.get", new_callable=AsyncMock, return_value=other_leave):
             with patch("app.routers.employees._pm_team_employee_ids", new_callable=AsyncMock, return_value=[]):
@@ -160,6 +168,7 @@ class TestPmTeamScoping:
             start_date=date.today(), end_date=date.today(), status="approved", **_stamps(),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.employees.leave_crud.get", new_callable=AsyncMock, return_value=target_leave):
             with patch("app.routers.employees._pm_team_employee_ids", new_callable=AsyncMock, return_value=[team_employee_id]):
@@ -177,6 +186,7 @@ class TestPmTeamScoping:
             start_date=date.today(), end_date=date.today(), status="approved", **_stamps(),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.employees.leave_crud.update", new_callable=AsyncMock, return_value=target_leave):
             result = await review_leave(uuid.uuid4(), LeaveStatusUpdate(status="approved"), mock_db, hr)
@@ -187,6 +197,7 @@ class TestPmTeamScoping:
         pm = _make_user("project_manager")
         other_timesheet = MagicMock(employee_id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.employees.timesheet_crud.get", new_callable=AsyncMock, return_value=other_timesheet):
             with patch("app.routers.employees._pm_team_employee_ids", new_callable=AsyncMock, return_value=[]):
@@ -198,6 +209,7 @@ class TestPmTeamScoping:
     async def test_pm_list_leaves_scoped_to_team_only(self):
         pm = _make_user("project_manager")
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.employees._pm_team_employee_ids", new_callable=AsyncMock, return_value=[]):
             result = await list_leaves(_mock_request(), mock_db, MagicMock(page=1, limit=20, offset=0, sort=None), pm)
@@ -209,6 +221,7 @@ class TestPmTeamScoping:
         pm = _make_user("project_manager")
         foreign_employee_id = uuid.uuid4()
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.employees._pm_team_employee_ids", new_callable=AsyncMock, return_value=[]):
             with pytest.raises(ApiError) as exc_info:
@@ -225,6 +238,7 @@ class TestProjectManagerOwnership:
         pm = _make_user("project_manager")
         project = Project(id=uuid.uuid4(), title="Other PM's project", slug="x", project_manager_id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.projects.crud.get", new_callable=AsyncMock, return_value=project):
             with pytest.raises(ApiError) as exc_info:
@@ -240,6 +254,7 @@ class TestProjectManagerOwnership:
             technology_stack=[], team=[], **_stamps(),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute.return_value = MagicMock(scalar_one=MagicMock(return_value=project))
 
         with patch("app.routers.projects.crud.get", new_callable=AsyncMock, return_value=project):
@@ -252,6 +267,7 @@ class TestProjectManagerOwnership:
         pm = _make_user("project_manager")
         project = Project(id=uuid.uuid4(), title="Other PM's project", slug="x", project_manager_id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute.return_value = MagicMock(scalar_one_or_none=MagicMock(return_value=project))
 
         with pytest.raises(ApiError) as exc_info:
@@ -267,6 +283,7 @@ class TestProjectManagerOwnership:
             technology_stack=[], team=[], **_stamps(),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute.return_value = MagicMock(scalar_one=MagicMock(return_value=project))
 
         with patch("app.routers.projects.crud.get", new_callable=AsyncMock, return_value=project):

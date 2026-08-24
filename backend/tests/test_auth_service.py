@@ -38,6 +38,7 @@ class TestCreateSession:
     async def test_returns_plaintext_tokens_and_stores_only_hashes(self):
         user = _make_user()
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         access_token, refresh_token, session = await create_session(mock_db, user, "127.0.0.1", "pytest-agent")
 
@@ -53,6 +54,7 @@ class TestCreateSession:
     async def test_records_ip_and_user_agent(self):
         user = _make_user()
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         _, _, session = await create_session(mock_db, user, "203.0.113.5", "Mozilla/5.0")
         assert session.ip_address == "203.0.113.5"
         assert session.user_agent == "Mozilla/5.0"
@@ -62,6 +64,7 @@ class TestGetSessionByAccessToken:
     @pytest.mark.asyncio
     async def test_returns_none_when_no_matching_session(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         result = MagicMock()
         result.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = result
@@ -76,6 +79,7 @@ class TestGetSessionByAccessToken:
             revoked_at=datetime.now(UTC),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         result = MagicMock()
         result.scalar_one_or_none.return_value = session
         mock_db.execute.return_value = result
@@ -89,6 +93,7 @@ class TestGetSessionByAccessToken:
             expires_at=datetime.now(UTC) - timedelta(seconds=1),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         result = MagicMock()
         result.scalar_one_or_none.return_value = session
         mock_db.execute.return_value = result
@@ -102,6 +107,7 @@ class TestGetSessionByAccessToken:
             expires_at=datetime.now(UTC) + timedelta(days=1),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         result = MagicMock()
         result.scalar_one_or_none.return_value = session
         mock_db.execute.return_value = result
@@ -119,6 +125,7 @@ class TestRotateSession:
             expires_at=datetime.now(UTC) + timedelta(days=1),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         result = MagicMock()
         result.scalar_one_or_none.return_value = session
         mock_db.execute.return_value = result
@@ -138,6 +145,7 @@ class TestRotateSession:
     @pytest.mark.asyncio
     async def test_unknown_token_returns_none(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         no_match = MagicMock()
         no_match.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = no_match
@@ -159,6 +167,7 @@ class TestRotateSession:
             expires_at=datetime.now(UTC) + timedelta(days=1),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         # First execute (lookup by current refresh_token_hash) finds nothing;
         # second execute (lookup by previous_refresh_token_hash) finds the session.
         no_current_match = MagicMock()
@@ -181,6 +190,7 @@ class TestRotateSession:
             expires_at=datetime.now(UTC) - timedelta(seconds=1),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         found = MagicMock()
         found.scalar_one_or_none.return_value = session
         no_previous_match = MagicMock()
@@ -199,6 +209,7 @@ class TestRevokeSession:
             expires_at=datetime.now(UTC) + timedelta(days=1),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         await revoke_session(mock_db, session)
         assert session.revoked_at is not None
         mock_db.commit.assert_awaited_once()
@@ -214,6 +225,7 @@ class TestRevokeAllSessions:
             for i in range(3)
         ]
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         result = MagicMock()
         result.scalars.return_value.all.return_value = sessions
         mock_db.execute.return_value = result
@@ -230,6 +242,7 @@ class TestRevokeAllSessions:
         revoke_me = UserSession(id=uuid.uuid4(), user_id=user_id, session_token_hash="h1", refresh_token_hash="r1",
                                  expires_at=datetime.now(UTC) + timedelta(days=1))
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         result = MagicMock()
         result.scalars.return_value.all.return_value = [keep, revoke_me]
         mock_db.execute.return_value = result
@@ -257,6 +270,7 @@ class TestAccountLockout:
     async def test_record_failed_login_increments_counter(self):
         user = _make_user(failed_login_attempts=0)
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         await record_failed_login(mock_db, user)
         assert user.failed_login_attempts == 1
         assert user.is_locked is False
@@ -265,6 +279,7 @@ class TestAccountLockout:
     async def test_record_failed_login_locks_account_at_threshold(self):
         user = _make_user(failed_login_attempts=MAX_FAILED_LOGIN_ATTEMPTS - 1)
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         await record_failed_login(mock_db, user)
         assert user.failed_login_attempts == MAX_FAILED_LOGIN_ATTEMPTS
         assert user.is_locked is True
@@ -278,6 +293,7 @@ class TestAccountLockout:
             locked_until=datetime.now(UTC) + timedelta(minutes=5),
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         await record_successful_login(mock_db, user)
         assert user.failed_login_attempts == 0
         assert user.is_locked is False

@@ -31,7 +31,7 @@ from app.schemas.finance import (
 )
 from app.schemas.ops import MeetingOut, TicketOut
 from app.schemas.project import ProjectOut
-from app.utils.pagination import SELF_SERVICE_LIST_CAP, PageParams, page_params
+from app.utils.pagination import PageParams, bounded_select, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
 router = APIRouter(prefix="/clients", tags=["Clients"], dependencies=[Depends(get_current_user)])
@@ -82,8 +82,10 @@ async def my_projects(db: AsyncSession = Depends(get_db), current_user: User = D
     # team members assigned (found via tests/e2e_workflows.py against a real
     # Postgres session; mocked tests can't reproduce this).
     result = await db.execute(
-        select(Project).options(selectinload(Project.team))
-        .where(Project.client_id == client.id).order_by(Project.created_at.desc()).limit(SELF_SERVICE_LIST_CAP)
+        bounded_select(
+            select(Project).options(selectinload(Project.team))
+            .where(Project.client_id == client.id).order_by(Project.created_at.desc())
+        )
     )
     return success_response(data=[ProjectOut.model_validate(p) for p in result.scalars().unique().all()])
 
@@ -92,7 +94,7 @@ async def my_projects(db: AsyncSession = Depends(get_db), current_user: User = D
 async def my_invoices(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
     result = await db.execute(
-        select(Invoice).where(Invoice.client_id == client.id).order_by(Invoice.issue_date.desc()).limit(SELF_SERVICE_LIST_CAP)
+        bounded_select(select(Invoice).where(Invoice.client_id == client.id).order_by(Invoice.issue_date.desc()))
     )
     return success_response(data=[InvoiceOut.model_validate(i) for i in result.scalars().all()])
 
@@ -100,7 +102,7 @@ async def my_invoices(db: AsyncSession = Depends(get_db), current_user: User = D
 @router.get("/me/tickets", response_model=dict)
 async def my_tickets(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
-    result = await db.execute(select(Ticket).where(Ticket.client_id == client.id).order_by(Ticket.created_at.desc()).limit(SELF_SERVICE_LIST_CAP))
+    result = await db.execute(bounded_select(select(Ticket).where(Ticket.client_id == client.id).order_by(Ticket.created_at.desc())))
     return success_response(data=[TicketOut.model_validate(t) for t in result.scalars().all()])
 
 
@@ -119,11 +121,12 @@ async def create_ticket(payload: TicketCreate, db: AsyncSession = Depends(get_db
 async def my_payments(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
     result = await db.execute(
-        select(Payment, Invoice.invoice_number)
-        .join(Invoice, Payment.invoice_id == Invoice.id)
-        .where(Invoice.client_id == client.id)
-        .order_by(Payment.paid_at.desc())
-        .limit(SELF_SERVICE_LIST_CAP)
+        bounded_select(
+            select(Payment, Invoice.invoice_number)
+            .join(Invoice, Payment.invoice_id == Invoice.id)
+            .where(Invoice.client_id == client.id)
+            .order_by(Payment.paid_at.desc())
+        )
     )
     rows = result.all()
     out = []
@@ -140,11 +143,12 @@ async def my_meetings(db: AsyncSession = Depends(get_db), current_user: User = D
     # Eager-load the organizer in the same query instead of one extra
     # per-meeting lookup (CF-AUD-011 N+1).
     result = await db.execute(
-        select(Meeting)
-        .options(selectinload(Meeting.organizer))
-        .where(Meeting.client_id == client.id)
-        .order_by(Meeting.scheduled_at.desc())
-        .limit(SELF_SERVICE_LIST_CAP)
+        bounded_select(
+            select(Meeting)
+            .options(selectinload(Meeting.organizer))
+            .where(Meeting.client_id == client.id)
+            .order_by(Meeting.scheduled_at.desc())
+        )
     )
     meetings = result.scalars().all()
     data = []
@@ -159,7 +163,7 @@ async def my_meetings(db: AsyncSession = Depends(get_db), current_user: User = D
 async def my_files(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
     result = await db.execute(
-        select(ClientFile).where(ClientFile.client_id == client.id).order_by(ClientFile.created_at.desc()).limit(SELF_SERVICE_LIST_CAP)
+        bounded_select(select(ClientFile).where(ClientFile.client_id == client.id).order_by(ClientFile.created_at.desc()))
     )
     return success_response(data=[ClientFileOut.model_validate(f) for f in result.scalars().all()])
 
@@ -179,7 +183,7 @@ async def upload_client_file(client_id: uuid.UUID, payload: ClientFileCreate, db
 async def my_reports(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     client = await _get_client_for_user(db, current_user)
     result = await db.execute(
-        select(ClientReport).where(ClientReport.client_id == client.id).order_by(ClientReport.created_at.desc()).limit(SELF_SERVICE_LIST_CAP)
+        bounded_select(select(ClientReport).where(ClientReport.client_id == client.id).order_by(ClientReport.created_at.desc()))
     )
     return success_response(data=[ClientReportOut.model_validate(r) for r in result.scalars().all()])
 

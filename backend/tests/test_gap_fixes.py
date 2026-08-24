@@ -51,6 +51,7 @@ class TestClientFileOwnership:
         admin = _make_user("admin")
         client = Client(id=uuid.uuid4(), user_id=uuid.uuid4(), company_name="Acme", account_manager_id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.refresh.side_effect = _stamp_on_refresh
 
         with patch("app.routers.clients.crud.get", new_callable=AsyncMock, return_value=client):
@@ -66,6 +67,7 @@ class TestClientFileOwnership:
         employee = Employee(id=uuid.uuid4(), user_id=pm.id, employee_code="EMP-1")
         client = Client(id=uuid.uuid4(), user_id=uuid.uuid4(), company_name="Acme", account_manager_id=employee.id)
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock(scalar_one_or_none=MagicMock(return_value=employee))
         mock_db.execute.return_value = mock_result
         mock_db.refresh.side_effect = _stamp_on_refresh
@@ -85,6 +87,7 @@ class TestClientFileOwnership:
         other_employee_id = uuid.uuid4()
         client = Client(id=uuid.uuid4(), user_id=uuid.uuid4(), company_name="Acme", account_manager_id=other_employee_id)
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         # This pm has no Employee row assigned as this client's manager.
         mock_result = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
         mock_db.execute.return_value = mock_result
@@ -103,6 +106,7 @@ class TestClientFileOwnership:
         other_employee_id = uuid.uuid4()
         client = Client(id=uuid.uuid4(), user_id=uuid.uuid4(), company_name="Acme", account_manager_id=other_employee_id)
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute.return_value = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
 
         with patch("app.routers.clients.crud.get", new_callable=AsyncMock, return_value=client):
@@ -120,6 +124,7 @@ class TestPartnerFileOwnership:
         sales_user = _make_user("sales")
         partner = PartnerAccount(id=uuid.uuid4(), user_id=uuid.uuid4(), company_name="Partner Co", account_manager_id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.execute.return_value = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
 
         with patch("app.routers.partner_account.crud.get", new_callable=AsyncMock, return_value=partner):
@@ -135,6 +140,7 @@ class TestPartnerFileOwnership:
         admin = _make_user("admin")
         partner = PartnerAccount(id=uuid.uuid4(), user_id=uuid.uuid4(), company_name="Partner Co", account_manager_id=uuid.uuid4())
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_db.refresh.side_effect = _stamp_on_refresh
 
         with patch("app.routers.partner_account.crud.get", new_callable=AsyncMock, return_value=partner):
@@ -159,6 +165,7 @@ class TestMeetingCancelActuallyCancels:
             duration_minutes=30, created_at=now, updated_at=now,
         )
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.meetings.crud.update", new_callable=AsyncMock, return_value=cancelled_meeting) as mock_update:
             with patch("app.routers.meetings.crud.delete", new_callable=AsyncMock) as mock_delete:
@@ -182,6 +189,7 @@ class TestTrainingEnrollmentRace:
         course_id = uuid.uuid4()
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         no_existing = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
         employee_lookup = MagicMock(scalar_one_or_none=MagicMock(return_value=employee))
         mock_db.execute.side_effect = [employee_lookup, no_existing]
@@ -198,6 +206,7 @@ class TestOverdueInvoiceSweep:
     @pytest.mark.asyncio
     async def test_sweeps_only_sent_and_past_due(self):
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalars.return_value.all.return_value = [uuid.uuid4(), uuid.uuid4()]
         mock_db.execute.return_value = mock_result

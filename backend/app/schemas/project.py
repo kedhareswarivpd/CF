@@ -1,7 +1,7 @@
 import uuid
 from datetime import date
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.models.enums import ProjectStatus
 from app.schemas.common import TimestampedRead
@@ -60,8 +60,7 @@ class ProjectMemberOut(BaseModel):
     designation: str | None = None
     user_id: uuid.UUID | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProjectOut(TimestampedRead):
@@ -88,6 +87,15 @@ class ProjectOut(TimestampedRead):
     is_featured: bool
     is_published: bool
     team: list[ProjectMemberOut] = []
+
+    @field_validator("deliverables", "gallery", "downloads", mode="before")
+    @classmethod
+    def _coerce_none_to_empty_list(cls, value):
+        """A partially-built (never flushed) ORM object, or a real DB row with a
+        NULL in one of these columns, yields an explicit None here rather than a
+        missing field — the `= []` default only fills in a *missing* field, so
+        None would otherwise fail validation. Coerce it to an empty list."""
+        return [] if value is None else value
 
 
 class AssignTeamRequest(BaseModel):

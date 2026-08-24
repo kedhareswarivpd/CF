@@ -50,6 +50,7 @@ class TestGetOrCreateClientUser:
         lead = _make_lead()
         existing = User(id=uuid.uuid4(), name="Jane", email=lead.email, password_hash="x", role="client")
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = existing
         mock_db.execute.return_value = mock_result
@@ -64,6 +65,7 @@ class TestGetOrCreateClientUser:
     async def test_creates_new_local_user_when_none_exists(self):
         lead = _make_lead()
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = mock_result
@@ -89,6 +91,7 @@ class TestSendClientWelcome:
         lead = _make_lead()
         user = User(id=uuid.uuid4(), name="Jane", email=lead.email, password_hash="x", role="client")
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.contracts.send_password_reset_email", new_callable=AsyncMock) as mock_reset_email:
             with patch("app.routers.contracts.send_welcome_email", new_callable=AsyncMock) as mock_welcome:
@@ -103,6 +106,7 @@ class TestSendClientWelcome:
         lead = _make_lead()
         user = User(id=uuid.uuid4(), name="Jane", email=lead.email, password_hash="x", role="client")
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.contracts.send_password_reset_email", side_effect=Exception("smtp down")):
             with patch("app.routers.contracts.send_welcome_email", new_callable=AsyncMock) as mock_welcome:
@@ -114,6 +118,7 @@ class TestSendClientWelcome:
         lead = _make_lead()
         user = User(id=uuid.uuid4(), name="Jane", email=lead.email, password_hash="x", role="client")
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
 
         with patch("app.routers.contracts.send_password_reset_email", new_callable=AsyncMock) as mock_reset_email:
             with patch("app.routers.contracts.send_welcome_email", side_effect=Exception("smtp down")):
@@ -128,6 +133,7 @@ class TestGetOrCreateClientRecord:
         user = User(id=uuid.uuid4(), name="Jane", email=lead.email, role="client")
         existing_client = Client(id=uuid.uuid4(), user_id=user.id)
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = existing_client
         mock_db.execute.return_value = mock_result
@@ -144,6 +150,7 @@ class TestGetOrCreateClientRecord:
         account_mgr_employee = Employee(id=uuid.uuid4(), user_id=lead.owner_id, employee_code="EMP-1")
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         employee_result = MagicMock()
         employee_result.scalar_one_or_none.return_value = account_mgr_employee
         client_result = MagicMock()
@@ -164,6 +171,7 @@ class TestGetOrCreateClientRecord:
         user = User(id=uuid.uuid4(), name="Jane", email=lead.email, role="client")
 
         mock_db = AsyncMock()
+        mock_db.add = MagicMock()
         client_result = MagicMock()
         client_result.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = client_result
