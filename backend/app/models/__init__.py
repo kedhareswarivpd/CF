@@ -52,6 +52,8 @@ from app.models.partner_file import PartnerFile  # noqa: F401
 from app.models.password_reset_token import PasswordResetToken  # noqa: F401
 from app.models.payment import Payment  # noqa: F401
 from app.models.payslip import Payslip  # noqa: F401
+from app.models.performance_feedback import PerformanceFeedback  # noqa: F401
+from app.models.performance_goal import PerformanceGoal  # noqa: F401
 from app.models.performance_review import PerformanceReview  # noqa: F401
 from app.models.permission import Permission  # noqa: F401
 from app.models.portfolio import Portfolio  # noqa: F401

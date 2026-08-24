@@ -1,7 +1,7 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Date, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,6 +21,9 @@ class PerformanceReview(Base):
     goals: Mapped[str | None] = mapped_column(Text)
     comments: Mapped[str | None] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(20), default="draft")
+    # Review-acknowledgment lifecycle: the employee confirming they've read
+    # a finalized review, previously had no backing field at all.
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     employee = relationship("Employee")
     reviewer = relationship("User")

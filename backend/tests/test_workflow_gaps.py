@@ -227,3 +227,89 @@ class TestProposalPmReviewStage:
                 with patch("app.routers.proposals.lead_crud.update", new_callable=AsyncMock):
                     result = await send_proposal(proposal.id, mock_db)
         assert result["data"].status == ProposalStatus.sent
+
+
+class TestPerformanceGoalOwnershipBoundary:
+    """Performance goals/feedback lifecycle: staff set a goal's title/
+    description/target_date; the employee it belongs to may only progress
+    status/progress_percent on their own goal — not edit its definition or
+    touch anyone else's."""
+
+    @pytest.mark.asyncio
+    async def test_employee_can_update_own_progress(self):
+        from app.models.employee import Employee
+        from app.models.performance_goal import PerformanceGoal
+        from app.routers.employees import update_performance_goal
+        from app.schemas.performance import PerformanceGoalUpdate
+
+        user = _make_user("developer")
+        employee = Employee(id=uuid.uuid4(), user_id=user.id, employee_code="EMP-1")
+        goal = PerformanceGoal(id=uuid.uuid4(), employee_id=employee.id, title="Learn X", status="not_started", progress_percent=0, **_stamps())
+
+        mock_db = AsyncMock()
+        goal_row = MagicMock(scalar_one_or_none=MagicMock(return_value=goal))
+        emp_row = MagicMock(scalar_one_or_none=MagicMock(return_value=employee))
+        mock_db.execute.side_effect = [goal_row, emp_row]
+
+        result = await update_performance_goal(goal.id, PerformanceGoalUpdate(progress_percent=50), mock_db, user)
+        assert result["data"].progress_percent == 50
+
+    @pytest.mark.asyncio
+    async def test_employee_cannot_edit_own_goal_title(self):
+        from app.models.employee import Employee
+        from app.models.performance_goal import PerformanceGoal
+        from app.routers.employees import update_performance_goal
+        from app.schemas.performance import PerformanceGoalUpdate
+
+        user = _make_user("developer")
+        employee = Employee(id=uuid.uuid4(), user_id=user.id, employee_code="EMP-2")
+        goal = PerformanceGoal(id=uuid.uuid4(), employee_id=employee.id, title="Learn X", status="not_started", progress_percent=0, **_stamps())
+
+        mock_db = AsyncMock()
+        goal_row = MagicMock(scalar_one_or_none=MagicMock(return_value=goal))
+        emp_row = MagicMock(scalar_one_or_none=MagicMock(return_value=employee))
+        mock_db.execute.side_effect = [goal_row, emp_row]
+
+        with pytest.raises(ApiError) as exc_info:
+            await update_performance_goal(goal.id, PerformanceGoalUpdate(title="hacked"), mock_db, user)
+        assert exc_info.value.status_code == 403
+
+    @pytest.mark.asyncio
+    async def test_employee_cannot_update_someone_elses_goal(self):
+        from app.models.employee import Employee
+        from app.models.performance_goal import PerformanceGoal
+        from app.routers.employees import update_performance_goal
+        from app.schemas.performance import PerformanceGoalUpdate
+
+        user = _make_user("developer")
+        employee = Employee(id=uuid.uuid4(), user_id=user.id, employee_code="EMP-3")
+        other_employee_goal = PerformanceGoal(id=uuid.uuid4(), employee_id=uuid.uuid4(), title="Not yours", status="not_started", progress_percent=0, **_stamps())
+
+        mock_db = AsyncMock()
+        goal_row = MagicMock(scalar_one_or_none=MagicMock(return_value=other_employee_goal))
+        emp_row = MagicMock(scalar_one_or_none=MagicMock(return_value=employee))
+        mock_db.execute.side_effect = [goal_row, emp_row]
+
+        with pytest.raises(ApiError) as exc_info:
+            await update_performance_goal(other_employee_goal.id, PerformanceGoalUpdate(progress_percent=100), mock_db, user)
+        assert exc_info.value.status_code == 403
+
+
+class TestPayslipSecureDownload:
+    @pytest.mark.asyncio
+    async def test_download_blocked_for_non_owner(self):
+        from app.models.payslip import Payslip
+        from app.routers.employees import download_my_payslip
+
+        other = _make_user("employee")
+        employee_other = MagicMock()  # the *caller's* employee row, unrelated to the payslip
+        payslip = Payslip(id=uuid.uuid4(), employee_id=uuid.uuid4(), month=8, year=2026, basic=5000, net_pay=5000, file_url="payslips/x.pdf")
+
+        mock_db = AsyncMock()
+        emp_row = MagicMock(scalar_one_or_none=MagicMock(return_value=employee_other))
+        no_matching_payslip = MagicMock(scalar_one_or_none=MagicMock(return_value=None))
+        mock_db.execute.side_effect = [emp_row, no_matching_payslip]
+
+        with pytest.raises(ApiError) as exc_info:
+            await download_my_payslip(payslip.id, mock_db, other)
+        assert exc_info.value.status_code == 404

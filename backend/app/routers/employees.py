@@ -19,6 +19,8 @@ from app.models.employee_document import EmployeeDocument
 from app.models.enums import DocumentType, LeaveStatus, NotificationType, TimesheetStatus
 from app.models.leave import Leave
 from app.models.payslip import Payslip
+from app.models.performance_feedback import PerformanceFeedback
+from app.models.performance_goal import PerformanceGoal
 from app.models.performance_review import PerformanceReview
 from app.models.timesheet import Timesheet
 from app.models.user import User
@@ -35,7 +37,16 @@ from app.schemas.employee import (
     TimesheetOut,
     TimesheetStatusUpdate,
 )
-from app.schemas.performance import PerformanceReviewOut
+from app.schemas.performance import (
+    PerformanceFeedbackCreate,
+    PerformanceFeedbackOut,
+    PerformanceGoalCreate,
+    PerformanceGoalOut,
+    PerformanceGoalUpdate,
+    PerformanceReviewCreate,
+    PerformanceReviewOut,
+    PerformanceReviewUpdate,
+)
 from app.services.notification_service import notify_user
 from app.utils.pagination import PageParams, bounded_select, page_params, paginate_query
 from app.utils.responses import build_pagination_meta, success_response
@@ -220,6 +231,40 @@ async def my_payslips(db: AsyncSession = Depends(get_db), current_user: User = D
     return success_response(data=[PayslipOut.model_validate(p) for p in payslips])
 
 
+PAYSLIP_SUBFOLDER = "payslips"
+
+
+@router.get("/me/payslips/{payslip_id}/download")
+async def download_my_payslip(payslip_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Payslips previously had no secured download path at all — only the
+    metadata list (GET /me/payslips) existed. Ownership-checked (404, not
+    403, on a mismatch) same as the equivalent employee-document download."""
+    employee = await _get_employee_for_user(db, current_user)
+    payslip = (await db.execute(select(Payslip).where(Payslip.id == payslip_id, Payslip.employee_id == employee.id))).scalar_one_or_none()
+    if payslip is None or not payslip.file_url:
+        raise ApiError.not_found("Payslip not found")
+    content, filename, content_type = await load_private_file(payslip.file_url, PAYSLIP_SUBFOLDER)
+    return Response(content=content, media_type=content_type, headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+@router.post("/{employee_id}/payslips", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr", "finance"))])
+async def create_payslip(
+    employee_id: uuid.UUID, month: int = Form(...), year: int = Form(...),
+    basic: float = Form(...), allowances: float = Form(0), deductions: float = Form(0),
+    file: UploadFile = File(...), db: AsyncSession = Depends(get_db),
+):
+    reference = await save_upload(file, PAYSLIP_SUBFOLDER)
+    net_pay = basic + allowances - deductions
+    payslip = Payslip(
+        employee_id=employee_id, month=month, year=year, basic=basic,
+        allowances=allowances, deductions=deductions, net_pay=net_pay, file_url=reference,
+    )
+    db.add(payslip)
+    await db.commit()
+    await db.refresh(payslip)
+    return success_response(data=PayslipOut.model_validate(payslip), message="Payslip created", status_code=201)
+
+
 @router.get("/me/documents", response_model=dict)
 async def my_documents(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)
@@ -284,6 +329,119 @@ async def my_performance_reviews(db: AsyncSession = Depends(get_db), current_use
         bounded_select(select(PerformanceReview).where(PerformanceReview.employee_id == employee.id).order_by(PerformanceReview.review_date.desc()))
     )
     return success_response(data=[PerformanceReviewOut.model_validate(r) for r in result.scalars().all()])
+
+
+@router.post("/me/performance-reviews/{review_id}/acknowledge", response_model=dict)
+async def acknowledge_performance_review(review_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Review-acknowledgment lifecycle: the employee confirming they've
+    read a finalized review."""
+    employee = await _get_employee_for_user(db, current_user)
+    review = (await db.execute(select(PerformanceReview).where(PerformanceReview.id == review_id, PerformanceReview.employee_id == employee.id))).scalar_one_or_none()
+    if review is None:
+        raise ApiError.not_found("Performance review not found")
+    review.acknowledged_at = datetime.now(UTC)
+    await db.commit()
+    await db.refresh(review)
+    return success_response(data=PerformanceReviewOut.model_validate(review), message="Review acknowledged")
+
+
+@router.post("/performance-reviews", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
+async def create_performance_review(payload: PerformanceReviewCreate, db: AsyncSession = Depends(get_db)):
+    review = PerformanceReview(**payload.model_dump())
+    db.add(review)
+    await db.commit()
+    await db.refresh(review)
+    return success_response(data=PerformanceReviewOut.model_validate(review), message="Performance review created", status_code=201)
+
+
+@router.get("/performance-reviews", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
+async def list_performance_reviews(request: Request, db: AsyncSession = Depends(get_db)):
+    filters = {}
+    if emp_id := request.query_params.get("employee_id"):
+        filters["employee_id"] = emp_id
+    stmt = select(PerformanceReview).order_by(PerformanceReview.review_date.desc())
+    for k, v in filters.items():
+        stmt = stmt.where(getattr(PerformanceReview, k) == v)
+    result = await db.execute(bounded_select(stmt))
+    return success_response(data=[PerformanceReviewOut.model_validate(r) for r in result.scalars().all()])
+
+
+@router.patch("/performance-reviews/{review_id}", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
+async def update_performance_review(review_id: uuid.UUID, payload: PerformanceReviewUpdate, db: AsyncSession = Depends(get_db)):
+    review = (await db.execute(select(PerformanceReview).where(PerformanceReview.id == review_id))).scalar_one_or_none()
+    if review is None:
+        raise ApiError.not_found("Performance review not found")
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(review, field, value)
+    await db.commit()
+    await db.refresh(review)
+    return success_response(data=PerformanceReviewOut.model_validate(review), message="Performance review updated")
+
+
+# ---------- Performance goals & continuous feedback ----------
+@router.post("/performance-goals", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
+async def create_performance_goal(payload: PerformanceGoalCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    goal = PerformanceGoal(**payload.model_dump(), created_by=current_user.id)
+    db.add(goal)
+    await db.commit()
+    await db.refresh(goal)
+    return success_response(data=PerformanceGoalOut.model_validate(goal), message="Goal created", status_code=201)
+
+
+@router.get("/me/performance-goals", response_model=dict)
+async def my_performance_goals(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    employee = await _get_employee_for_user(db, current_user)
+    result = await db.execute(bounded_select(select(PerformanceGoal).where(PerformanceGoal.employee_id == employee.id).order_by(PerformanceGoal.target_date)))
+    return success_response(data=[PerformanceGoalOut.model_validate(g) for g in result.scalars().all()])
+
+
+@router.get("/performance-goals", response_model=dict, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
+async def list_performance_goals(request: Request, db: AsyncSession = Depends(get_db)):
+    stmt = select(PerformanceGoal).order_by(PerformanceGoal.target_date)
+    if emp_id := request.query_params.get("employee_id"):
+        stmt = stmt.where(PerformanceGoal.employee_id == emp_id)
+    result = await db.execute(bounded_select(stmt))
+    return success_response(data=[PerformanceGoalOut.model_validate(g) for g in result.scalars().all()])
+
+
+@router.patch("/performance-goals/{goal_id}", response_model=dict)
+async def update_performance_goal(goal_id: uuid.UUID, payload: PerformanceGoalUpdate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Staff can edit any field; the goal's own employee may only update
+    their own progress/status — title/description/target_date stay
+    staff-controlled, matching how goals are meant to be set by a
+    manager and then progressed by the employee."""
+    goal = (await db.execute(select(PerformanceGoal).where(PerformanceGoal.id == goal_id))).scalar_one_or_none()
+    if goal is None:
+        raise ApiError.not_found("Goal not found")
+    is_staff_editor = current_user.role in ("admin", "hr", "project_manager")
+    if not is_staff_editor:
+        employee = await _get_employee_for_user(db, current_user)
+        if employee.id != goal.employee_id:
+            raise ApiError.forbidden("You can only update your own goals")
+        allowed_fields = {"status", "progress_percent"}
+        if set(payload.model_dump(exclude_unset=True)) - allowed_fields:
+            raise ApiError.forbidden("You can only update status and progress on your own goal")
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(goal, field, value)
+    await db.commit()
+    await db.refresh(goal)
+    return success_response(data=PerformanceGoalOut.model_validate(goal), message="Goal updated")
+
+
+@router.post("/{employee_id}/feedback", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "hr", "project_manager"))])
+async def give_performance_feedback(employee_id: uuid.UUID, payload: PerformanceFeedbackCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    feedback = PerformanceFeedback(employee_id=employee_id, given_by=current_user.id, feedback_text=payload.feedback_text, feedback_type=payload.feedback_type)
+    db.add(feedback)
+    await db.commit()
+    await db.refresh(feedback)
+    return success_response(data=PerformanceFeedbackOut.model_validate(feedback), message="Feedback recorded", status_code=201)
+
+
+@router.get("/me/feedback", response_model=dict)
+async def my_performance_feedback(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    employee = await _get_employee_for_user(db, current_user)
+    result = await db.execute(bounded_select(select(PerformanceFeedback).where(PerformanceFeedback.employee_id == employee.id).order_by(PerformanceFeedback.created_at.desc())))
+    return success_response(data=[PerformanceFeedbackOut.model_validate(f) for f in result.scalars().all()])
 
 
 # ---------- Leave & timesheet approval (HR reviews all; PM reviews their team's) ----------
