@@ -17,6 +17,7 @@ export const partnerPortalTabs = [
 export const clientPortalTabs = [
   { id: 'overview', label: 'Overview', icon: 'dashboard' },
   { id: 'projects', label: 'Projects', icon: 'folder' },
+  { id: 'proposals', label: 'Proposals', icon: 'description' },
   { id: 'invoices', label: 'Invoices', icon: 'receipt' },
   { id: 'payments', label: 'Payments', icon: 'payments' },
   { id: 'files', label: 'Files', icon: 'folder_open' },

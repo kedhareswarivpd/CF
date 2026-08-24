@@ -75,6 +75,12 @@ class ProposalOut(TimestampedRead):
     sent_at: datetime | None = None
     viewed_at: datetime | None = None
     created_by: uuid.UUID | None = None
+    client_comment: str | None = None
+    rejection_reason: str | None = None
+
+
+class ProposalRejectRequest(BaseModel):
+    reason: str | None = None
 
 
 # ---------- Contract ----------

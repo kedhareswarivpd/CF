@@ -16,7 +16,10 @@ import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import useAsyncAction from '../hooks/useAsyncAction.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { clientPortalTabs } from '../data/portal.js';
-import { fetchMyProfile, fetchMyProjects, fetchMyInvoices, fetchMyTickets, fetchMyPayments, fetchMyMeetings, fetchMyFiles, fetchMyReports, createTicket as createTicketApi } from '../api/clients.js';
+import {
+ fetchMyProfile, fetchMyProjects, fetchMyInvoices, fetchMyTickets, fetchMyPayments, fetchMyMeetings, fetchMyFiles, fetchMyReports,
+ fetchMyProposals, acceptMyProposal, rejectMyProposal, createTicket as createTicketApi,
+} from '../api/clients.js';
 import { validateNewTicket } from '../schemas/client.schema.js';
 
 // The /clients/me/* endpoints these tables read from are self-service list
@@ -38,7 +41,7 @@ const STATUS_VARIANTS = {
  in_progress: 'info', completed: 'success', planning: 'warning', on_hold: 'neutral',
  paid: 'success', pending: 'warning', overdue: 'error', sent: 'info', draft: 'neutral',
  open: 'info', resolved: 'success', closed: 'neutral', cancelled: 'error',
- upcoming: 'info',
+ upcoming: 'info', accepted: 'success', rejected: 'error',
  project: 'info', financial: 'warning', annual: 'neutral',
 };
 
@@ -118,6 +121,99 @@ function Projects({ projects }) {
    rows={pageRows}
   />
   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+  </div>
+ );
+}
+
+function ProposalCard({ proposal, onAccept, onReject }) {
+ const { run, isPending } = useAsyncAction();
+ const [showRejectForm, setShowRejectForm] = useState(false);
+ const [reason, setReason] = useState('');
+ const [error, setError] = useState('');
+ const isSent = proposal.status === 'sent';
+
+ const handleAccept = () => run(async () => {
+  setError('');
+  try {
+   await onAccept(proposal.id);
+  } catch (err) {
+   setError(err?.message || 'Could not accept the proposal. Please try again.');
+  }
+ });
+
+ const handleReject = () => run(async () => {
+  setError('');
+  try {
+   await onReject(proposal.id, reason);
+   setShowRejectForm(false);
+   setReason('');
+  } catch (err) {
+   setError(err?.message || 'Could not reject the proposal. Please try again.');
+  }
+ });
+
+ return (
+  <div className="rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+   <div className="flex flex-wrap items-start justify-between gap-3">
+    <div>
+     <div className="flex items-center gap-2">
+      <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Proposal v{proposal.version}</h3>
+      <StatusBadge variant={STATUS_VARIANTS[proposal.status] || 'neutral'}>{proposal.status}</StatusBadge>
+     </div>
+     <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">Sent {proposal.sentAt || '—'}</p>
+    </div>
+    <p className="font-stat text-2xl font-bold text-brand-dark dark:text-white">${proposal.price.toLocaleString()}</p>
+   </div>
+   <p className="mt-4 whitespace-pre-line text-body-md text-ink-muted dark:text-dark-ink-muted">{proposal.scopeSummary}</p>
+   {proposal.fileUrl && (
+    <a href={proposal.fileUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-body-sm font-semibold text-brand hover:underline">
+     <Icon name="description" className="text-base" /> View full proposal document
+    </a>
+   )}
+   {proposal.rejectionReason && (
+    <p className="mt-3 rounded bg-status-error-bg p-3 text-body-sm text-status-error-text">Rejection reason: {proposal.rejectionReason}</p>
+   )}
+   {error && <p className="mt-3 flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
+   {isSent && (
+    <div className="mt-5 flex flex-wrap items-center gap-3">
+     <Button onClick={handleAccept} disabled={isPending} variant="primary" size="md" icon={<Icon name="check" />}>
+      {isPending ? 'Working...' : 'Accept Proposal'}
+     </Button>
+     <Button onClick={() => setShowRejectForm((v) => !v)} disabled={isPending} variant="outline" size="md" icon={<Icon name="close" />}>
+      Reject
+     </Button>
+    </div>
+   )}
+   {showRejectForm && (
+    <div className="mt-4 flex flex-col gap-2">
+     <textarea
+      value={reason} onChange={(e) => setReason(e.target.value)} rows={2}
+      placeholder="Let us know why (optional) so we can revise the proposal..."
+      className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink"
+     />
+     <div className="flex gap-2">
+      <Button onClick={handleReject} disabled={isPending} variant="primary" size="md">{isPending ? 'Working...' : 'Confirm Rejection'}</Button>
+      <Button onClick={() => setShowRejectForm(false)} disabled={isPending} variant="outline" size="md">Cancel</Button>
+     </div>
+    </div>
+   )}
+  </div>
+ );
+}
+
+function Proposals({ proposals, onAccept, onReject }) {
+ const { page, setPage, totalPages, pageRows } = usePagedRows(proposals);
+ if (proposals.length === 0) {
+  return (
+   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+    <EmptyState icon="description" title="No proposals yet" description="Proposals from your account team will appear here for review." />
+   </div>
+  );
+ }
+ return (
+  <div className="space-y-stack-md">
+   {pageRows.map((p) => <ProposalCard key={p.id} proposal={p} onAccept={onAccept} onReject={onReject} />)}
+   <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
 }
@@ -397,6 +493,14 @@ const normalizeProject = (p) => ({
 });
 const normalizeProjects = (arr) => (Array.isArray(arr) ? arr.map(normalizeProject) : []);
 
+const normalizeProposal = (p) => ({
+ id: p.id, version: p.version, status: p.status,
+ price: Number(p.price ?? 0), scopeSummary: p.scope_summary,
+ sentAt: p.sent_at?.slice(0, 10), fileUrl: p.file_url,
+ rejectionReason: p.rejection_reason,
+});
+const normalizeProposals = (arr) => (Array.isArray(arr) ? arr.map(normalizeProposal) : []);
+
 const normalizeInvoice = (i) => ({
  id: i.invoice_number ?? i.id, amount: Number(i.total_amount ?? i.amount ?? 0),
  status: i.status, issueDate: i.issue_date ?? i.issueDate, dueDate: i.due_date ?? i.dueDate,
@@ -458,6 +562,7 @@ export default function ClientPortal() {
  const initialLoadDone = useRef(false);
  const [profile, setProfile] = useState({ contact_name: '', email: '', company_name: '', industry: '', country: '' });
  const [projects, setProjects] = useState([]);
+ const [proposals, setProposals] = useState([]);
  const [invoices, setInvoices] = useState([]);
  const [tickets, setTickets] = useState([]);
  const [payments, setPayments] = useState([]);
@@ -471,15 +576,17 @@ export default function ClientPortal() {
   Promise.allSettled([
    fetchMyProfile().then((res) => res?.data),
    fetchMyProjects().then((res) => res?.data),
+   fetchMyProposals().then((res) => res?.data),
    fetchMyInvoices().then((res) => res?.data),
    fetchMyTickets().then((res) => res?.data),
    fetchMyPayments().then((res) => res?.data),
    fetchMyMeetings().then((res) => res?.data),
    fetchMyFiles().then((res) => res?.data),
    fetchMyReports().then((res) => res?.data),
-  ]).then(([p, pr, inv, t, pay, m, f, r]) => {
+  ]).then(([p, pr, prop, inv, t, pay, m, f, r]) => {
    if (p.status === 'fulfilled' && p.value) setProfile(p.value);
    if (pr.status === 'fulfilled' && pr.value) setProjects(normalizeProjects(pr.value));
+   if (prop.status === 'fulfilled' && prop.value) setProposals(normalizeProposals(prop.value));
    if (inv.status === 'fulfilled' && inv.value) setInvoices(normalizeInvoices(inv.value));
    if (t.status === 'fulfilled' && t.value) setTickets(normalizeTickets(t.value));
    if (pay.status === 'fulfilled' && pay.value) setPayments(normalizePayments(pay.value));
@@ -492,6 +599,7 @@ export default function ClientPortal() {
  const fetchTab = async (tabId) => {
   if (!user) return;
   const fetchers = {
+   proposals: () => fetchMyProposals().then((res) => { if (res?.data) setProposals(normalizeProposals(res.data)); }),
    payments: () => fetchMyPayments().then((res) => { if (res?.data) setPayments(normalizePayments(res.data)); }),
    files: () => fetchMyFiles().then((res) => { if (res?.data) setFiles(normalizeFiles(res.data)); }),
    meetings: () => fetchMyMeetings().then((res) => { if (res?.data) setMeetings(normalizeMeetings(res.data)); }),
@@ -516,6 +624,18 @@ export default function ClientPortal() {
   const res = await createTicketApi({ subject, description: description || subject, priority: 'medium' });
   const d = res?.data;
   setTickets((prev) => [normalizeTicket(d), ...prev]);
+ };
+
+ const handleAcceptProposal = async (proposalId) => {
+  const res = await acceptMyProposal(proposalId);
+  const d = res?.data;
+  if (d) setProposals((prev) => prev.map((p) => (p.id === proposalId ? normalizeProposal(d) : p)));
+ };
+
+ const handleRejectProposal = async (proposalId, reason) => {
+  const res = await rejectMyProposal(proposalId, reason);
+  const d = res?.data;
+  if (d) setProposals((prev) => prev.map((p) => (p.id === proposalId ? normalizeProposal(d) : p)));
  };
 
  // useRoleGuard already redirects both the unauthenticated case (to
@@ -570,12 +690,13 @@ export default function ClientPortal() {
      />
 
      <div className="min-w-0 flex-1 overflow-y-auto px-4 py-stack-lg sm:px-6 lg:px-10 xl:px-12 ">
-      {tabLoading && ['payments', 'files', 'meetings', 'reports'].includes(activeTab)
+      {tabLoading && ['proposals', 'payments', 'files', 'meetings', 'reports'].includes(activeTab)
        ? <SkeletonTable rows={6} columns={5} />
        : (
         <>
          {activeTab === 'overview' && <Overview profile={profile} projects={projects} invoices={invoices} tickets={tickets} />}
          {activeTab === 'projects' && <Projects projects={projects} />}
+         {activeTab === 'proposals' && <Proposals proposals={proposals} onAccept={handleAcceptProposal} onReject={handleRejectProposal} />}
          {activeTab === 'invoices' && <Invoices invoices={invoices} />}
          {activeTab === 'payments' && <Payments payments={payments} />}
          {activeTab === 'files' && <Files files={files} />}

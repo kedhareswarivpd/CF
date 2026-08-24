@@ -1,7 +1,7 @@
 """Unit tests for contracts.py's client-provisioning helpers.
 
 Extracted during this engagement's DRY/KISS/SOLID review from a single
-~75-line function (`_provision_client_account`) that mixed five
+~75-line function (`provision_client_account`) that mixed five
 responsibilities — account creation, local User row, password-reset email,
 welcome email, Client row creation — with no test coverage at all beyond an
 auth-required smoke test on the HTTP endpoint. These tests target the three
@@ -23,11 +23,11 @@ from app.models.client import Client
 from app.models.employee import Employee
 from app.models.lead import Lead
 from app.models.user import User
-from app.routers.contracts import (
-    _get_or_create_client_record,
-    _get_or_create_client_user,
-    _provision_client_account,
-    _send_client_welcome,
+from app.services.client_provisioning import (
+    get_or_create_client_record,
+    get_or_create_client_user,
+    provision_client_account,
+    send_client_welcome,
 )
 
 
@@ -55,7 +55,7 @@ class TestGetOrCreateClientUser:
         mock_result.scalar_one_or_none.return_value = existing
         mock_db.execute.return_value = mock_result
 
-        user, created = await _get_or_create_client_user(mock_db, lead)
+        user, created = await get_or_create_client_user(mock_db, lead)
 
         assert user is existing
         assert created is False
@@ -70,7 +70,7 @@ class TestGetOrCreateClientUser:
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = mock_result
 
-        user, created = await _get_or_create_client_user(mock_db, lead)
+        user, created = await get_or_create_client_user(mock_db, lead)
 
         assert created is True
         assert user.email == lead.email
@@ -78,7 +78,7 @@ class TestGetOrCreateClientUser:
         # The placeholder password is a real Argon2id hash of an unguessable
         # random value the caller never sees — never usable to log in with,
         # by design (the real password is set via the reset link
-        # _send_client_welcome issues).
+        # send_client_welcome issues).
         assert user.password_hash.startswith("$argon2id$")
         assert not verify_password("", user.password_hash)
         mock_db.add.assert_called_once()
@@ -93,9 +93,9 @@ class TestSendClientWelcome:
         mock_db = AsyncMock()
         mock_db.add = MagicMock()
 
-        with patch("app.routers.contracts.send_password_reset_email", new_callable=AsyncMock) as mock_reset_email:
-            with patch("app.routers.contracts.send_welcome_email", new_callable=AsyncMock) as mock_welcome:
-                await _send_client_welcome(mock_db, user, lead)
+        with patch("app.services.client_provisioning.send_password_reset_email", new_callable=AsyncMock) as mock_reset_email:
+            with patch("app.services.client_provisioning.send_welcome_email", new_callable=AsyncMock) as mock_welcome:
+                await send_client_welcome(mock_db, user, lead)
 
         mock_db.add.assert_called_once()  # the PasswordResetToken row
         mock_reset_email.assert_awaited_once()
@@ -108,9 +108,9 @@ class TestSendClientWelcome:
         mock_db = AsyncMock()
         mock_db.add = MagicMock()
 
-        with patch("app.routers.contracts.send_password_reset_email", side_effect=Exception("smtp down")):
-            with patch("app.routers.contracts.send_welcome_email", new_callable=AsyncMock) as mock_welcome:
-                await _send_client_welcome(mock_db, user, lead)  # must not raise
+        with patch("app.services.client_provisioning.send_password_reset_email", side_effect=Exception("smtp down")):
+            with patch("app.services.client_provisioning.send_welcome_email", new_callable=AsyncMock) as mock_welcome:
+                await send_client_welcome(mock_db, user, lead)  # must not raise
         mock_welcome.assert_awaited_once()
 
     @pytest.mark.asyncio
@@ -120,9 +120,9 @@ class TestSendClientWelcome:
         mock_db = AsyncMock()
         mock_db.add = MagicMock()
 
-        with patch("app.routers.contracts.send_password_reset_email", new_callable=AsyncMock) as mock_reset_email:
-            with patch("app.routers.contracts.send_welcome_email", side_effect=Exception("smtp down")):
-                await _send_client_welcome(mock_db, user, lead)  # must not raise
+        with patch("app.services.client_provisioning.send_password_reset_email", new_callable=AsyncMock) as mock_reset_email:
+            with patch("app.services.client_provisioning.send_welcome_email", side_effect=Exception("smtp down")):
+                await send_client_welcome(mock_db, user, lead)  # must not raise
         mock_reset_email.assert_awaited_once()
 
 
@@ -138,7 +138,7 @@ class TestGetOrCreateClientRecord:
         mock_result.scalar_one_or_none.return_value = existing_client
         mock_db.execute.return_value = mock_result
 
-        client = await _get_or_create_client_record(mock_db, user, lead)
+        client = await get_or_create_client_record(mock_db, user, lead)
 
         assert client is existing_client
         mock_db.add.assert_not_called()
@@ -157,7 +157,7 @@ class TestGetOrCreateClientRecord:
         client_result.scalar_one_or_none.return_value = None
         mock_db.execute.side_effect = [employee_result, client_result]
 
-        client = await _get_or_create_client_record(mock_db, user, lead)
+        client = await get_or_create_client_record(mock_db, user, lead)
 
         assert client.user_id == user.id
         assert client.company_name == lead.company
@@ -176,7 +176,7 @@ class TestGetOrCreateClientRecord:
         client_result.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = client_result
 
-        client = await _get_or_create_client_record(mock_db, user, lead)
+        client = await get_or_create_client_record(mock_db, user, lead)
 
         assert client.account_manager_id is None
 
@@ -192,10 +192,10 @@ class TestProvisionClientAccount:
         new_user = User(id=uuid.uuid4(), name="Jane", email=lead.email, role="client")
         client = Client(id=uuid.uuid4(), user_id=new_user.id)
 
-        with patch("app.routers.contracts._get_or_create_client_user", return_value=(new_user, True)):
-            with patch("app.routers.contracts._send_client_welcome") as mock_welcome:
-                with patch("app.routers.contracts._get_or_create_client_record", return_value=client) as mock_record:
-                    result = await _provision_client_account(AsyncMock(), lead)
+        with patch("app.services.client_provisioning.get_or_create_client_user", return_value=(new_user, True)):
+            with patch("app.services.client_provisioning.send_client_welcome") as mock_welcome:
+                with patch("app.services.client_provisioning.get_or_create_client_record", return_value=client) as mock_record:
+                    result = await provision_client_account(AsyncMock(), lead)
 
         assert result is client
         mock_welcome.assert_awaited_once()
@@ -209,10 +209,10 @@ class TestProvisionClientAccount:
         existing_user = User(id=uuid.uuid4(), name="Jane", email=lead.email, role="client")
         client = Client(id=uuid.uuid4(), user_id=existing_user.id)
 
-        with patch("app.routers.contracts._get_or_create_client_user", return_value=(existing_user, False)):
-            with patch("app.routers.contracts._send_client_welcome") as mock_welcome:
-                with patch("app.routers.contracts._get_or_create_client_record", return_value=client):
-                    result = await _provision_client_account(AsyncMock(), lead)
+        with patch("app.services.client_provisioning.get_or_create_client_user", return_value=(existing_user, False)):
+            with patch("app.services.client_provisioning.send_client_welcome") as mock_welcome:
+                with patch("app.services.client_provisioning.get_or_create_client_record", return_value=client):
+                    result = await provision_client_account(AsyncMock(), lead)
 
         assert result is client
         mock_welcome.assert_not_called()
@@ -220,10 +220,10 @@ class TestProvisionClientAccount:
     @pytest.mark.asyncio
     async def test_returns_none_and_skips_everything_when_user_cannot_be_resolved(self):
         lead = _make_lead()
-        with patch("app.routers.contracts._get_or_create_client_user", return_value=(None, False)):
-            with patch("app.routers.contracts._send_client_welcome") as mock_welcome:
-                with patch("app.routers.contracts._get_or_create_client_record") as mock_record:
-                    result = await _provision_client_account(AsyncMock(), lead)
+        with patch("app.services.client_provisioning.get_or_create_client_user", return_value=(None, False)):
+            with patch("app.services.client_provisioning.send_client_welcome") as mock_welcome:
+                with patch("app.services.client_provisioning.get_or_create_client_record") as mock_record:
+                    result = await provision_client_account(AsyncMock(), lead)
 
         assert result is None
         mock_welcome.assert_not_called()

@@ -9,3 +9,7 @@ export const fetchMyMeetings = () => apiRequest('/clients/me/meetings',  {});
 export const fetchMyFiles    = () => apiRequest('/clients/me/files',     {});
 export const fetchMyReports  = () => apiRequest('/clients/me/reports',   {});
 export const createTicket    = (payload) => apiRequest('/clients/me/tickets', { method: 'POST', body: payload });
+
+export const fetchMyProposals  = () => apiRequest('/clients/me/proposals', {});
+export const acceptMyProposal  = (id) => apiRequest(`/clients/me/proposals/${id}/accept`, { method: 'POST' });
+export const rejectMyProposal  = (id, reason) => apiRequest(`/clients/me/proposals/${id}/reject`, { method: 'POST', body: { reason } });

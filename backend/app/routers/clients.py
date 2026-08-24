@@ -14,13 +14,17 @@ from app.models.client import Client
 from app.models.client_file import ClientFile
 from app.models.client_report import ClientReport
 from app.models.employee import Employee
+from app.models.enums import NotificationType, ProposalStatus
 from app.models.invoice import Invoice
+from app.models.lead import Lead
 from app.models.meeting import Meeting
 from app.models.payment import Payment
 from app.models.project import Project
+from app.models.proposal import Proposal
 from app.models.ticket import Ticket
 from app.models.user import User
 from app.schemas.client import ClientCreate, ClientOut, TicketCreate
+from app.schemas.crm import ProposalOut, ProposalRejectRequest
 from app.schemas.finance import (
     ClientFileCreate,
     ClientFileOut,
@@ -31,6 +35,7 @@ from app.schemas.finance import (
 )
 from app.schemas.ops import MeetingOut, TicketOut
 from app.schemas.project import ProjectOut
+from app.services.notification_service import notify_roles
 from app.utils.pagination import PageParams, bounded_select, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
@@ -115,6 +120,75 @@ async def create_ticket(payload: TicketCreate, db: AsyncSession = Depends(get_db
     await db.commit()
     await db.refresh(ticket)
     return success_response(data=TicketOut.model_validate(ticket), message="Support ticket created", status_code=201)
+
+
+# Workflow doc §7 requires the client to review and Accept/Reject a proposal
+# themselves from the Client Portal — previously /proposals/{id}/accept and
+# /reject were staff-only (require_roles("sales","admin","project_manager",
+# "marketing")), so a client could never do this step at all. A Proposal has
+# no direct client_id (it belongs to the Lead that preceded client
+# conversion — see app/models/proposal.py), so ownership here is: the
+# proposal's lead must have converted to *this* logged-in client.
+@router.get("/me/proposals", response_model=dict)
+async def my_proposals(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    client = await _get_client_for_user(db, current_user)
+    result = await db.execute(
+        bounded_select(
+            select(Proposal).join(Lead, Proposal.lead_id == Lead.id)
+            .where(Lead.converted_client_id == client.id).order_by(Proposal.created_at.desc())
+        )
+    )
+    return success_response(data=[ProposalOut.model_validate(p) for p in result.scalars().all()])
+
+
+async def _get_own_sent_proposal(db: AsyncSession, client: Client, proposal_id: uuid.UUID) -> Proposal:
+    proposal = (
+        await db.execute(
+            select(Proposal).join(Lead, Proposal.lead_id == Lead.id)
+            .where(Proposal.id == proposal_id, Lead.converted_client_id == client.id)
+        )
+    ).scalar_one_or_none()
+    if proposal is None:
+        # 404, not 403 — don't confirm to a client that a proposal ID exists
+        # but belongs to someone else.
+        raise ApiError.not_found("Proposal not found")
+    if proposal.status != ProposalStatus.sent:
+        raise ApiError.bad_request("Only a sent proposal can be accepted or rejected")
+    return proposal
+
+
+@router.post("/me/proposals/{proposal_id}/accept", response_model=dict)
+async def accept_my_proposal(proposal_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    client = await _get_client_for_user(db, current_user)
+    proposal = await _get_own_sent_proposal(db, client, proposal_id)
+    proposal.status = ProposalStatus.accepted
+    await db.commit()
+    await db.refresh(proposal)
+    await notify_roles(
+        db, ["admin", "project_manager"], "Proposal accepted",
+        f"{client.company_name or current_user.name} accepted proposal v{proposal.version} — ready to start the project.",
+        NotificationType.success, f"/employee-portal?tab=proposals&proposal={proposal.id}",
+    )
+    return success_response(data=ProposalOut.model_validate(proposal), message="Proposal accepted")
+
+
+@router.post("/me/proposals/{proposal_id}/reject", response_model=dict)
+async def reject_my_proposal(
+    proposal_id: uuid.UUID, payload: ProposalRejectRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    client = await _get_client_for_user(db, current_user)
+    proposal = await _get_own_sent_proposal(db, client, proposal_id)
+    proposal.status = ProposalStatus.rejected
+    proposal.rejection_reason = payload.reason
+    await db.commit()
+    await db.refresh(proposal)
+    reason_note = f" Reason: {payload.reason}" if payload.reason else ""
+    await notify_roles(
+        db, ["admin", "project_manager"], "Proposal rejected",
+        f"{client.company_name or current_user.name} rejected proposal v{proposal.version}.{reason_note}",
+        NotificationType.warning, f"/employee-portal?tab=proposals&proposal={proposal.id}",
+    )
+    return success_response(data=ProposalOut.model_validate(proposal), message="Proposal rejected")
 
 
 @router.get("/me/payments", response_model=dict)
