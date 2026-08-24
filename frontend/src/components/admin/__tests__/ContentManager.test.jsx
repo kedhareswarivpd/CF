@@ -37,7 +37,7 @@ vi.mock('../../../api/cms.js', () => {
 describe('ContentManager', () => {
  it('renders resource tabs', async () => {
   m.mockList.mockResolvedValue({ data: [] });
-  render(<ContentManager accessToken="token" />);
+  render(<ContentManager />);
   expect(screen.getByRole('button', { name: /services/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /case studies/i })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /blog posts/i })).toBeInTheDocument();
@@ -46,20 +46,20 @@ describe('ContentManager', () => {
 
  it('lists fetched items', async () => {
   m.mockList.mockResolvedValue({ data: [{ id: '1', name: 'Cloud Migration', is_published: true }] });
-  render(<ContentManager accessToken="token" />);
+  render(<ContentManager />);
   await waitFor(() => expect(screen.getByText('Cloud Migration')).toBeInTheDocument());
   expect(screen.getByText('published')).toBeInTheDocument();
  });
 
  it('shows empty state when nothing is returned', async () => {
   m.mockList.mockResolvedValue({ data: [] });
-  render(<ContentManager accessToken="token" />);
+  render(<ContentManager />);
   await waitFor(() => expect(screen.getByText(/no services found/i)).toBeInTheDocument());
  });
 
  it('opens the create form', async () => {
   m.mockList.mockResolvedValue({ data: [] });
-  render(<ContentManager accessToken="token" />);
+  render(<ContentManager />);
   fireEvent.click(screen.getByRole('button', { name: /new service/i }));
   expect(screen.getByPlaceholderText('Name')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: /create/i })).toBeInTheDocument();

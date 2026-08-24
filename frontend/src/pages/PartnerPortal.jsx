@@ -6,9 +6,11 @@ import Badge from '../components/ui/Badge.jsx';
 import StatusBadge from '../components/ui/StatusBadge.jsx';
 import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
-import EmptyState from '../components/ui/EmptyState.jsx';
+import { PortalTable } from '../components/ui/ResponsiveTable.jsx';
+import Tabs from '../components/ui/Tabs.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
+import useAsyncAction from '../hooks/useAsyncAction.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { partnerPortalTabs } from '../data/portal.js';
 import { fetchMyProfile, fetchMyFiles, fetchMyTickets, createTicket as createTicketApi } from '../api/partnerAccounts.js';
@@ -70,65 +72,46 @@ function Overview({ profile, files, tickets }) {
 
 // ─── Files ─────────────────────────────────────────────────────────────────
 function Files({ files }) {
- return (
-  <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-   {files.length === 0
-    ? <div className="p-stack-lg"><EmptyState icon="folder_open" title="No files yet" description="Shared files will appear here." /></div>
-    : (
-     <table className="w-full text-left">
-      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-       <tr>
-        <th className="px-stack-lg py-4">Name</th>
-        <th className="px-stack-lg py-4">Category</th>
-        <th className="px-stack-lg py-4">Size</th>
-        <th className="px-stack-lg py-4">Uploaded</th>
-        <th className="px-stack-lg py-4"></th>
-       </tr>
-      </thead>
-      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {files.map((f) => (
-        <tr key={f.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-         <td data-label="Name" className="px-stack-lg py-4"><div className="flex items-center gap-2"><Icon name="description" className="text-lg text-brand" />{f.name}</div></td>
-         <td data-label="Category" className="px-stack-lg py-4"><Badge className="text-label-caps">{f.category}</Badge></td>
-         <td data-label="Size" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.size}</td>
-         <td data-label="Uploaded" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedOn}</td>
-         <td data-label="Name" className="px-stack-lg py-4">
-          {f.file_url && (
-           <a href={f.file_url} target="_blank" rel="noreferrer" aria-label={`Open ${f.name}`} className="text-brand hover:text-brand-dark" title="Open file">
-            <Icon name="open_in_new" className="text-xl" />
-           </a>
-          )}
-         </td>
-        </tr>
-       ))}
-      </tbody>
-     </table>
-    )}
-  </div>
- );
+ const columns = [
+  {
+   key: 'name', label: 'Name',
+   render: (_v, f) => <div className="flex items-center gap-2"><Icon name="description" className="text-lg text-brand" />{f.name}</div>,
+  },
+  { key: 'category', label: 'Category', render: (v) => <Badge className="text-label-caps">{v}</Badge> },
+  { key: 'size', label: 'Size', className: 'text-body-md text-ink-muted dark:text-white' },
+  { key: 'uploadedOn', label: 'Uploaded', className: 'text-body-md text-ink-muted dark:text-white' },
+  {
+   key: 'actions', label: '',
+   render: (_v, f) => f.file_url && (
+    <a href={f.file_url} target="_blank" rel="noreferrer" aria-label={`Open ${f.name}`} className="text-brand hover:text-brand-dark" title="Open file">
+     <Icon name="open_in_new" className="text-xl" />
+    </a>
+   ),
+  },
+ ];
+ return <PortalTable columns={columns} rows={files} emptyMessage="No files yet. Shared files will appear here." />;
 }
 
 // ─── Tickets ───────────────────────────────────────────────────────────────
 function Tickets({ tickets, onNewTicket }) {
  const [newTicket, setNewTicket] = useState({ subject: '', description: '' });
  const [showForm, setShowForm] = useState(false);
- const [submitting, setSubmitting] = useState(false);
  const [error, setError] = useState('');
+ const { run, isPending } = useAsyncAction();
 
- const handleSubmit = async (e) => {
+ const handleSubmit = (e) => {
   e.preventDefault();
   if (!newTicket.subject.trim()) return;
-  setSubmitting(true);
   setError('');
-  try {
-   await onNewTicket(newTicket.subject, newTicket.description);
-   setNewTicket({ subject: '', description: '' });
-   setShowForm(false);
-  } catch (err) {
-   setError(err?.message || 'Could not submit the ticket. Please try again.');
-  } finally {
-   setSubmitting(false);
-  }
+  run(async () => {
+   try {
+    await onNewTicket(newTicket.subject, newTicket.description);
+    setNewTicket({ subject: '', description: '' });
+    setShowForm(false);
+   } catch (err) {
+    setError(err?.message || 'Could not submit the ticket. Please try again.');
+   }
+  });
  };
 
  return (
@@ -144,44 +127,28 @@ function Tickets({ tickets, onNewTicket }) {
      <textarea placeholder="Describe your request..." value={newTicket.description}
       onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })} rows={3} className={formClass} />
      <div className="flex gap-2">
-      <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit'}</Button>
+      <Button type="submit" variant="primary" size="md" disabled={isPending}>{isPending ? 'Submitting...' : 'Submit'}</Button>
       <Button type="button" variant="outline" size="md" onClick={() => setShowForm(false)}>Cancel</Button>
      </div>
     </form>
    )}
-   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-    {tickets.length === 0
-     ? <div className="p-stack-lg"><EmptyState icon="support" title="No tickets yet" description="Submit a ticket to get support." /></div>
-     : (
-      <table className="w-full text-left">
-       <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-        <tr>
-         <th className="px-stack-lg py-4">Subject</th>
-         <th className="px-stack-lg py-4">Priority</th>
-         <th className="px-stack-lg py-4">Created</th>
-         <th className="px-stack-lg py-4">Status</th>
-        </tr>
-       </thead>
-       <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-        {tickets.map((t) => (
-         <tr key={t.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-          <td data-label="Subject" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.subject}</td>
-          <td data-label="Priority" className="px-stack-lg py-4"><Badge className="text-label-caps">{t.priority}</Badge></td>
-          <td data-label="Created" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{t.createdAt}</td>
-          <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[t.status] || 'neutral'}>{t.status}</StatusBadge></td>
-         </tr>
-        ))}
-       </tbody>
-      </table>
-     )}
-   </div>
+   <PortalTable
+    columns={[
+     { key: 'subject', label: 'Subject', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+     { key: 'priority', label: 'Priority', render: (v) => <Badge className="text-label-caps">{v}</Badge> },
+     { key: 'createdAt', label: 'Created', className: 'text-body-md text-ink-muted dark:text-white' },
+     { key: 'status', label: 'Status', render: (v) => <StatusBadge variant={STATUS_VARIANTS[v] || 'neutral'}>{v}</StatusBadge> },
+    ]}
+    rows={tickets}
+    emptyMessage="No tickets yet. Submit a ticket to get support."
+   />
   </div>
  );
 }
 
 export default function PartnerPortal() {
  useDocumentTitle('Partner Portal | CoreFusion Technologies');
- const { user, accessToken, initializing, logout } = useAuth();
+ const { user, initializing, logout } = useAuth();
  const { denied } = useRoleGuard('partner', '/login');
  const navigate = useNavigate();
  const [activeTab, setActiveTab] = useState('overview');
@@ -192,22 +159,22 @@ export default function PartnerPortal() {
  const [tickets, setTickets] = useState([]);
 
  useEffect(() => {
-  if (!user || !accessToken) { setLoading(false); return; }
+  if (!user) { setLoading(false); return; }
   if (!initialLoadDone.current) setLoading(true);
   Promise.allSettled([
-   fetchMyProfile(accessToken).then((res) => res?.data),
-   fetchMyFiles(accessToken).then((res) => res?.data),
-   fetchMyTickets(accessToken).then((res) => res?.data),
+   fetchMyProfile().then((res) => res?.data),
+   fetchMyFiles().then((res) => res?.data),
+   fetchMyTickets().then((res) => res?.data),
   ]).then(([p, f, t]) => {
    if (p.status === 'fulfilled' && p.value) setProfile(normalizeProfile(p.value));
    if (f.status === 'fulfilled' && f.value) setFiles(normalizeFiles(f.value));
    if (t.status === 'fulfilled' && t.value) setTickets(normalizeTickets(t.value));
   }).finally(() => { initialLoadDone.current = true; setLoading(false); });
- }, [user, accessToken]);
+ }, [user]);
 
  const handleNewTicket = async (subject, description) => {
-  if (!user || !accessToken) return;
-  const res = await createTicketApi(accessToken, { subject, description: description || subject, priority: 'medium' });
+  if (!user) return;
+  const res = await createTicketApi({ subject, description: description || subject, priority: 'medium' });
   const d = res?.data;
   if (d) setTickets((prev) => [normalizeTicket(d), ...prev]);
  };
@@ -248,16 +215,19 @@ export default function PartnerPortal() {
     </aside>
 
     <div className="flex min-h-0 flex-1 flex-col">
-     <div role="tablist" aria-label="Portal navigation" className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12">
-      {partnerPortalTabs.map((tab) => (
-       <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-        className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
-         activeTab === tab.id ? 'border-white font-bold text-white' : 'border-transparent font-semibold text-white/70 hover:border-white/40 hover:text-white'
-        }`}>
-        <Icon name={tab.icon} className="text-lg" />{tab.label}
-       </button>
-      ))}
-     </div>
+     <Tabs
+      tabs={partnerPortalTabs.map((tab) => ({ key: tab.id, label: tab.label, icon: <Icon name={tab.icon} className="text-lg" /> }))}
+      active={activeTab}
+      onChange={setActiveTab}
+      variant="underline"
+      ariaLabel="Portal navigation"
+      tabClassName={(selected) =>
+       `flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
+        selected ? 'border-white font-bold text-white' : 'border-transparent font-semibold text-white/70 hover:border-white/40 hover:text-white'
+       }`
+      }
+      className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12"
+     />
 
      <div className="min-w-0 flex-1 overflow-y-auto px-4 py-stack-lg sm:px-6 lg:px-10 xl:px-12 ">
       {activeTab === 'overview' && <Overview profile={profile} files={files} tickets={tickets} />}

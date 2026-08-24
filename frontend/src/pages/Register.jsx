@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Icon from '../components/ui/Icon.jsx';
+import { registerSchema, parseWithSchema } from '../schemas/auth.schema.js';
 
 // Public self-serve signup is Client-only by design — Employee and Admin accounts
 // carry internal RBAC permissions and must be provisioned by an authenticated
@@ -24,8 +25,13 @@ export default function Register() {
  const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
-  if (form.password !== form.confirm) { setError('Passwords do not match.'); return; }
-  if (form.password.length < 8) { setError('Password must be at least 8 characters.'); return; }
+
+  const { success, errors } = parseWithSchema(registerSchema, form);
+  if (!success) {
+   setError(Object.values(errors)[0]);
+   return;
+  }
+
   setSubmitting(true);
   try {
    await register(form.name, form.email, form.password);

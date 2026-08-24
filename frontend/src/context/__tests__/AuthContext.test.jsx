@@ -22,7 +22,6 @@ describe('useAuth', () => {
   const { result } = renderHook(() => useAuth());
   expect(result.current.user).toBeNull();
   expect(result.current.isAuthenticated).toBe(false);
-  expect(result.current.accessToken).toBeNull();
  });
 });
 
@@ -43,7 +42,6 @@ describe('AuthProvider', () => {
 
   expect(result.current.user).toBeNull();
   expect(result.current.isAuthenticated).toBe(false);
-  expect(result.current.accessToken).toBeNull();
  });
 
  it('hydrates the user from GET /auth/me when a session cookie is already present', async () => {
@@ -60,8 +58,6 @@ describe('AuthProvider', () => {
   expect(result.current.user).toEqual(mockUser);
   expect(result.current.isAuthenticated).toBe(true);
   expect(result.current.role).toBe('client');
-  // Not a real credential — see AuthContext.jsx's AUTHENTICATED_SENTINEL comment.
-  expect(result.current.accessToken).toBeTruthy();
  });
 
  it('login calls the API (no tokens ever touch JS — cookies are set by the server response)', async () => {

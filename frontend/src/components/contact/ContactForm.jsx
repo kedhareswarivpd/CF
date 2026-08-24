@@ -1,41 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { submitContactForm } from '../../api/contact.js';
 import { ApiRequestError } from '../../api/client.js';
+import { validateContactForm } from '../../schemas/contact.schema.js';
 import Icon from '../ui/Icon.jsx';
 
 const initialForm = { name: '', email: '', phone: '', company: '', department: 'general', subject: '', message: '' };
 
 const NAME_ALLOWED_CHARS = /[^A-Za-z\s'.-]/g;
 const PHONE_ALLOWED_CHARS = /[^0-9+]/g;
-const NAME_REGEX = /^[A-Za-z][A-Za-z\s'.-]*$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const PHONE_REGEX = /^\+[1-9][0-9]{6,14}$/;
-
-function validateForm(data) {
- const errors = {};
-
- if (!data.name.trim()) {
-  errors.name = 'Full name is required.';
- } else if (!NAME_REGEX.test(data.name.trim())) {
-  errors.name = 'Name can only contain letters, spaces, hyphens, and apostrophes.';
- }
-
- if (!data.email.trim()) {
-  errors.email = 'Email is required.';
- } else if (!EMAIL_REGEX.test(data.email.trim())) {
-  errors.email = 'Enter a valid email address (e.g. jane@company.com).';
- }
-
- if (data.phone.trim() && !PHONE_REGEX.test(data.phone.trim())) {
-  errors.phone = 'Enter a valid phone number with country code (e.g. +15550000000).';
- }
-
- if (!data.message.trim()) {
-  errors.message = 'Message is required.';
- }
-
- return errors;
-}
 
 const DEPARTMENTS = [
  { value: 'general', label: 'General Inquiry' },
@@ -76,7 +48,7 @@ export default function ContactForm() {
   e.preventDefault();
   setErrorMessage('');
 
-  const errors = validateForm(form);
+  const errors = validateContactForm(form);
   if (Object.keys(errors).length > 0) {
    setFieldErrors(errors);
    setStatus('error');

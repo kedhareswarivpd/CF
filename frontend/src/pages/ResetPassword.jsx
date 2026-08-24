@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { resetPassword } from '../api/auth.js';
 import Icon from '../components/ui/Icon.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
+import { resetPasswordSchema, parseWithSchema } from '../schemas/auth.schema.js';
 
 export default function ResetPassword() {
  useDocumentTitle('Reset Password | CoreFusion Technologies');
@@ -24,8 +25,12 @@ export default function ResetPassword() {
   e.preventDefault();
   setError('');
   if (!token) { setError('This reset link is missing or invalid. Please request a new one.'); return; }
-  if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
-  if (password !== confirm) { setError('Passwords do not match.'); return; }
+
+  const { success, errors } = parseWithSchema(resetPasswordSchema, { password, confirm });
+  if (!success) {
+   setError(Object.values(errors)[0]);
+   return;
+  }
 
   setSubmitting(true);
   try {

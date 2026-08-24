@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import Icon from '../components/ui/Icon.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
+import { loginSchema, parseWithSchema } from '../schemas/auth.schema.js';
 
 // Only ever navigate to a same-app relative path from `returnTo` — a bare
 // `/foo`, never `//host/foo` (protocol-relative) or `https://...`/`javascript:...`,
@@ -42,8 +43,15 @@ export default function LoginPage() {
 
  const handleSubmit = async (e) => {
   e.preventDefault();
-  setSubmitting(true);
   setError('');
+
+  const { success, errors } = parseWithSchema(loginSchema, { email, password });
+  if (!success) {
+   setError(Object.values(errors)[0]);
+   return;
+  }
+
+  setSubmitting(true);
   try {
    const userData = await login(email, password);
    const role = userData?.role;

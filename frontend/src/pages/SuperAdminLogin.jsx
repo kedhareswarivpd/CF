@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import Icon from '../components/ui/Icon.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
+import { loginSchema, parseWithSchema } from '../schemas/auth.schema.js';
 
 export default function SuperAdminLogin() {
  useDocumentTitle('Super Admin Verification | CoreFusion Technologies');
@@ -16,8 +17,15 @@ export default function SuperAdminLogin() {
 
  const handleSubmit = async (e) => {
   e.preventDefault();
-  setSubmitting(true);
   setError('');
+
+  const { success, errors } = parseWithSchema(loginSchema, { email, password });
+  if (!success) {
+   setError(Object.values(errors)[0]);
+   return;
+  }
+
+  setSubmitting(true);
   try {
    const userData = await login(email, password);
    const role = userData?.role;

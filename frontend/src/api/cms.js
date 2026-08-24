@@ -56,33 +56,33 @@ export function fetchPartners(params = {}) {
   return apiRequest(`/partners${toQueryString({ is_published: true, ...params })}`);
 }
 
-const crudWithToken = (endpoint) => ({
-  list: (token, params = {}) => apiRequest(`${endpoint}${toQueryString({ limit: 100, ...params })}`, { token }),
-  create: (token, body) => apiRequest(endpoint, { method: 'POST', body, token }),
-  update: (token, id, body) => apiRequest(`${endpoint}/${id}`, { method: 'PUT', body, token }),
-  remove: (token, id) => apiRequest(`${endpoint}/${id}`, { method: 'DELETE', token }),
+const crudApi = (endpoint) => ({
+  list: (params = {}) => apiRequest(`${endpoint}${toQueryString({ limit: 100, ...params })}`),
+  create: (body) => apiRequest(endpoint, { method: 'POST', body }),
+  update: (id, body) => apiRequest(`${endpoint}/${id}`, { method: 'PUT', body }),
+  remove: (id) => apiRequest(`${endpoint}/${id}`, { method: 'DELETE' }),
 });
 
-export const servicesApi = crudWithToken('/services');
-export const eventsApi = crudWithToken('/events');
-export const blogsApi = crudWithToken('/blogs');
-export const solutionsApi = crudWithToken('/solutions');
-export const caseStudiesApi = crudWithToken('/case-studies');
-export const downloadsApi = crudWithToken('/downloads');
-export const industriesApi = crudWithToken('/industries');
-export const technologiesApi = crudWithToken('/technologies');
-export const productsApi = crudWithToken('/products');
-export const awardsApi = crudWithToken('/awards');
-export const faqsApi = crudWithToken('/faqs');
-export const galleryApi = crudWithToken('/gallery');
-export const portfolioApi = crudWithToken('/portfolio');
-export const resourcesApi = crudWithToken('/resources');
-export const categoriesApi = crudWithToken('/categories');
-export const testimonialsApi = crudWithToken('/testimonials');
-export const partnersApi = crudWithToken('/partners');
-export const seoApi = crudWithToken('/seo');
-export const pageContentApi = crudWithToken('/page-content');
-export const careersApi = crudWithToken('/careers');
+export const servicesApi = crudApi('/services');
+export const eventsApi = crudApi('/events');
+export const blogsApi = crudApi('/blogs');
+export const solutionsApi = crudApi('/solutions');
+export const caseStudiesApi = crudApi('/case-studies');
+export const downloadsApi = crudApi('/downloads');
+export const industriesApi = crudApi('/industries');
+export const technologiesApi = crudApi('/technologies');
+export const productsApi = crudApi('/products');
+export const awardsApi = crudApi('/awards');
+export const faqsApi = crudApi('/faqs');
+export const galleryApi = crudApi('/gallery');
+export const portfolioApi = crudApi('/portfolio');
+export const resourcesApi = crudApi('/resources');
+export const categoriesApi = crudApi('/categories');
+export const testimonialsApi = crudApi('/testimonials');
+export const partnersApi = crudApi('/partners');
+export const seoApi = crudApi('/seo');
+export const pageContentApi = crudApi('/page-content');
+export const careersApi = crudApi('/careers');
 
 // Blog comments — public read (approved only, scoped to one post) and
 // public create (rate-limited 5/min server-side); moderation itself is

@@ -1,45 +1,45 @@
 import { apiRequest } from './client.js';
 
-export function fetchMyProfile(token) {
-  return apiRequest('/employees/me/profile', { token });
+export function fetchMyProfile() {
+  return apiRequest('/employees/me/profile', {});
 }
 
-export function checkIn(token) {
-  return apiRequest('/employees/me/attendance/check-in', { method: 'POST', token });
+export function checkIn() {
+  return apiRequest('/employees/me/attendance/check-in', { method: 'POST' });
 }
 
-export function checkOut(token) {
-  return apiRequest('/employees/me/attendance/check-out', { method: 'POST', token });
+export function checkOut() {
+  return apiRequest('/employees/me/attendance/check-out', { method: 'POST' });
 }
 
-export function applyLeave(token, payload) {
-  return apiRequest('/employees/me/leaves', { method: 'POST', token, body: payload });
+export function applyLeave(payload) {
+  return apiRequest('/employees/me/leaves', { method: 'POST', body: payload });
 }
 
-export function submitTimesheet(token, payload) {
-  return apiRequest('/employees/me/timesheets', { method: 'POST', token, body: payload });
+export function submitTimesheet(payload) {
+  return apiRequest('/employees/me/timesheets', { method: 'POST', body: payload });
 }
 
-export function fetchMyPayslips(token) {
-  return apiRequest('/employees/me/payslips', { token });
+export function fetchMyPayslips() {
+  return apiRequest('/employees/me/payslips', {});
 }
 
-export function fetchMyDocuments(token) {
-  return apiRequest('/employees/me/documents', { token });
+export function fetchMyDocuments() {
+  return apiRequest('/employees/me/documents', {});
 }
 
-export function fetchMyPerformanceReviews(token) {
-  return apiRequest('/employees/me/performance-reviews', { token });
+export function fetchMyPerformanceReviews() {
+  return apiRequest('/employees/me/performance-reviews', {});
 }
 
-export function fetchMyTrainingEnrollments(token) {
-  return apiRequest('/trainings/my-enrollments', { token });
+export function fetchMyTrainingEnrollments() {
+  return apiRequest('/trainings/my-enrollments', {});
 }
 
-export function fetchTrainingCatalog(token) {
-  return apiRequest('/trainings/courses?limit=50', { token });
+export function fetchTrainingCatalog() {
+  return apiRequest('/trainings/courses?limit=50', {});
 }
 
-export function enrollInCourse(token, courseId) {
-  return apiRequest(`/trainings/enroll?course_id=${courseId}`, { method: 'POST', token });
+export function enrollInCourse(courseId) {
+  return apiRequest(`/trainings/enroll?course_id=${courseId}`, { method: 'POST' });
 }

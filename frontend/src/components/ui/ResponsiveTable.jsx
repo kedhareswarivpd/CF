@@ -51,7 +51,7 @@ export function PortalTable({ columns, rows, emptyMessage = 'No data available.'
     <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
      <tr>
       {columns.map((col) => (
-       <th key={col.key} className={`px-stack-lg py-4 ${col.headerClassName ?? ''}`}>
+       <th key={col.key} scope="col" className={`px-stack-lg py-4 ${col.headerClassName ?? ''}`}>
         {col.label}
        </th>
       ))}

@@ -10,6 +10,7 @@ import {
 } from '../../api/cms.js';
 
 import { FORM_INPUT_CLASS as BASE_INPUT_CLASS } from '../ui/formClasses.js';
+import { validateResourceForm } from '../../schemas/admin.schema.js';
 
 const FORM_INPUT_CLASS = `${BASE_INPUT_CLASS} w-full`;
 
@@ -300,7 +301,7 @@ function Field({ field, value, onChange }) {
  return <input type={field.kind === 'datetime' ? 'datetime-local' : field.kind === 'number' ? 'number' : 'text'} placeholder={field.label} value={value} onChange={(e) => onChange(field.name, e.target.value)} className={FORM_INPUT_CLASS} />;
 }
 
-export default function ContentManager({ accessToken }) {
+export default function ContentManager() {
  const [activeKey, setActiveKey] = useState('services');
  const resource = useMemo(() => RESOURCES.find((r) => r.key === activeKey), [activeKey]);
 
@@ -314,13 +315,12 @@ export default function ContentManager({ accessToken }) {
  const [submitting, setSubmitting] = useState(false);
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  resource.api.list(accessToken)
+  resource.api.list()
    .then((res) => setItems(Array.isArray(res?.data) ? res.data : []))
    .catch(() => setItems([]))
    .finally(() => setLoading(false));
- }, [resource, accessToken]);
+ }, [resource]);
 
  useEffect(() => {
   load();
@@ -344,15 +344,23 @@ export default function ContentManager({ accessToken }) {
 
  const handleSubmit = async (e) => {
   e.preventDefault();
-  setSubmitting(true);
   setError('');
   setFieldErrors({});
+
+  const clientErrors = validateResourceForm(resource.fields, form);
+  if (Object.keys(clientErrors).length > 0) {
+   setFieldErrors(clientErrors);
+   setError('Please fix the errors below.');
+   return;
+  }
+
+  setSubmitting(true);
   try {
    const payload = toPayload(form, resource.fields);
    if (editing) {
-    await resource.api.update(accessToken, editing.id, payload);
+    await resource.api.update(editing.id, payload);
    } else {
-    await resource.api.create(accessToken, payload);
+    await resource.api.create(payload);
    }
    setShowForm(false);
    load();
@@ -373,7 +381,7 @@ export default function ContentManager({ accessToken }) {
 
  const togglePublish = async (item) => {
   try {
-   await resource.api.update(accessToken, item.id, { is_published: !item.is_published });
+   await resource.api.update(item.id, { is_published: !item.is_published });
    load();
   } catch { /* keep row unchanged on failure */ }
  };
@@ -381,7 +389,7 @@ export default function ContentManager({ accessToken }) {
  const remove = async (item) => {
   if (!window.confirm(`Delete "${resource.title(item)}"?`)) return;
   try {
-   await resource.api.remove(accessToken, item.id);
+   await resource.api.remove(item.id);
    load();
   } catch { /* keep row on failure */ }
  };

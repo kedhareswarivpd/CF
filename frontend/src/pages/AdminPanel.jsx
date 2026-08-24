@@ -6,7 +6,11 @@ import Button from '../components/ui/Button.jsx';
 import StatusBadge from '../components/ui/StatusBadge.jsx';
 import Badge from '../components/ui/Badge.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
+import { PortalTable } from '../components/ui/ResponsiveTable.jsx';
+import Modal from '../components/ui/Modal.jsx';
+import Tabs from '../components/ui/Tabs.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
+import useAsyncAction from '../hooks/useAsyncAction.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { adminPanelTabs } from '../data/portal.js';
 import { PORTAL_ROLE_OPTIONS } from '../data/roles.js';
@@ -65,92 +69,82 @@ function useToast() {
 }
 
 // ── Convert-to-Lead modal ────────────────────────────────────────────────────
-function ConvertToLeadModal({ submission, accessToken, onClose, onSuccess }) {
+function ConvertToLeadModal({ submission, onClose, onSuccess }) {
  const [estimatedValue, setEstimatedValue] = useState('');
  const [notes, setNotes] = useState(submission.message || '');
- const [submitting, setSubmitting] = useState(false);
  const [error, setError] = useState('');
+ const { run, isPending } = useAsyncAction();
 
  const handleConvert = async (e) => {
   e.preventDefault();
   setError('');
-  setSubmitting(true);
   try {
-   await createLead(accessToken, {
-    contact_name: submission.name,
-    email: submission.email,
-    phone: submission.phone || null,
-    company: submission.company || null,
-    source: 'contact_form',
-    contact_submission_id: submission.id,
-    estimated_value: estimatedValue ? Number(estimatedValue) : null,
-    notes: notes || null,
+   await run(async () => {
+    await createLead({
+     contact_name: submission.name,
+     email: submission.email,
+     phone: submission.phone || null,
+     company: submission.company || null,
+     source: 'contact_form',
+     contact_submission_id: submission.id,
+     estimated_value: estimatedValue ? Number(estimatedValue) : null,
+     notes: notes || null,
+    });
+    onSuccess();
    });
-   onSuccess();
   } catch (err) {
    setError(err.message || 'Could not convert to lead.');
-  } finally {
-   setSubmitting(false);
   }
  };
 
  return (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
-   <div className="w-full max-w-md rounded-2xl border border-outline-variant bg-white p-6 shadow-2xl dark:border-dark-outline-variant dark:bg-dark-surface">
-    <div className="mb-5 flex items-start justify-between">
-     <div>
-      <h2 className="font-display text-headline-sm font-bold text-brand-dark dark:text-dark-brand">Convert to Lead</h2>
-      <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">Create a CRM lead from this contact submission</p>
-     </div>
-     <button onClick={onClose} aria-label="Close" className="text-ink-muted hover:text-ink dark:text-dark-ink-muted"><Icon name="close" className="text-xl" /></button>
-    </div>
+  <Modal open onClose={onClose} title="Convert to Lead" size="sm">
+   <p className="-mt-3 mb-5 text-body-sm text-ink-muted dark:text-dark-ink-muted">Create a CRM lead from this contact submission</p>
 
-    {/* Pre-filled read-only summary */}
-    <div className="mb-5 space-y-1 rounded-lg bg-surface-container p-4 dark:bg-dark-surface-container">
-     <p className="text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{submission.name}</p>
-     <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{submission.email}</p>
-     {submission.phone && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{submission.phone}</p>}
-     {submission.company && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{submission.company}</p>}
-    </div>
-
-    <form onSubmit={handleConvert} className="space-y-4">
-     <div>
-      <label className="mb-1 block text-body-sm font-medium text-ink dark:text-dark-ink">Estimated Value (USD)</label>
-      <input
-       type="number" min="0" step="0.01" placeholder="e.g. 5000"
-       value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)}
-       className={FORM_INPUT_CLASS + ' w-full'}
-      />
-     </div>
-     <div>
-      <label className="mb-1 block text-body-sm font-medium text-ink dark:text-dark-ink">Notes</label>
-      <textarea
-       rows={3} placeholder="Internal notes about this lead..."
-       value={notes} onChange={(e) => setNotes(e.target.value)}
-       className={FORM_INPUT_CLASS + ' w-full resize-none'}
-      />
-     </div>
-     {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
-     <div className="flex gap-3 pt-1">
-      <Button type="submit" variant="primary" size="md" disabled={submitting} className="flex-1">
-       {submitting ? 'Converting...' : 'Convert to Lead'}
-      </Button>
-      <Button type="button" variant="outline" size="md" onClick={onClose}>Cancel</Button>
-     </div>
-    </form>
+   {/* Pre-filled read-only summary */}
+   <div className="mb-5 space-y-1 rounded-lg bg-surface-container p-4 dark:bg-dark-surface-container">
+    <p className="text-body-sm font-semibold text-brand-dark dark:text-dark-brand">{submission.name}</p>
+    <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{submission.email}</p>
+    {submission.phone && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{submission.phone}</p>}
+    {submission.company && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{submission.company}</p>}
    </div>
-  </div>
+
+   <form onSubmit={handleConvert} className="space-y-4">
+    <div>
+     <label className="mb-1 block text-body-sm font-medium text-ink dark:text-dark-ink">Estimated Value (USD)</label>
+     <input
+      type="number" min="0" step="0.01" placeholder="e.g. 5000"
+      value={estimatedValue} onChange={(e) => setEstimatedValue(e.target.value)}
+      className={FORM_INPUT_CLASS + ' w-full'}
+     />
+    </div>
+    <div>
+     <label className="mb-1 block text-body-sm font-medium text-ink dark:text-dark-ink">Notes</label>
+     <textarea
+      rows={3} placeholder="Internal notes about this lead..."
+      value={notes} onChange={(e) => setNotes(e.target.value)}
+      className={FORM_INPUT_CLASS + ' w-full resize-none'}
+     />
+    </div>
+    {error && <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
+    <div className="flex gap-3 pt-1">
+     <Button type="submit" variant="primary" size="md" disabled={isPending} className="flex-1">
+      {isPending ? 'Converting...' : 'Convert to Lead'}
+     </Button>
+     <Button type="button" variant="outline" size="md" onClick={onClose}>Cancel</Button>
+    </div>
+   </form>
+  </Modal>
  );
 }
 
-function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken, setActiveTab }) {
+function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, setActiveTab }) {
  const kpis = propKpis || { total_employees: 0, total_clients: 0, total_projects: 0, active_projects: 0, open_tasks: 0, total_revenue: 0, open_tickets: 0, new_applications: 0, unresolved_contacts: 0, published_blogs: 0 };
  const statusBreakdown = propBreakdown || [];
  const [recentLogs, setRecentLogs] = useState([]);
  useEffect(() => {
-  if (!accessToken) return;
-  fetchAuditLogs(accessToken, { limit: 5 }).then((res) => setRecentLogs(res?.data || res || [])).catch(() => {});
- }, [accessToken]);
+  fetchAuditLogs({ limit: 5 }).then((res) => setRecentLogs(res?.data || res || [])).catch(() => {});
+ }, []);
 
  const statCards = [
   { label: 'Employees', value: kpis.total_employees, icon: 'badge', color: 'text-status-info-text' },
@@ -242,11 +236,11 @@ function Dashboard({ kpis: propKpis, statusBreakdown: propBreakdown, accessToken
  );
 }
 
-function ContentManagement({ accessToken }) {
- return <ContentManager accessToken={accessToken} />;
+function ContentManagement() {
+ return <ContentManager />;
 }
 
-function AddUserForm({ accessToken, currentRole, onCreated, onCancel }) {
+function AddUserForm({ currentRole, onCreated, onCancel }) {
  // Admin Portal is only offered to a Super Admin — matches the backend guard in
  // routers/users.py::create_user (only super_admin may mint admin/super_admin).
  const availablePortals = PORTAL_ROLE_OPTIONS.filter((p) => p.value !== 'admin' || currentRole === 'super_admin');
@@ -275,7 +269,7 @@ function AddUserForm({ accessToken, currentRole, onCreated, onCancel }) {
   setSubmitError('');
   setSubmitting(true);
   try {
-   await createUser(accessToken, { name: form.name, email: form.email, password: form.password, phone: form.phone || null, role: form.role });
+   await createUser({ name: form.name, email: form.email, password: form.password, phone: form.phone || null, role: form.role });
    onCreated();
   } catch (err) {
    setSubmitError(err.message || 'Could not create the account.');
@@ -322,17 +316,16 @@ function AddUserForm({ accessToken, currentRole, onCreated, onCancel }) {
  );
 }
 
-function UserManagement({ accessToken, currentRole }) {
+function UserManagement({ currentRole }) {
  const [users, setUsers] = useState([]);
  const [loadingUsers, setLoadingUsers] = useState(true);
  const [showAddForm, setShowAddForm] = useState(false);
  const [editingUser, setEditingUser] = useState(null);
 
  const loadUsers = useCallback(() => {
-  if (!accessToken) { setLoadingUsers(false); return; }
   setLoadingUsers(true);
-  fetchUsers(accessToken).then((res) => setUsers(res?.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
- }, [accessToken]);
+  fetchUsers().then((res) => setUsers(res?.data || [])).catch(() => {}).finally(() => setLoadingUsers(false));
+ }, []);
 
  useEffect(() => {
   loadUsers();
@@ -348,7 +341,7 @@ function UserManagement({ accessToken, currentRole }) {
   if (!editingUser) return;
   setSubmittingUser(true);
   try {
-   await updateUser(accessToken, editingUser.id, {
+   await updateUser(editingUser.id, {
     name: editingUser.name,
     email: editingUser.email,
     phone: editingUser.phone || null,
@@ -367,6 +360,49 @@ function UserManagement({ accessToken, currentRole }) {
  const [submittingUser, setSubmittingUser] = useState(false);
  const [userError, setUserError] = useState('');
  const [successMsg, setSuccessMsg] = useState('');
+ const { run: runDeactivate, isPending: deactivating } = useAsyncAction();
+
+ const userColumns = [
+  { key: 'name', label: 'Name', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+  { key: 'email', label: 'Email', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted' },
+  { key: 'role', label: 'Role', className: 'text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted', render: (v) => v?.replace('_', ' ') },
+  { key: 'is_active', label: 'Status', render: (v) => <StatusBadge variant={v ? 'success' : 'neutral'}>{v ? 'active' : 'inactive'}</StatusBadge> },
+  {
+   key: 'actions', label: 'Actions',
+   render: (_v, u) => (
+    <div className="flex gap-2">
+     <button onClick={() => handleEdit(u)} aria-label={`Edit ${u.name}`} className="text-ink-muted transition-colors hover:text-brand" title="Edit">
+      <Icon name="edit" className="text-lg" />
+     </button>
+     <button
+      disabled={deactivating}
+      onClick={() => { if (window.confirm(`Deactivate user "${u.name}"?`)) { runDeactivate(async () => { await deactivateUser(u.id); loadUsers(); }); } }}
+      aria-label={`Deactivate ${u.name}`} className="text-ink-muted transition-colors hover:text-status-warning-text disabled:opacity-50" title="Deactivate"
+     >
+      <Icon name="block" className="text-lg" />
+     </button>
+    </div>
+   ),
+  },
+ ];
+
+ const roleCounts = {};
+ users.forEach((u) => {
+  const r = u.role || 'unknown';
+  roleCounts[r] = (roleCounts[r] || 0) + 1;
+ });
+ const roleList = Object.keys(roleCounts).sort((a, b) => roleCounts[b] - roleCounts[a]);
+ const roleRows = roleList.map((role) => ({
+  id: role,
+  role,
+  count: roleCounts[role],
+  permissions: role === 'super_admin' ? 'Full access' : role.replace('_', ' ') + ' portal access',
+ }));
+ const roleSummaryColumns = [
+  { key: 'role', label: 'Role', className: 'text-body-md capitalize text-brand-dark dark:text-dark-brand', render: (v) => v.replace('_', ' ') },
+  { key: 'count', label: 'Users', className: 'text-body-md text-ink-muted dark:text-dark-ink-muted' },
+  { key: 'permissions', label: 'Permissions', className: 'text-body-md capitalize text-ink-muted dark:text-dark-ink-muted' },
+ ];
 
  return (
   <div className="space-y-stack-lg">
@@ -401,7 +437,6 @@ function UserManagement({ accessToken, currentRole }) {
        </form>
       ) : (
        <AddUserForm
-        accessToken={accessToken}
         currentRole={currentRole}
         onCreated={() => { setShowAddForm(false); loadUsers(); setSuccessMsg('User created successfully!'); setTimeout(() => setSuccessMsg(''), 3000); }}
         onCancel={() => setShowAddForm(false)}
@@ -417,34 +452,7 @@ function UserManagement({ accessToken, currentRole }) {
     {loadingUsers ? (
      <div className="p-stack-lg"><LoadingSpinner /></div>
     ) : (
-     <table className="w-full text-left">
-      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-       <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Role</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Actions</th></tr>
-      </thead>
-      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {users.map((u) => (
-        <tr key={u.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
-         <td data-label="Name" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{u.name}</td>
-         <td data-label="Email" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{u.email}</td>
-         <td data-label="Role" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{u.role?.replace('_', ' ')}</td>
-         <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={u.is_active ? 'success' : 'neutral'}>{u.is_active ? 'active' : 'inactive'}</StatusBadge></td>
-         <td data-label="Actions" className="px-stack-lg py-4">
-          <div className="flex gap-2">
-           <button onClick={() => handleEdit(u)} aria-label={`Edit ${u.name}`} className="text-ink-muted transition-colors hover:text-brand" title="Edit">
-            <Icon name="edit" className="text-lg" />
-           </button>
-           <button onClick={() => { if (window.confirm(`Deactivate user "${u.name}"?`)) { deactivateUser(accessToken, u.id).then(loadUsers); }}} aria-label={`Deactivate ${u.name}`} className="text-ink-muted transition-colors hover:text-status-warning-text" title="Deactivate">
-            <Icon name="block" className="text-lg" />
-           </button>
-          </div>
-         </td>
-        </tr>
-       ))}
-       {!users.length && (
-        <tr><td data-label="Name" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No users found.</td></tr>
-       )}
-      </tbody>
-     </table>
+     <PortalTable columns={userColumns} rows={users} emptyMessage="No users found." />
     )}
    </div>
 
@@ -452,47 +460,22 @@ function UserManagement({ accessToken, currentRole }) {
     <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
      <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">User Roles</h3>
     </div>
-    <table className="w-full text-left">
-     <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-      <tr><th className="px-stack-lg py-4">Role</th><th className="px-stack-lg py-4">Users</th><th className="px-stack-lg py-4">Permissions</th></tr>
-     </thead>
-     <tbody className="divide-y divide-outline-variant">
-      {(() => {
-       const roleCounts = {};
-       users.forEach((u) => {
-        const r = u.role || 'unknown';
-        roleCounts[r] = (roleCounts[r] || 0) + 1;
-       });
-       const roleList = Object.keys(roleCounts).sort((a, b) => roleCounts[b] - roleCounts[a]);
-       if (!roleList.length) {
-        return <tr><td data-label="Role" colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No roles found.</td></tr>;
-       }
-       return roleList.map((role) => (
-        <tr key={role} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
-         <td data-label="Role" className="px-stack-lg py-4 text-body-md capitalize text-brand-dark dark:text-dark-brand">{role.replace('_', ' ')}</td>
-         <td data-label="Users" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-dark-ink-muted">{roleCounts[role]}</td>
-         <td data-label="Permissions" className="px-stack-lg py-4 text-body-md capitalize text-ink-muted dark:text-dark-ink-muted">{role === 'super_admin' ? 'Full access' : role.replace('_', ' ') + ' portal access'}</td>
-        </tr>
-       ));
-      })()}
-     </tbody>
-    </table>
+    <PortalTable columns={roleSummaryColumns} rows={roleRows} emptyMessage="No roles found." />
    </div>
   </div>
  );
 }
 
-function EmployeeManagement({ accessToken }) {
+function EmployeeManagement() {
  const [employees, setEmployees] = useState([]);
  const [loading, setLoading] = useState(true);
 
  useEffect(() => {
-  if (!accessToken) { setLoading(false); return; }
-  fetchEmployees(accessToken, { limit: 100 })
+  fetchEmployees({ limit: 100 })
    .then((res) => setEmployees(res?.data || []))
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  return (
   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -500,41 +483,34 @@ function EmployeeManagement({ accessToken }) {
     <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Employees ({employees.length})</h3>
    </div>
    {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
-    <table className="w-full text-left">
-     <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-      <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Code</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Designation</th><th className="px-stack-lg py-4">Department</th><th className="px-stack-lg py-4">Employment</th><th className="px-stack-lg py-4">Status</th></tr>
-     </thead>
-     <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {employees.map((e) => (
-       <tr key={e.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
-        <td data-label="Name" className="px-stack-lg py-4 text-body-md font-semibold text-brand-dark dark:text-dark-brand">{e.name || '—'}</td>
-        <td data-label="Code" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.employee_code || '—'}</td>
-        <td data-label="Email" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.email || '—'}</td>
-        <td data-label="Designation" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.designation || '—'}</td>
-        <td data-label="Department" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{e.department_name || '—'}</td>
-        <td data-label="Employment" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{(e.employment_type || '—').replace('_', ' ')}</td>
-        <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={e.status === 'active' ? 'success' : 'neutral'}>{e.status}</StatusBadge></td>
-       </tr>
-      ))}
-      {!employees.length && <tr><td data-label="Name" colSpan={7} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No employees found.</td></tr>}
-     </tbody>
-    </table>
+    <PortalTable
+     emptyMessage="No employees found."
+     rows={employees}
+     columns={[
+      { key: 'name', label: 'Name', className: 'text-body-md font-semibold text-brand-dark dark:text-dark-brand', render: (v) => v || '—' },
+      { key: 'employee_code', label: 'Code', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+      { key: 'email', label: 'Email', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+      { key: 'designation', label: 'Designation', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+      { key: 'department_name', label: 'Department', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+      { key: 'employment_type', label: 'Employment', className: 'text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted', render: (v) => (v || '—').replace('_', ' ') },
+      { key: 'status', label: 'Status', render: (v) => <StatusBadge variant={v === 'active' ? 'success' : 'neutral'}>{v}</StatusBadge> },
+     ]}
+    />
    )}
   </div>
  );
 }
 
-function ClientManagement({ accessToken }) {
+function ClientManagement() {
  const [clients, setClients] = useState([]);
  const [loading, setLoading] = useState(true);
 
  useEffect(() => {
-  if (!accessToken) { setLoading(false); return; }
-  fetchClients(accessToken, { limit: 100 })
+  fetchClients({ limit: 100 })
    .then((res) => setClients(res?.data || []))
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  return (
   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -542,22 +518,16 @@ function ClientManagement({ accessToken }) {
     <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Clients</h3>
    </div>
    {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
-    <table className="w-full text-left">
-     <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-      <tr><th className="px-stack-lg py-4">Company</th><th className="px-stack-lg py-4">Industry</th><th className="px-stack-lg py-4">Country</th><th className="px-stack-lg py-4">Status</th></tr>
-     </thead>
-     <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {clients.map((c) => (
-       <tr key={c.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
-        <td data-label="Company" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.company_name}</td>
-        <td data-label="Industry" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.industry || '—'}</td>
-        <td data-label="Country" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.country || '—'}</td>
-        <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={c.status === 'active' ? 'success' : 'neutral'}>{c.status || 'active'}</StatusBadge></td>
-       </tr>
-      ))}
-      {!clients.length && <tr><td data-label="Company" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No clients found.</td></tr>}
-     </tbody>
-    </table>
+    <PortalTable
+     emptyMessage="No clients found."
+     rows={clients}
+     columns={[
+      { key: 'company_name', label: 'Company', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+      { key: 'industry', label: 'Industry', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+      { key: 'country', label: 'Country', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+      { key: 'status', label: 'Status', render: (v) => <StatusBadge variant={v === 'active' ? 'success' : 'neutral'}>{v || 'active'}</StatusBadge> },
+     ]}
+    />
    )}
   </div>
  );
@@ -568,7 +538,7 @@ const PROJECT_STATUS_VARIANT = {
  planning: 'neutral', in_progress: 'info', on_hold: 'warning', completed: 'success', cancelled: 'error',
 };
 
-function AddProjectForm({ accessToken, onCreated, onCancel }) {
+function AddProjectForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ title: '', industry: '', status: 'planning', budget: '', is_published: false, is_featured: false });
  const [error, setError] = useState('');
  const [submitting, setSubmitting] = useState(false);
@@ -579,7 +549,7 @@ function AddProjectForm({ accessToken, onCreated, onCancel }) {
   setError('');
   setSubmitting(true);
   try {
-   await createProject(accessToken, {
+   await createProject({
     title: form.title,
     industry: form.industry || null,
     status: form.status,
@@ -622,17 +592,16 @@ function AddProjectForm({ accessToken, onCreated, onCancel }) {
  );
 }
 
-function ProjectsManagement({ accessToken }) {
+function ProjectsManagement() {
  const [projects, setProjects] = useState([]);
  const [loading, setLoading] = useState(true);
  const [showAddForm, setShowAddForm] = useState(false);
  const [editingProject, setEditingProject] = useState(null);
 
  const loadProjects = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchAdminProjects(accessToken, { limit: 50 }).then((res) => setProjects(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, [accessToken]);
+  fetchAdminProjects({ limit: 50 }).then((res) => setProjects(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, []);
 
  useEffect(() => {
   loadProjects();
@@ -648,7 +617,7 @@ function ProjectsManagement({ accessToken }) {
   if (!editingProject) return;
   setSubmittingProject(true);
   try {
-   await updateProject(accessToken, editingProject.id, {
+   await updateProject(editingProject.id, {
     title: editingProject.title,
     industry: editingProject.industry || null,
     status: editingProject.status,
@@ -668,21 +637,53 @@ function ProjectsManagement({ accessToken }) {
 
  const [submittingProject, setSubmittingProject] = useState(false);
  const [projectError, setProjectError] = useState('');
+ const { run: runTogglePublish, isPending: togglingPublish } = useAsyncAction();
+ const { run: runRemove, isPending: removing } = useAsyncAction();
 
- const togglePublish = async (project) => {
+ const togglePublish = (project) => runTogglePublish(async () => {
   try {
-   await updateProject(accessToken, project.id, { is_published: !project.is_published });
+   await updateProject(project.id, { is_published: !project.is_published });
    loadProjects();
   } catch { /* surfaced via the row staying unchanged */ }
+ });
+
+ const remove = (project) => {
+  if (!window.confirm(`Delete project "${project.title}"?`)) return;
+  runRemove(async () => {
+   try {
+    await deleteProject(project.id);
+    loadProjects();
+   } catch { /* surfaced via the row staying in the list */ }
+  });
  };
 
- const remove = async (project) => {
-  if (!window.confirm(`Delete project "${project.title}"?`)) return;
-  try {
-   await deleteProject(accessToken, project.id);
-   loadProjects();
-  } catch { /* surfaced via the row staying in the list */ }
- };
+ const projectColumns = [
+  { key: 'title', label: 'Title', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+  { key: 'industry', label: 'Industry', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+  { key: 'status', label: 'Status', render: (v) => <StatusBadge variant={PROJECT_STATUS_VARIANT[v] || 'neutral'}>{v?.replace('_', ' ')}</StatusBadge> },
+  { key: 'progress_percent', label: 'Progress', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => `${v ?? 0}%` },
+  {
+   key: 'is_published', label: 'Published',
+   render: (v, p) => (
+    <button onClick={() => togglePublish(p)} disabled={togglingPublish} className="cursor-pointer disabled:opacity-50">
+     <StatusBadge variant={v ? 'success' : 'neutral'}>{v ? 'published' : 'draft'}</StatusBadge>
+    </button>
+   ),
+  },
+  {
+   key: 'actions', label: 'Actions', className: 'text-right', headerClassName: 'text-right',
+   render: (_v, p) => (
+    <div className="flex justify-end gap-2">
+     <button onClick={() => handleEdit(p)} aria-label={`Edit ${p.title}`} className="text-ink-muted transition-colors hover:text-brand" title="Edit">
+      <Icon name="edit" className="text-lg" />
+     </button>
+     <button onClick={() => remove(p)} disabled={removing} aria-label={`Delete ${p.title}`} className="text-ink-muted transition-colors hover:text-status-error-text disabled:opacity-50" title="Delete">
+      <Icon name="delete" className="text-lg" />
+     </button>
+    </div>
+   ),
+  },
+ ];
 
  return (
   <div className="space-y-stack-lg">
@@ -721,60 +722,21 @@ function ProjectsManagement({ accessToken }) {
         </div>
        </form>
       ) : (
-       <AddProjectForm accessToken={accessToken} onCreated={() => { setShowAddForm(false); loadProjects(); }} onCancel={() => setShowAddForm(false)} />
+       <AddProjectForm onCreated={() => { setShowAddForm(false); loadProjects(); }} onCancel={() => setShowAddForm(false)} />
       )}
      </div>
     )}
     {loading ? (
      <div className="p-stack-lg"><LoadingSpinner /></div>
     ) : (
-     <table className="w-full text-left">
-      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-       <tr>
-        <th className="px-stack-lg py-4">Title</th>
-        <th className="px-stack-lg py-4">Industry</th>
-        <th className="px-stack-lg py-4">Status</th>
-        <th className="px-stack-lg py-4">Progress</th>
-        <th className="px-stack-lg py-4">Published</th>
-        <th className="px-stack-lg py-4">Actions</th>
-       </tr>
-      </thead>
-      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {projects.map((p) => (
-        <tr key={p.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
-         <td data-label="Title" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.title}</td>
-         <td data-label="Industry" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.industry || '—'}</td>
-         <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={PROJECT_STATUS_VARIANT[p.status] || 'neutral'}>{p.status?.replace('_', ' ')}</StatusBadge></td>
-         <td data-label="Progress" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.progress_percent ?? 0}%</td>
-         <td data-label="Published" className="px-stack-lg py-4">
-          <button onClick={() => togglePublish(p)} className="cursor-pointer">
-           <StatusBadge variant={p.is_published ? 'success' : 'neutral'}>{p.is_published ? 'published' : 'draft'}</StatusBadge>
-          </button>
-         </td>
-         <td data-label="Actions" className="px-stack-lg py-4 text-right">
-          <div className="flex justify-end gap-2">
-           <button onClick={() => handleEdit(p)} aria-label={`Edit ${p.title}`} className="text-ink-muted transition-colors hover:text-brand" title="Edit">
-            <Icon name="edit" className="text-lg" />
-           </button>
-           <button onClick={() => remove(p)} aria-label={`Delete ${p.title}`} className="text-ink-muted transition-colors hover:text-status-error-text" title="Delete">
-            <Icon name="delete" className="text-lg" />
-           </button>
-          </div>
-         </td>
-        </tr>
-       ))}
-       {!projects.length && (
-        <tr><td data-label="Title" colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No projects found.</td></tr>
-       )}
-      </tbody>
-     </table>
+     <PortalTable columns={projectColumns} rows={projects} emptyMessage="No projects found." />
     )}
    </div>
   </div>
  );
 }
 
-function AddRoleForm({ accessToken, onCreated, onCancel }) {
+function AddRoleForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ name: '', slug: '', description: '' });
  const [error, setError] = useState('');
  const [submitting, setSubmitting] = useState(false);
@@ -785,7 +747,7 @@ function AddRoleForm({ accessToken, onCreated, onCancel }) {
   setError('');
   setSubmitting(true);
   try {
-   await createRole(accessToken, form);
+   await createRole(form);
    onCreated();
   } catch (err) {
    setError(err.message || 'Could not create the role.');
@@ -810,7 +772,7 @@ function AddRoleForm({ accessToken, onCreated, onCancel }) {
  );
 }
 
-function AddPermissionForm({ accessToken, onCreated, onCancel }) {
+function AddPermissionForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ name: '', module: '', action: '', description: '' });
  const [error, setError] = useState('');
  const [submitting, setSubmitting] = useState(false);
@@ -821,7 +783,7 @@ function AddPermissionForm({ accessToken, onCreated, onCancel }) {
   setError('');
   setSubmitting(true);
   try {
-   await createPermission(accessToken, form);
+   await createPermission(form);
    onCreated();
   } catch (err) {
    setError(err.message || 'Could not create the permission.');
@@ -846,29 +808,45 @@ function AddPermissionForm({ accessToken, onCreated, onCancel }) {
  );
 }
 
-function RolesManagement({ accessToken }) {
+function RolesManagement() {
  const [roles, setRoles] = useState([]);
  const [loading, setLoading] = useState(true);
  const [showRoleForm, setShowRoleForm] = useState(false);
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchRoles(accessToken, { limit: 50 })
+  fetchRoles({ limit: 50 })
    .then((r) => setRoles(r?.data || []))
    .finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  useEffect(() => {
   load();
  }, [load]);
 
- const removeRole = async (role) => {
+ const { run: runRemoveRole, isPending: removingRole } = useAsyncAction();
+ const removeRole = (role) => {
   if (!window.confirm(`Delete role "${role.name}"?`)) return;
-  try { await deleteRole(accessToken, role.id); load(); } catch { /* row stays visible on failure */ }
+  runRemoveRole(async () => {
+   try { await deleteRole(role.id); load(); } catch { /* row stays visible on failure */ }
+  });
  };
 
  if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
+
+ const roleColumns = [
+  { key: 'name', label: 'Name', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+  { key: 'slug', label: 'Slug', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted' },
+  { key: 'description', label: 'Description', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+  {
+   key: 'actions', label: '', className: 'text-right', headerClassName: 'text-right',
+   render: (_v, r) => !r.is_system && (
+    <button onClick={() => removeRole(r)} disabled={removingRole} aria-label={`Delete role ${r.name}`} className="text-ink-muted transition-colors hover:text-status-error-text disabled:opacity-50">
+     <Icon name="delete" className="text-lg" />
+    </button>
+   ),
+  },
+ ];
 
  return (
   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -880,60 +858,53 @@ function RolesManagement({ accessToken }) {
    </div>
    {showRoleForm && (
     <div className="border-b border-outline-variant bg-surface-container p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface-container">
-     <AddRoleForm accessToken={accessToken} onCreated={() => { setShowRoleForm(false); load(); }} onCancel={() => setShowRoleForm(false)} />
+     <AddRoleForm onCreated={() => { setShowRoleForm(false); load(); }} onCancel={() => setShowRoleForm(false)} />
     </div>
    )}
-   <table className="w-full text-left">
-    <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-     <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Slug</th><th className="px-stack-lg py-4">Description</th><th className="px-stack-lg py-4"></th></tr>
-    </thead>
-    <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-     {roles.map((r) => (
-      <tr key={r.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
-       <td data-label="Name" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{r.name}</td>
-       <td data-label="Slug" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.slug}</td>
-       <td data-label="Description" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.description || '—'}</td>
-       <td data-label="Name" className="px-stack-lg py-4 text-right">
-        {!r.is_system && (
-         <button onClick={() => removeRole(r)} aria-label={`Delete role ${r.name}`} className="text-ink-muted transition-colors hover:text-status-error-text">
-          <Icon name="delete" className="text-lg" />
-         </button>
-        )}
-       </td>
-      </tr>
-     ))}
-     {!roles.length && (
-      <tr><td data-label="Name" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No custom roles yet.</td></tr>
-     )}
-    </tbody>
-   </table>
+   <PortalTable columns={roleColumns} rows={roles} emptyMessage="No custom roles yet." />
   </div>
  );
 }
 
-function PermissionsManagement({ accessToken }) {
+function PermissionsManagement() {
  const [permissions, setPermissions] = useState([]);
  const [loading, setLoading] = useState(true);
  const [showPermForm, setShowPermForm] = useState(false);
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchPermissions(accessToken, { limit: 100 })
+  fetchPermissions({ limit: 100 })
    .then((p) => setPermissions(p?.data || []))
    .finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  useEffect(() => {
   load();
  }, [load]);
 
- const removePermission = async (perm) => {
+ const { run: runRemovePermission, isPending: removingPermission } = useAsyncAction();
+ const removePermission = (perm) => {
   if (!window.confirm(`Delete permission "${perm.name}"?`)) return;
-  try { await deletePermission(accessToken, perm.id); load(); } catch { /* row stays visible on failure */ }
+  runRemovePermission(async () => {
+   try { await deletePermission(perm.id); load(); } catch { /* row stays visible on failure */ }
+  });
  };
 
  if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
+
+ const permColumns = [
+  { key: 'name', label: 'Name', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+  { key: 'module', label: 'Module', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted' },
+  { key: 'action', label: 'Action', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted' },
+  {
+   key: 'actions', label: '', className: 'text-right', headerClassName: 'text-right',
+   render: (_v, p) => (
+    <button onClick={() => removePermission(p)} disabled={removingPermission} aria-label={`Delete permission ${p.name}`} className="text-ink-muted transition-colors hover:text-status-error-text disabled:opacity-50">
+     <Icon name="delete" className="text-lg" />
+    </button>
+   ),
+  },
+ ];
 
  return (
   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
@@ -945,31 +916,10 @@ function PermissionsManagement({ accessToken }) {
    </div>
    {showPermForm && (
     <div className="border-b border-outline-variant bg-surface-container p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface-container">
-     <AddPermissionForm accessToken={accessToken} onCreated={() => { setShowPermForm(false); load(); }} onCancel={() => setShowPermForm(false)} />
+     <AddPermissionForm onCreated={() => { setShowPermForm(false); load(); }} onCancel={() => setShowPermForm(false)} />
     </div>
    )}
-   <table className="w-full text-left">
-    <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-     <tr><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Module</th><th className="px-stack-lg py-4">Action</th><th className="px-stack-lg py-4"></th></tr>
-    </thead>
-    <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-     {permissions.map((p) => (
-      <tr key={p.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
-       <td data-label="Name" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.name}</td>
-       <td data-label="Module" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.module}</td>
-       <td data-label="Action" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.action}</td>
-       <td data-label="Name" className="px-stack-lg py-4 text-right">
-        <button onClick={() => removePermission(p)} aria-label={`Delete permission ${p.name}`} className="text-ink-muted transition-colors hover:text-status-error-text">
-         <Icon name="delete" className="text-lg" />
-        </button>
-       </td>
-      </tr>
-     ))}
-     {!permissions.length && (
-      <tr><td data-label="Name" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No permissions yet.</td></tr>
-     )}
-    </tbody>
-   </table>
+   <PortalTable columns={permColumns} rows={permissions} emptyMessage="No permissions yet." />
   </div>
  );
 }
@@ -982,17 +932,16 @@ function mediaIcon(mimeType) {
  return 'insert_drive_file';
 }
 
-function MediaManagement({ accessToken }) {
+function MediaManagement() {
  const [media, setMedia] = useState([]);
  const [loading, setLoading] = useState(true);
  const [uploading, setUploading] = useState(false);
  const [error, setError] = useState('');
 
  const loadMedia = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchMedia(accessToken, { limit: 60 }).then((res) => setMedia(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, [accessToken]);
+  fetchMedia({ limit: 60 }).then((res) => setMedia(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, []);
 
  useEffect(() => {
   loadMedia();
@@ -1004,7 +953,7 @@ function MediaManagement({ accessToken }) {
   setError('');
   setUploading(true);
   try {
-   await uploadMedia(accessToken, files, 'misc');
+   await uploadMedia(files, 'misc');
    loadMedia();
   } catch (err) {
    setError(err.message || 'Upload failed.');
@@ -1014,9 +963,12 @@ function MediaManagement({ accessToken }) {
   }
  };
 
- const remove = async (item) => {
+ const { run: runRemoveMedia, isPending: removingMedia } = useAsyncAction();
+ const remove = (item) => {
   if (!window.confirm(`Delete "${item.file_name}"?`)) return;
-  try { await deleteMedia(accessToken, item.id); loadMedia(); } catch { /* item stays visible on failure */ }
+  runRemoveMedia(async () => {
+   try { await deleteMedia(item.id); loadMedia(); } catch { /* item stays visible on failure */ }
+  });
  };
 
  return (
@@ -1048,7 +1000,7 @@ function MediaManagement({ accessToken }) {
          <p className="truncate text-body-sm text-brand-dark dark:text-dark-brand" title={m.file_name}>{m.file_name}</p>
          <p className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{m.folder}</p>
         </div>
-        <button onClick={() => remove(m)} aria-label={`Delete ${m.file_name}`} className="absolute right-2 top-2 rounded-full bg-white/90 p-1 text-ink-muted opacity-0 transition-opacity hover:text-status-error-text group-hover:opacity-100 dark:bg-dark-surface/90">
+        <button onClick={() => remove(m)} disabled={removingMedia} aria-label={`Delete ${m.file_name}`} className="absolute right-2 top-2 rounded-full bg-white/90 p-1 text-ink-muted opacity-0 transition-opacity hover:text-status-error-text disabled:opacity-50 group-hover:opacity-100 dark:bg-dark-surface/90">
          <Icon name="delete" className="text-base" />
         </button>
        </div>
@@ -1066,7 +1018,7 @@ function MediaManagement({ accessToken }) {
 const NOTIFICATION_ICON = { info: 'info', success: 'check_circle', warning: 'warning', error: 'error' };
 const NOTIFICATION_TEXT = { info: 'text-status-info-text', success: 'text-status-success-text', warning: 'text-status-warning-text', error: 'text-status-error-text' };
 
-function SendNotificationForm({ accessToken, onSent, onCancel }) {
+function SendNotificationForm({ onSent, onCancel }) {
  const [form, setForm] = useState({ title: '', message: '', type: 'info', link: '', roles: '' });
  const [error, setError] = useState('');
  const [submitting, setSubmitting] = useState(false);
@@ -1079,7 +1031,7 @@ function SendNotificationForm({ accessToken, onSent, onCancel }) {
   setSubmitting(true);
   try {
    const roles = form.roles.split(',').map((r) => r.trim()).filter(Boolean);
-   await createNotification(accessToken, {
+   await createNotification({
     title: form.title, message: form.message || undefined, type: form.type,
     link: form.link || undefined, roles: roles.length ? roles : undefined,
    });
@@ -1113,28 +1065,30 @@ function SendNotificationForm({ accessToken, onSent, onCancel }) {
  );
 }
 
-function NotificationsManagement({ accessToken }) {
+function NotificationsManagement() {
  const [notifications, setNotifications] = useState([]);
  const [loading, setLoading] = useState(true);
  const [showSend, setShowSend] = useState(false);
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchNotifications(accessToken).then((res) => setNotifications(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, [accessToken]);
+  fetchNotifications().then((res) => setNotifications(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, []);
 
  useEffect(() => {
   load();
  }, [load]);
 
- const markOne = async (n) => {
-  try { await markNotificationRead(accessToken, n.id); load(); } catch { /* row stays unread on failure */ }
- };
+ const { run: runMarkOne, isPending: markingOne } = useAsyncAction();
+ const { run: runMarkAll, isPending: markingAll } = useAsyncAction();
 
- const markAll = async () => {
-  try { await markAllNotificationsRead(accessToken); load(); } catch { /* list stays unchanged on failure */ }
- };
+ const markOne = (n) => runMarkOne(async () => {
+  try { await markNotificationRead(n.id); load(); } catch { /* row stays unread on failure */ }
+ });
+
+ const markAll = () => runMarkAll(async () => {
+  try { await markAllNotificationsRead(); load(); } catch { /* list stays unchanged on failure */ }
+ });
 
  const unreadCount = notifications.filter((n) => !n.is_read).length;
 
@@ -1143,14 +1097,14 @@ function NotificationsManagement({ accessToken }) {
    <div className="flex justify-end">
     <Button onClick={() => setShowSend((v) => !v)} variant="primary" size="md" icon={<Icon name="send" />}>Send Notification</Button>
    </div>
-   {showSend && <SendNotificationForm accessToken={accessToken} onSent={() => { setShowSend(false); load(); }} onCancel={() => setShowSend(false)} />}
+   {showSend && <SendNotificationForm onSent={() => { setShowSend(false); load(); }} onCancel={() => setShowSend(false)} />}
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
     <div className="flex items-center justify-between gap-4 border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
      <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">
       Notifications {unreadCount > 0 && <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">({unreadCount} unread)</span>}
      </h3>
-     <Button variant="outline" size="md" icon={<Icon name="done_all" />} onClick={markAll} disabled={!unreadCount}>
-      Mark All Read
+     <Button variant="outline" size="md" icon={<Icon name="done_all" />} onClick={markAll} disabled={!unreadCount || markingAll}>
+      {markingAll ? 'Marking...' : 'Mark All Read'}
      </Button>
     </div>
     {loading ? (
@@ -1166,7 +1120,7 @@ function NotificationsManagement({ accessToken }) {
          <p className="mt-1 font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{new Date(n.created_at).toLocaleString()}</p>
         </div>
         {!n.is_read && (
-         <button onClick={() => markOne(n)} aria-label="Mark as read" className="text-ink-muted transition-colors hover:text-brand" title="Mark as read">
+         <button onClick={() => markOne(n)} disabled={markingOne} aria-label="Mark as read" className="text-ink-muted transition-colors hover:text-brand disabled:opacity-50" title="Mark as read">
           <Icon name="check" className="text-lg" />
          </button>
         )}
@@ -1182,7 +1136,7 @@ function NotificationsManagement({ accessToken }) {
  );
 }
 
-function GenerateReportForm({ accessToken, onCreated, onCancel }) {
+function GenerateReportForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ title: '', report_type: '', period: '', summary: '' });
  const [error, setError] = useState('');
  const [submitting, setSubmitting] = useState(false);
@@ -1193,7 +1147,7 @@ function GenerateReportForm({ accessToken, onCreated, onCancel }) {
   setError('');
   setSubmitting(true);
   try {
-   await generateReport(accessToken, form);
+   await generateReport(form);
    onCreated();
   } catch (err) {
    setError(err.message || 'Could not generate the report.');
@@ -1219,25 +1173,48 @@ function GenerateReportForm({ accessToken, onCreated, onCancel }) {
  );
 }
 
-function ReportsManagement({ accessToken }) {
+function ReportsManagement() {
  const [reports, setReports] = useState([]);
  const [loading, setLoading] = useState(true);
  const [showForm, setShowForm] = useState(false);
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchReports(accessToken, { limit: 50 }).then((res) => setReports(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, [accessToken]);
+  fetchReports({ limit: 50 }).then((res) => setReports(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, []);
 
  useEffect(() => {
   load();
  }, [load]);
 
- const remove = async (report) => {
+ const { run: runRemoveReport, isPending: removingReport } = useAsyncAction();
+ const remove = (report) => {
   if (!window.confirm(`Delete report "${report.title}"?`)) return;
-  try { await deleteReport(accessToken, report.id); load(); } catch { /* row stays visible on failure */ }
+  runRemoveReport(async () => {
+   try { await deleteReport(report.id); load(); } catch { /* row stays visible on failure */ }
+  });
  };
+
+ const reportColumns = [
+  { key: 'title', label: 'Title', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+  { key: 'report_type', label: 'Type', className: 'text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted' },
+  { key: 'period', label: 'Period', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted' },
+  {
+   key: 'actions', label: '', className: 'flex items-center justify-end gap-3 text-right', headerClassName: 'text-right',
+   render: (_v, r) => (
+    <>
+     {r.file_url && (
+      <a href={r.file_url} target="_blank" rel="noreferrer" aria-label={`Download ${r.title}`} className="text-ink-muted transition-colors hover:text-brand">
+       <Icon name="download" className="text-lg" />
+      </a>
+     )}
+     <button onClick={() => remove(r)} disabled={removingReport} aria-label={`Delete ${r.title}`} className="text-ink-muted transition-colors hover:text-status-error-text disabled:opacity-50">
+      <Icon name="delete" className="text-lg" />
+     </button>
+    </>
+   ),
+  },
+ ];
 
  return (
   <div className="space-y-stack-lg">
@@ -1250,39 +1227,13 @@ function ReportsManagement({ accessToken }) {
     </div>
     {showForm && (
      <div className="border-b border-outline-variant bg-surface-container p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface-container">
-      <GenerateReportForm accessToken={accessToken} onCreated={() => { setShowForm(false); load(); }} onCancel={() => setShowForm(false)} />
+      <GenerateReportForm onCreated={() => { setShowForm(false); load(); }} onCancel={() => setShowForm(false)} />
      </div>
     )}
     {loading ? (
      <div className="p-stack-lg"><LoadingSpinner /></div>
     ) : (
-     <table className="w-full text-left">
-      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-       <tr><th className="px-stack-lg py-4">Title</th><th className="px-stack-lg py-4">Type</th><th className="px-stack-lg py-4">Period</th><th className="px-stack-lg py-4"></th></tr>
-      </thead>
-      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {reports.map((r) => (
-        <tr key={r.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
-         <td data-label="Title" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{r.title}</td>
-         <td data-label="Type" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{r.report_type}</td>
-         <td data-label="Period" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{r.period}</td>
-         <td data-label="Title" className="flex items-center justify-end gap-3 px-stack-lg py-4 text-right">
-          {r.file_url && (
-           <a href={r.file_url} target="_blank" rel="noreferrer" aria-label={`Download ${r.title}`} className="text-ink-muted transition-colors hover:text-brand">
-            <Icon name="download" className="text-lg" />
-           </a>
-          )}
-          <button onClick={() => remove(r)} aria-label={`Delete ${r.title}`} className="text-ink-muted transition-colors hover:text-status-error-text">
-           <Icon name="delete" className="text-lg" />
-          </button>
-         </td>
-        </tr>
-       ))}
-       {!reports.length && (
-        <tr><td data-label="Title" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No reports generated yet.</td></tr>
-       )}
-      </tbody>
-     </table>
+     <PortalTable columns={reportColumns} rows={reports} emptyMessage="No reports generated yet." />
     )}
    </div>
   </div>
@@ -1298,7 +1249,7 @@ const CONTACT_STATUS_OPTIONS = [
  { value: 'spam', label: 'Spam', variant: 'error' },
 ];
 
-function ContactsManagement({ accessToken }) {
+function ContactsManagement() {
  const [submissions, setSubmissions] = useState([]);
  const [loading, setLoading] = useState(true);
  const [statusFilter, setStatusFilter] = useState('all');
@@ -1306,12 +1257,11 @@ function ContactsManagement({ accessToken }) {
  const { toasts, toast } = useToast();
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
   const start = Date.now();
   const params = { limit: 100 };
   if (statusFilter !== 'all') params.status = statusFilter;
-  fetchContactSubmissions(accessToken, params)
+  fetchContactSubmissions(params)
    .then((res) => setSubmissions(res?.data || []))
    .catch(() => setSubmissions([]))
    .finally(() => {
@@ -1323,41 +1273,43 @@ function ContactsManagement({ accessToken }) {
      setLoading(false);
     }
    });
- }, [accessToken, statusFilter]);
+ }, [statusFilter]);
 
  useEffect(() => {
   load();
  }, [load]);
 
- const markAsResolved = async (submission) => {
+ const { run: runStatusChange, isPending: statusChanging } = useAsyncAction();
+
+ const markAsResolved = (submission) => runStatusChange(async () => {
   try {
-   await updateContactStatus(accessToken, submission.id, 'resolved');
+   await updateContactStatus(submission.id, 'resolved');
    toast('Marked as resolved');
    load();
   } catch { toast('Failed to update status', 'error'); }
- };
+ });
 
- const markAsInProgress = async (submission) => {
+ const markAsInProgress = (submission) => runStatusChange(async () => {
   try {
-   await updateContactStatus(accessToken, submission.id, 'in_progress');
+   await updateContactStatus(submission.id, 'in_progress');
    toast('Marked as in progress');
    load();
   } catch { toast('Failed to update status', 'error'); }
- };
+ });
 
- const markAsSpam = async (submission) => {
+ const markAsSpam = (submission) => runStatusChange(async () => {
   try {
-   await updateContactStatus(accessToken, submission.id, 'spam');
+   await updateContactStatus(submission.id, 'spam');
    toast('Marked as spam');
    load();
   } catch { toast('Failed to update status', 'error'); }
- };
+ });
 
  const handleLeadConverted = async (submission) => {
   setConvertTarget(null);
   toast(`${submission.name} converted to lead successfully!`);
   // Also mark as in_progress so the contact shows follow-up is happening
-  try { await updateContactStatus(accessToken, submission.id, 'in_progress'); } catch { /* non-critical */ }
+  try { await updateContactStatus(submission.id, 'in_progress'); } catch { /* non-critical */ }
   load();
  };
 
@@ -1369,7 +1321,6 @@ function ContactsManagement({ accessToken }) {
    {convertTarget && (
     <ConvertToLeadModal
      submission={convertTarget}
-     accessToken={accessToken}
      onClose={() => setConvertTarget(null)}
      onSuccess={() => handleLeadConverted(convertTarget)}
     />
@@ -1451,8 +1402,9 @@ function ContactsManagement({ accessToken }) {
             {s.status !== 'in_progress' && s.status !== 'resolved' && (
              <button
               onClick={() => markAsInProgress(s)}
+              disabled={statusChanging}
               aria-label="Mark in progress"
-              className="rounded p-1 text-ink-muted transition-colors hover:bg-surface-container hover:text-status-info-text dark:text-dark-ink-muted"
+              className="rounded p-1 text-ink-muted transition-colors hover:bg-surface-container hover:text-status-info-text disabled:opacity-50 dark:text-dark-ink-muted"
               title="Mark in progress"
              >
               <Icon name="schedule" />
@@ -1462,8 +1414,9 @@ function ContactsManagement({ accessToken }) {
             {s.status !== 'resolved' && s.status !== 'spam' && (
              <button
               onClick={() => markAsResolved(s)}
+              disabled={statusChanging}
               aria-label="Mark resolved"
-              className="rounded p-1 text-ink-muted transition-colors hover:bg-surface-container hover:text-status-success-text dark:text-dark-ink-muted"
+              className="rounded p-1 text-ink-muted transition-colors hover:bg-surface-container hover:text-status-success-text disabled:opacity-50 dark:text-dark-ink-muted"
               title="Mark resolved"
              >
               <Icon name="check_circle" />
@@ -1473,8 +1426,9 @@ function ContactsManagement({ accessToken }) {
             {s.status !== 'spam' && (
              <button
               onClick={() => markAsSpam(s)}
+              disabled={statusChanging}
               aria-label="Mark as spam"
-              className="rounded p-1 text-ink-muted transition-colors hover:bg-surface-container hover:text-status-error-text dark:text-dark-ink-muted"
+              className="rounded p-1 text-ink-muted transition-colors hover:bg-surface-container hover:text-status-error-text disabled:opacity-50 dark:text-dark-ink-muted"
               title="Mark as spam"
              >
               <Icon name="report" />
@@ -1501,19 +1455,18 @@ function ContactsManagement({ accessToken }) {
 }
 
 // ── Analytics ────────────────────────────────────────────────────────────────
-function AnalyticsManagement({ accessToken }) {
+function AnalyticsManagement() {
  const [summary, setSummary] = useState(null);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState('');
 
  useEffect(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchAnalyticsSummary(accessToken)
+  fetchAnalyticsSummary()
    .then((res) => setSummary(res?.data || null))
    .catch((err) => setError(err?.message || 'Could not load analytics.'))
    .finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
  if (error) return <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>;
@@ -1535,29 +1488,21 @@ function AnalyticsManagement({ accessToken }) {
     <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
      <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Top Pages</h3>
     </div>
-    <table className="w-full text-left">
-     <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-      <tr><th className="px-stack-lg py-4">Path</th><th className="px-stack-lg py-4">Views</th></tr>
-     </thead>
-     <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-      {(summary.top_pages || []).map((p) => (
-       <tr key={p.path} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-        <td data-label="Path" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.path}</td>
-        <td data-label="Views" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.count}</td>
-       </tr>
-      ))}
-      {!(summary.top_pages || []).length && (
-       <tr><td data-label="Path" colSpan={2} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No page views recorded yet.</td></tr>
-      )}
-     </tbody>
-    </table>
+    <PortalTable
+     emptyMessage="No page views recorded yet."
+     rows={summary.top_pages || []}
+     columns={[
+      { key: 'path', label: 'Path', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+      { key: 'count', label: 'Views', className: 'text-body-md text-ink-muted dark:text-white' },
+     ]}
+    />
    </div>
   </div>
  );
 }
 
 // ── Settings ─────────────────────────────────────────────────────────────────
-function SettingsManagement({ accessToken }) {
+function SettingsManagement() {
  const [settings, setSettings] = useState([]);
  const [loading, setLoading] = useState(true);
  const [editingKey, setEditingKey] = useState(null);
@@ -1567,10 +1512,9 @@ function SettingsManagement({ accessToken }) {
  const [showNew, setShowNew] = useState(false);
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchSettings(accessToken).then((res) => setSettings(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, [accessToken]);
+  fetchSettings().then((res) => setSettings(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, []);
 
  useEffect(() => { load(); }, [load]);
 
@@ -1579,7 +1523,7 @@ function SettingsManagement({ accessToken }) {
  const saveEdit = async (group) => {
   setSaving(true);
   try {
-   await upsertSetting(accessToken, editingKey, { value: editValue, group });
+   await upsertSetting(editingKey, { value: editValue, group });
    setEditingKey(null);
    load();
   } finally {
@@ -1592,7 +1536,7 @@ function SettingsManagement({ accessToken }) {
   if (!newKey.key.trim()) return;
   setSaving(true);
   try {
-   await upsertSetting(accessToken, newKey.key.trim(), { value: newKey.value, group: newKey.group || 'general' });
+   await upsertSetting(newKey.key.trim(), { value: newKey.value, group: newKey.group || 'general' });
    setNewKey({ key: '', value: '', group: 'general' });
    setShowNew(false);
    load();
@@ -1601,10 +1545,13 @@ function SettingsManagement({ accessToken }) {
   }
  };
 
- const remove = async (key) => {
+ const { run: runRemoveSetting, isPending: removingSetting } = useAsyncAction();
+ const remove = (key) => {
   if (!window.confirm(`Delete setting "${key}"?`)) return;
-  await deleteSetting(accessToken, key);
-  load();
+  runRemoveSetting(async () => {
+   await deleteSetting(key);
+   load();
+  });
  };
 
  if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
@@ -1626,6 +1573,7 @@ function SettingsManagement({ accessToken }) {
     </form>
    )}
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
+    <div className="overflow-x-auto">
     <table className="w-full text-left">
      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
       <tr><th className="px-stack-lg py-4">Key</th><th className="px-stack-lg py-4">Group</th><th className="px-stack-lg py-4">Value</th><th className="px-stack-lg py-4"></th></tr>
@@ -1650,7 +1598,7 @@ function SettingsManagement({ accessToken }) {
           ) : (
            <>
             <button onClick={() => startEdit(s)} aria-label={`Edit ${s.key}`} className="text-brand hover:text-brand-dark"><Icon name="edit" /></button>
-            <button onClick={() => remove(s.key)} aria-label={`Delete ${s.key}`} className="text-status-error-text hover:opacity-70"><Icon name="delete" /></button>
+            <button onClick={() => remove(s.key)} disabled={removingSetting} aria-label={`Delete ${s.key}`} className="text-status-error-text hover:opacity-70 disabled:opacity-50"><Icon name="delete" /></button>
            </>
           )}
          </div>
@@ -1662,6 +1610,7 @@ function SettingsManagement({ accessToken }) {
       )}
      </tbody>
     </table>
+    </div>
    </div>
   </div>
  );
@@ -1671,7 +1620,7 @@ function SettingsManagement({ accessToken }) {
 // List + create only — the backend (backend/app/routers/training.py) has no
 // update/delete endpoint for courses at all, so this deliberately doesn't
 // offer edit/delete controls the API can't back.
-function NewCourseForm({ accessToken, onCreated, onCancel }) {
+function NewCourseForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ title: '', category: '', duration_hours: '', description: '', is_published: true });
  const [error, setError] = useState('');
  const [submitting, setSubmitting] = useState(false);
@@ -1683,7 +1632,7 @@ function NewCourseForm({ accessToken, onCreated, onCancel }) {
   if (!form.title.trim()) { setError('Title is required.'); return; }
   setSubmitting(true);
   try {
-   await createCourse(accessToken, {
+   await createCourse({
     title: form.title,
     category: form.category || undefined,
     duration_hours: form.duration_hours ? Number(form.duration_hours) : undefined,
@@ -1718,16 +1667,15 @@ function NewCourseForm({ accessToken, onCreated, onCancel }) {
  );
 }
 
-function TrainingManagement({ accessToken }) {
+function TrainingManagement() {
  const [courses, setCourses] = useState([]);
  const [loading, setLoading] = useState(true);
  const [showNew, setShowNew] = useState(false);
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchCourses(accessToken).then((res) => setCourses(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, [accessToken]);
+  fetchCourses().then((res) => setCourses(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, []);
 
  useEffect(() => { load(); }, [load]);
 
@@ -1736,25 +1684,19 @@ function TrainingManagement({ accessToken }) {
    <div className="flex justify-end">
     <Button onClick={() => setShowNew((v) => !v)} variant="primary" size="md" icon={<Icon name="add" />}>New Course</Button>
    </div>
-   {showNew && <NewCourseForm accessToken={accessToken} onCreated={() => { setShowNew(false); load(); }} onCancel={() => setShowNew(false)} />}
+   {showNew && <NewCourseForm onCreated={() => { setShowNew(false); load(); }} onCancel={() => setShowNew(false)} />}
    <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
     {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
-     <table className="w-full text-left">
-      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-       <tr><th className="px-stack-lg py-4">Title</th><th className="px-stack-lg py-4">Category</th><th className="px-stack-lg py-4">Duration</th><th className="px-stack-lg py-4">Status</th></tr>
-      </thead>
-      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {courses.map((c) => (
-        <tr key={c.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-         <td data-label="Title" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.title}</td>
-         <td data-label="Category" className="px-stack-lg py-4"><Badge className="text-label-caps">{c.category || '—'}</Badge></td>
-         <td data-label="Duration" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{c.duration_hours ? `${c.duration_hours}h` : '—'}</td>
-         <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={c.is_published ? 'success' : 'neutral'}>{c.is_published ? 'published' : 'draft'}</StatusBadge></td>
-        </tr>
-       ))}
-       {!courses.length && <tr><td data-label="Title" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No courses yet.</td></tr>}
-      </tbody>
-     </table>
+     <PortalTable
+      emptyMessage="No courses yet."
+      rows={courses}
+      columns={[
+       { key: 'title', label: 'Title', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+       { key: 'category', label: 'Category', render: (v) => <Badge className="text-label-caps">{v || '—'}</Badge> },
+       { key: 'duration_hours', label: 'Duration', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => (v ? `${v}h` : '—') },
+       { key: 'is_published', label: 'Status', render: (v) => <StatusBadge variant={v ? 'success' : 'neutral'}>{v ? 'published' : 'draft'}</StatusBadge> },
+      ]}
+     />
     )}
    </div>
   </div>
@@ -1762,7 +1704,7 @@ function TrainingManagement({ accessToken }) {
 }
 
 // ── Careers: job postings + application review ──────────────────────────────
-function NewCareerForm({ accessToken, onCreated, onCancel }) {
+function NewCareerForm({ onCreated, onCancel }) {
  const [form, setForm] = useState({ title: '', department: '', location: '', employment_type: 'full_time', description: '' });
  const [error, setError] = useState('');
  const [submitting, setSubmitting] = useState(false);
@@ -1774,7 +1716,7 @@ function NewCareerForm({ accessToken, onCreated, onCancel }) {
   if (!form.title.trim()) { setError('Title is required.'); return; }
   setSubmitting(true);
   try {
-   await careersApi.create(accessToken, {
+   await careersApi.create({
     title: form.title,
     department: form.department || undefined,
     location: form.location || undefined,
@@ -1812,7 +1754,7 @@ function NewCareerForm({ accessToken, onCreated, onCancel }) {
  );
 }
 
-function CareersManagement({ accessToken }) {
+function CareersManagement() {
  const [careers, setCareers] = useState([]);
  const [applications, setApplications] = useState([]);
  const [loading, setLoading] = useState(true);
@@ -1820,25 +1762,25 @@ function CareersManagement({ accessToken }) {
  const [statusFilter, setStatusFilter] = useState('');
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
   Promise.all([
-   careersApi.list(accessToken, { limit: 100 }),
-   fetchApplications(accessToken, statusFilter ? { status: statusFilter } : {}),
+   careersApi.list({ limit: 100 }),
+   fetchApplications(statusFilter ? { status: statusFilter } : {}),
   ])
    .then(([c, a]) => { setCareers(c?.data || []); setApplications(a?.data || []); })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [accessToken, statusFilter]);
+ }, [statusFilter]);
 
  useEffect(() => { load(); }, [load]);
 
  const careerTitleById = Object.fromEntries(careers.map((c) => [c.id, c.title]));
 
- const setAppStatus = async (id, status) => {
-  await updateApplicationStatus(accessToken, id, status);
+ const { run: runSetAppStatus, isPending: settingAppStatus } = useAsyncAction();
+ const setAppStatus = (id, status) => runSetAppStatus(async () => {
+  await updateApplicationStatus(id, status);
   load();
- };
+ });
 
  return (
   <div className="space-y-stack-xl">
@@ -1847,25 +1789,19 @@ function CareersManagement({ accessToken }) {
      <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Open Positions</h3>
      <Button onClick={() => setShowNew((v) => !v)} variant="primary" size="md" icon={<Icon name="add" />}>New Position</Button>
     </div>
-    {showNew && <NewCareerForm accessToken={accessToken} onCreated={() => { setShowNew(false); load(); }} onCancel={() => setShowNew(false)} />}
+    {showNew && <NewCareerForm onCreated={() => { setShowNew(false); load(); }} onCancel={() => setShowNew(false)} />}
     <div className="responsive-table mt-4 overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
      {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
-      <table className="w-full text-left">
-       <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-        <tr><th className="px-stack-lg py-4">Title</th><th className="px-stack-lg py-4">Department</th><th className="px-stack-lg py-4">Location</th><th className="px-stack-lg py-4">Type</th></tr>
-       </thead>
-       <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-        {careers.map((c) => (
-         <tr key={c.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-          <td data-label="Title" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{c.title}</td>
-          <td data-label="Department" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{c.department || '—'}</td>
-          <td data-label="Location" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{c.location || '—'}</td>
-          <td data-label="Type" className="px-stack-lg py-4"><Badge className="text-label-caps">{c.employment_type?.replace('_', ' ')}</Badge></td>
-         </tr>
-        ))}
-        {!careers.length && <tr><td data-label="Title" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No open positions — this list only shows currently-open postings.</td></tr>}
-       </tbody>
-      </table>
+      <PortalTable
+       emptyMessage="No open positions — this list only shows currently-open postings."
+       rows={careers}
+       columns={[
+        { key: 'title', label: 'Title', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+        { key: 'department', label: 'Department', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => v || '—' },
+        { key: 'location', label: 'Location', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => v || '—' },
+        { key: 'employment_type', label: 'Type', render: (v) => <Badge className="text-label-caps">{v?.replace('_', ' ')}</Badge> },
+       ]}
+      />
      )}
     </div>
    </div>
@@ -1884,40 +1820,46 @@ function CareersManagement({ accessToken }) {
     </div>
     <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
      {loading ? <div className="p-stack-lg"><LoadingSpinner /></div> : (
-      <table className="w-full text-left">
-       <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-        <tr><th className="px-stack-lg py-4">Applicant</th><th className="px-stack-lg py-4">Position</th><th className="px-stack-lg py-4">Resume</th><th className="px-stack-lg py-4">Status</th></tr>
-       </thead>
-       <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-        {applications.map((a) => (
-         <tr key={a.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-          <td data-label="Applicant" className="px-stack-lg py-4">
+      <PortalTable
+       emptyMessage={`No applications${statusFilter ? ` with status "${statusFilter}"` : ''} yet.`}
+       rows={applications}
+       columns={[
+        {
+         key: 'full_name', label: 'Applicant',
+         render: (_v, a) => (
+          <div>
            <p className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{a.full_name}</p>
            <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{a.email}</p>
-          </td>
-          <td data-label="Position" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{careerTitleById[a.career_id] || '—'}</td>
-          <td data-label="Resume" className="px-stack-lg py-4">
-           <a href={a.resume_url} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-body-sm text-brand hover:text-brand-dark">
-            <Icon name="description" className="text-lg" />Resume
-           </a>
-          </td>
-          <td data-label="Status" className="px-stack-lg py-4">
-           <select
-            value={a.status}
-            onChange={(e) => setAppStatus(a.id, e.target.value)}
-            aria-label={`Status for ${a.full_name}`}
-            className="rounded border border-outline-variant bg-white px-2 py-1 text-body-sm dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink"
-           >
-            {['applied', 'shortlisted', 'interview', 'offered', 'rejected', 'hired'].map((s) => (
-             <option key={s} value={s}>{s}</option>
-            ))}
-           </select>
-          </td>
-         </tr>
-        ))}
-        {!applications.length && <tr><td data-label="Applicant" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No applications{statusFilter ? ` with status "${statusFilter}"` : ''} yet.</td></tr>}
-       </tbody>
-      </table>
+          </div>
+         ),
+        },
+        { key: 'career_id', label: 'Position', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => careerTitleById[v] || '—' },
+        {
+         key: 'resume_url', label: 'Resume',
+         render: (v) => (
+          <a href={v} target="_blank" rel="noreferrer" className="flex items-center gap-1 text-body-sm text-brand hover:text-brand-dark">
+           <Icon name="description" className="text-lg" />Resume
+          </a>
+         ),
+        },
+        {
+         key: 'status', label: 'Status',
+         render: (v, a) => (
+          <select
+           value={v}
+           onChange={(e) => setAppStatus(a.id, e.target.value)}
+           disabled={settingAppStatus}
+           aria-label={`Status for ${a.full_name}`}
+           className="rounded border border-outline-variant bg-white px-2 py-1 text-body-sm disabled:opacity-50 dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink"
+          >
+           {['applied', 'shortlisted', 'interview', 'offered', 'rejected', 'hired'].map((s) => (
+            <option key={s} value={s}>{s}</option>
+           ))}
+          </select>
+         ),
+        },
+       ]}
+      />
      )}
     </div>
    </div>
@@ -1926,21 +1868,25 @@ function CareersManagement({ accessToken }) {
 }
 
 // ── Blog Comment Moderation ──────────────────────────────────────────────────
-function CommentsManagement({ accessToken }) {
+function CommentsManagement() {
  const [comments, setComments] = useState([]);
  const [loading, setLoading] = useState(true);
  const [filter, setFilter] = useState('pending');
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchComments(accessToken, filter ? { status: filter } : {}).then((res) => setComments(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, [accessToken, filter]);
+  fetchComments(filter ? { status: filter } : {}).then((res) => setComments(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, [filter]);
 
  useEffect(() => { load(); }, [load]);
 
- const moderate = async (id, status) => { await moderateComment(accessToken, id, status); load(); };
- const remove = async (id) => { if (!window.confirm('Permanently delete this comment?')) return; await deleteComment(accessToken, id); load(); };
+ const { run: runModerate, isPending: moderating } = useAsyncAction();
+ const { run: runRemoveComment, isPending: removingComment } = useAsyncAction();
+ const moderate = (id, status) => runModerate(async () => { await moderateComment(id, status); load(); });
+ const remove = (id) => {
+  if (!window.confirm('Permanently delete this comment?')) return;
+  runRemoveComment(async () => { await deleteComment(id); load(); });
+ };
 
  return (
   <div className="space-y-stack-lg">
@@ -1963,12 +1909,12 @@ function CommentsManagement({ accessToken }) {
         </div>
         <div className="flex shrink-0 gap-2">
          {c.status !== 'approved' && (
-          <button onClick={() => moderate(c.id, 'approved')} aria-label="Approve comment" className="text-status-success-text hover:opacity-70" title="Approve"><Icon name="check_circle" className="text-xl" /></button>
+          <button onClick={() => moderate(c.id, 'approved')} disabled={moderating} aria-label="Approve comment" className="text-status-success-text hover:opacity-70 disabled:opacity-50" title="Approve"><Icon name="check_circle" className="text-xl" /></button>
          )}
          {c.status !== 'rejected' && (
-          <button onClick={() => moderate(c.id, 'rejected')} aria-label="Reject comment" className="text-status-error-text hover:opacity-70" title="Reject"><Icon name="cancel" className="text-xl" /></button>
+          <button onClick={() => moderate(c.id, 'rejected')} disabled={moderating} aria-label="Reject comment" className="text-status-error-text hover:opacity-70 disabled:opacity-50" title="Reject"><Icon name="cancel" className="text-xl" /></button>
          )}
-         <button onClick={() => remove(c.id)} aria-label="Delete comment" className="text-ink-muted hover:text-status-error-text" title="Delete"><Icon name="delete" className="text-xl" /></button>
+         <button onClick={() => remove(c.id)} disabled={removingComment} aria-label="Delete comment" className="text-ink-muted hover:text-status-error-text disabled:opacity-50" title="Delete"><Icon name="delete" className="text-xl" /></button>
         </div>
        </div>
       ))}
@@ -1981,14 +1927,13 @@ function CommentsManagement({ accessToken }) {
 }
 
 // ── Newsletter Subscribers ───────────────────────────────────────────────────
-function NewsletterManagement({ accessToken }) {
+function NewsletterManagement() {
  const [subscribers, setSubscribers] = useState([]);
  const [loading, setLoading] = useState(true);
 
  useEffect(() => {
-  if (!accessToken) { setLoading(false); return; }
-  fetchNewsletterSubscribers(accessToken, { is_active: true }).then((res) => setSubscribers(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, [accessToken]);
+  fetchNewsletterSubscribers({ is_active: true }).then((res) => setSubscribers(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, []);
 
  if (loading) return <div className="p-stack-lg"><LoadingSpinner /></div>;
 
@@ -1997,35 +1942,28 @@ function NewsletterManagement({ accessToken }) {
    <div className="border-b border-outline-variant p-stack-lg dark:border-dark-outline-variant">
     <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Newsletter Subscribers ({subscribers.length} active)</h3>
    </div>
-   <table className="w-full text-left">
-    <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-     <tr><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Name</th><th className="px-stack-lg py-4">Subscribed</th></tr>
-    </thead>
-    <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-     {subscribers.map((s) => (
-      <tr key={s.email} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-       <td data-label="Email" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{s.email}</td>
-       <td data-label="Name" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{s.name || '—'}</td>
-       <td data-label="Subscribed" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{s.subscribed_at ? new Date(s.subscribed_at).toLocaleDateString() : '—'}</td>
-      </tr>
-     ))}
-     {!subscribers.length && <tr><td data-label="Email" colSpan={3} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No active subscribers yet.</td></tr>}
-    </tbody>
-   </table>
+   <PortalTable
+    emptyMessage="No active subscribers yet."
+    rows={subscribers}
+    columns={[
+     { key: 'email', label: 'Email', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+     { key: 'name', label: 'Name', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => v || '—' },
+     { key: 'subscribed_at', label: 'Subscribed', className: 'text-body-md text-ink-muted dark:text-white', render: (v) => (v ? new Date(v).toLocaleDateString() : '—') },
+    ]}
+   />
   </div>
  );
 }
 
-function AuditLogsManagement({ accessToken }) {
+function AuditLogsManagement() {
  const [logs, setLogs] = useState([]);
  const [loading, setLoading] = useState(true);
 
  useEffect(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchAuditLogs(accessToken, { limit: 50 }).then((res) => setLogs(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
-   
- }, [accessToken]);
+  fetchAuditLogs({ limit: 50 }).then((res) => setLogs(res?.data || [])).catch(() => {}).finally(() => setLoading(false));
+
+ }, []);
 
  return (
   <div className="space-y-stack-lg">
@@ -2036,29 +1974,16 @@ function AuditLogsManagement({ accessToken }) {
     {loading ? (
      <div className="p-stack-lg"><LoadingSpinner /></div>
     ) : (
-     <table className="w-full text-left">
-      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-       <tr>
-        <th className="px-stack-lg py-4">Action</th>
-        <th className="px-stack-lg py-4">Entity</th>
-        <th className="px-stack-lg py-4">IP Address</th>
-        <th className="px-stack-lg py-4">When</th>
-       </tr>
-      </thead>
-      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {logs.map((l) => (
-        <tr key={l.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30 dark:hover:bg-blue-900/30">
-         <td data-label="Action" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{l.action}</td>
-         <td data-label="Entity" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.entity_type || '—'}</td>
-         <td data-label="IP Address" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.ip_address || '—'}</td>
-         <td data-label="When" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{new Date(l.created_at).toLocaleString()}</td>
-        </tr>
-       ))}
-       {!logs.length && (
-        <tr><td data-label="Action" colSpan={4} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted">No audit log entries yet.</td></tr>
-       )}
-      </tbody>
-     </table>
+     <PortalTable
+      emptyMessage="No audit log entries yet."
+      rows={logs}
+      columns={[
+       { key: 'action', label: 'Action', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+       { key: 'entity_type', label: 'Entity', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+       { key: 'ip_address', label: 'IP Address', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
+       { key: 'created_at', label: 'When', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => new Date(v).toLocaleString() },
+      ]}
+     />
     )}
    </div>
   </div>
@@ -2067,7 +1992,7 @@ function AuditLogsManagement({ accessToken }) {
 
 export default function AdminPanel() {
  useDocumentTitle('Admin Panel | CoreFusion Technologies');
- const { user, initializing, accessToken, logout } = useAuth();
+ const { user, initializing, logout } = useAuth();
  const { denied } = useRoleGuard('admin', '/login');
  const navigate = useNavigate();
  const [activeTab, setActiveTab] = useState('overview');
@@ -2079,19 +2004,19 @@ export default function AdminPanel() {
  const [currentUser, setCurrentUser] = useState(null);
 
  useEffect(() => {
-  if (!user || !accessToken) { setLoading(false); return; }
+  if (!user) { setLoading(false); return; }
   if (!initialLoadDone.current) setLoading(true);
   const userRole = user?.role || 'admin';
   setCurrentRole(userRole);
   setCurrentUser({ name: user?.name || user?.email, email: user?.email, role: userRole });
   Promise.allSettled([
-   fetchDashboardOverview(accessToken),
-   fetchProjectStatusBreakdownApi(accessToken),
+   fetchDashboardOverview(),
+   fetchProjectStatusBreakdownApi(),
   ]).then(([d, sb]) => {
    if (d.status === 'fulfilled') setKpis(d.value?.data || null);
    if (sb.status === 'fulfilled') setStatusBreakdown(sb.value?.data || null);
   }).finally(() => { initialLoadDone.current = true; setLoading(false); });
- }, [user, accessToken]);
+ }, [user]);
 
  // useRoleGuard already redirects both the unauthenticated case (to
  // /login?returnTo=..., preserving destination) and the wrong-role case —
@@ -2150,37 +2075,40 @@ export default function AdminPanel() {
     </aside>
 
     <div className="flex min-h-0 flex-1 flex-col">
-     <div role="tablist" aria-label="Portal navigation" className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12">
-      {adminPanelTabs.map((tab) => (
-       <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-        className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
-         activeTab === tab.id ? 'border-brand font-bold text-brand' : 'border-transparent font-semibold text-ink-muted hover:border-brand/40 hover:text-ink'
-        }`}>
-        <Icon name={tab.icon} className="text-lg" />{tab.label}
-       </button>
-      ))}
-     </div>
+     <Tabs
+      tabs={adminPanelTabs.map((tab) => ({ key: tab.id, label: tab.label, icon: <Icon name={tab.icon} className="text-lg" /> }))}
+      active={activeTab}
+      onChange={setActiveTab}
+      variant="underline"
+      ariaLabel="Portal navigation"
+      tabClassName={(selected) =>
+       `flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
+        selected ? 'border-brand font-bold text-brand' : 'border-transparent font-semibold text-ink-muted hover:border-brand/40 hover:text-ink'
+       }`
+      }
+      className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12"
+     />
 
      <div className="min-w-0 flex-1 overflow-auto px-4 py-stack-lg sm:px-6 lg:px-10 xl:px-12 ">
-      {activeTab === 'overview' && <Dashboard kpis={kpis} statusBreakdown={statusBreakdown} accessToken={accessToken} setActiveTab={setActiveTab} />}
-      {activeTab === 'content' && <ContentManagement accessToken={accessToken} />}
-      {activeTab === 'contacts' && <ContactsManagement accessToken={accessToken} />}
-      {activeTab === 'projects' && <ProjectsManagement accessToken={accessToken} />}
-      {activeTab === 'users' && <UserManagement accessToken={accessToken} currentRole={currentRole} />}
-      {activeTab === 'employees' && <EmployeeManagement accessToken={accessToken} />}
-      {activeTab === 'clients' && <ClientManagement accessToken={accessToken} />}
-      {activeTab === 'roles' && <RolesManagement accessToken={accessToken} />}
-      {activeTab === 'permissions' && <PermissionsManagement accessToken={accessToken} />}
-      {activeTab === 'media' && <MediaManagement accessToken={accessToken} />}
-      {activeTab === 'notifications' && <NotificationsManagement accessToken={accessToken} />}
-      {activeTab === 'reports' && <ReportsManagement accessToken={accessToken} />}
-      {activeTab === 'training' && <TrainingManagement accessToken={accessToken} />}
-      {activeTab === 'careers' && <CareersManagement accessToken={accessToken} />}
-      {activeTab === 'comments' && <CommentsManagement accessToken={accessToken} />}
-      {activeTab === 'newsletter' && <NewsletterManagement accessToken={accessToken} />}
-      {activeTab === 'analytics' && <AnalyticsManagement accessToken={accessToken} />}
-      {activeTab === 'settings' && <SettingsManagement accessToken={accessToken} />}
-      {activeTab === 'logs' && <AuditLogsManagement accessToken={accessToken} />}
+      {activeTab === 'overview' && <Dashboard kpis={kpis} statusBreakdown={statusBreakdown} setActiveTab={setActiveTab} />}
+      {activeTab === 'content' && <ContentManagement />}
+      {activeTab === 'contacts' && <ContactsManagement />}
+      {activeTab === 'projects' && <ProjectsManagement />}
+      {activeTab === 'users' && <UserManagement currentRole={currentRole} />}
+      {activeTab === 'employees' && <EmployeeManagement />}
+      {activeTab === 'clients' && <ClientManagement />}
+      {activeTab === 'roles' && <RolesManagement />}
+      {activeTab === 'permissions' && <PermissionsManagement />}
+      {activeTab === 'media' && <MediaManagement />}
+      {activeTab === 'notifications' && <NotificationsManagement />}
+      {activeTab === 'reports' && <ReportsManagement />}
+      {activeTab === 'training' && <TrainingManagement />}
+      {activeTab === 'careers' && <CareersManagement />}
+      {activeTab === 'comments' && <CommentsManagement />}
+      {activeTab === 'newsletter' && <NewsletterManagement />}
+      {activeTab === 'analytics' && <AnalyticsManagement />}
+      {activeTab === 'settings' && <SettingsManagement />}
+      {activeTab === 'logs' && <AuditLogsManagement />}
      </div>
     </div>
    </div>

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { forgotPassword } from '../api/auth.js';
 import Icon from '../components/ui/Icon.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
+import { forgotPasswordSchema, parseWithSchema } from '../schemas/auth.schema.js';
 
 // Backend deliberately returns the same generic response for an existing vs.
 // nonexistent email (enumeration-safe — see backend/app/routers/auth.py's
@@ -19,8 +20,15 @@ export default function ForgotPassword() {
 
  const handleSubmit = async (e) => {
   e.preventDefault();
-  setSubmitting(true);
   setError('');
+
+  const { success, errors } = parseWithSchema(forgotPasswordSchema, { email });
+  if (!success) {
+   setError(Object.values(errors)[0]);
+   return;
+  }
+
+  setSubmitting(true);
   try {
    await forgotPassword(email);
    setSubmitted(true);

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { submitJobApplication } from '../../api/careers.js';
+import { validateApplyForm } from '../../schemas/careers.schema.js';
+import Modal from '../ui/Modal.jsx';
 
 const TEXT_FIELDS = [
  { name: 'full_name', label: 'Full Name', type: 'text', required: true },
@@ -21,14 +23,7 @@ export default function ApplyForm({ job, onClose }) {
 
  const setField = (name) => (e) => setForm((f) => ({ ...f, [name]: e.target.value }));
 
- const validate = () => {
-  const next = {};
-  if (!form.full_name.trim()) next.full_name = 'Full name is required';
-  if (!/^\S+@\S+\.\S+$/.test(form.email)) next.email = 'Enter a valid email address';
-  if (form.linkedin_url && !/^https?:\/\/.+/.test(form.linkedin_url)) next.linkedin_url = 'Enter a valid URL';
-  if (!resume) next.resume = 'Please attach your resume';
-  return next;
- };
+ const validate = () => validateApplyForm(form, resume);
 
  const handleSubmit = async (e) => {
   e.preventDefault();
@@ -47,26 +42,12 @@ export default function ApplyForm({ job, onClose }) {
  };
 
  return (
-  <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true">
-   <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-stack-lg text-ink dark:bg-dark-surface dark:text-dark-ink">
-    <div className="mb-2 flex items-start justify-between">
-     <div>
-      <h3 className="font-display text-headline-sm text-brand-dark dark:text-dark-brand">Apply for {job.title}</h3>
-      <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">
-       {job.department} · {job.location}
-      </p>
-     </div>
-     <button
-      type="button"
-      onClick={onClose}
-      aria-label="Close apply form"
-      className="text-ink-muted transition-colors hover:text-brand"
-     >
-      ✕
-     </button>
-    </div>
+  <Modal open onClose={onClose} title={`Apply for ${job.title}`} size="lg">
+   <p className="-mt-3 mb-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
+    {job.department} · {job.location}
+   </p>
 
-    {status === 'success' ? (
+   {status === 'success' ? (
      <div className="mt-6">
       <p className="mb-4 text-body-md text-brand">
        Thank you — your application for {job.title} has been submitted successfully.
@@ -144,7 +125,6 @@ export default function ApplyForm({ job, onClose }) {
       </div>
      </form>
     )}
-   </div>
-  </div>
+  </Modal>
  );
 }

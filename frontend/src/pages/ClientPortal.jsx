@@ -7,8 +7,11 @@ import StatusBadge from '../components/ui/StatusBadge.jsx';
 import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import EmptyState from '../components/ui/EmptyState.jsx';
+import { PortalTable } from '../components/ui/ResponsiveTable.jsx';
+import Tabs from '../components/ui/Tabs.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
+import useAsyncAction from '../hooks/useAsyncAction.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import { clientPortalTabs } from '../data/portal.js';
 import { fetchMyProfile, fetchMyProjects, fetchMyInvoices, fetchMyTickets, fetchMyPayments, fetchMyMeetings, fetchMyFiles, fetchMyReports, createTicket as createTicketApi } from '../api/clients.js';
@@ -65,98 +68,81 @@ function Overview({ profile, projects, invoices, tickets }) {
 }
 
 function Projects({ projects }) {
+ if (projects.length === 0) {
+  return (
+   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+    <EmptyState icon="folder" title="No projects yet" description="Your projects will appear here." />
+   </div>
+  );
+ }
  return (
-  <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-   {projects.length === 0
-    ? <div className="p-stack-lg"><EmptyState icon="folder" title="No projects yet" description="Your projects will appear here." /></div>
-    : (
-     <table className="w-full text-left">
-      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-       <tr>
-        <th className="px-stack-lg py-4">Project</th>
-        <th className="px-stack-lg py-4">Progress</th>
-        <th className="px-stack-lg py-4">Deadline</th>
-        <th className="px-stack-lg py-4">Budget</th>
-        <th className="px-stack-lg py-4">Status</th>
-       </tr>
-      </thead>
-      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {projects.map((p) => (
-        <tr key={p.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-         <td data-label="Project" className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{p.title}</td>
-         <td data-label="Progress" className="px-stack-lg py-4">
-          <div className="flex items-center gap-3">
-           <div className="h-2 w-24 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
-            <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress}%` }} />
-           </div>
-           <span className="text-body-sm text-ink-muted dark:text-white">{p.progress}%</span>
-          </div>
-         </td>
-         <td data-label="Deadline" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.deadline}</td>
-         <td data-label="Budget" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{p.budget}</td>
-         <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[p.status] || 'neutral'}>{p.status.replace('_', ' ')}</StatusBadge></td>
-        </tr>
-       ))}
-      </tbody>
-     </table>
-    )}
-  </div>
+  <PortalTable
+   columns={[
+    { key: 'title', label: 'Project', className: 'font-body text-body-md text-brand-dark dark:text-dark-brand' },
+    {
+     key: 'progress', label: 'Progress',
+     render: (_val, row) => (
+      <div className="flex items-center gap-3">
+       <div className="h-2 w-24 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
+        <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${row.progress}%` }} />
+       </div>
+       <span className="text-body-sm text-ink-muted dark:text-white">{row.progress}%</span>
+      </div>
+     ),
+    },
+    { key: 'deadline', label: 'Deadline', className: 'text-body-md text-ink-muted dark:text-white' },
+    { key: 'budget', label: 'Budget', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+    {
+     key: 'status', label: 'Status',
+     render: (val) => <StatusBadge variant={STATUS_VARIANTS[val] || 'neutral'}>{val.replace('_', ' ')}</StatusBadge>,
+    },
+   ]}
+   rows={projects}
+  />
  );
 }
 
 function Invoices({ invoices }) {
+ if (invoices.length === 0) {
+  return (
+   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+    <EmptyState icon="receipt" title="No invoices yet" description="Your invoices will appear here." />
+   </div>
+  );
+ }
  return (
-  <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-   {invoices.length === 0
-    ? <div className="p-stack-lg"><EmptyState icon="receipt" title="No invoices yet" description="Your invoices will appear here." /></div>
-    : (
-     <table className="w-full text-left">
-      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-       <tr>
-        <th className="px-stack-lg py-4">Invoice</th>
-        <th className="px-stack-lg py-4">Amount</th>
-        <th className="px-stack-lg py-4">Issued</th>
-        <th className="px-stack-lg py-4">Due</th>
-        <th className="px-stack-lg py-4">Status</th>
-       </tr>
-      </thead>
-      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {invoices.map((inv) => (
-        <tr key={inv.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-         <td data-label="Invoice" className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{inv.id}</td>
-         <td data-label="Amount" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">${inv.amount.toLocaleString()}</td>
-         <td data-label="Issued" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{inv.issueDate}</td>
-         <td data-label="Due" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{inv.dueDate}</td>
-         <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[inv.status] || 'neutral'}>{inv.status}</StatusBadge></td>
-        </tr>
-       ))}
-      </tbody>
-     </table>
-    )}
-  </div>
+  <PortalTable
+   columns={[
+    { key: 'id', label: 'Invoice', className: 'font-body text-body-md text-brand-dark dark:text-dark-brand' },
+    { key: 'amount', label: 'Amount', className: 'text-body-md text-brand-dark dark:text-dark-brand', render: (val) => `$${val.toLocaleString()}` },
+    { key: 'issueDate', label: 'Issued', className: 'text-body-md text-ink-muted dark:text-white' },
+    { key: 'dueDate', label: 'Due', className: 'text-body-md text-ink-muted dark:text-white' },
+    { key: 'status', label: 'Status', render: (val) => <StatusBadge variant={STATUS_VARIANTS[val] || 'neutral'}>{val}</StatusBadge> },
+   ]}
+   rows={invoices}
+  />
  );
 }
 
 function Tickets({ tickets, onNewTicket }) {
  const [newTicket, setNewTicket] = useState({ subject: '', description: '' });
  const [showForm, setShowForm] = useState(false);
- const [submitting, setSubmitting] = useState(false);
  const [error, setError] = useState('');
+ const { run, isPending: submitting } = useAsyncAction();
 
  const handleSubmit = async (e) => {
   e.preventDefault();
   if (!newTicket.subject.trim()) return;
-  setSubmitting(true);
   setError('');
-  try {
-   await onNewTicket(newTicket.subject, newTicket.description);
-   setNewTicket({ subject: '', description: '' });
-   setShowForm(false);
-  } catch (err) {
-   setError(err?.message || 'Could not submit the ticket. Please try again.');
-  } finally {
-   setSubmitting(false);
-  }
+  await run(async () => {
+   try {
+    await onNewTicket(newTicket.subject, newTicket.description);
+    setNewTicket({ subject: '', description: '' });
+    setShowForm(false);
+   } catch (err) {
+    setError(err?.message || 'Could not submit the ticket. Please try again.');
+   }
+  });
  };
 
  return (
@@ -181,204 +167,167 @@ function Tickets({ tickets, onNewTicket }) {
      </div>
     </form>
    )}
-   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-    {tickets.length === 0
-     ? <div className="p-stack-lg"><EmptyState icon="support" title="No tickets yet" description="Submit a ticket to get support." /></div>
-     : (
-      <table className="w-full text-left">
-       <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-        <tr>
-         <th className="px-stack-lg py-4">ID</th>
-         <th className="px-stack-lg py-4">Subject</th>
-         <th className="px-stack-lg py-4">Priority</th>
-         <th className="px-stack-lg py-4">Created</th>
-         <th className="px-stack-lg py-4">Status</th>
-        </tr>
-       </thead>
-       <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-        {tickets.map((t) => (
-         <tr key={t.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-          <td data-label="ID" className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{t.id}</td>
-          <td data-label="Subject" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">{t.subject}</td>
-          <td data-label="Priority" className="px-stack-lg py-4"><Badge className="text-label-caps">{t.priority}</Badge></td>
-          <td data-label="Created" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{t.createdAt}</td>
-          <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[t.status] || 'neutral'}>{t.status}</StatusBadge></td>
-         </tr>
-        ))}
-       </tbody>
-      </table>
-     )}
-   </div>
+   {tickets.length === 0
+    ? (
+     <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+      <EmptyState icon="support" title="No tickets yet" description="Submit a ticket to get support." />
+     </div>
+    )
+    : (
+     <PortalTable
+      columns={[
+       { key: 'id', label: 'ID', className: 'font-label-caps text-label-caps text-brand' },
+       { key: 'subject', label: 'Subject', className: 'text-body-md text-brand-dark dark:text-dark-brand' },
+       { key: 'priority', label: 'Priority', render: (val) => <Badge className="text-label-caps">{val}</Badge> },
+       { key: 'createdAt', label: 'Created', className: 'text-body-md text-ink-muted dark:text-white' },
+       { key: 'status', label: 'Status', render: (val) => <StatusBadge variant={STATUS_VARIANTS[val] || 'neutral'}>{val}</StatusBadge> },
+      ]}
+      rows={tickets}
+     />
+    )}
   </div>
  );
 }
 
 function Payments({ payments }) {
+ if (payments.length === 0) {
+  return (
+   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+    <EmptyState icon="payments" title="No payments yet" description="Your payment history will appear here." />
+   </div>
+  );
+ }
  return (
-  <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-   {payments.length === 0
-    ? <div className="p-stack-lg"><EmptyState icon="payments" title="No payments yet" description="Your payment history will appear here." /></div>
-    : (
-     <table className="w-full text-left">
-      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-       <tr>
-        <th className="px-stack-lg py-4">Payment ID</th>
-        <th className="px-stack-lg py-4">Invoice</th>
-        <th className="px-stack-lg py-4">Amount</th>
-        <th className="px-stack-lg py-4">Method</th>
-        <th className="px-stack-lg py-4">Date</th>
-        <th className="px-stack-lg py-4">Status</th>
-       </tr>
-      </thead>
-      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {payments.map((p) => (
-        <tr key={p.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-         <td data-label="Payment ID" className="px-stack-lg py-4 font-label-caps text-label-caps text-brand">{p.id}</td>
-         <td data-label="Invoice" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.invoice}</td>
-         <td data-label="Amount" className="px-stack-lg py-4 text-body-md text-brand-dark dark:text-dark-brand">${p.amount.toLocaleString()}</td>
-         <td data-label="Method" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.method}</td>
-         <td data-label="Date" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{p.date}</td>
-         <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[p.status] || 'neutral'}>{p.status}</StatusBadge></td>
-        </tr>
-       ))}
-      </tbody>
-     </table>
-    )}
-  </div>
+  <PortalTable
+   columns={[
+    { key: 'id', label: 'Payment ID', className: 'font-label-caps text-label-caps text-brand' },
+    { key: 'invoice', label: 'Invoice', className: 'text-body-md text-ink-muted dark:text-white' },
+    { key: 'amount', label: 'Amount', className: 'text-body-md text-brand-dark dark:text-dark-brand', render: (val) => `$${val.toLocaleString()}` },
+    { key: 'method', label: 'Method', className: 'text-body-md text-ink-muted dark:text-white' },
+    { key: 'date', label: 'Date', className: 'text-body-md text-ink-muted dark:text-white' },
+    { key: 'status', label: 'Status', render: (val) => <StatusBadge variant={STATUS_VARIANTS[val] || 'neutral'}>{val}</StatusBadge> },
+   ]}
+   rows={payments}
+  />
  );
 }
 
 function Files({ files }) {
+ if (files.length === 0) {
+  return (
+   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+    <EmptyState icon="folder_open" title="No files yet" description="Shared files will appear here." />
+   </div>
+  );
+ }
  return (
-  <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-   {files.length === 0
-    ? <div className="p-stack-lg"><EmptyState icon="folder_open" title="No files yet" description="Shared files will appear here." /></div>
-    : (
-     <table className="w-full text-left">
-      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-       <tr>
-        <th className="px-stack-lg py-4">Name</th>
-        <th className="px-stack-lg py-4">Category</th>
-        <th className="px-stack-lg py-4">Size</th>
-        <th className="px-stack-lg py-4">Uploaded</th>
-        <th className="px-stack-lg py-4">By</th>
-        <th className="px-stack-lg py-4"></th>
-       </tr>
-      </thead>
-      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {files.map((f) => (
-        <tr key={f.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-         <td data-label="Name" className="px-stack-lg py-4">
-          <div className="flex items-center gap-2">
-           <Icon name="description" className="text-lg text-brand" />
-           <span className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{f.name}</span>
-          </div>
-         </td>
-         <td data-label="Category" className="px-stack-lg py-4"><Badge className="text-label-caps">{f.category}</Badge></td>
-         <td data-label="Size" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.size}</td>
-         <td data-label="Uploaded" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedOn}</td>
-         <td data-label="By" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{f.uploadedBy}</td>
-         <td data-label="Name" className="px-stack-lg py-4">
-          {f.file_url ? (
-           <a href={f.file_url} target="_blank" rel="noreferrer" aria-label={`Open ${f.name}`} className="text-brand hover:text-brand-dark" title="Open file">
-            <Icon name="open_in_new" className="text-xl" />
-           </a>
-          ) : (
-           <span className="text-ink-muted/40" title="No file attached"><Icon name="open_in_new" className="text-xl" /></span>
-          )}
-         </td>
-        </tr>
-       ))}
-      </tbody>
-     </table>
-    )}
-  </div>
+  <PortalTable
+   columns={[
+    {
+     key: 'name', label: 'Name',
+     render: (val, row) => (
+      <div className="flex items-center gap-2">
+       <Icon name="description" className="text-lg text-brand" />
+       <span className="text-body-md font-semibold text-brand-dark dark:text-dark-brand">{row.name}</span>
+      </div>
+     ),
+    },
+    { key: 'category', label: 'Category', render: (val) => <Badge className="text-label-caps">{val}</Badge> },
+    { key: 'size', label: 'Size', className: 'text-body-md text-ink-muted dark:text-white' },
+    { key: 'uploadedOn', label: 'Uploaded', className: 'text-body-md text-ink-muted dark:text-white' },
+    { key: 'uploadedBy', label: 'By', className: 'text-body-md text-ink-muted dark:text-white' },
+    {
+     key: 'file_url', label: '',
+     render: (val, row) => (
+      row.file_url ? (
+       <a href={row.file_url} target="_blank" rel="noreferrer" aria-label={`Open ${row.name}`} className="text-brand hover:text-brand-dark" title="Open file">
+        <Icon name="open_in_new" className="text-xl" />
+       </a>
+      ) : (
+       <span className="text-ink-muted/40" title="No file attached"><Icon name="open_in_new" className="text-xl" /></span>
+      )
+     ),
+    },
+   ]}
+   rows={files}
+  />
  );
 }
 
 function Meetings({ meetings }) {
+ if (meetings.length === 0) {
+  return (
+   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+    <EmptyState icon="video_call" title="No meetings scheduled" description="Upcoming meetings will appear here." />
+   </div>
+  );
+ }
  return (
-  <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-   {meetings.length === 0
-    ? <div className="p-stack-lg"><EmptyState icon="video_call" title="No meetings scheduled" description="Upcoming meetings will appear here." /></div>
-    : (
-     <table className="w-full text-left">
-      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-       <tr>
-        <th className="px-stack-lg py-4">Meeting</th>
-        <th className="px-stack-lg py-4">Date & Time</th>
-        <th className="px-stack-lg py-4">Duration</th>
-        <th className="px-stack-lg py-4">Attendees</th>
-        <th className="px-stack-lg py-4">Status</th>
-        <th className="px-stack-lg py-4">Action</th>
-       </tr>
-      </thead>
-      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {meetings.map((m) => (
-        <tr key={m.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-         <td data-label="Meeting" className="px-stack-lg py-4 font-body text-body-md text-brand-dark dark:text-dark-brand">{m.title}</td>
-         <td data-label="Date & Time" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{m.date} {m.time}</td>
-         <td data-label="Duration" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{m.duration}</td>
-         <td data-label="Attendees" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-white">{(m.attendees ?? []).join(', ') || '—'}</td>
-         <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={STATUS_VARIANTS[m.status] || 'neutral'}>{m.status}</StatusBadge></td>
-         <td data-label="Action" className="px-stack-lg py-4">
-          {m.status === 'upcoming' && m.meeting_link && (
-           <a href={m.meeting_link} target="_blank" rel="noreferrer"
-            className="inline-flex items-center gap-1 rounded bg-brand px-3 py-1.5 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark">
-            <Icon name="videocam" className="text-base" /> Join
-           </a>
-          )}
-         </td>
-        </tr>
-       ))}
-      </tbody>
-     </table>
-    )}
-  </div>
+  <PortalTable
+   columns={[
+    { key: 'title', label: 'Meeting', className: 'font-body text-body-md text-brand-dark dark:text-dark-brand' },
+    {
+     key: 'date', label: 'Date & Time', className: 'text-body-md text-ink-muted dark:text-white',
+     render: (_val, row) => `${row.date} ${row.time}`,
+    },
+    { key: 'duration', label: 'Duration', className: 'text-body-md text-ink-muted dark:text-white' },
+    {
+     key: 'attendees', label: 'Attendees', className: 'text-body-sm text-ink-muted dark:text-white',
+     render: (val) => (val ?? []).join(', ') || '—',
+    },
+    { key: 'status', label: 'Status', render: (val) => <StatusBadge variant={STATUS_VARIANTS[val] || 'neutral'}>{val}</StatusBadge> },
+    {
+     key: 'meeting_link', label: 'Action',
+     render: (val, row) => (
+      row.status === 'upcoming' && row.meeting_link && (
+       <a href={row.meeting_link} target="_blank" rel="noreferrer"
+        className="inline-flex items-center gap-1 rounded bg-brand px-3 py-1.5 font-label-caps text-label-caps uppercase text-white transition-colors hover:bg-brand-dark">
+        <Icon name="videocam" className="text-base" /> Join
+       </a>
+      )
+     ),
+    },
+   ]}
+   rows={meetings}
+  />
  );
 }
 
 function Reports({ reports }) {
+ if (reports.length === 0) {
+  return (
+   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white p-stack-lg dark:border-dark-outline-variant dark:bg-dark-surface">
+    <EmptyState icon="bar_chart" title="No reports yet" description="Generated reports will appear here." />
+   </div>
+  );
+ }
  return (
-  <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-white dark:border-dark-outline-variant dark:bg-dark-surface">
-   {reports.length === 0
-    ? <div className="p-stack-lg"><EmptyState icon="bar_chart" title="No reports yet" description="Generated reports will appear here." /></div>
-    : (
-     <table className="w-full text-left">
-      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-       <tr>
-        <th className="px-stack-lg py-4">Report</th>
-        <th className="px-stack-lg py-4">Type</th>
-        <th className="px-stack-lg py-4">Period</th>
-        <th className="px-stack-lg py-4">Generated</th>
-        <th className="px-stack-lg py-4">Size</th>
-        <th className="px-stack-lg py-4"></th>
-       </tr>
-      </thead>
-      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
-       {reports.map((r) => (
-        <tr key={r.id} className="transition-colors hover:bg-surface-low dark:hover:bg-dark-surface-low">
-         <td data-label="Report" className="px-stack-lg py-4">
-          <div className="flex items-center gap-2">
-           <Icon name="bar_chart" className="text-lg text-brand" />
-           <span className="text-body-md text-brand-dark dark:text-dark-brand">{r.title}</span>
-          </div>
-         </td>
-         <td data-label="Type" className="px-stack-lg py-4"><Badge className="text-label-caps">{r.type}</Badge></td>
-         <td data-label="Period" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.period}</td>
-         <td data-label="Generated" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.generatedOn}</td>
-         <td data-label="Size" className="px-stack-lg py-4 text-body-md text-ink-muted dark:text-white">{r.size}</td>
-         <td data-label="Report" className="px-stack-lg py-4">
-          {r.file_url
-           ? <a href={r.file_url} target="_blank" rel="noreferrer" aria-label={`Download ${r.title}`} className="text-brand hover:text-brand-dark"><Icon name="download" className="text-xl" /></a>
-           : <span className="text-ink-muted/40"><Icon name="download" className="text-xl" /></span>}
-         </td>
-        </tr>
-       ))}
-      </tbody>
-     </table>
-    )}
-  </div>
+  <PortalTable
+   columns={[
+    {
+     key: 'title', label: 'Report',
+     render: (_val, row) => (
+      <div className="flex items-center gap-2">
+       <Icon name="bar_chart" className="text-lg text-brand" />
+       <span className="text-body-md text-brand-dark dark:text-dark-brand">{row.title}</span>
+      </div>
+     ),
+    },
+    { key: 'type', label: 'Type', render: (val) => <Badge className="text-label-caps">{val}</Badge> },
+    { key: 'period', label: 'Period', className: 'text-body-md text-ink-muted dark:text-white' },
+    { key: 'generatedOn', label: 'Generated', className: 'text-body-md text-ink-muted dark:text-white' },
+    { key: 'size', label: 'Size', className: 'text-body-md text-ink-muted dark:text-white' },
+    {
+     key: 'file_url', label: '',
+     render: (val, row) => (
+      row.file_url
+       ? <a href={row.file_url} target="_blank" rel="noreferrer" aria-label={`Download ${row.title}`} className="text-brand hover:text-brand-dark"><Icon name="download" className="text-xl" /></a>
+       : <span className="text-ink-muted/40"><Icon name="download" className="text-xl" /></span>
+     ),
+    },
+   ]}
+   rows={reports}
+  />
  );
 }
 
@@ -443,7 +392,7 @@ const normalizeReports = (arr) => (Array.isArray(arr) ? arr.map(normalizeReport)
 
 export default function ClientPortal() {
  useDocumentTitle('Client Portal | CoreFusion Technologies');
- const { user, accessToken, initializing, logout } = useAuth();
+ const { user, initializing, logout } = useAuth();
  const { denied } = useRoleGuard('client', '/login');
  const navigate = useNavigate();
  const [activeTab, setActiveTab] = useState('overview');
@@ -459,17 +408,17 @@ export default function ClientPortal() {
  const [reports, setReports] = useState([]);
 
  useEffect(() => {
-  if (!user || !accessToken) { setLoading(false); return; }
+  if (!user) { setLoading(false); return; }
   if (!initialLoadDone.current) setLoading(true);
   Promise.allSettled([
-   fetchMyProfile(accessToken).then((res) => res?.data),
-   fetchMyProjects(accessToken).then((res) => res?.data),
-   fetchMyInvoices(accessToken).then((res) => res?.data),
-   fetchMyTickets(accessToken).then((res) => res?.data),
-   fetchMyPayments(accessToken).then((res) => res?.data),
-   fetchMyMeetings(accessToken).then((res) => res?.data),
-   fetchMyFiles(accessToken).then((res) => res?.data),
-   fetchMyReports(accessToken).then((res) => res?.data),
+   fetchMyProfile().then((res) => res?.data),
+   fetchMyProjects().then((res) => res?.data),
+   fetchMyInvoices().then((res) => res?.data),
+   fetchMyTickets().then((res) => res?.data),
+   fetchMyPayments().then((res) => res?.data),
+   fetchMyMeetings().then((res) => res?.data),
+   fetchMyFiles().then((res) => res?.data),
+   fetchMyReports().then((res) => res?.data),
   ]).then(([p, pr, inv, t, pay, m, f, r]) => {
    if (p.status === 'fulfilled' && p.value) setProfile(p.value);
    if (pr.status === 'fulfilled' && pr.value) setProjects(normalizeProjects(pr.value));
@@ -480,15 +429,15 @@ export default function ClientPortal() {
    if (f.status === 'fulfilled' && f.value) setFiles(normalizeFiles(f.value));
    if (r.status === 'fulfilled' && r.value) setReports(normalizeReports(r.value));
   }).finally(() => { initialLoadDone.current = true; setLoading(false); });
- }, [user, accessToken]);
+ }, [user]);
 
  const fetchTab = async (tabId) => {
-  if (!accessToken) return;
+  if (!user) return;
   const fetchers = {
-   payments: () => fetchMyPayments(accessToken).then((res) => { if (res?.data) setPayments(normalizePayments(res.data)); }),
-   files: () => fetchMyFiles(accessToken).then((res) => { if (res?.data) setFiles(normalizeFiles(res.data)); }),
-   meetings: () => fetchMyMeetings(accessToken).then((res) => { if (res?.data) setMeetings(normalizeMeetings(res.data)); }),
-   reports: () => fetchMyReports(accessToken).then((res) => { if (res?.data) setReports(normalizeReports(res.data)); }),
+   payments: () => fetchMyPayments().then((res) => { if (res?.data) setPayments(normalizePayments(res.data)); }),
+   files: () => fetchMyFiles().then((res) => { if (res?.data) setFiles(normalizeFiles(res.data)); }),
+   meetings: () => fetchMyMeetings().then((res) => { if (res?.data) setMeetings(normalizeMeetings(res.data)); }),
+   reports: () => fetchMyReports().then((res) => { if (res?.data) setReports(normalizeReports(res.data)); }),
   };
   if (fetchers[tabId]) await fetchers[tabId]();
  };
@@ -499,8 +448,8 @@ export default function ClientPortal() {
  };
 
  const handleNewTicket = async (subject, description) => {
-  if (!user || !accessToken) return;
-  const res = await createTicketApi(accessToken, { subject, description: description || subject, priority: 'medium' });
+  if (!user) return;
+  const res = await createTicketApi({ subject, description: description || subject, priority: 'medium' });
   const d = res?.data;
   setTickets((prev) => [normalizeTicket(d), ...prev]);
  };
@@ -542,16 +491,19 @@ export default function ClientPortal() {
     </aside>
 
     <div className="flex min-h-0 flex-1 flex-col">
-     <div role="tablist" aria-label="Portal navigation" className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12">
-      {clientPortalTabs.map((tab) => (
-       <button key={tab.id} onClick={() => handleTabChange(tab.id)}
-        className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
-         activeTab === tab.id ? 'border-white font-bold text-white' : 'border-transparent font-semibold text-white/70 hover:border-white/40 hover:text-white'
-        }`}>
-        <Icon name={tab.icon} className="text-lg" />{tab.label}
-       </button>
-      ))}
-     </div>
+     <Tabs
+      tabs={clientPortalTabs.map((tab) => ({ key: tab.id, label: tab.label, icon: <Icon name={tab.icon} className="text-lg" /> }))}
+      active={activeTab}
+      onChange={handleTabChange}
+      variant="underline"
+      ariaLabel="Portal navigation"
+      tabClassName={(selected) =>
+       `flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 font-label-caps text-label-caps uppercase transition-colors ${
+        selected ? 'border-white font-bold text-white' : 'border-transparent font-semibold text-white/70 hover:border-white/40 hover:text-white'
+       }`
+      }
+      className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12"
+     />
 
      <div className="min-w-0 flex-1 overflow-y-auto px-4 py-stack-lg sm:px-6 lg:px-10 xl:px-12 ">
       {activeTab === 'overview' && <Overview profile={profile} projects={projects} invoices={invoices} tickets={tickets} />}

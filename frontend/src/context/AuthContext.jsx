@@ -15,18 +15,12 @@ const AuthContext = createContext(null);
 // boot; there is no Supabase Auth, no localStorage/sessionStorage token, and
 // no Authorization: Bearer header anywhere in this codebase.
 //
-// `accessToken` below is a deliberate compatibility shim, not a real
-// credential: many existing components (ClientPortal, EmployeePortal,
-// AdminPanel, SuperAdminPanel, ContentManager) gate data fetches on
-// `if (!accessToken) return` and thread the value into api/*.js functions
-// that accept a `token` argument. Since the real transport is now the
-// browser's automatic cookie handling (`credentials: 'include'` in
-// api/client.js, which ignores this value entirely), `accessToken` is set to
-// a non-secret sentinel string while authenticated and `null` otherwise —
-// preserving every existing truthy/falsy gate without threading a rewrite
-// through those four large files. It holds no usable value and cannot be
-// replayed anywhere.
-const AUTHENTICATED_SENTINEL = 'cf-cookie-session';
+// There used to be an `accessToken` compatibility shim here (a non-secret
+// sentinel string) so legacy components could gate on `if (!accessToken)`
+// and thread a value into api/*.js functions that accepted a `token`
+// argument. Both call sites have since been removed — components gate on
+// `status`/`user` directly, and api/*.js functions no longer accept a
+// token argument at all — so the shim is gone.
 
 export function AuthProvider({ children }) {
  const [user, setUser] = useState(null);
@@ -106,7 +100,6 @@ export function AuthProvider({ children }) {
    isLoading: status === 'loading',
    initializing: status === 'loading',
    role: user?.role ?? null,
-   accessToken: status === 'authenticated' ? AUTHENTICATED_SENTINEL : null,
    login,
    logout,
    register,
@@ -128,7 +121,6 @@ export function useAuth() {
    isLoading: false,
    initializing: false,
    role: null,
-   accessToken: null,
    login: async () => null,
    logout: async () => {},
    register: async () => null,

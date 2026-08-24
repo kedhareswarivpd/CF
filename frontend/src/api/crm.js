@@ -1,74 +1,74 @@
 import { apiRequest, toQueryString } from './client.js';
 
 // ---------- Leads ----------
-export function fetchLeads(token, params = {}) {
-  return apiRequest(`/leads${toQueryString(params)}`, { token });
+export function fetchLeads(params = {}) {
+  return apiRequest(`/leads${toQueryString(params)}`, {});
 }
 
-export function createLead(token, payload) {
-  return apiRequest('/leads', { method: 'POST', token, body: payload });
+export function createLead(payload) {
+  return apiRequest('/leads', { method: 'POST', body: payload });
 }
 
-export function updateLead(token, leadId, payload) {
-  return apiRequest(`/leads/${leadId}`, { method: 'PATCH', token, body: payload });
+export function updateLead(leadId, payload) {
+  return apiRequest(`/leads/${leadId}`, { method: 'PATCH', body: payload });
 }
 
 // ---------- Proposals ----------
-export function fetchProposals(token, params = {}) {
-  return apiRequest(`/proposals${toQueryString(params)}`, { token });
+export function fetchProposals(params = {}) {
+  return apiRequest(`/proposals${toQueryString(params)}`, {});
 }
 
-export function createProposal(token, payload) {
-  return apiRequest('/proposals', { method: 'POST', token, body: payload });
+export function createProposal(payload) {
+  return apiRequest('/proposals', { method: 'POST', body: payload });
 }
 
-export function sendProposal(token, proposalId) {
-  return apiRequest(`/proposals/${proposalId}/send`, { method: 'POST', token });
+export function sendProposal(proposalId) {
+  return apiRequest(`/proposals/${proposalId}/send`, { method: 'POST' });
 }
 
-export function acceptProposal(token, proposalId) {
-  return apiRequest(`/proposals/${proposalId}/accept`, { method: 'POST', token });
+export function acceptProposal(proposalId) {
+  return apiRequest(`/proposals/${proposalId}/accept`, { method: 'POST' });
 }
 
-export function rejectProposal(token, proposalId) {
-  return apiRequest(`/proposals/${proposalId}/reject`, { method: 'POST', token });
+export function rejectProposal(proposalId) {
+  return apiRequest(`/proposals/${proposalId}/reject`, { method: 'POST' });
 }
 
 // ---------- Contracts ----------
-export function fetchContracts(token, params = {}) {
-  return apiRequest(`/contracts${toQueryString(params)}`, { token });
+export function fetchContracts(params = {}) {
+  return apiRequest(`/contracts${toQueryString(params)}`, {});
 }
 
-export function createContract(token, proposalId) {
-  return apiRequest('/contracts', { method: 'POST', token, body: { proposal_id: proposalId } });
+export function createContract(proposalId) {
+  return apiRequest('/contracts', { method: 'POST', body: { proposal_id: proposalId } });
 }
 
-export function signContract(token, contractId, payload = {}) {
-  return apiRequest(`/contracts/${contractId}/sign`, { method: 'POST', token, body: payload });
+export function signContract(contractId, payload = {}) {
+  return apiRequest(`/contracts/${contractId}/sign`, { method: 'POST', body: payload });
 }
 
 // ---------- Meetings ----------
-export function fetchMeetings(token, params = {}) {
-  return apiRequest(`/meetings${toQueryString(params)}`, { token });
+export function fetchMeetings(params = {}) {
+  return apiRequest(`/meetings${toQueryString(params)}`, {});
 }
 
-export function createMeeting(token, payload) {
-  return apiRequest('/meetings', { method: 'POST', token, body: payload });
+export function createMeeting(payload) {
+  return apiRequest('/meetings', { method: 'POST', body: payload });
 }
 
-export function updateMeeting(token, meetingId, payload) {
-  return apiRequest(`/meetings/${meetingId}`, { method: 'PATCH', token, body: payload });
+export function updateMeeting(meetingId, payload) {
+  return apiRequest(`/meetings/${meetingId}`, { method: 'PATCH', body: payload });
 }
 
-export function deleteMeeting(token, meetingId) {
-  return apiRequest(`/meetings/${meetingId}`, { method: 'DELETE', token });
+export function deleteMeeting(meetingId) {
+  return apiRequest(`/meetings/${meetingId}`, { method: 'DELETE' });
 }
 
 // ---------- Contact Submissions ----------
-export function fetchContactSubmissions(token, params = {}) {
-  return apiRequest(`/contact${toQueryString(params)}`, { token });
+export function fetchContactSubmissions(params = {}) {
+  return apiRequest(`/contact${toQueryString(params)}`, {});
 }
 
-export function updateContactStatus(token, id, status) {
-  return apiRequest(`/contact/${id}`, { method: 'PATCH', token, body: { status } });
+export function updateContactStatus(id, status) {
+  return apiRequest(`/contact/${id}`, { method: 'PATCH', body: { status } });
 }

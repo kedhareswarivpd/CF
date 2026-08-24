@@ -4,7 +4,6 @@ import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
 import Breadcrumbs from '../ui/Breadcrumbs.jsx';
 import useScrollToTop from '../../hooks/useScrollToTop.js';
-import { THEME_STORAGE_KEY } from '../../context/ThemeContext.jsx';
 import { portalPaths } from '../../data/portal.js';
 
 export default function Layout() {
@@ -12,15 +11,8 @@ export default function Layout() {
  const mainRef = useRef(null);
  useScrollToTop();
 
- useEffect(() => {
-  const stored = localStorage.getItem(THEME_STORAGE_KEY);
-  if (stored === 'dark' || stored === 'light') {
-   document.documentElement.classList.toggle('dark', stored === 'dark');
-  } else {
-   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-   document.documentElement.classList.toggle('dark', prefersDark);
-  }
- }, []);
+ // Theme init/persistence is owned exclusively by ThemeProvider (see
+ // context/ThemeContext.jsx) — do not re-read localStorage/prefers-color-scheme here.
 
  // Instant page switch — no fade delay
  useEffect(() => {

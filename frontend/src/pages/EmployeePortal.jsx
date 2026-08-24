@@ -9,6 +9,7 @@ import RowAction from '../components/ui/RowAction.jsx';
 import { FORM_INPUT_CLASS } from '../components/ui/formClasses.js';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
+import useAsyncAction from '../hooks/useAsyncAction.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
  employeeTabsForRole,
@@ -81,7 +82,7 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
  );
 }
 
-function Attendance({ attendance, accessToken, onChange }) {
+function Attendance({ attendance, onChange }) {
  const today = new Date().toISOString().slice(0, 10);
  const isToday = attendance.date === today;
  const [checkedIn, setCheckedIn] = useState(isToday && Boolean(attendance.checkIn));
@@ -104,10 +105,9 @@ function Attendance({ attendance, accessToken, onChange }) {
  const currentTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
  const handleCheckIn = async () => {
-  if (!accessToken) return;
   setLoading(true);
   try {
-   const res = await checkInApi(accessToken);
+   const res = await checkInApi();
    const updated = res?.data;
    const time = toLocalTime(updated?.check_in) || currentTime();
    onChange?.({ ...attendance, checkIn: time, status: 'present' });
@@ -123,10 +123,9 @@ function Attendance({ attendance, accessToken, onChange }) {
  };
 
  const handleCheckOut = async () => {
-  if (!accessToken) return;
   setLoading(true);
   try {
-   const res = await checkOutApi(accessToken);
+   const res = await checkOutApi();
    const updated = res?.data;
    const time = toLocalTime(updated?.check_out) || currentTime();
    onChange?.({ ...attendance, checkOut: time });
@@ -181,7 +180,7 @@ function Attendance({ attendance, accessToken, onChange }) {
  );
 }
 
-function Leaves({ leaves: initialLeaves, accessToken }) {
+function Leaves({ leaves: initialLeaves }) {
  const [showForm, setShowForm] = useState(false);
  const LEAVE_TYPES = [
   { label: 'Earned (Annual)', value: 'earned' },
@@ -235,20 +234,15 @@ function Leaves({ leaves: initialLeaves, accessToken }) {
   setSubmitting(true);
   try {
    let newLeave;
-   if (accessToken) {
-    const res = await applyLeaveApi(accessToken, {
-     type: form.type,
-     start_date: form.from,
-     end_date: form.to,
-     reason: form.reason,
-    });
-    const d = res?.data;
-    const days = Math.ceil((new Date(d.end_date) - new Date(d.start_date)) / 86400000) + 1;
-    newLeave = { id: d.id, type: d.type, from: d.start_date, to: d.end_date, status: d.status, days };
-   } else {
-    const days = Math.ceil((new Date(form.to) - new Date(form.from)) / 86400000) + 1;
-    newLeave = { id: `LV-${Date.now()}`, type: form.type, from: form.from, to: form.to, status: 'pending', days };
-   }
+   const res = await applyLeaveApi({
+    type: form.type,
+    start_date: form.from,
+    end_date: form.to,
+    reason: form.reason,
+   });
+   const d = res?.data;
+   const days = Math.ceil((new Date(d.end_date) - new Date(d.start_date)) / 86400000) + 1;
+   newLeave = { id: d.id, type: d.type, from: d.start_date, to: d.end_date, status: d.status, days };
    setAllLeaves((prev) => [newLeave, ...prev]);
    setForm({ type: 'earned', from: '', to: '', reason: '' });
    setErrors({});
@@ -303,7 +297,7 @@ function Leaves({ leaves: initialLeaves, accessToken }) {
      toast.includes('success') ? 'bg-status-success-bg0/10 border border-green-500/30 text-status-success-text' : 'border border-status-error/30 bg-red-500/10 text-red-800'
     }`}>{toast}</p>
    )}
-   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-surface-container dark:border-dark-outline-variant dark:bg-dark-surface-container">
+   <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant bg-surface-container dark:border-dark-outline-variant dark:bg-dark-surface-container">
     <table className="w-full text-left">
      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
       <tr><th className="px-stack-lg py-4">Type</th><th className="px-stack-lg py-4">From</th><th className="px-stack-lg py-4">To</th><th className="px-stack-lg py-4">Days</th><th className="px-stack-lg py-4">Status</th></tr>
@@ -327,7 +321,7 @@ function Leaves({ leaves: initialLeaves, accessToken }) {
  );
 }
 
-function Timesheets({ timesheets: initialTimesheets, accessToken }) {
+function Timesheets({ timesheets: initialTimesheets }) {
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ date: '', project: '', hours: '', description: '' });
  const [errors, setErrors] = useState({});
@@ -364,9 +358,8 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
  };
 
  const refresh = async () => {
-  if (!accessToken) return;
   try {
-   const res = await apiRequest('/employees/me/timesheets', { token: accessToken });
+   const res = await apiRequest('/employees/me/timesheets');
    setAllEntries(normalizeTimesheets(res?.data));
    showToast('Timesheets refreshed.');
   } catch (err) {
@@ -384,7 +377,7 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
     hours: parseFloat(form.hours),
     description: form.description || null,
    };
-   const res = await submitTimesheet(accessToken, payload);
+   const res = await submitTimesheet(payload);
    const d = res?.data;
    const entry = { id: d.id, date: d.date, project: form.project || 'General', hours: Number(d.hours), description: d.description };
    setAllEntries((prev) => [entry, ...prev]);
@@ -439,7 +432,7 @@ function Timesheets({ timesheets: initialTimesheets, accessToken }) {
      toast.includes('success') || toast.includes('refreshed') ? 'bg-status-success-bg0/10 border border-green-500/30 text-status-success-text' : 'border border-status-error/30 bg-red-500/10 text-red-800'
     }`}>{toast}</p>
    )}
-   <div className="responsive-table overflow-hidden rounded-lg border border-outline-variant bg-surface-container dark:border-dark-outline-variant dark:bg-dark-surface-container">
+   <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant bg-surface-container dark:border-dark-outline-variant dark:bg-dark-surface-container">
     <table className="w-full text-left">
      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
       <tr><th className="px-stack-lg py-4">Date</th><th className="px-stack-lg py-4">Project</th><th className="px-stack-lg py-4">Hours</th><th className="px-stack-lg py-4">Description</th></tr>
@@ -484,7 +477,7 @@ function Payslips({ payslips }) {
     ))}
    </div>
 
-   <div className="responsive-table overflow-hidden rounded-xl border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
+   <div className="responsive-table overflow-x-auto rounded-xl border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
     <div className="border-b border-outline-variant/50 bg-surface-container px-6 py-4 dark:border-dark-outline-variant/50 dark:bg-dark-surface-container/50">
      <h3 className="font-display text-body-md font-bold text-brand-dark dark:text-white">Monthly Compensation History</h3>
     </div>
@@ -561,7 +554,7 @@ function Tasks({ tasks }) {
     ))}
    </div>
 
-   <div className="responsive-table overflow-hidden rounded-xl border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
+   <div className="responsive-table overflow-x-auto rounded-xl border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
     <div className="border-b border-outline-variant/50 bg-surface-container px-6 py-4 dark:border-dark-outline-variant/50 dark:bg-dark-surface-container/50">
      <h3 className="font-display text-body-md font-bold text-brand-dark dark:text-white">Task Assignments & Milestones</h3>
     </div>
@@ -733,7 +726,7 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
 
    <section>
     <h3 className="mb-4 font-display text-headline-sm text-white">My Enrollments</h3>
-    <div className="responsive-table overflow-hidden rounded-xl border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
+    <div className="responsive-table overflow-x-auto rounded-xl border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
      <table className="w-full text-left">
       <thead className="border-b border-outline-variant bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:border-dark-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted">
        <tr>
@@ -827,7 +820,7 @@ const LEAD_STATUS_COLOR = { new: 'neutral', contacted: 'info', requirement_gathe
 const PROPOSAL_STATUS_COLOR = { draft: 'neutral', sent: 'warning', viewed: 'info', accepted: 'success', rejected: 'error' };
 const CONTRACT_STATUS_COLOR = { pending: 'warning', signed: 'success', void: 'error' };
 
-function Leads({ leads, accessToken, onRefresh }) {
+function Leads({ leads, onRefresh }) {
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ company: '', contact_name: '', email: '', phone: '', source: 'website', estimated_value: '' });
  const [errors, setErrors] = useState({});
@@ -875,7 +868,7 @@ function Leads({ leads, accessToken, onRefresh }) {
   if (!validate()) return;
   setSubmitting(true);
   try {
-   await createLead(accessToken, { ...form, estimated_value: form.estimated_value ? Number(form.estimated_value) : null });
+   await createLead({ ...form, estimated_value: form.estimated_value ? Number(form.estimated_value) : null });
    setForm({ company: '', contact_name: '', email: '', phone: '', source: 'website', estimated_value: '' });
    setErrors({});
    setShowForm(false);
@@ -891,7 +884,7 @@ function Leads({ leads, accessToken, onRefresh }) {
  const handleStatusChange = async (leadId, status) => {
   setSavingId(leadId);
   try {
-   await updateLead(accessToken, leadId, { status });
+   await updateLead(leadId, { status });
    onRefresh();
   } finally {
    setSavingId(null);
@@ -917,7 +910,7 @@ function Leads({ leads, accessToken, onRefresh }) {
   try {
    const lead = leads.find((l) => l.id === leadId);
    const existingNote = lead?.notes ? `${lead.notes}\n` : '';
-   await updateLead(accessToken, leadId, { notes: `${existingNote}[Call Log] ${new Date().toLocaleString()}: ${noteDraft}` });
+   await updateLead(leadId, { notes: `${existingNote}[Call Log] ${new Date().toLocaleString()}: ${noteDraft}` });
    onRefresh();
    showToast('Call logged successfully.');
   } catch (err) {
@@ -932,7 +925,7 @@ function Leads({ leads, accessToken, onRefresh }) {
   if (!proposalForm.scope_summary.trim() || !proposalForm.price) { showToast('Please enter scope and price.'); return; }
   setSavingId(leadId);
   try {
-   await createProposal(accessToken, {
+   await createProposal({
     lead_id: leadId,
     scope_summary: proposalForm.scope_summary,
     price: Number(proposalForm.price),
@@ -953,7 +946,7 @@ function Leads({ leads, accessToken, onRefresh }) {
   setSavingId(leadId);
   try {
    const lead = leads.find((l) => l.id === leadId);
-   await createMeeting(accessToken, {
+   await createMeeting({
     title: `Demo: ${lead?.company || lead?.contact_name || 'Lead'}`,
     scheduled_at: demoForm.scheduled_at,
     duration_minutes: Number(demoForm.duration_minutes) || 30,
@@ -1030,22 +1023,19 @@ function Leads({ leads, accessToken, onRefresh }) {
          <td data-label="Status" className="px-stack-lg py-4">
           <div className="flex items-center gap-2">
            <StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge>
-           <select value={l.status} disabled={savingId === l.id || !accessToken} onChange={(e) => handleStatusChange(l.id, e.target.value)}
+           <select value={l.status} disabled={savingId === l.id} onChange={(e) => handleStatusChange(l.id, e.target.value)}
             className="rounded border border-outline-variant bg-white px-2 py-1 text-body-sm disabled:opacity-50 dark:border-dark-outline-variant">
             {LEAD_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
            </select>
           </div>
          </td>
          <td data-label="Quick Actions" className="px-stack-lg py-4">
-          {PIPELINE_ACTIVE_STATUSES.includes(l.status) && accessToken && (
+          {PIPELINE_ACTIVE_STATUSES.includes(l.status) && (
            <div className="flex flex-col gap-1">
             <RowAction disabled={savingId === l.id} onClick={() => openQuickAction(l.id, 'log_call')}>Log Call</RowAction>
             <RowAction variant="outline" disabled={savingId === l.id} onClick={() => openQuickAction(l.id, 'send_proposal')}>Send Proposal</RowAction>
             <RowAction variant="outline" disabled={savingId === l.id} onClick={() => openQuickAction(l.id, 'schedule_demo')}>Schedule Demo</RowAction>
            </div>
-          )}
-          {!accessToken && l.status !== 'disqualified' && l.status !== 'converted' && (
-           <span className="text-body-xs text-ink-muted dark:text-dark-ink-muted">Login to use quick actions</span>
           )}
          </td>
         </tr>
@@ -1109,36 +1099,39 @@ function Leads({ leads, accessToken, onRefresh }) {
 }
 
 // ---------- Sales: Contact Submissions view (mirrors marketing's view but for sales) ----------
-function ContactSubmissionsView({ accessToken, onLeadCreated }) {
+function ContactSubmissionsView({ onLeadCreated }) {
  const [submissions, setSubmissions] = useState([]);
  const [loading, setLoading] = useState(true);
  const [convertTarget, setConvertTarget] = useState(null);
  const [toast, setToast] = useState({ msg: '', type: 'success' });
+ const [actingId, setActingId] = useState(null);
+ const { run, isPending } = useAsyncAction();
  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 3500); };
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  apiRequest('/contact?limit=100', { token: accessToken })
+  apiRequest('/contact?limit=100')
    .then((r) => setSubmissions(r?.data || []))
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  useEffect(() => { load(); }, [load]);
 
- const updateStatus = async (id, status) => {
+ const updateStatus = (id, status) => run(async () => {
+  setActingId(id);
   try {
-   await apiRequest(`/contact/${id}`, { method: 'PATCH', body: { status }, token: accessToken });
+   await apiRequest(`/contact/${id}`, { method: 'PATCH', body: { status } });
    showToast(`Marked as ${status.replace('_', ' ')}`);
    load();
   } catch { showToast('Failed to update status', 'error'); }
- };
+  finally { setActingId(null); }
+ });
 
  const handleConverted = async (sub) => {
   setConvertTarget(null);
   showToast(`${sub.name} converted to lead!`);
-  try { await apiRequest(`/contact/${sub.id}`, { method: 'PATCH', body: { status: 'in_progress' }, token: accessToken }); } catch { /* non-critical */ }
+  try { await apiRequest(`/contact/${sub.id}`, { method: 'PATCH', body: { status: 'in_progress' } }); } catch { /* non-critical */ }
   load();
   onLeadCreated?.();
  };
@@ -1156,7 +1149,6 @@ function ContactSubmissionsView({ accessToken, onLeadCreated }) {
    {convertTarget && (
     <SalesConvertModal
      submission={convertTarget}
-     accessToken={accessToken}
      onClose={() => setConvertTarget(null)}
      onSuccess={() => handleConverted(convertTarget)}
     />
@@ -1183,10 +1175,14 @@ function ContactSubmissionsView({ accessToken, onLeadCreated }) {
            <RowAction onClick={() => setConvertTarget(s)}>Convert to Lead</RowAction>
           )}
           {s.status === 'new' && (
-           <RowAction variant="outline" onClick={() => updateStatus(s.id, 'in_progress')}>Mark In Progress</RowAction>
+           <RowAction variant="outline" disabled={isPending && actingId === s.id} onClick={() => updateStatus(s.id, 'in_progress')}>
+            {isPending && actingId === s.id ? 'Updating...' : 'Mark In Progress'}
+           </RowAction>
           )}
           {s.status !== 'resolved' && s.status !== 'spam' && (
-           <RowAction variant="outline" onClick={() => updateStatus(s.id, 'resolved')}>Resolve</RowAction>
+           <RowAction variant="outline" disabled={isPending && actingId === s.id} onClick={() => updateStatus(s.id, 'resolved')}>
+            {isPending && actingId === s.id ? 'Updating...' : 'Resolve'}
+           </RowAction>
           )}
          </div>
         </td>
@@ -1201,7 +1197,7 @@ function ContactSubmissionsView({ accessToken, onLeadCreated }) {
 }
 
 // Reusable Convert-to-Lead modal (shared by Sales and Marketing views)
-function SalesConvertModal({ submission, accessToken, onClose, onSuccess }) {
+function SalesConvertModal({ submission, onClose, onSuccess }) {
  const [estimatedValue, setEstimatedValue] = useState('');
  const [notes, setNotes] = useState(submission.message || '');
  const [submitting, setSubmitting] = useState(false);
@@ -1213,7 +1209,7 @@ function SalesConvertModal({ submission, accessToken, onClose, onSuccess }) {
   setError('');
   setSubmitting(true);
   try {
-   await createLead(accessToken, {
+   await createLead({
     contact_name: submission.name,
     email: submission.email,
     phone: submission.phone || null,
@@ -1272,7 +1268,7 @@ function SalesConvertModal({ submission, accessToken, onClose, onSuccess }) {
  );
 }
 
-function Proposals({ proposals, leads, contracts = [], accessToken, onRefresh, onNavigateTab }) {
+function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab }) {
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ lead_id: '', scope_summary: '', price: '', currency: 'USD' });
  const [errors, setErrors] = useState({});
@@ -1316,7 +1312,7 @@ function Proposals({ proposals, leads, contracts = [], accessToken, onRefresh, o
   if (!validate()) return;
   setSubmitting(true);
   try {
-   await createProposal(accessToken, { ...form, price: Number(form.price) });
+   await createProposal({ ...form, price: Number(form.price) });
    setForm({ lead_id: '', scope_summary: '', price: '', currency: 'USD' });
    setErrors({});
    setShowForm(false);
@@ -1329,7 +1325,7 @@ function Proposals({ proposals, leads, contracts = [], accessToken, onRefresh, o
  const runAction = async (action, proposalId, successMsg) => {
   setActingId(proposalId);
   try {
-   await action(accessToken, proposalId);
+   await action(proposalId);
    showToast(successMsg || 'Done!');
    onRefresh();
   } catch (err) {
@@ -1419,7 +1415,7 @@ function Proposals({ proposals, leads, contracts = [], accessToken, onRefresh, o
  );
 }
 
-function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
+function Contracts({ contracts, proposals, leads, onRefresh }) {
  const [actingId, setActingId] = useState(null);
  const [confirmId, setConfirmId] = useState(null);
  const [toast, setToast] = useState({ msg: '', type: 'success' });
@@ -1436,7 +1432,7 @@ function Contracts({ contracts, proposals, leads, accessToken, onRefresh }) {
   setConfirmId(null);
   setActingId(contractId);
   try {
-   await signContract(accessToken, contractId, { client_signed: true, company_signed: true, provision_client_account: true });
+   await signContract(contractId, { client_signed: true, company_signed: true, provision_client_account: true });
    showToast('Contract signed! Client account has been provisioned and a welcome email was sent.');
    onRefresh();
   } catch (err) {
@@ -1707,7 +1703,7 @@ function SalesClients({ clients }) {
 
 const MEETING_STATUS_COLOR = { scheduled: 'info', completed: 'success', cancelled: 'error' };
 
-function SalesMeetings({ meetings, clients, accessToken, onRefresh }) {
+function SalesMeetings({ meetings, clients, onRefresh }) {
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ title: '', client_id: '', scheduled_at: '', duration_minutes: 30, meeting_link: '' });
  const [errors, setErrors] = useState({});
@@ -1742,7 +1738,7 @@ function SalesMeetings({ meetings, clients, accessToken, onRefresh }) {
     duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : 30,
     client_id: form.client_id || undefined,
    };
-   await createMeeting(accessToken, payload);
+   await createMeeting(payload);
    setForm({ title: '', client_id: '', scheduled_at: '', duration_minutes: 30, meeting_link: '' });
    setErrors({});
    setShowForm(false);
@@ -1758,7 +1754,7 @@ function SalesMeetings({ meetings, clients, accessToken, onRefresh }) {
  const handleComplete = async (meetingId) => {
   setActingId(meetingId);
   try {
-   await updateMeeting(accessToken, meetingId, { status: 'completed' });
+   await updateMeeting(meetingId, { status: 'completed' });
    onRefresh();
   } catch (err) {
    showToast(err?.message || 'Action failed.');
@@ -1770,7 +1766,7 @@ function SalesMeetings({ meetings, clients, accessToken, onRefresh }) {
  const handleCancel = async (meetingId) => {
   setActingId(meetingId);
   try {
-   await updateMeeting(accessToken, meetingId, { status: 'cancelled' });
+   await updateMeeting(meetingId, { status: 'cancelled' });
    onRefresh();
   } catch (err) {
    showToast(err?.message || 'Action failed.');
@@ -1857,8 +1853,8 @@ function SalesMeetings({ meetings, clients, accessToken, onRefresh }) {
          <div className="flex gap-2">
           {m.status === 'scheduled' && new Date(m.scheduled_at) >= new Date(now) && (
            <>
-            <RowAction disabled={actingId === m.id || !accessToken} onClick={() => handleComplete(m.id)}>Complete</RowAction>
-            <RowAction variant="outline" disabled={actingId === m.id || !accessToken} onClick={() => handleCancel(m.id)}>Cancel</RowAction>
+            <RowAction disabled={actingId === m.id} onClick={() => handleComplete(m.id)}>Complete</RowAction>
+            <RowAction variant="outline" disabled={actingId === m.id} onClick={() => handleCancel(m.id)}>Cancel</RowAction>
            </>
           )}
          </div>
@@ -1998,7 +1994,7 @@ const APPLICATION_STATUS_OPTIONS = ['applied', 'shortlisted', 'interview', 'offe
 const APPLICATION_STATUS_COLOR = { applied: 'neutral', shortlisted: 'info', interview: 'warning', offered: 'success', rejected: 'error', hired: 'success' };
 
 // ---------- Marketing ----------
-function MarketingLeadsView({ accessToken }) {
+function MarketingLeadsView() {
  const [contacts, setContacts] = useState([]);
  const [leads, setLeads] = useState([]);
  const [loading, setLoading] = useState(true);
@@ -2008,16 +2004,15 @@ function MarketingLeadsView({ accessToken }) {
  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 3500); };
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
   Promise.allSettled([
-   apiRequest('/contact?status=in_progress&limit=100', { token: accessToken }),
-   fetchLeads(accessToken, { limit: 100 }),
+   apiRequest('/contact?status=in_progress&limit=100'),
+   fetchLeads({ limit: 100 }),
   ]).then(([cRes, lRes]) => {
    if (cRes.status === 'fulfilled') setContacts(cRes.value?.data || []);
    if (lRes.status === 'fulfilled') setLeads(lRes.value?.data || []);
   }).finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  useEffect(() => { load(); }, [load]);
 
@@ -2041,7 +2036,6 @@ function MarketingLeadsView({ accessToken }) {
    {convertTarget && (
     <SalesConvertModal
      submission={convertTarget}
-     accessToken={accessToken}
      onClose={() => setConvertTarget(null)}
      onSuccess={() => handleConverted(convertTarget)}
     />
@@ -2129,7 +2123,7 @@ function MarketingLeadsView({ accessToken }) {
  );
 }
 
-function TestimonialModeration({ accessToken }) {
+function TestimonialModeration() {
  const [items, setItems] = useState([]);
  const [loading, setLoading] = useState(true);
  const [actingId, setActingId] = useState(null);
@@ -2143,13 +2137,12 @@ function TestimonialModeration({ accessToken }) {
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchTestimonials(accessToken, { limit: 100 })
+  fetchTestimonials({ limit: 100 })
    .then((r) => { setItems(r?.data || []); })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  useEffect(() => { load(); }, [load]);
 
@@ -2167,7 +2160,7 @@ function TestimonialModeration({ accessToken }) {
   if (!validate()) return;
   setSubmitting(true);
   try {
-   await createTestimonial(accessToken, { ...form, is_published: false });
+   await createTestimonial({ ...form, is_published: false });
    setForm({ author_name: '', author_title: '', company_name: '', rating: 5, content: '' });
    setErrors({});
    setShowForm(false);
@@ -2183,7 +2176,7 @@ function TestimonialModeration({ accessToken }) {
  const approve = async (id) => {
   setActingId(id);
   try {
-   await updateTestimonial(accessToken, id, { is_published: true });
+   await updateTestimonial(id, { is_published: true });
    showToast('Testimonial approved and published.');
    load();
   } catch (err) {
@@ -2196,7 +2189,7 @@ function TestimonialModeration({ accessToken }) {
  const unpublish = async (id) => {
   setActingId(id);
   try {
-   await updateTestimonial(accessToken, id, { is_published: false });
+   await updateTestimonial(id, { is_published: false });
    showToast('Testimonial unpublished.');
    load();
   } catch (err) {
@@ -2209,7 +2202,7 @@ function TestimonialModeration({ accessToken }) {
  const remove = async (id) => {
   setActingId(id);
   try {
-   await deleteTestimonial(accessToken, id);
+   await deleteTestimonial(id);
    showToast('Testimonial deleted.');
    load();
   } catch (err) {
@@ -2349,7 +2342,7 @@ function TestimonialModeration({ accessToken }) {
 }
 
 // ---------- Project Manager ----------
-function TeamProjects({ accessToken, userId }) {
+function TeamProjects({ userId }) {
  const [projects, setProjects] = useState([]);
  const [employees, setEmployees] = useState([]);
  const [clients, setClients] = useState([]);
@@ -2360,6 +2353,7 @@ function TeamProjects({ accessToken, userId }) {
  const [assigningId, setAssigningId] = useState(null);
  const [teamSelection, setTeamSelection] = useState([]);
  const [toast, setToast] = useState({ msg: '', type: 'success' });
+ const { run: runAssign, isPending: assignPending } = useAsyncAction();
 
  const showToast = (msg, type = 'success') => {
   setToast({ msg, type });
@@ -2367,18 +2361,18 @@ function TeamProjects({ accessToken, userId }) {
  };
 
  const load = useCallback(() => {
-  if (!accessToken || !userId) { setLoading(false); return; }
+  if (!userId) { setLoading(false); return; }
   setLoading(true);
   Promise.allSettled([
-   fetchAdminProjects(accessToken, { project_manager_id: userId }),
-   fetchEmployees(accessToken, { limit: 100 }),
-   fetchClients(accessToken, { limit: 100 }),
+   fetchAdminProjects({ project_manager_id: userId }),
+   fetchEmployees({ limit: 100 }),
+   fetchClients({ limit: 100 }),
   ]).then(([p, e, c]) => {
    if (p.status === 'fulfilled') setProjects(p.value?.data || []);
    if (e.status === 'fulfilled') setEmployees(e.value?.data || []);
    if (c.status === 'fulfilled') setClients(c.value?.data || []);
   }).finally(() => setLoading(false));
- }, [accessToken, userId]);
+ }, [userId]);
 
  useEffect(() => { load();  }, [load]);
 
@@ -2389,7 +2383,7 @@ function TeamProjects({ accessToken, userId }) {
   if (!form.title) return;
   setSubmitting(true);
   try {
-   await createProject(accessToken, {
+   await createProject({
     title: form.title,
     client_id: form.client_id || null,
     budget: form.budget ? Number(form.budget) : null,
@@ -2416,16 +2410,16 @@ function TeamProjects({ accessToken, userId }) {
 
  const toggleTeamMember = (id) => setTeamSelection((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
- const submitAssign = async () => {
+ const submitAssign = () => runAssign(async () => {
   try {
-   await assignProjectTeam(accessToken, assigningId, teamSelection);
+   await assignProjectTeam(assigningId, teamSelection);
    showToast('Team is assigned');
    setAssigningId(null);
    load();
   } catch (err) {
    showToast(err?.message || 'Failed to assign team', 'error');
   }
- };
+ });
 
  if (loading) return <LoadingSpinner />;
 
@@ -2502,8 +2496,8 @@ function TeamProjects({ accessToken, userId }) {
          ))}
         </div>
         <div className="flex gap-2">
-         <RowAction onClick={submitAssign}>Save Team</RowAction>
-         <RowAction variant="outline" onClick={() => setAssigningId(null)}>Cancel</RowAction>
+         <RowAction disabled={assignPending} onClick={submitAssign}>{assignPending ? 'Saving...' : 'Save Team'}</RowAction>
+         <RowAction variant="outline" disabled={assignPending} onClick={() => setAssigningId(null)}>Cancel</RowAction>
         </div>
        </div>
       ) : (
@@ -2519,7 +2513,7 @@ function TeamProjects({ accessToken, userId }) {
  );
 }
 
-function TaskBoard({ accessToken, userId }) {
+function TaskBoard({ userId }) {
  const [projects, setProjects] = useState([]);
  const [employees, setEmployees] = useState([]);
  const [selectedProject, setSelectedProject] = useState('');
@@ -2537,10 +2531,10 @@ function TaskBoard({ accessToken, userId }) {
  };
 
  useEffect(() => {
-  if (!accessToken || !userId) { setLoading(false); return; }
+  if (!userId) { setLoading(false); return; }
   Promise.allSettled([
-   fetchAdminProjects(accessToken, { project_manager_id: userId }),
-   fetchEmployees(accessToken, { limit: 100 }),
+   fetchAdminProjects({ project_manager_id: userId }),
+   fetchEmployees({ limit: 100 }),
   ]).then(([pRes, eRes]) => {
    const pItems = pRes.status === 'fulfilled' ? pRes.value?.data || [] : [];
    const eItems = eRes.status === 'fulfilled' ? eRes.value?.data || [] : [];
@@ -2548,16 +2542,16 @@ function TaskBoard({ accessToken, userId }) {
    setEmployees(eItems);
    setSelectedProject((prev) => prev || pItems[0]?.id || '');
   }).catch(() => {});
- }, [accessToken, userId]);
+ }, [userId]);
 
  const loadTasks = useCallback(() => {
-  if (!accessToken || !selectedProject) { setLoading(false); return; }
+  if (!selectedProject) { setLoading(false); return; }
   setLoading(true);
-  fetchTasks(accessToken, { project_id: selectedProject, limit: 100 })
+  fetchTasks({ project_id: selectedProject, limit: 100 })
    .then((r) => setTasks(r?.data || []))
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [accessToken, selectedProject]);
+ }, [selectedProject]);
 
  useEffect(() => { loadTasks(); }, [loadTasks]);
 
@@ -2566,7 +2560,7 @@ function TaskBoard({ accessToken, userId }) {
   if (!form.title || !selectedProject) return;
   setSubmitting(true);
   try {
-   await createTask(accessToken, {
+   await createTask({
     project_id: selectedProject,
     title: form.title,
     priority: form.priority,
@@ -2587,7 +2581,7 @@ function TaskBoard({ accessToken, userId }) {
  const changeStatus = async (taskId, status) => {
   setSavingId(taskId);
   try {
-   await updateTaskStatus(accessToken, taskId, status);
+   await updateTaskStatus(taskId, status);
    showToast(`Task moved to ${status.replace('_', ' ')}`);
    loadTasks();
   } catch (err) {
@@ -2707,7 +2701,7 @@ function TaskBoard({ accessToken, userId }) {
  );
 }
 
-function Approvals({ accessToken }) {
+function Approvals() {
  const [timesheets, setTimesheets] = useState([]);
  const [loading, setLoading] = useState(true);
  const [actingId, setActingId] = useState(null);
@@ -2717,13 +2711,12 @@ function Approvals({ accessToken }) {
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchAllTimesheets(accessToken, { limit: 100 })
+  fetchAllTimesheets({ limit: 100 })
    .then((r) => { setTimesheets(r?.data || []); })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  useEffect(() => { load(); }, [load]);
 
@@ -2735,7 +2728,7 @@ function Approvals({ accessToken }) {
  const review = async (id, status) => {
   setActingId(id);
   try {
-   await reviewTimesheet(accessToken, id, status);
+   await reviewTimesheet(id, status);
    showToast(`Timesheet ${status}.`);
    load();
   } catch (err) {
@@ -2832,7 +2825,7 @@ function Approvals({ accessToken }) {
 }
 
 // ---------- Developer ----------
-function MyTasksBoard({ accessToken, userId }) {
+function MyTasksBoard({ userId }) {
  const [tasks, setTasks] = useState([]);
  const [loading, setLoading] = useState(true);
  const [savingId, setSavingId] = useState(null);
@@ -2844,20 +2837,20 @@ function MyTasksBoard({ accessToken, userId }) {
  };
 
  const load = useCallback(() => {
-  if (!accessToken || !userId) { setLoading(false); return; }
+  if (!userId) { setLoading(false); return; }
   setLoading(true);
-  fetchTasks(accessToken, { assigned_to: userId, limit: 100 })
+  fetchTasks({ assigned_to: userId, limit: 100 })
    .then((r) => setTasks(r?.data || []))
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [accessToken, userId]);
+ }, [userId]);
 
  useEffect(() => { load(); }, [load]);
 
  const changeStatus = async (taskId, status) => {
   setSavingId(taskId);
   try {
-   await updateTaskStatus(accessToken, taskId, status);
+   await updateTaskStatus(taskId, status);
    showToast(`Task moved to ${status.replace('_', ' ')}`);
    load();
   } catch (err) {
@@ -2944,7 +2937,7 @@ function MyTasksBoard({ accessToken, userId }) {
 }
 
 // ---------- QA ----------
-function TestQueue({ accessToken }) {
+function TestQueue() {
  const [tasks, setTasks] = useState([]);
  const [loading, setLoading] = useState(true);
  const [savingId, setSavingId] = useState(null);
@@ -2954,13 +2947,12 @@ function TestQueue({ accessToken }) {
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchTasks(accessToken, { limit: 100 })
+  fetchTasks({ limit: 100 })
    .then((r) => { setTasks(r?.data || []); })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  useEffect(() => { load(); }, [load]);
 
@@ -2972,7 +2964,7 @@ function TestQueue({ accessToken }) {
  const resolve = async (id, status) => {
   setSavingId(id);
   try {
-   await updateTaskStatus(accessToken, id, status);
+   await updateTaskStatus(id, status);
    showToast(status === 'done' ? 'Task passed QA.' : 'Task blocked — bug logged.');
    load();
   } catch (err) {
@@ -3066,7 +3058,7 @@ function TestQueue({ accessToken }) {
 }
 
 // ---------- Support ----------
-function TicketQueue({ accessToken, userId }) {
+function TicketQueue({ userId }) {
  const [tickets, setTickets] = useState([]);
  const [loading, setLoading] = useState(true);
  const [savingId, setSavingId] = useState(null);
@@ -3080,13 +3072,12 @@ function TicketQueue({ accessToken, userId }) {
  const isRealId = (id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id ?? '');
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  fetchTickets(accessToken, { limit: 100 })
+  fetchTickets({ limit: 100 })
    .then((r) => { setTickets(r?.data || []); })
    .catch(() => {})
    .finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  useEffect(() => { load(); }, [load]);
 
@@ -3099,7 +3090,7 @@ function TicketQueue({ accessToken, userId }) {
   setSavingId(id);
   try {
    if (isRealId(id)) {
-    await updateTicket(accessToken, id, { status });
+    await updateTicket(id, { status });
    } else {
     setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, status } : t)));
    }
@@ -3116,7 +3107,7 @@ function TicketQueue({ accessToken, userId }) {
   setSavingId(id);
   try {
    if (isRealId(id)) {
-    await updateTicket(accessToken, id, { assigned_to: userId });
+    await updateTicket(id, { assigned_to: userId });
    } else {
     setTickets((prev) => prev.map((t) => (t.id === id ? { ...t, assigned_to: userId || 'u-support' } : t)));
    }
@@ -3135,7 +3126,7 @@ function TicketQueue({ accessToken, userId }) {
   setSavingId(id);
   try {
    if (isRealId(id)) {
-    await replyToTicket(accessToken, id, { message });
+    await replyToTicket(id, { message });
    }
    setReplyDraft((prev) => ({ ...prev, [id]: '' }));
    setOpenTicketId(null);
@@ -3232,7 +3223,7 @@ function TicketQueue({ accessToken, userId }) {
 }
 
 // ---------- Finance ----------
-function Invoices({ accessToken }) {
+function Invoices() {
  const [invoices, setInvoices] = useState([]);
  const [clients, setClients] = useState([]);
  const [loading, setLoading] = useState(true);
@@ -3242,13 +3233,12 @@ function Invoices({ accessToken }) {
  const [actingId, setActingId] = useState(null);
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
-  Promise.allSettled([fetchInvoices(accessToken, { limit: 100 }), fetchClients(accessToken, { limit: 100 })]).then(([i, c]) => {
+  Promise.allSettled([fetchInvoices({ limit: 100 }), fetchClients({ limit: 100 })]).then(([i, c]) => {
    if (i.status === 'fulfilled') setInvoices(i.value?.data || []);
    if (c.status === 'fulfilled') setClients(c.value?.data || []);
   }).finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  useEffect(() => { load();  }, [load]);
 
@@ -3259,7 +3249,7 @@ function Invoices({ accessToken }) {
   if (!form.client_id || !form.amount || !form.issue_date || !form.due_date) return;
   setSubmitting(true);
   try {
-   await createInvoice(accessToken, {
+   await createInvoice({
     client_id: form.client_id, amount: Number(form.amount), tax: form.tax ? Number(form.tax) : 0,
     currency: form.currency, issue_date: form.issue_date, due_date: form.due_date,
    });
@@ -3273,13 +3263,13 @@ function Invoices({ accessToken }) {
 
  const send = async (id) => {
   setActingId(id);
-  try { await updateInvoice(accessToken, id, { status: 'sent' }); load(); } finally { setActingId(null); }
+  try { await updateInvoice(id, { status: 'sent' }); load(); } finally { setActingId(null); }
  };
 
  const markPaid = async (invoice) => {
   setActingId(invoice.id);
   try {
-   await recordPayment(accessToken, invoice.id, { amount: invoice.total_amount, method: 'bank_transfer', paid_at: new Date().toISOString(), status: 'completed' });
+   await recordPayment(invoice.id, { amount: invoice.total_amount, method: 'bank_transfer', paid_at: new Date().toISOString(), status: 'completed' });
    load();
   } finally {
    setActingId(null);
@@ -3343,7 +3333,7 @@ function Invoices({ accessToken }) {
 }
 
 // ---------- HR ----------
-function LeaveApprovals({ accessToken }) {
+function LeaveApprovals() {
  const [leaves, setLeaves] = useState([]);
  const [loading, setLoading] = useState(true);
  const [actingId, setActingId] = useState(null);
@@ -3353,12 +3343,11 @@ function LeaveApprovals({ accessToken }) {
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
   const params = { limit: 100 };
   if (filter !== 'all') params.status = filter;
-  fetchLeaves(accessToken, params).then((r) => setLeaves(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
- }, [accessToken, filter]);
+  fetchLeaves(params).then((r) => setLeaves(r?.data || [])).catch(() => {}).finally(() => setLoading(false));
+ }, [filter]);
 
  useEffect(() => { load(); }, [load]);
 
@@ -3371,7 +3360,7 @@ function LeaveApprovals({ accessToken }) {
  const review = async (id, status) => {
   setActingId(id);
   try {
-   await reviewLeave(accessToken, id, status);
+   await reviewLeave(id, status);
    showToast(`Leave ${status} successfully.`);
    load();
   } catch (err) {
@@ -3458,7 +3447,7 @@ function LeaveApprovals({ accessToken }) {
  );
 }
 
-function Recruitment({ accessToken }) {
+function Recruitment() {
  const [positions, setPositions] = useState([]);
  const [applications, setApplications] = useState([]);
  const [loading, setLoading] = useState(true);
@@ -3469,16 +3458,15 @@ function Recruitment({ accessToken }) {
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
  const load = useCallback(() => {
-  if (!accessToken) { setLoading(false); return; }
   setLoading(true);
   Promise.allSettled([
-   apiRequest('/careers?limit=50', { token: accessToken }),
-   fetchApplications(accessToken, { limit: 100 }),
+   apiRequest('/careers?limit=50'),
+   fetchApplications({ limit: 100 }),
   ]).then(([positionsRes, appsRes]) => {
    if (positionsRes.status === 'fulfilled') setPositions(positionsRes.value?.data || []);
    if (appsRes.status === 'fulfilled') setApplications(appsRes.value?.data || []);
   }).finally(() => setLoading(false));
- }, [accessToken]);
+ }, []);
 
  useEffect(() => { load(); }, [load]);
 
@@ -3490,7 +3478,7 @@ function Recruitment({ accessToken }) {
  const changeStatus = async (id, status) => {
   setSavingId(id);
   try {
-   await updateApplicationStatus(accessToken, id, status);
+   await updateApplicationStatus(id, status);
    showToast('Application status updated.');
    load();
   } catch (err) {
@@ -3711,7 +3699,7 @@ export default function EmployeePortal() {
  const portalTitle = `${ROLE_LABELS[urlRole] || 'Employee'} Portal`;
 
  useDocumentTitle(`${portalTitle} | CoreFusion Technologies`);
- const { user, initializing, accessToken, logout } = useAuth();
+ const { user, initializing, logout } = useAuth();
  const { denied } = useRoleGuard('employee', '/login');
  const navigate = useNavigate();
  const [activeTab, setActiveTab] = useState('overview');
@@ -3741,13 +3729,12 @@ export default function EmployeePortal() {
  const portalTabs = employeeTabsForRole(effectiveRole);
 
  const refreshCrm = useCallback(() => {
-  if (!accessToken) return;
   Promise.allSettled([
-   fetchLeads(accessToken),
-   fetchProposals(accessToken),
-   fetchContracts(accessToken),
-   fetchMeetings(accessToken),
-   fetchClients(accessToken, { limit: 100 }),
+   fetchLeads(),
+   fetchProposals(),
+   fetchContracts(),
+   fetchMeetings(),
+   fetchClients({ limit: 100 }),
   ]).then(([l, p, c, m, cl]) => {
    if (l.status === 'fulfilled') setLeadsData(l.value?.data || []);
    if (p.status === 'fulfilled') setProposalsData(p.value?.data || []);
@@ -3755,13 +3742,12 @@ export default function EmployeePortal() {
    if (m.status === 'fulfilled') setMeetingsData(m.value?.data || []);
    if (cl.status === 'fulfilled') setClientsData(cl.value?.data || []);
   });
- }, [accessToken]);
+ }, []);
 
  const handleEnroll = (courseId) => {
-  if (!accessToken) return;
   setEnrollingId(courseId);
-  enrollInCourse(accessToken, courseId)
-   .then(() => fetchMyTrainingEnrollments(accessToken))
+  enrollInCourse(courseId)
+   .then(() => fetchMyTrainingEnrollments())
    .then((res) => {
     setTraining(normalizeTraining(res?.data));
    })
@@ -3770,7 +3756,7 @@ export default function EmployeePortal() {
  };
 
  useEffect(() => {
-  if (!user || !accessToken) { setLoading(false); return; }
+  if (!user) { setLoading(false); return; }
   if (!initialLoadDone.current) setLoading(true);
 
   const handleProfile = (profileData) => {
@@ -3790,11 +3776,11 @@ export default function EmployeePortal() {
    });
    const isPM = realRole === 'project_manager' || realRole === 'admin';
    Promise.allSettled([
-    apiRequest(`/employees/me/attendance/today`, { token: accessToken }),
-    apiRequest(`/employees/me/leaves`, { token: accessToken }),
-    apiRequest(`/employees/me/timesheets`, { token: accessToken }),
-    apiRequest(`/tasks?assigned_to=${p.user_id}&limit=50`, { token: accessToken }),
-    apiRequest(isPM ? `/projects?project_manager_id=${p.user_id}&limit=50` : `/projects?employee_id=${p.id}&limit=50`, { token: accessToken }),
+    apiRequest(`/employees/me/attendance/today`),
+    apiRequest(`/employees/me/leaves`),
+    apiRequest(`/employees/me/timesheets`),
+    apiRequest(`/tasks?assigned_to=${p.user_id}&limit=50`),
+    apiRequest(isPM ? `/projects?project_manager_id=${p.user_id}&limit=50` : `/projects?employee_id=${p.id}&limit=50`),
    ]).then(([attRes, lvRes, tsRes, taskRes, projRes]) => {
     if (attRes.status === 'fulfilled' && attRes.value?.data) {
      const a = attRes.value.data;
@@ -3808,16 +3794,16 @@ export default function EmployeePortal() {
   };
 
   Promise.allSettled([
-   fetchMyProfile(accessToken).then((res) => {
+   fetchMyProfile().then((res) => {
     const p = res?.data;
     if (p) handleProfile(p);
     return res;
    }),
-   fetchMyPayslips(accessToken),
-   fetchMyPerformanceReviews(accessToken),
-   fetchMyTrainingEnrollments(accessToken),
-   fetchMyDocuments(accessToken),
-   fetchTrainingCatalog(accessToken),
+   fetchMyPayslips(),
+   fetchMyPerformanceReviews(),
+   fetchMyTrainingEnrollments(),
+   fetchMyDocuments(),
+   fetchTrainingCatalog(),
   ]).then(([, psRes, perfRes, trainRes, docsRes, catRes]) => {
    if (psRes.status === 'fulfilled') setPayslips(normalizePayslips(psRes.value?.data));
    if (perfRes.status === 'fulfilled') setPerformance(normalizePerformance(perfRes.value?.data));
@@ -3825,12 +3811,12 @@ export default function EmployeePortal() {
    if (catRes.status === 'fulfilled') setCatalog(normalizeCatalog(catRes.value?.data));
    if (docsRes.status === 'fulfilled') setDocuments(normalizeDocs(docsRes.value?.data));
   }).finally(() => { initialLoadDone.current = true; setLoading(false); });
- }, [user, accessToken]);
+ }, [user]);
 
  useEffect(() => {
-  if (!user || !accessToken || !CRM_ROLES.includes(effectiveRole)) return;
+  if (!user || !CRM_ROLES.includes(effectiveRole)) return;
   refreshCrm();
- }, [user, accessToken, effectiveRole, refreshCrm]);
+ }, [user, effectiveRole, refreshCrm]);
 
  // Reset to the first tab whenever the (real or previewed) role changes, since the
  // previously active tab may not exist in the new role's tab set.
@@ -3896,27 +3882,27 @@ export default function EmployeePortal() {
      <div className="min-w-0 flex-1 overflow-y-auto px-4 py-stack-lg sm:px-6 lg:px-10 xl:px-12 ">
       {activeTab === 'overview' && <Overview profile={profile} attendance={attendance} leaves={leaves} timesheets={timesheets} payslips={payslips} />}
       {activeTab === 'crm-dashboard' && effectiveRole === 'sales' && <CrmDashboard leads={leadsData} proposals={proposalsData} contracts={contractsData} />}
-      {activeTab === 'contact-submissions' && effectiveRole === 'sales' && <ContactSubmissionsView accessToken={accessToken} onLeadCreated={refreshCrm} />}
-      {activeTab === 'leads' && effectiveRole === 'sales' && <Leads leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+      {activeTab === 'contact-submissions' && effectiveRole === 'sales' && <ContactSubmissionsView onLeadCreated={refreshCrm} />}
+      {activeTab === 'leads' && effectiveRole === 'sales' && <Leads leads={leadsData} onRefresh={refreshCrm} />}
       {activeTab === 'clients' && effectiveRole === 'sales' && <SalesClients clients={clientsData} />}
-      {activeTab === 'proposals' && effectiveRole === 'sales' && <Proposals proposals={proposalsData} leads={leadsData} contracts={contractsData} accessToken={accessToken} onRefresh={refreshCrm} onNavigateTab={setActiveTab} />}
-      {activeTab === 'contracts' && effectiveRole === 'sales' && <Contracts contracts={contractsData} proposals={proposalsData} leads={leadsData} accessToken={accessToken} onRefresh={refreshCrm} />}
-      {activeTab === 'meetings' && effectiveRole === 'sales' && <SalesMeetings meetings={meetingsData} clients={clientsData} accessToken={accessToken} onRefresh={refreshCrm} />}
+      {activeTab === 'proposals' && effectiveRole === 'sales' && <Proposals proposals={proposalsData} leads={leadsData} contracts={contractsData} onRefresh={refreshCrm} onNavigateTab={setActiveTab} />}
+      {activeTab === 'contracts' && effectiveRole === 'sales' && <Contracts contracts={contractsData} proposals={proposalsData} leads={leadsData} onRefresh={refreshCrm} />}
+      {activeTab === 'meetings' && effectiveRole === 'sales' && <SalesMeetings meetings={meetingsData} clients={clientsData} onRefresh={refreshCrm} />}
       {activeTab === 'reports' && effectiveRole === 'sales' && <SalesReports leads={leadsData} proposals={proposalsData} contracts={contractsData} />}
-      {activeTab === 'marketing-leads' && effectiveRole === 'marketing' && <MarketingLeadsView accessToken={accessToken} />}
-      {activeTab === 'testimonials' && effectiveRole === 'marketing' && <TestimonialModeration accessToken={accessToken} />}
-      {activeTab === 'team-projects' && effectiveRole === 'project_manager' && <TeamProjects accessToken={accessToken} userId={user?.id} />}
-      {activeTab === 'task-board' && effectiveRole === 'project_manager' && <TaskBoard accessToken={accessToken} userId={user?.id} />}
-      {activeTab === 'approvals' && effectiveRole === 'project_manager' && <Approvals accessToken={accessToken} />}
-      {activeTab === 'my-tasks' && effectiveRole === 'developer' && <MyTasksBoard accessToken={accessToken} userId={user?.id} />}
-      {activeTab === 'test-queue' && effectiveRole === 'qa' && <TestQueue accessToken={accessToken} />}
-      {activeTab === 'ticket-queue' && effectiveRole === 'support' && <TicketQueue accessToken={accessToken} userId={user?.id} />}
-      {activeTab === 'invoices' && effectiveRole === 'finance' && <Invoices accessToken={accessToken} />}
-      {activeTab === 'leave-approvals' && effectiveRole === 'hr' && <LeaveApprovals accessToken={accessToken} />}
-      {activeTab === 'recruitment' && effectiveRole === 'hr' && <Recruitment accessToken={accessToken} />}
-      {activeTab === 'attendance' && <Attendance attendance={attendance} accessToken={accessToken} onChange={setAttendance} />}
-      {activeTab === 'leaves' && <Leaves leaves={leaves} accessToken={accessToken} />}
-      {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} accessToken={accessToken} />}
+      {activeTab === 'marketing-leads' && effectiveRole === 'marketing' && <MarketingLeadsView />}
+      {activeTab === 'testimonials' && effectiveRole === 'marketing' && <TestimonialModeration />}
+      {activeTab === 'team-projects' && effectiveRole === 'project_manager' && <TeamProjects userId={user?.id} />}
+      {activeTab === 'task-board' && effectiveRole === 'project_manager' && <TaskBoard userId={user?.id} />}
+      {activeTab === 'approvals' && effectiveRole === 'project_manager' && <Approvals />}
+      {activeTab === 'my-tasks' && effectiveRole === 'developer' && <MyTasksBoard userId={user?.id} />}
+      {activeTab === 'test-queue' && effectiveRole === 'qa' && <TestQueue />}
+      {activeTab === 'ticket-queue' && effectiveRole === 'support' && <TicketQueue userId={user?.id} />}
+      {activeTab === 'invoices' && effectiveRole === 'finance' && <Invoices />}
+      {activeTab === 'leave-approvals' && effectiveRole === 'hr' && <LeaveApprovals />}
+      {activeTab === 'recruitment' && effectiveRole === 'hr' && <Recruitment />}
+      {activeTab === 'attendance' && <Attendance attendance={attendance} onChange={setAttendance} />}
+      {activeTab === 'leaves' && <Leaves leaves={leaves} />}
+      {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} />}
       {activeTab === 'payslips' && <Payslips payslips={payslips} />}
       {activeTab === 'tasks' && <Tasks tasks={tasks} />}
       {activeTab === 'projects' && <Projects projects={projects} />}
