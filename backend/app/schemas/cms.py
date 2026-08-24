@@ -387,6 +387,68 @@ class PartnerOut(TimestampedRead):
     is_published: bool
 
 
+# ---------- Leadership ----------
+class LeadershipCreate(BaseModel):
+    name: str
+    title: str
+    bio: str | None = None
+    photo_url: str | None = None
+    linkedin: str | None = None
+    order: int = 0
+    is_published: bool = True
+
+
+class LeadershipUpdate(BaseModel):
+    name: str | None = None
+    title: str | None = None
+    bio: str | None = None
+    photo_url: str | None = None
+    linkedin: str | None = None
+    order: int | None = None
+    is_published: bool | None = None
+
+
+class LeadershipOut(TimestampedRead):
+    name: str
+    title: str
+    bio: str | None = None
+    photo_url: str | None = None
+    linkedin: str | None = None
+    order: int
+    is_published: bool
+
+
+# ---------- Office ----------
+class OfficeCreate(BaseModel):
+    city: str
+    country: str | None = None
+    description: str | None = None
+    address: str | None = None
+    is_headquarters: bool = False
+    order: int = 0
+    is_published: bool = True
+
+
+class OfficeUpdate(BaseModel):
+    city: str | None = None
+    country: str | None = None
+    description: str | None = None
+    address: str | None = None
+    is_headquarters: bool | None = None
+    order: int | None = None
+    is_published: bool | None = None
+
+
+class OfficeOut(TimestampedRead):
+    city: str
+    country: str | None = None
+    description: str | None = None
+    address: str | None = None
+    is_headquarters: bool
+    order: int
+    is_published: bool
+
+
 # ---------- Category ----------
 class CategoryCreate(BaseModel):
     name: str

@@ -60,6 +60,8 @@ from app.models.event import Event
 from app.models.faq import Faq
 from app.models.gallery import Gallery
 from app.models.industry import Industry
+from app.models.leadership import Leadership
+from app.models.office import Office
 from app.models.page_content import PageContent
 from app.models.partner import Partner
 from app.models.portfolio import Portfolio
@@ -887,6 +889,15 @@ async def seed_gallery(db: AsyncSession, projects: list[Project]) -> list[Galler
 # Page content — literal PRD copy (company profile, vision, mission, core
 # values, why choose us).
 # ---------------------------------------------------------------------------
+def _legal_html(sections: list[tuple[str, str]]) -> str:
+    """Renders (heading, paragraph) pairs as sanitizer-safe HTML — the shape
+    LegalContent.jsx expects in PageContent.content for the legal pages
+    (frontend/src/components/legal/LegalContent.jsx renders it through
+    DOMPurify). Mirrors the section copy from frontend/src/data/legal.js,
+    which the frontend still falls back to while this fetch is in flight."""
+    return "".join(f"<h2>{heading}</h2><p>{body}</p>" for heading, body in sections)
+
+
 async def seed_page_contents(db: AsyncSession) -> list[PageContent]:
     pages = [
         ("about", "About CoreFusion Technologies",
@@ -909,6 +920,133 @@ async def seed_page_contents(db: AsyncSession) -> list[PageContent]:
         ("why-choose-us", "Why Choose CoreFusion",
          "430+ Projects Delivered · 285+ Employees · 120+ Enterprise Clients · 18+ Countries Served · "
          "99.8% Uptime · 24×7 Support · ISO 9001 Certified · ISO 27001 Certified."),
+        # Legal pages — consumed by pages/Privacy.jsx, Terms.jsx, Cookies.jsx
+        # (fetched by slug via fetchPageContent), replacing the previously
+        # static frontend/src/data/legal.js copy that's now only the
+        # offline/loading fallback for those pages.
+        ("privacy-policy", "Privacy Policy", _legal_html([
+            ("1. Information We Collect",
+             "We collect information you provide directly, including name, email address, phone number, "
+             "company name, and job title when you fill out forms on our website, subscribe to newsletters, "
+             "or interact with our services. We also automatically collect certain technical information "
+             "such as IP address, browser type, device information, and usage data through cookies and "
+             "similar technologies."),
+            ("2. How We Use Your Information",
+             "We use the information we collect to provide, maintain, and improve our services, communicate "
+             "with you about our products and services, send marketing communications (with your consent), "
+             "comply with legal obligations, and protect our rights and property."),
+            ("3. Information Sharing",
+             "We do not sell your personal information. We may share information with trusted service "
+             "providers who assist us in operating our website and business, when required by law, or in "
+             "connection with a business transaction such as a merger or acquisition. All third-party "
+             "providers are contractually bound to maintain the confidentiality of your data."),
+            ("4. Data Security",
+             "We implement industry-standard security measures including encryption in transit and at rest, "
+             "access controls, regular security audits, and employee training to protect your personal "
+             "information from unauthorized access, disclosure, or destruction."),
+            ("5. Your Rights",
+             "Depending on your jurisdiction, you may have rights including: access to your personal data, "
+             "correction of inaccurate data, deletion of your data (right to be forgotten), restriction of "
+             "processing, data portability, and the right to withdraw consent at any time. To exercise these "
+             "rights, please contact us at privacy@corefusiontech.com."),
+            ("6. Cookie Policy",
+             "We use essential cookies for website functionality, analytics cookies to understand how "
+             "visitors interact with our site, and marketing cookies (with your consent) to deliver relevant "
+             "advertisements. You can manage cookie preferences through your browser settings at any time. "
+             "For more details, see our Cookie Policy."),
+            ("7. International Data Transfers",
+             "Your information may be transferred to and processed in countries other than your own. We "
+             "ensure appropriate safeguards are in place through Standard Contractual Clauses and Data "
+             "Processing Agreements to protect your data regardless of where it is processed."),
+            ("8. Changes to This Policy",
+             "We may update this Privacy Policy from time to time. We will notify you of material changes by "
+             "posting the updated policy on this page and, where appropriate, through email notification. We "
+             "encourage you to review this policy periodically."),
+            ("9. Contact Us",
+             "If you have questions about this Privacy Policy or our data practices, please contact our Data "
+             "Protection Officer at privacy@corefusiontech.com or write to us at: CoreFusion Technologies, "
+             "4th Floor, Innovation Tower, Plot 27, Sector 4, HSR Layout, Bangalore 560102, India."),
+        ])),
+        ("terms-of-service", "Terms of Service", _legal_html([
+            ("1. Acceptance of Terms",
+             "By accessing or using the CoreFusion Technologies website, products, or services, you agree to "
+             "be bound by these Terms of Service. If you do not agree with any part of these terms, you may "
+             "not use our services."),
+            ("2. Services Description",
+             "CoreFusion Technologies provides technology consulting, software development, cloud "
+             "infrastructure services, cybersecurity solutions, and managed IT services. The specific scope, "
+             "deliverables, and timelines for each engagement are defined in separate Statements of Work or "
+             "Service Agreements."),
+            ("3. Intellectual Property",
+             "All intellectual property developed specifically for a client engagement is owned by the "
+             "client upon full payment. CoreFusion Technologies retains ownership of pre-existing "
+             "intellectual property, tools, frameworks, and methodologies used during service delivery. "
+             "Clients are granted a perpetual, royalty-free license to any pre-existing IP incorporated into "
+             "deliverables."),
+            ("4. Confidentiality",
+             "Both parties agree to maintain the confidentiality of all proprietary information disclosed "
+             "during the engagement. Confidential information includes technical data, business strategies, "
+             "source code, and any materials marked as confidential. This obligation survives the "
+             "termination of the agreement for a period of five years."),
+            ("5. Limitation of Liability",
+             "To the maximum extent permitted by law, CoreFusion Technologies shall not be liable for any "
+             "indirect, incidental, special, consequential, or punitive damages. Our total liability for any "
+             "claim arising from our services shall not exceed the total fees paid for the specific "
+             "engagement giving rise to the claim."),
+            ("6. Warranties",
+             "We warrant that our services will be performed in a professional and workmanlike manner in "
+             "accordance with industry standards. Services will conform to the specifications outlined in "
+             "the applicable Statement of Work. This warranty is valid for 90 days from the date of "
+             "delivery."),
+            ("7. Termination",
+             "Either party may terminate an agreement with 30 days written notice. In case of material "
+             "breach, the non-breaching party may terminate immediately with written notice. Upon "
+             "termination, the client shall pay for all services rendered up to the effective termination "
+             "date."),
+            ("8. Governing Law",
+             "These terms shall be governed by and construed in accordance with the laws of India. Any "
+             "disputes arising from these terms shall be resolved through binding arbitration in Bangalore, "
+             "India, in accordance with the Arbitration and Conciliation Act, 1996."),
+            ("9. Contact Information",
+             "For questions about these Terms of Service, please contact us at legal@corefusiontech.com or "
+             "at: CoreFusion Technologies, 4th Floor, Innovation Tower, Plot 27, Sector 4, HSR Layout, "
+             "Bangalore 560102, India."),
+        ])),
+        ("cookie-policy", "Cookie Policy", _legal_html([
+            ("1. What Are Cookies",
+             "Cookies are small text files stored on your device when you visit a website. They help "
+             "websites function properly, improve user experience, and provide information to website "
+             "owners. Cookies can be \"session\" cookies that expire when you close your browser or "
+             "\"persistent\" cookies that remain until you clear them."),
+            ("2. Types of Cookies We Use",
+             "Essential Cookies: Required for the website to function properly. These include authentication "
+             "cookies, session management, and security cookies. Analytics Cookies: Help us understand how "
+             "visitors interact with our website by collecting anonymized data about page visits, navigation "
+             "patterns, and referral sources. We use Google Analytics and Microsoft Clarity for this "
+             "purpose. Preference Cookies: Remember your settings and preferences such as language, region, "
+             "and display options. Marketing Cookies: Used (with your consent) to deliver relevant "
+             "advertisements and measure their effectiveness."),
+            ("3. Third-Party Cookies",
+             "Some cookies are placed by third-party services we use, including Google Analytics (website "
+             "analytics), Microsoft Clarity (session recording), LinkedIn Insight Tag (marketing), and "
+             "HubSpot (CRM and marketing). These third parties have their own privacy policies governing the "
+             "use of your data."),
+            ("4. Managing Cookies",
+             "You can control and manage cookies through your browser settings. Most browsers allow you to "
+             "block or delete cookies entirely, or to receive a warning before a cookie is stored. Please "
+             "note that disabling certain cookies may affect the functionality of our website."),
+            ("5. Your Consent",
+             "When you first visit our website, we display a cookie consent banner that allows you to choose "
+             "which categories of cookies you accept. Essential cookies are always active as they are "
+             "necessary for the website to function. You can change your preferences at any time by clicking "
+             "the \"Cookie Settings\" link in the footer."),
+            ("6. Updates to This Policy",
+             "We may update this Cookie Policy from time to time to reflect changes in our practices or "
+             "relevant regulations. We will notify you of material changes through a banner or notification "
+             "on our website."),
+            ("7. Contact",
+             "If you have questions about our use of cookies, please contact us at privacy@corefusiontech.com."),
+        ])),
     ]
     created = []
     for slug, title, content in pages:
@@ -935,6 +1073,152 @@ async def seed_stats_settings(db: AsyncSession) -> None:
         _, created = await _get_or_create(db, Setting, {"key": key}, {"value": value, "group": "public"})
         n += 1 if created else 0
     print(f"Business-stat settings seeded ({n} new)")
+
+
+# ---------------------------------------------------------------------------
+# Leadership / Offices / Company & About site content — transcribed verbatim
+# from the previously-hardcoded frontend/src/data/about.js and
+# frontend/src/data/company.js so switching those pages over to the API
+# doesn't blank the site. Leadership/Offices are normal list-style CMS
+# resources (own table); company info and about-page content (mission,
+# core values, timeline, certifications) are simple enough that they're
+# stored as structured JSON on the existing `settings` table instead of new
+# single-row tables (see app/routers/site_content.py).
+# ---------------------------------------------------------------------------
+LEADERSHIP = [
+    ("Dr. Vikram Nair", "Founder & CEO", "https://www.linkedin.com/", 0),
+    ("Sara Cheng", "Chief Technology Officer", "https://www.linkedin.com/", 1),
+    ("Arjun Mehta", "COO, Global Operations", "https://www.linkedin.com/", 2),
+    ("Elena Rossi", "Chief Experience Officer", "https://www.linkedin.com/", 3),
+]
+
+
+async def seed_leadership(db: AsyncSession) -> list[Leadership]:
+    created = []
+    for name, title, linkedin, order in LEADERSHIP:
+        leader, _ = await _get_or_create(
+            db, Leadership, {"name": name},
+            {"title": title, "photo_url": None, "linkedin": linkedin, "order": order, "is_published": True},
+        )
+        created.append(leader)
+    print(f"Leadership seeded ({len(LEADERSHIP)})")
+    return created
+
+
+OFFICES = [
+    ("Bangalore", "HQ & Innovation Lab", True, 0),
+    ("Dubai", "MENA Regional Office", False, 1),
+    ("Singapore", "SEA Hub", False, 2),
+    ("Mumbai", "Delivery Center", False, 3),
+    ("Hyderabad", "Cybersecurity CoE", False, 4),
+    ("Pune", "AI & Data Science", False, 5),
+]
+
+
+async def seed_offices(db: AsyncSession) -> list[Office]:
+    created = []
+    for city, description, is_hq, order in OFFICES:
+        office, _ = await _get_or_create(
+            db, Office, {"city": city},
+            {"description": description, "is_headquarters": is_hq, "order": order, "is_published": True},
+        )
+        created.append(office)
+    print(f"Offices seeded ({len(OFFICES)})")
+    return created
+
+
+async def seed_company_info(db: AsyncSession) -> None:
+    value = {
+        "name": "CoreFusion Technologies",
+        "legalName": "CoreFusion Technologies Private Limited",
+        "tagline": "Transforming Businesses Through Intelligent Digital Solutions",
+        "website": "www.corefusiontech.com",
+        "email": "hello@corefusiontech.com",
+        "founded": 2020,
+        "hq": "Connaught Place, New Delhi, India",
+        "offices": ["Bangalore", "Hyderabad", "Pune", "Mumbai", "Dubai", "Singapore"],
+    }
+    setting, created = await _get_or_create(db, Setting, {"key": "company_info"}, {"value": value, "group": "company"})
+    if not created:
+        setting.value = value
+    print("Company info settings seeded")
+
+
+async def seed_about_content(db: AsyncSession) -> None:
+    core_values = [
+        {"icon": "lightbulb", "title": "Innovation",
+         "description": ("We don't just follow trends; we create the frameworks that define them. Our R&D labs "
+                          "are constantly pushing the boundaries of AI, cloud native architectures, and cybersecurity."),
+         "span": "md:col-span-8", "variant": "light", "decorativeIcon": "rocket_launch"},
+        {"icon": "shield_lock", "title": "Integrity",
+         "description": "Uncompromising honesty in our partnerships and security in our deliveries. Trust is our primary currency.",
+         "span": "md:col-span-4", "variant": "dark"},
+        {"icon": "precision_manufacturing", "title": "Engineering Excellence",
+         "description": "Quality is not an act, but a habit. We employ rigorous peer reviews and automated testing for every build.",
+         "span": "md:col-span-4", "variant": "light"},
+        {"icon": "verified", "title": "Quality",
+         "description": "Every deliverable is held to enterprise-grade standards, validated through structured QA and continuous review.",
+         "span": "md:col-span-4", "variant": "light"},
+        {"icon": "workspace_premium", "title": "Customer Success",
+         "description": "Our engagements are measured by our clients' outcomes, not just our delivery milestones.",
+         "span": "md:col-span-4", "variant": "dark"},
+        {"icon": "handshake", "title": "Ownership",
+         "description": "Every engineer treats client systems as their own — accountable end-to-end, not just for their slice of the code.",
+         "span": "md:col-span-4", "variant": "light"},
+        {"icon": "visibility", "title": "Transparency",
+         "description": "Clear communication, honest timelines, and open access to project status — no surprises, no black boxes.",
+         "span": "md:col-span-4", "variant": "light"},
+        {"icon": "school", "title": "Continuous Learning",
+         "description": "We invest in our engineers' growth continuously, staying ahead of the technology curve as a discipline, not an event.",
+         "span": "md:col-span-4", "variant": "dark"},
+        {"icon": "security", "title": "Security First",
+         "description": "Security is designed in from day one of every engagement, not bolted on afterward.",
+         "span": "md:col-span-4", "variant": "light"},
+        {"icon": "public", "title": "Collaboration",
+         "description": ("Operating across 6 countries, our diverse teams bring global perspectives to solve "
+                          "local enterprise challenges with unified standards."),
+         "span": "md:col-span-8", "variant": "light", "showAvatars": True},
+    ]
+    timeline = [
+        {"year": "2020", "title": "Inception",
+         "description": ("Engineered for scale, security, and velocity. We bridge the gap between complex "
+                          "enterprise needs and cutting-edge digital implementation."),
+         "side": "left"},
+        {"year": "2021", "title": "Pan-India Expansion",
+         "description": "Opened operational hubs in Mumbai, Hyderabad, and Pune. Surpassed the 500-engineer milestone within 18 months.",
+         "side": "right"},
+        {"year": "2022", "title": "Global Footprint",
+         "description": "Expanded to Dubai and Singapore. Achieved ISO 9001 and ISO 27001 certifications for security and quality management.",
+         "side": "left"},
+        {"year": "2024", "title": "AI-First Future",
+         "description": ("Launching our Global AI Center of Excellence and partnering with Fortune 500 leaders "
+                          "to re-engineer their core systems for a generative age."),
+         "side": "present", "icon": "rocket_launch"},
+    ]
+    certifications = [
+        {"icon": "verified", "tag": "ISO 9001", "label": "Quality Management"},
+        {"icon": "lock_person", "tag": "ISO 27001", "label": "Information Security"},
+        {"icon": "trophy", "tag": "2023", "label": "Digital Innovator Award"},
+    ]
+    about_stats = [
+        {"value": "285+", "label": "Employees", "subtitle": "Deep bench of specialists across domains"},
+        {"value": "430+", "label": "Projects Delivered", "subtitle": "Consistent on-time, on-budget delivery"},
+        {"value": "120+", "label": "Enterprise Clients", "subtitle": "Trusted by leading organizations worldwide"},
+        {"value": "35+", "label": "Technology Partners", "subtitle": "A global ecosystem of delivery partners"},
+        {"value": "18+", "label": "Countries Served", "subtitle": "Delivery hubs spanning the globe"},
+        {"value": "5", "label": "Years in Business", "subtitle": "Founded in 2020, built for the long term"},
+        {"value": "98%", "label": "Success Rate", "subtitle": "Projects delivered on scope and on schedule"},
+    ]
+    value = {
+        "coreValues": core_values,
+        "timeline": timeline,
+        "certifications": certifications,
+        "aboutStats": about_stats,
+    }
+    setting, created = await _get_or_create(db, Setting, {"key": "about_content"}, {"value": value, "group": "about"})
+    if not created:
+        setting.value = value
+    print("About-page content settings seeded")
 
 
 # ---------------------------------------------------------------------------
@@ -985,6 +1269,10 @@ async def run() -> None:
         await seed_gallery(db, projects)
         await seed_page_contents(db)
         await seed_stats_settings(db)
+        await seed_leadership(db)
+        await seed_offices(db)
+        await seed_company_info(db)
+        await seed_about_content(db)
 
         await db.commit()
         print(f"\nCMS content seeding complete. New rows this run: {_counts}")

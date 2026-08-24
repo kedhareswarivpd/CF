@@ -34,6 +34,7 @@ from app.models.invoice import Invoice  # noqa: F401
 
 # CRM / sales pipeline
 from app.models.lead import Lead  # noqa: F401
+from app.models.leadership import Leadership  # noqa: F401
 from app.models.leave import Leave  # noqa: F401
 from app.models.media import Media  # noqa: F401
 from app.models.meeting import Meeting  # noqa: F401
@@ -42,6 +43,7 @@ from app.models.mfa_challenge import MfaChallenge  # noqa: F401
 from app.models.newsletter import NewsletterSubscriber  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
 from app.models.oauth_account import OAuthAccount  # noqa: F401
+from app.models.office import Office  # noqa: F401
 from app.models.page_content import PageContent  # noqa: F401
 from app.models.partner import Partner  # noqa: F401
 from app.models.partner_account import PartnerAccount  # noqa: F401
@@ -85,6 +87,7 @@ __all__ = [
     "Department", "Employee", "Attendance", "Leave", "Timesheet", "Payslip", "EmployeeDocument",
     "Client", "ClientFile", "ClientReport", "PartnerAccount", "PartnerFile", "Project", "Task", "Invoice", "Payment",
     "Lead", "Proposal", "Contract",
+    "Leadership", "Office",
     "Blog", "Category", "Comment", "Service",
     "CaseStudy",
     "Testimonial", "Download",
