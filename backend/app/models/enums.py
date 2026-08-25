@@ -203,6 +203,10 @@ class LeadStatus(str, enum.Enum):
     new = "new"
     contacted = "contacted"
     requirement_gathering = "requirement_gathering"
+    # Set the moment a draft proposal is created for the lead (before it's
+    # actually emailed to the client) — distinct from proposal_sent so the
+    # pipeline UI can show "proposal drafted, not yet sent" as its own step.
+    proposal_created = "proposal_created"
     proposal_sent = "proposal_sent"
     proposal_approved = "proposal_approved"
     converted = "converted"

@@ -13,3 +13,4 @@ export const createTicket    = (payload) => apiRequest('/clients/me/tickets', { 
 export const fetchMyProposals  = () => apiRequest('/clients/me/proposals', {});
 export const acceptMyProposal  = (id) => apiRequest(`/clients/me/proposals/${id}/accept`, { method: 'POST' });
 export const rejectMyProposal  = (id, reason) => apiRequest(`/clients/me/proposals/${id}/reject`, { method: 'POST', body: { reason } });
+export const fetchMyContracts  = () => apiRequest('/clients/me/contracts', {});

@@ -13,7 +13,9 @@ from app.models.enums import LeadStatus, NotificationType, ProposalStatus
 from app.models.lead import Lead
 from app.models.proposal import Proposal
 from app.models.user import User
-from app.schemas.crm import ProposalCreate, ProposalOut, ProposalReviewRequest
+from app.schemas.crm import ProposalCreate, ProposalOut, ProposalRejectRequest, ProposalReviewRequest
+from app.services.email_service import send_proposal_email
+from app.services.lead_pipeline import advance_lead_status, log_lead_activity
 from app.services.notification_service import notify_roles
 from app.services.project_provisioning import provision_project_for_accepted_proposal
 from app.utils.pagination import PageParams, page_params
@@ -48,6 +50,14 @@ async def create_proposal(payload: ProposalCreate, db: AsyncSession = Depends(ge
     )).scalar_one()
     next_version = (max_version or 0) + 1
     proposal = await crud.create(db, {**payload.model_dump(), "created_by": current_user.id, "version": next_version})
+
+    lead = await lead_crud.get(db, proposal.lead_id)
+    await advance_lead_status(db, lead, LeadStatus.proposal_created)
+    await log_lead_activity(
+        db, proposal.lead_id, "proposal_created",
+        f"Proposal v{proposal.version} drafted: {proposal.scope_summary[:120]} ({proposal.currency} {proposal.price})",
+        current_user.id,
+    )
     return success_response(data=ProposalOut.model_validate(proposal), message="Proposal drafted", status_code=201)
 
 
@@ -88,7 +98,9 @@ async def send_proposal(proposal_id: uuid.UUID, db: AsyncSession = Depends(get_d
         raise ApiError.bad_request("Only a draft or PM-approved proposal can be sent")
 
     proposal = await crud.update(db, proposal_id, {"status": ProposalStatus.sent, "sent_at": datetime.now(UTC)})
-    await lead_crud.update(db, proposal.lead_id, {"status": LeadStatus.proposal_sent})
+    lead = await lead_crud.update(db, proposal.lead_id, {"status": LeadStatus.proposal_sent})
+    await send_proposal_email(lead.contact_name, lead.email, proposal.scope_summary, float(proposal.price), proposal.currency)
+    await log_lead_activity(db, lead.id, "proposal_sent", f"Proposal v{proposal.version} emailed to {lead.email}")
 
     if float(proposal.price) > DISCOUNT_APPROVAL_THRESHOLD:
         await notify_roles(
@@ -107,6 +119,7 @@ async def accept_proposal(proposal_id: uuid.UUID, db: AsyncSession = Depends(get
 
     proposal = await crud.update(db, proposal_id, {"status": ProposalStatus.accepted})
     await lead_crud.update(db, proposal.lead_id, {"status": LeadStatus.proposal_approved})
+    await log_lead_activity(db, proposal.lead_id, "proposal_approved", f"Proposal v{proposal.version} accepted by the client")
     # Workflow doc's end-to-end diagram: "Client Accepts Proposal -> Project
     # Created" — no manual step in between. Idempotent (see
     # provision_project_for_accepted_proposal); a no-op if the lead hasn't
@@ -116,10 +129,21 @@ async def accept_proposal(proposal_id: uuid.UUID, db: AsyncSession = Depends(get
 
 
 @router.post("/{proposal_id}/reject", response_model=dict)
-async def reject_proposal(proposal_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+async def reject_proposal(proposal_id: uuid.UUID, payload: ProposalRejectRequest = ProposalRejectRequest(), db: AsyncSession = Depends(get_db)):
     proposal = await crud.get(db, proposal_id)
     if proposal.status not in (ProposalStatus.sent, ProposalStatus.viewed):
         raise ApiError.bad_request("Only a sent proposal can be rejected")
 
-    proposal = await crud.update(db, proposal_id, {"status": ProposalStatus.rejected})
+    proposal = await crud.update(db, proposal_id, {"status": ProposalStatus.rejected, "rejection_reason": payload.reason})
+    # A rejected proposal closes the lead out — matches the pipeline's
+    # documented "proposal sent -> disqualified" branch (see
+    # app/services/lead_pipeline.py); staff can still disqualify a lead
+    # directly via POST /leads/{id}/disqualify for reasons unrelated to a
+    # specific proposal.
+    lead = await lead_crud.get(db, proposal.lead_id)
+    if lead.status not in (LeadStatus.converted, LeadStatus.disqualified):
+        lead.rejection_reason = payload.reason
+        await db.commit()
+        await advance_lead_status(db, lead, LeadStatus.disqualified)
+    await log_lead_activity(db, proposal.lead_id, "disqualified", payload.reason or f"Proposal v{proposal.version} rejected by the client")
     return success_response(data=ProposalOut.model_validate(proposal), message="Proposal rejected")

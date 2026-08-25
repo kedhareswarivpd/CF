@@ -111,6 +111,25 @@ async def list_projects(
         return success_response(data=[ProjectOut.model_validate(p) for p in result.scalars().unique().all()], message="Projects fetched", meta=meta)
 
 
+    if filters.get("project_manager_id"):
+        # A PM's "My Projects" dashboard must only ever show real
+        # business-driven projects — ones that trace back to an accepted
+        # proposal (see provision_project_for_accepted_proposal). CMS demo
+        # content (app/seeders/cms_seed.py's seed_projects, used purely as
+        # source material for the public portfolio/case-studies pages) also
+        # assigns a project_manager_id to a seeded PM account so those pages
+        # have a plausible-looking team, which otherwise leaks that showcase
+        # content straight into the PM's actual work queue.
+        query = select(Project).where(Project.project_manager_id == filters["project_manager_id"], Project.proposal_id.isnot(None))
+        count_query = select(func.count()).select_from(Project).where(Project.project_manager_id == filters["project_manager_id"], Project.proposal_id.isnot(None))
+        query = crud._with_relationships(query)
+        query = apply_sort(query, Project, page.sort, allowed_fields={"title", "status", "created_at", "updated_at", "start_date", "end_date", "budget", "progress_percent", "industry"})
+        query = query.limit(page.limit).offset(page.offset)
+        result = await db.execute(query)
+        total = (await db.execute(count_query)).scalar_one()
+        meta = build_pagination_meta(total, page.page, page.limit)
+        return success_response(data=[ProjectOut.model_validate(p) for p in result.scalars().unique().all()], message="Projects fetched", meta=meta)
+
     items, total = await crud.list(db, page, filters)
     meta = build_pagination_meta(total, page.page, page.limit)
     return success_response(data=[ProjectOut.model_validate(p) for p in items], message="Projects fetched", meta=meta)

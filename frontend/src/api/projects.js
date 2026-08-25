@@ -12,3 +12,10 @@ export function fetchProjects({ industry, ...rest } = {}) {
 export function fetchProjectBySlug(slug) {
   return apiRequest(`/projects/${encodeURIComponent(slug)}`);
 }
+
+export function postProjectUpdate(projectId, updateText, hoursLogged) {
+  return apiRequest(`/projects/${projectId}/updates`, {
+    method: 'POST',
+    body: { update_text: updateText, hours_logged: hoursLogged || null },
+  });
+}

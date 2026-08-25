@@ -18,7 +18,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { clientPortalTabs } from '../data/portal.js';
 import {
  fetchMyProfile, fetchMyProjects, fetchMyInvoices, fetchMyTickets, fetchMyPayments, fetchMyMeetings, fetchMyFiles, fetchMyReports,
- fetchMyProposals, acceptMyProposal, rejectMyProposal, createTicket as createTicketApi,
+ fetchMyProposals, acceptMyProposal, rejectMyProposal, createTicket as createTicketApi, fetchMyContracts,
 } from '../api/clients.js';
 import { validateNewTicket } from '../schemas/client.schema.js';
 
@@ -125,7 +125,7 @@ function Projects({ projects }) {
  );
 }
 
-function ProposalCard({ proposal, onAccept, onReject }) {
+function ProposalCard({ proposal, contract, onAccept, onReject }) {
  const { run, isPending } = useAsyncAction();
  const [showRejectForm, setShowRejectForm] = useState(false);
  const [reason, setReason] = useState('');
@@ -173,6 +173,24 @@ function ProposalCard({ proposal, onAccept, onReject }) {
    {proposal.rejectionReason && (
     <p className="mt-3 rounded bg-status-error-bg p-3 text-body-sm text-status-error-text">Rejection reason: {proposal.rejectionReason}</p>
    )}
+   {contract && (
+    <div className="mt-4 rounded-lg border border-outline-variant bg-surface-container p-4 dark:border-dark-outline-variant dark:bg-dark-surface-container">
+     <div className="flex items-center gap-2">
+      <Icon name="gavel" className="text-base text-brand" />
+      <span className="text-body-sm font-semibold text-brand-dark dark:text-white">Contract</span>
+      <StatusBadge variant={contract.status === 'signed' ? 'success' : 'warning'}>{contract.status}</StatusBadge>
+     </div>
+     <div className="mt-2 grid grid-cols-2 gap-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
+      <span>Signed by us: {contract.signedByCompanyAt ? new Date(contract.signedByCompanyAt).toLocaleDateString() : 'Pending'}</span>
+      <span>Signed by you: {contract.signedByClientAt ? new Date(contract.signedByClientAt).toLocaleDateString() : 'Pending'}</span>
+     </div>
+     {contract.documentUrl && (
+      <a href={contract.documentUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex items-center gap-1 text-body-sm font-semibold text-brand hover:underline">
+       <Icon name="description" className="text-base" /> View contract document
+      </a>
+     )}
+    </div>
+   )}
    {error && <p className="mt-3 flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>}
    {isSent && (
     <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -201,7 +219,7 @@ function ProposalCard({ proposal, onAccept, onReject }) {
  );
 }
 
-function Proposals({ proposals, onAccept, onReject }) {
+function Proposals({ proposals, contracts, onAccept, onReject }) {
  const { page, setPage, totalPages, pageRows } = usePagedRows(proposals);
  if (proposals.length === 0) {
   return (
@@ -212,7 +230,9 @@ function Proposals({ proposals, onAccept, onReject }) {
  }
  return (
   <div className="space-y-stack-md">
-   {pageRows.map((p) => <ProposalCard key={p.id} proposal={p} onAccept={onAccept} onReject={onReject} />)}
+   {pageRows.map((p) => (
+    <ProposalCard key={p.id} proposal={p} contract={contracts?.find((c) => c.proposalId === p.id)} onAccept={onAccept} onReject={onReject} />
+   ))}
    <Pagination page={page} totalPages={totalPages} onChange={setPage} />
   </div>
  );
@@ -511,6 +531,13 @@ const normalizeProposal = (p) => ({
 });
 const normalizeProposals = (arr) => (Array.isArray(arr) ? arr.map(normalizeProposal) : []);
 
+const normalizeContract = (c) => ({
+ id: c.id, proposalId: c.proposal_id, status: c.status,
+ signedByCompanyAt: c.signed_by_company_at, signedByClientAt: c.signed_by_client_at,
+ documentUrl: c.document_url,
+});
+const normalizeContracts = (arr) => (Array.isArray(arr) ? arr.map(normalizeContract) : []);
+
 const normalizeInvoice = (i) => ({
  id: i.invoice_number ?? i.id, amount: Number(i.total_amount ?? i.amount ?? 0),
  status: i.status, issueDate: i.issue_date ?? i.issueDate, dueDate: i.due_date ?? i.dueDate,
@@ -575,6 +602,7 @@ export default function ClientPortal() {
  const [profile, setProfile] = useState({ contact_name: '', email: '', company_name: '', industry: '', country: '' });
  const [projects, setProjects] = useState([]);
  const [proposals, setProposals] = useState([]);
+ const [contracts, setContracts] = useState([]);
  const [invoices, setInvoices] = useState([]);
  const [tickets, setTickets] = useState([]);
  const [payments, setPayments] = useState([]);
@@ -589,16 +617,18 @@ export default function ClientPortal() {
    fetchMyProfile().then((res) => res?.data),
    fetchMyProjects().then((res) => res?.data),
    fetchMyProposals().then((res) => res?.data),
+   fetchMyContracts().then((res) => res?.data),
    fetchMyInvoices().then((res) => res?.data),
    fetchMyTickets().then((res) => res?.data),
    fetchMyPayments().then((res) => res?.data),
    fetchMyMeetings().then((res) => res?.data),
    fetchMyFiles().then((res) => res?.data),
    fetchMyReports().then((res) => res?.data),
-  ]).then(([p, pr, prop, inv, t, pay, m, f, r]) => {
+  ]).then(([p, pr, prop, con, inv, t, pay, m, f, r]) => {
    if (p.status === 'fulfilled' && p.value) setProfile(p.value);
    if (pr.status === 'fulfilled' && pr.value) setProjects(normalizeProjects(pr.value));
    if (prop.status === 'fulfilled' && prop.value) setProposals(normalizeProposals(prop.value));
+   if (con.status === 'fulfilled' && con.value) setContracts(normalizeContracts(con.value));
    if (inv.status === 'fulfilled' && inv.value) setInvoices(normalizeInvoices(inv.value));
    if (t.status === 'fulfilled' && t.value) setTickets(normalizeTickets(t.value));
    if (pay.status === 'fulfilled' && pay.value) setPayments(normalizePayments(pay.value));
@@ -611,7 +641,10 @@ export default function ClientPortal() {
  const fetchTab = async (tabId) => {
   if (!user) return;
   const fetchers = {
-   proposals: () => fetchMyProposals().then((res) => { if (res?.data) setProposals(normalizeProposals(res.data)); }),
+   proposals: () => Promise.all([
+    fetchMyProposals().then((res) => { if (res?.data) setProposals(normalizeProposals(res.data)); }),
+    fetchMyContracts().then((res) => { if (res?.data) setContracts(normalizeContracts(res.data)); }),
+   ]),
    payments: () => fetchMyPayments().then((res) => { if (res?.data) setPayments(normalizePayments(res.data)); }),
    files: () => fetchMyFiles().then((res) => { if (res?.data) setFiles(normalizeFiles(res.data)); }),
    meetings: () => fetchMyMeetings().then((res) => { if (res?.data) setMeetings(normalizeMeetings(res.data)); }),
@@ -708,7 +741,7 @@ export default function ClientPortal() {
         <>
          {activeTab === 'overview' && <Overview profile={profile} projects={projects} invoices={invoices} tickets={tickets} />}
          {activeTab === 'projects' && <Projects projects={projects} />}
-         {activeTab === 'proposals' && <Proposals proposals={proposals} onAccept={handleAcceptProposal} onReject={handleRejectProposal} />}
+         {activeTab === 'proposals' && <Proposals proposals={proposals} contracts={contracts} onAccept={handleAcceptProposal} onReject={handleRejectProposal} />}
          {activeTab === 'invoices' && <Invoices invoices={invoices} />}
          {activeTab === 'payments' && <Payments payments={payments} />}
          {activeTab === 'files' && <Files files={files} />}

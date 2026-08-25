@@ -13,6 +13,7 @@ from app.crud.base import CRUDBase
 from app.models.client import Client
 from app.models.client_file import ClientFile
 from app.models.client_report import ClientReport
+from app.models.contract import Contract
 from app.models.employee import Employee
 from app.models.enums import LeadStatus, NotificationType, ProposalStatus, TicketPriority
 from app.models.invoice import Invoice
@@ -27,7 +28,7 @@ from app.models.proposal import Proposal
 from app.models.ticket import Ticket
 from app.models.user import User
 from app.schemas.client import ClientCreate, ClientOut, TicketCreate
-from app.schemas.crm import ProposalOut, ProposalRejectRequest
+from app.schemas.crm import ContractOut, ProposalOut, ProposalRejectRequest
 from app.schemas.finance import (
     ClientFileOut,
     ClientPaymentOut,
@@ -296,6 +297,23 @@ async def my_proposals(db: AsyncSession = Depends(get_db), current_user: User = 
         )
     )
     return success_response(data=[ProposalOut.model_validate(p) for p in result.scalars().all()])
+
+
+@router.get("/me/contracts", response_model=dict)
+async def my_contracts(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Surfaces the contract(s) generated from this client's own proposals —
+    shown alongside them under the Proposals section so the client can see
+    generation/signature status even though the actual signing is recorded
+    by staff (see contracts.py::sign_contract), not done through this
+    portal."""
+    client = await _get_client_for_user(db, current_user)
+    result = await db.execute(
+        bounded_select(
+            select(Contract).join(Proposal, Contract.proposal_id == Proposal.id).join(Lead, Proposal.lead_id == Lead.id)
+            .where(Lead.converted_client_id == client.id).order_by(Contract.created_at.desc())
+        )
+    )
+    return success_response(data=[ContractOut.model_validate(c) for c in result.scalars().all()])
 
 
 async def _get_own_sent_proposal(db: AsyncSession, client: Client, proposal_id: uuid.UUID) -> Proposal:

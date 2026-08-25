@@ -10,6 +10,7 @@ from app.crud.base import CRUDBase
 from app.models.task import Task
 from app.models.user import User
 from app.schemas.task import TaskCreate, TaskOut, TaskStatusUpdate
+from app.services.project_progress import recompute_project_progress
 from app.utils.pagination import PageParams, page_params
 from app.utils.responses import build_pagination_meta, success_response
 
@@ -29,6 +30,9 @@ async def list_tasks(request: Request, db: AsyncSession = Depends(get_db), page:
 @router.post("", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "project_manager"))])
 async def create_task(payload: TaskCreate, db: AsyncSession = Depends(get_db)):
     task = await crud.create(db, payload.model_dump())
+    # A new (not-done) task lowers the done/total ratio — recompute so
+    # progress_percent doesn't sit stale at whatever it was before this task existed.
+    await recompute_project_progress(db, task.project_id)
     return success_response(data=TaskOut.model_validate(task), message="Task created successfully", status_code=201)
 
 
@@ -46,4 +50,5 @@ async def update_task_status(
         raise ApiError.forbidden("You can only update tasks assigned to you")
 
     task = await crud.update(db, task_id, payload.model_dump())
+    await recompute_project_progress(db, task.project_id)
     return success_response(data=TaskOut.model_validate(task), message="Task status updated")

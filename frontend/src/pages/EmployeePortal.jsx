@@ -7,6 +7,7 @@ import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import { SkeletonTable, SkeletonCard } from '../components/ui/Skeleton.jsx';
 import Pagination from '../components/ui/Pagination.jsx';
+import NotificationBell from '../components/ui/NotificationBell.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import useAsyncAction from '../hooks/useAsyncAction.js';
@@ -22,7 +23,8 @@ import {
 } from '../api/employees.js';
 import { apiRequest } from '../api/client.js';
 import { fetchProposals, fetchContracts, fetchLeads, fetchMeetings } from '../api/crm.js';
-import { fetchClients } from '../api/admin.js';
+import { fetchClients, updateTaskStatus } from '../api/admin.js';
+import { postProjectUpdate } from '../api/projects.js';
 import { lazyWithReload as lazy } from '../utils/lazyWithReload.js';
 import { validateNewLeaveRequest, validateNewTimesheet } from '../schemas/employee-self-service.schema.js';
 
@@ -539,9 +541,21 @@ function Payslips({ payslips }) {
  );
 }
 
-function Tasks({ tasks, page, totalPages, onPageChange }) {
+const TASK_STATUS_OPTIONS = ['todo', 'in_progress', 'in_review', 'done', 'blocked'];
+
+function Tasks({ tasks, page, totalPages, onPageChange, onStatusChange }) {
  const priorityColor = { urgent: 'error', high: 'warning', medium: 'info', low: 'neutral' };
- const statusColor = { done: 'success', in_progress: 'info', todo: 'neutral', blocked: 'error' };
+ const statusColor = { done: 'success', in_progress: 'info', in_review: 'info', todo: 'neutral', blocked: 'error' };
+ const [savingId, setSavingId] = useState(null);
+
+ const handleChange = async (taskId, status) => {
+  setSavingId(taskId);
+  try {
+   await onStatusChange(taskId, status);
+  } finally {
+   setSavingId(null);
+  }
+ };
 
  const inProgress = tasks.filter((t) => t.status === 'in_progress').length;
  const completed = tasks.filter((t) => t.status === 'done').length;
@@ -593,7 +607,15 @@ function Tasks({ tasks, page, totalPages, onPageChange }) {
          </span>
         </td>
         <td data-label="Priority" className="px-stack-lg py-4"><StatusBadge variant={priorityColor[t.priority] || 'neutral'}>{t.priority}</StatusBadge></td>
-        <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={statusColor[t.status] || 'neutral'}>{t.status.replace('_', ' ')}</StatusBadge></td>
+        <td data-label="Status" className="px-stack-lg py-4">
+         <div className="flex items-center gap-2">
+          <StatusBadge variant={statusColor[t.status] || 'neutral'}>{t.status.replace('_', ' ')}</StatusBadge>
+          <select value={t.status} disabled={savingId === t.id} onChange={(e) => handleChange(t.id, e.target.value)}
+           className="rounded border border-outline-variant bg-white px-2 py-1 text-body-sm disabled:opacity-50 dark:border-dark-outline-variant dark:bg-dark-surface">
+           {TASK_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+          </select>
+         </div>
+        </td>
         <td data-label="Due Date" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.due}</td>
        </tr>
       ))}
@@ -601,6 +623,44 @@ function Tasks({ tasks, page, totalPages, onPageChange }) {
     </table>
    </div>
    <Pagination page={page} totalPages={totalPages} onChange={onPageChange} />
+  </div>
+ );
+}
+
+function ProjectUpdateForm({ projectId }) {
+ const [open, setOpen] = useState(false);
+ const [text, setText] = useState('');
+ const [saving, setSaving] = useState(false);
+ const [sent, setSent] = useState(false);
+
+ const submit = async () => {
+  if (!text.trim()) return;
+  setSaving(true);
+  try {
+   await postProjectUpdate(projectId, text.trim());
+   setText('');
+   setOpen(false);
+   setSent(true);
+   setTimeout(() => setSent(false), 3000);
+  } catch { /* the field stays populated so the user can retry */ }
+  finally { setSaving(false); }
+ };
+
+ if (!open) {
+  return (
+   <button type="button" onClick={() => setOpen(true)} className="mt-3 flex items-center gap-1 text-body-sm font-semibold text-brand hover:underline">
+    <Icon name="add_comment" className="text-base" /> {sent ? 'Update posted ✓' : 'Post Update'}
+   </button>
+  );
+ }
+ return (
+  <div className="mt-3 space-y-2">
+   <textarea value={text} onChange={(e) => setText(e.target.value)} rows={2} placeholder="What did you work on today..."
+    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-body-sm text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-white dark:placeholder-white/40" />
+   <div className="flex gap-2">
+    <Button type="button" variant="primary" size="sm" disabled={saving || !text.trim()} onClick={submit}>{saving ? 'Posting...' : 'Post'}</Button>
+    <Button type="button" variant="outline" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+   </div>
   </div>
  );
 }
@@ -643,6 +703,7 @@ function Projects({ projects, page, totalPages, onPageChange }) {
        <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
         <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress}%` }} />
        </div>
+       <ProjectUpdateForm projectId={p.id} />
       </div>
      ))}
     </div>
@@ -1072,12 +1133,19 @@ export default function EmployeePortal() {
  // Tasks and Projects (unlike the /employees/me/* self-service lists above)
  // are backed by routers (tasks.py/projects.py) that support real
  // page_params, so these fetch one page at a time instead of a capped batch.
- useEffect(() => {
+ const loadTasks = useCallback(() => {
   if (!profile._userId) return;
   apiRequest(`/tasks?assigned_to=${profile._userId}&page=${tasksPage}&limit=20`)
    .then((res) => { setTasks(normalizeTasks(res?.data)); setTasksTotalPages(res?.meta?.total_pages || 1); })
    .catch(() => {});
  }, [profile._userId, tasksPage]);
+
+ useEffect(() => { loadTasks(); }, [loadTasks]);
+
+ const handleTaskStatusChange = async (taskId, status) => {
+  await updateTaskStatus(taskId, status);
+  loadTasks();
+ };
 
  useEffect(() => {
   if (!profile._userId && !profile._employeeId) return;
@@ -1124,6 +1192,7 @@ export default function EmployeePortal() {
      </div>
     </div>
     <div className="flex items-center gap-3">
+     <NotificationBell />
      <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
       Sign Out
      </Button>
@@ -1183,7 +1252,7 @@ export default function EmployeePortal() {
       {activeTab === 'leaves' && <Leaves leaves={leaves} />}
       {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} />}
       {activeTab === 'payslips' && <Payslips payslips={payslips} />}
-      {activeTab === 'tasks' && <Tasks tasks={tasks} page={tasksPage} totalPages={tasksTotalPages} onPageChange={setTasksPage} />}
+      {activeTab === 'tasks' && <Tasks tasks={tasks} page={tasksPage} totalPages={tasksTotalPages} onPageChange={setTasksPage} onStatusChange={handleTaskStatusChange} />}
       {activeTab === 'projects' && <Projects projects={projects} page={projectsPage} totalPages={projectsTotalPages} onPageChange={setProjectsPage} />}
       {activeTab === 'performance' && <Performance reviews={performance} />}
       {activeTab === 'training' && <Training courses={training} catalog={catalog} onEnroll={handleEnroll} enrollingId={enrollingId} />}

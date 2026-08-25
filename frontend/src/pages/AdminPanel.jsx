@@ -629,8 +629,8 @@ const PROJECT_STATUS_VARIANT = {
  planning: 'neutral', in_progress: 'info', on_hold: 'warning', completed: 'success', cancelled: 'error',
 };
 
-function AddProjectForm({ onCreated, onCancel }) {
- const [form, setForm] = useState({ title: '', industry: '', status: 'planning', budget: '', is_published: false, is_featured: false });
+function AddProjectForm({ onCreated, onCancel, pmOptions }) {
+ const [form, setForm] = useState({ title: '', industry: '', status: 'planning', budget: '', project_manager_id: '', is_published: false, is_featured: false });
  const [error, setError] = useState('');
  const [fieldErrors, setFieldErrors] = useState({});
  const { run, isPending: submitting } = useAsyncAction();
@@ -653,6 +653,7 @@ function AddProjectForm({ onCreated, onCancel }) {
      industry: form.industry || null,
      status: form.status,
      budget: form.budget ? Number(form.budget) : null,
+     project_manager_id: form.project_manager_id || null,
      is_published: form.is_published,
      is_featured: form.is_featured,
     });
@@ -684,6 +685,12 @@ function AddProjectForm({ onCreated, onCancel }) {
      <input type="number" min="0" placeholder="Budget (optional)" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} className={inputClass + ' w-full'} />
      {fieldErrors.budget && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{fieldErrors.budget}</p>}
     </div>
+    <div>
+     <select value={form.project_manager_id} onChange={(e) => setForm({ ...form, project_manager_id: e.target.value })} className={inputClass + ' w-full'}>
+      <option value="">Unassigned Project Manager</option>
+      {pmOptions?.map((pm) => <option key={pm.id} value={pm.id}>{pm.name}</option>)}
+     </select>
+    </div>
    </div>
    <div className="flex items-center gap-6">
     <label className="flex items-center gap-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
@@ -709,6 +716,7 @@ function ProjectsManagement() {
  const [editingProject, setEditingProject] = useState(null);
  const [page, setPage] = useState(1);
  const [totalPages, setTotalPages] = useState(1);
+ const [pmOptions, setPmOptions] = useState([]);
 
  const loadProjects = useCallback(() => {
   setLoading(true);
@@ -721,6 +729,12 @@ function ProjectsManagement() {
  useEffect(() => {
   loadProjects();
  }, [loadProjects]);
+
+ useEffect(() => {
+  fetchUsers({ role: 'project_manager', limit: 100 }).then((res) => setPmOptions(res?.data || [])).catch(() => {});
+ }, []);
+
+ const pmName = (id) => pmOptions.find((pm) => pm.id === id)?.name || 'Unassigned';
 
  const handleEdit = (project) => {
   setEditingProject(project);
@@ -747,6 +761,7 @@ function ProjectsManagement() {
      industry: editingProject.industry || null,
      status: editingProject.status,
      budget: editingProject.budget ? Number(editingProject.budget) : null,
+     project_manager_id: editingProject.project_manager_id || null,
      is_published: editingProject.is_published,
      is_featured: editingProject.is_featured,
      progress_percent: editingProject.progress_percent,
@@ -787,6 +802,7 @@ function ProjectsManagement() {
   { key: 'industry', label: 'Industry', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => v || '—' },
   { key: 'status', label: 'Status', render: (v) => <StatusBadge variant={PROJECT_STATUS_VARIANT[v] || 'neutral'}>{v?.replace('_', ' ')}</StatusBadge> },
   { key: 'progress_percent', label: 'Progress', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => `${v ?? 0}%` },
+  { key: 'project_manager_id', label: 'Project Manager', className: 'text-body-sm text-ink-muted dark:text-dark-ink-muted', render: (v) => pmName(v) },
   {
    key: 'is_published', label: 'Published',
    render: (v, p) => (
@@ -846,6 +862,12 @@ function ProjectsManagement() {
           <input type="number" min="0" placeholder="Budget (optional)" value={editingProject.budget || ''} onChange={(e) => setEditingProject({ ...editingProject, budget: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
           {projectFieldErrors.budget && <p className="mt-1 flex items-center gap-1 text-body-xs font-semibold text-status-error-text">{projectFieldErrors.budget}</p>}
          </div>
+         <div>
+          <select value={editingProject.project_manager_id || ''} onChange={(e) => setEditingProject({ ...editingProject, project_manager_id: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'}>
+           <option value="">Unassigned Project Manager</option>
+           {pmOptions.map((pm) => <option key={pm.id} value={pm.id}>{pm.name}</option>)}
+          </select>
+         </div>
         </div>
         <div className="flex items-center gap-6">
          <label className="flex items-center gap-2 text-body-sm text-ink-muted dark:text-dark-ink-muted">
@@ -862,7 +884,7 @@ function ProjectsManagement() {
         </div>
        </form>
       ) : (
-       <AddProjectForm onCreated={() => { setShowAddForm(false); loadProjects(); }} onCancel={() => setShowAddForm(false)} />
+       <AddProjectForm onCreated={() => { setShowAddForm(false); loadProjects(); }} onCancel={() => setShowAddForm(false)} pmOptions={pmOptions} />
       )}
      </div>
     )}

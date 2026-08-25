@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.logger import logger
+from app.models.client import Client
 from app.models.enums import NotificationType, ProjectStatus
 from app.models.lead import Lead
 from app.models.project import Project
@@ -56,10 +57,23 @@ async def provision_project_for_accepted_proposal(db: AsyncSession, proposal: Pr
     await db.refresh(project)
 
     try:
+        client = (await db.execute(select(Client).where(Client.id == lead.converted_client_id))).scalar_one_or_none()
+        client_name = (client.company_name if client else None) or lead.company or lead.contact_name
+        details = (
+            f"'{title}' was auto-created from accepted proposal v{proposal.version}.\n"
+            f"Client: {client_name} ({lead.email})\n"
+            f"Budget: {proposal.currency} {float(proposal.price):,.2f}\n"
+            f"Scope: {proposal.scope_summary[:200]}"
+        )
+        # admin and project_manager land on different portals — each needs
+        # its own deep link (a PM hitting /admin-panel is role-gated out).
         await notify_roles(
-            db, ["admin", "project_manager"], "New project created from an accepted proposal",
-            f"'{title}' was auto-created from accepted proposal v{proposal.version} — assign a PM and team.",
+            db, ["admin"], "New project created from an accepted proposal", details,
             NotificationType.success, f"/admin-panel?tab=projects&project={project.id}",
+        )
+        await notify_roles(
+            db, ["project_manager"], "New project needs a PM assigned", details,
+            NotificationType.success, f"/project-manager?tab=projects&project={project.id}",
         )
     except Exception as exc:  # noqa: BLE001 — the project itself is already committed; a notify failure must not undo it
         logger.warning("Failed to notify staff of auto-created project %s: %s", project.id, exc)

@@ -35,6 +35,7 @@ from app.models.invoice import Invoice  # noqa: F401
 
 # CRM / sales pipeline
 from app.models.lead import Lead  # noqa: F401
+from app.models.lead_activity import LeadActivity  # noqa: F401
 from app.models.leadership import Leadership  # noqa: F401
 from app.models.leave import Leave  # noqa: F401
 from app.models.media import Media  # noqa: F401

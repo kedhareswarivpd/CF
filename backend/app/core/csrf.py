@@ -27,9 +27,22 @@ from app.core.cookies import ACCESS_TOKEN_COOKIE, CSRF_COOKIE, CSRF_HEADER
 
 _STATE_CHANGING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
+# Always exempt regardless of whether a (possibly stale/invalid) access-token
+# cookie is present. A stale cookie left over from before a DB reset, a
+# revoked session, or any other case where the browser holds a cookie the
+# server no longer recognizes must never permanently lock the user out of
+# both logging in AND logging out — the CSRF cookie is only ever minted by
+# a successful login, so gating logout on it (as the plain cookie-presence
+# check below would) creates exactly that deadlock. Forging a cross-site
+# logout is a low-severity nuisance (logs the victim out), not a CSRF
+# concern worth blocking.
+_ALWAYS_EXEMPT_PATH_SUFFIXES = ("/auth/login", "/auth/register", "/auth/logout", "/auth/refresh")
+
 
 class CSRFMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        if request.url.path.endswith(_ALWAYS_EXEMPT_PATH_SUFFIXES):
+            return await call_next(request)
         if request.method in _STATE_CHANGING_METHODS and request.cookies.get(ACCESS_TOKEN_COOKIE):
             # Only enforced once a session cookie exists — login/register are
             # unauthenticated POSTs with nothing to hijack yet (no session to

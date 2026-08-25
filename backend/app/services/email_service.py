@@ -130,6 +130,18 @@ async def send_meeting_scheduled_email(
     )
 
 
+async def send_proposal_email(name: str, email: str, scope_summary: str, price: float, currency: str) -> None:
+    safe_name = _esc(name)
+    await send_email(
+        email,
+        f"Your Proposal from {settings.app_name}",
+        f"<p>Hi {safe_name},</p><p>Thank you for your interest. Please find your proposal details below:</p>"
+        f"<p><strong>Scope of Work:</strong> {_esc(scope_summary)}</p>"
+        f"<p><strong>Price:</strong> {_esc(currency)} {_esc(f'{price:,.2f}')}</p>"
+        f"<p>If you have any questions or would like to proceed, just reply to this email.</p>",
+    )
+
+
 async def send_contact_notification(name: str, email: str, message: str, subject: str | None) -> None:
     await send_email(
         settings.brevo_sender_email,

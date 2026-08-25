@@ -5,13 +5,14 @@ import StatusBadge from '../ui/StatusBadge.jsx';
 import RowAction from '../ui/RowAction.jsx';
 import { SkeletonTable } from '../ui/Skeleton.jsx';
 import Pagination from '../ui/Pagination.jsx';
+import LeadFlowPage from './LeadFlowPage.jsx';
 import useAsyncAction from '../../hooks/useAsyncAction.js';
 import { apiRequest } from '../../api/client.js';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import {
  createProposal, sendProposal, acceptProposal, rejectProposal,
  createContract, signContract,
- createLead, updateLead,
+ createLead,
  createMeeting, updateMeeting,
 } from '../../api/crm.js';
 import { validateConvertToLead, validateNewLead, validateNewProposal, validateNewMeeting } from '../../schemas/crm.schema.js';
@@ -24,9 +25,8 @@ const CLIENT_PAGE_SIZE = 10;
 // Extracted from EmployeePortal.jsx (Sonar M5): the Sales CRM sub-views are
 // only rendered for the "sales" role, so splitting them into their own
 // lazy-loaded chunk keeps that weight out of every other role's download.
-const LEAD_STATUS_OPTIONS = ['new', 'contacted', 'requirement_gathering', 'proposal_sent', 'proposal_approved', 'converted', 'disqualified'];
 const LEAD_SOURCE_OPTIONS = ['website', 'contact_form', 'referral', 'campaign', 'cold_outreach', 'event', 'other'];
-const LEAD_STATUS_COLOR = { new: 'neutral', contacted: 'info', requirement_gathering: 'info', proposal_sent: 'warning', proposal_approved: 'success', converted: 'success', disqualified: 'error' };
+const LEAD_STATUS_COLOR = { new: 'neutral', contacted: 'info', requirement_gathering: 'info', proposal_created: 'info', proposal_sent: 'warning', proposal_approved: 'success', converted: 'success', disqualified: 'error' };
 const PROPOSAL_STATUS_COLOR = { draft: 'neutral', sent: 'warning', viewed: 'info', accepted: 'success', rejected: 'error' };
 const CONTRACT_STATUS_COLOR = { pending: 'warning', signed: 'success', void: 'error' };
 
@@ -34,16 +34,10 @@ function Leads({ leads, onRefresh }) {
  const [showForm, setShowForm] = useState(false);
  const [form, setForm] = useState({ company: '', contact_name: '', email: '', phone: '', source: 'website', estimated_value: '' });
  const [errors, setErrors] = useState({});
- const [savingId, setSavingId] = useState(null);
- const [expandedLeadId, setExpandedLeadId] = useState(null);
- const [activeAction, setActiveAction] = useState(null);
- const [noteDraft, setNoteDraft] = useState('');
- const [proposalForm, setProposalForm] = useState({ scope_summary: '', price: '' });
- const [demoForm, setDemoForm] = useState({ scheduled_at: '', duration_minutes: 30, meeting_link: '' });
  const [toast, setToast] = useState('');
  const [page, setPage] = useState(1);
+ const [openLeadId, setOpenLeadId] = useState(null);
  const { run: runSubmit, isPending: submitting } = useAsyncAction();
- const { run: runAction, isPending: actionPending } = useAsyncAction();
  const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 bg-white focus:outline-none focus:border-brand';
 
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
@@ -75,86 +69,9 @@ function Leads({ leads, onRefresh }) {
   });
  };
 
- const handleStatusChange = (leadId, status) => runAction(async () => {
-  setSavingId(leadId);
-  try {
-   await updateLead(leadId, { status });
-   onRefresh();
-  } finally {
-   setSavingId(null);
-  }
- });
-
- const openQuickAction = (leadId, action) => {
-  setExpandedLeadId(leadId);
-  setActiveAction(action);
-  setNoteDraft('');
-  setProposalForm({ scope_summary: '', price: '' });
-  setDemoForm({ scheduled_at: '', duration_minutes: 30, meeting_link: '' });
- };
-
- const closeQuickAction = () => {
-  setExpandedLeadId(null);
-  setActiveAction(null);
- };
-
- const handleLogCall = (leadId) => runAction(async () => {
-  if (!noteDraft.trim()) { showToast('Please enter a note.'); return; }
-  setSavingId(leadId);
-  try {
-   const lead = leads.find((l) => l.id === leadId);
-   const existingNote = lead?.notes ? `${lead.notes}\n` : '';
-   await updateLead(leadId, { notes: `${existingNote}[Call Log] ${new Date().toLocaleString()}: ${noteDraft}` });
-   onRefresh();
-   showToast('Call logged successfully.');
-  } catch (err) {
-   showToast(err?.message || 'Failed to log call.');
-  } finally {
-   setSavingId(null);
-   closeQuickAction();
-  }
- });
-
- const handleSendProposal = (leadId) => runAction(async () => {
-  if (!proposalForm.scope_summary.trim() || !proposalForm.price) { showToast('Please enter scope and price.'); return; }
-  setSavingId(leadId);
-  try {
-   await createProposal({
-    lead_id: leadId,
-    scope_summary: proposalForm.scope_summary,
-    price: Number(proposalForm.price),
-    currency: 'USD',
-   });
-   onRefresh();
-   showToast('Proposal sent successfully.');
-  } catch (err) {
-   showToast(err?.message || 'Failed to send proposal.');
-  } finally {
-   setSavingId(null);
-   closeQuickAction();
-  }
- });
-
- const handleScheduleDemo = (leadId) => runAction(async () => {
-  if (!demoForm.scheduled_at) { showToast('Please select a date and time.'); return; }
-  setSavingId(leadId);
-  try {
-   const lead = leads.find((l) => l.id === leadId);
-   await createMeeting({
-    title: `Demo: ${lead?.company || lead?.contact_name || 'Lead'}`,
-    scheduled_at: demoForm.scheduled_at,
-    duration_minutes: Number(demoForm.duration_minutes) || 30,
-    meeting_link: demoForm.meeting_link || undefined,
-   });
-   onRefresh();
-   showToast('Demo scheduled successfully.');
-  } catch (err) {
-   showToast(err?.message || 'Failed to schedule demo.');
-  } finally {
-   setSavingId(null);
-   closeQuickAction();
-  }
- });
+ if (openLeadId) {
+  return <LeadFlowPage leadId={openLeadId} onBack={() => setOpenLeadId(null)} onRefresh={onRefresh} />;
+ }
 
  return (
   <div className="space-y-stack-md">
@@ -201,86 +118,25 @@ function Leads({ leads, onRefresh }) {
    <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant bg-surface-container dark:border-dark-outline-variant dark:bg-dark-surface-container">
     <table className="w-full text-left">
      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-      <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Est. Value</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Quick Actions</th></tr>
+      <tr><th className="px-stack-lg py-4">Company / Contact</th><th className="px-stack-lg py-4">Email</th><th className="px-stack-lg py-4">Source</th><th className="px-stack-lg py-4">Est. Value</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Open</th></tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
       {pagedLeads.map((l) => (
-       <Fragment key={l.id}>
-        <tr className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
-          <td data-label="Company / Contact" className="px-stack-lg py-4">
-          <p className="text-body-md font-semibold text-brand-dark dark:text-white">{l.company || '—'}</p>
-          <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.contact_name}</p>
-         </td>
-         <td data-label="Email" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.email}</td>
-         <td data-label="Source" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{l.source?.replace('_', ' ')}</td>
-         <td data-label="Est. Value" className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-white">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
-         <td data-label="Status" className="px-stack-lg py-4">
-          <div className="flex items-center gap-2">
-           <StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge>
-           <select value={l.status} disabled={actionPending && savingId === l.id} onChange={(e) => handleStatusChange(l.id, e.target.value)}
-            className="rounded border border-outline-variant bg-white px-2 py-1 text-body-sm disabled:opacity-50 dark:border-dark-outline-variant">
-            {LEAD_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-           </select>
-          </div>
-         </td>
-         <td data-label="Quick Actions" className="px-stack-lg py-4">
-          {PIPELINE_ACTIVE_STATUSES.includes(l.status) && (
-           <div className="flex flex-col gap-1">
-            <RowAction disabled={actionPending && savingId === l.id} onClick={() => openQuickAction(l.id, 'log_call')}>Log Call</RowAction>
-            <RowAction variant="outline" disabled={actionPending && savingId === l.id} onClick={() => openQuickAction(l.id, 'send_proposal')}>Send Proposal</RowAction>
-            <RowAction variant="outline" disabled={actionPending && savingId === l.id} onClick={() => openQuickAction(l.id, 'schedule_demo')}>Schedule Demo</RowAction>
-           </div>
-          )}
-         </td>
-        </tr>
-        {expandedLeadId === l.id && (
-         <tr className="dark:bg-blue-900/30/30 bg-accent-cyan-pale">
-          <td data-label="Company / Contact" colSpan={6} className="px-stack-lg py-4">
-           {activeAction === 'log_call' && (
-            <div className="space-y-3">
-             <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Log Call — {l.company || l.contact_name}</p>
-             <textarea placeholder="Enter call notes..." value={noteDraft} onChange={(e) => setNoteDraft(e.target.value)} rows={3}
-              className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
-             <div className="flex gap-2">
-              <Button type="button" variant="primary" size="md" disabled={actionPending && savingId === l.id} onClick={() => handleLogCall(l.id)}>Save Note</Button>
-              <Button type="button" variant="outline" size="md" onClick={closeQuickAction}>Cancel</Button>
-             </div>
-            </div>
-           )}
-           {activeAction === 'send_proposal' && (
-            <div className="space-y-3">
-             <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Send Proposal — {l.company || l.contact_name}</p>
-             <textarea placeholder="Scope summary *" value={proposalForm.scope_summary} onChange={(e) => setProposalForm({ ...proposalForm, scope_summary: e.target.value })} rows={3}
-              className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
-             <input type="number" min="0" placeholder="Price ($) *" value={proposalForm.price} onChange={(e) => setProposalForm({ ...proposalForm, price: e.target.value })}
-              className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
-             <div className="flex gap-2">
-              <Button type="button" variant="primary" size="md" disabled={actionPending && savingId === l.id} onClick={() => handleSendProposal(l.id)}>Create & Send</Button>
-              <Button type="button" variant="outline" size="md" onClick={closeQuickAction}>Cancel</Button>
-             </div>
-            </div>
-           )}
-           {activeAction === 'schedule_demo' && (
-            <div className="space-y-3">
-             <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Schedule Demo — {l.company || l.contact_name}</p>
-             <input type="datetime-local" value={demoForm.scheduled_at} onChange={(e) => setDemoForm({ ...demoForm, scheduled_at: e.target.value })}
-              className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
-             <input type="number" min="15" max="240" step="15" placeholder="Duration (minutes)" value={demoForm.duration_minutes}
-              onChange={(e) => setDemoForm({ ...demoForm, duration_minutes: e.target.value })}
-              className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
-             <input type="url" placeholder="Meeting link (optional)" value={demoForm.meeting_link}
-              onChange={(e) => setDemoForm({ ...demoForm, meeting_link: e.target.value })}
-              className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
-             <div className="flex gap-2">
-              <Button type="button" variant="primary" size="md" disabled={actionPending && savingId === l.id} onClick={() => handleScheduleDemo(l.id)}>Schedule</Button>
-              <Button type="button" variant="outline" size="md" onClick={closeQuickAction}>Cancel</Button>
-             </div>
-            </div>
-           )}
-          </td>
-         </tr>
-        )}
-       </Fragment>
+       <tr key={l.id} className="transition-colors hover:bg-accent-cyan-pale dark:bg-blue-900/30">
+         <td data-label="Company / Contact" className="px-stack-lg py-4">
+         <p className="text-body-md font-semibold text-brand-dark dark:text-white">{l.company || '—'}</p>
+         <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.contact_name}</p>
+        </td>
+        <td data-label="Email" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{l.email}</td>
+        <td data-label="Source" className="px-stack-lg py-4 text-body-sm capitalize text-ink-muted dark:text-dark-ink-muted">{l.source?.replace('_', ' ')}</td>
+        <td data-label="Est. Value" className="px-stack-lg py-4 text-body-sm text-brand-dark dark:text-white">{l.estimated_value ? `$${Number(l.estimated_value).toLocaleString()}` : '—'}</td>
+        <td data-label="Status" className="px-stack-lg py-4">
+         <StatusBadge variant={LEAD_STATUS_COLOR[l.status]}>{l.status?.replace('_', ' ')}</StatusBadge>
+        </td>
+        <td data-label="Open" className="px-stack-lg py-4">
+         <RowAction onClick={() => setOpenLeadId(l.id)}>Open</RowAction>
+        </td>
+       </tr>
       ))}
       {!leads.length && (
        <tr><td data-label="Company / Contact" colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No leads yet.</td></tr>
@@ -368,7 +224,10 @@ function ContactSubmissionsView({ onLeadCreated }) {
         <td data-label="Date" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{s.created_at?.slice(0, 10) || '—'}</td>
         <td data-label="Actions" className="px-stack-lg py-4">
          <div className="flex flex-col gap-1">
-          {s.status !== 'spam' && s.status !== 'resolved' && (
+          {s.lead_id && s.status !== 'spam' && s.status !== 'resolved' && (
+           <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Lead created</span>
+          )}
+          {!s.lead_id && s.status === 'in_progress' && (
            <RowAction onClick={() => setConvertTarget(s)}>Convert to Lead</RowAction>
           )}
           {s.status === 'new' && (
@@ -482,6 +341,7 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
  const [actingId, setActingId] = useState(null);
  const [toast, setToast] = useState({ msg: '', type: 'success' });
  const [page, setPage] = useState(1);
+ const [viewProposal, setViewProposal] = useState(null);
  const { run: runSubmit, isPending: submitting } = useAsyncAction();
  const { run: runRowAction, isPending: rowActionPending } = useAsyncAction();
  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 3500); };
@@ -564,7 +424,7 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
    <div className="responsive-table overflow-x-auto rounded-lg border border-outline-variant bg-surface-container dark:border-dark-outline-variant dark:bg-dark-surface-container">
     <table className="w-full text-left">
      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
-      <tr><th className="px-stack-lg py-4">Lead</th><th className="px-stack-lg py-4">Price</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Sent</th><th className="px-stack-lg py-4">Actions</th></tr>
+      <tr><th className="px-stack-lg py-4">Lead</th><th className="px-stack-lg py-4">Price</th><th className="px-stack-lg py-4">Status</th><th className="px-stack-lg py-4">Sent</th><th className="px-stack-lg py-4">View</th><th className="px-stack-lg py-4">Actions</th></tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
       {pagedProposals.map((p) => (
@@ -573,6 +433,12 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
         <td data-label="Price" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.currency} {Number(p.price).toLocaleString()}</td>
         <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={PROPOSAL_STATUS_COLOR[p.status]}>{p.status}</StatusBadge></td>
         <td data-label="Sent" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{p.sent_at ? p.sent_at.slice(0, 10) : '—'}</td>
+        <td data-label="View" className="px-stack-lg py-4">
+         <button type="button" aria-label="View proposal" onClick={() => setViewProposal(p)}
+          className="flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-accent-cyan-pale hover:text-brand-dark dark:text-dark-ink-muted dark:hover:bg-blue-900/30 dark:hover:text-white">
+          <Icon name="visibility" className="text-lg" />
+         </button>
+        </td>
         <td data-label="Actions" className="px-stack-lg py-4">
          <div className="flex gap-2">
           {p.status === 'draft' && <RowAction disabled={rowActionPending && actingId === p.id} onClick={() => runAction(sendProposal, p.id, 'Proposal sent to client!')}>Send</RowAction>}
@@ -598,12 +464,60 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
        </tr>
       ))}
       {!proposals.length && (
-       <tr><td data-label="Lead" colSpan={5} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No proposals yet.</td></tr>
+       <tr><td data-label="Lead" colSpan={6} className="px-stack-lg py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No proposals yet.</td></tr>
       )}
      </tbody>
     </table>
    </div>
    <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+   {viewProposal && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && setViewProposal(null)}>
+     <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl dark:bg-dark-surface-container">
+      <div className="mb-5 flex items-start justify-between">
+       <div>
+        <h2 className="font-display text-headline-sm font-bold text-brand-dark dark:text-white">Proposal v{viewProposal.version}</h2>
+        <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{leadLabel(viewProposal.lead_id)}</p>
+       </div>
+       <button onClick={() => setViewProposal(null)} aria-label="Close" className="text-ink-muted hover:text-ink dark:text-dark-ink-muted dark:text-white"><Icon name="close" className="text-xl" /></button>
+      </div>
+      <div className="space-y-4">
+       <div className="flex items-center gap-2">
+        <StatusBadge variant={PROPOSAL_STATUS_COLOR[viewProposal.status]}>{viewProposal.status}</StatusBadge>
+        <span className="text-body-md font-semibold text-brand-dark dark:text-white">{viewProposal.currency} {Number(viewProposal.price).toLocaleString()}</span>
+       </div>
+       <div>
+        <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Scope Summary</p>
+        <p className="mt-1 whitespace-pre-wrap text-body-sm text-brand-dark dark:text-white">{viewProposal.scope_summary}</p>
+       </div>
+       <div className="grid grid-cols-2 gap-4 text-body-sm">
+        <div>
+         <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Sent</p>
+         <p className="text-brand-dark dark:text-white">{viewProposal.sent_at ? new Date(viewProposal.sent_at).toLocaleString() : '—'}</p>
+        </div>
+        <div>
+         <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Viewed by client</p>
+         <p className="text-brand-dark dark:text-white">{viewProposal.viewed_at ? new Date(viewProposal.viewed_at).toLocaleString() : '—'}</p>
+        </div>
+       </div>
+       {viewProposal.client_comment && (
+        <div>
+         <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Client Comment</p>
+         <p className="mt-1 text-body-sm text-brand-dark dark:text-white">{viewProposal.client_comment}</p>
+        </div>
+       )}
+       {viewProposal.rejection_reason && (
+        <div>
+         <p className="font-label-caps text-label-caps uppercase text-status-error">Rejection Reason</p>
+         <p className="mt-1 text-body-sm text-red-800">{viewProposal.rejection_reason}</p>
+        </div>
+       )}
+       <div className="flex justify-end pt-1">
+        <Button type="button" variant="outline" size="md" onClick={() => setViewProposal(null)}>Close</Button>
+       </div>
+      </div>
+     </div>
+    </div>
+   )}
   </div>
  );
 }
@@ -706,13 +620,14 @@ const LEAD_FUNNEL_STAGES = [
  { label: 'New', value: 'new', color: '#6366f1' },
  { label: 'Contacted', value: 'contacted', color: '#8b5cf6' },
  { label: 'Qualified', value: 'requirement_gathering', color: '#3b82f6' },
+ { label: 'Proposal Created', value: 'proposal_created', color: '#0ea5e9' },
  { label: 'Proposal Sent', value: 'proposal_sent', color: '#f59e0b' },
  { label: 'Proposal Approved', value: 'proposal_approved', color: '#10b981' },
  { label: 'Won', value: 'converted', color: '#059669' },
  { label: 'Lost', value: 'disqualified', color: '#ef4444' },
 ];
 
-const PIPELINE_ACTIVE_STATUSES = ['new', 'contacted', 'requirement_gathering', 'proposal_sent', 'proposal_approved'];
+const PIPELINE_ACTIVE_STATUSES = ['new', 'contacted', 'requirement_gathering', 'proposal_created', 'proposal_sent', 'proposal_approved'];
 
 function CrmDashboard({ leads, proposals, contracts }) {
  const openLeads = leads.filter((l) => PIPELINE_ACTIVE_STATUSES.includes(l.status)).length;

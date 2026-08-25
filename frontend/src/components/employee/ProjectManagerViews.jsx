@@ -11,7 +11,7 @@ import {
  fetchAllTimesheets, reviewTimesheet,
  fetchTasks, createTask, updateTaskStatus,
  assignProjectTeam, fetchAdminProjects, createProject,
- fetchEmployees, fetchClients,
+ fetchEmployees, fetchClients, submitProjectForClientReview,
 } from '../../api/admin.js';
 import { validateAddProject } from '../../schemas/project.schema.js';
 import { validateNewTask } from '../../schemas/task.schema.js';
@@ -37,6 +37,7 @@ function TeamProjects({ userId }) {
  const [totalPages, setTotalPages] = useState(1);
  const { run: runAssign, isPending: assignPending } = useAsyncAction();
  const { run: runCreate, isPending: creating } = useAsyncAction();
+ const { run: runSubmitReview, isPending: submittingReview } = useAsyncAction();
 
  const showToast = (msg, type = 'success') => {
   setToast({ msg, type });
@@ -112,6 +113,16 @@ function TeamProjects({ userId }) {
   }
  });
 
+ const submitForReview = (project) => runSubmitReview(async () => {
+  try {
+   await submitProjectForClientReview(project.id);
+   showToast('Submitted for client review — the client has been notified.');
+   load();
+  } catch (err) {
+   showToast(err?.message || 'Failed to submit for client review', 'error');
+  }
+ });
+
  if (loading) return <SkeletonTable rows={6} columns={4} />;
 
  return (
@@ -168,6 +179,18 @@ function TeamProjects({ userId }) {
        </div>
        <span className="w-10 text-right text-body-sm font-semibold text-brand-dark dark:text-white">{p.progress_percent}%</span>
       </div>
+
+      {p.status === 'completed' && !p.completion_submitted_at && (
+       <div className="mb-3 flex items-center justify-between rounded-lg border border-green-500/30 bg-status-success-bg0/10 px-4 py-2">
+        <span className="text-body-sm text-status-success-text">All tasks done — ready to submit for client review.</span>
+        <RowAction disabled={submittingReview} onClick={() => submitForReview(p)}>
+         {submittingReview ? 'Submitting...' : 'Submit for Client Review'}
+        </RowAction>
+       </div>
+      )}
+      {p.completion_submitted_at && (
+       <p className="mb-3 text-body-sm text-ink-muted dark:text-dark-ink-muted">Submitted for client review on {new Date(p.completion_submitted_at).toLocaleDateString()} — {p.client_review_status || 'pending'}.</p>
+      )}
 
       {/* Display assigned team members if any */}
       {(p.team && p.team.length > 0 && assigningId !== p.id) && (

@@ -24,12 +24,15 @@ class LeadCreate(BaseModel):
 
 
 class LeadUpdate(BaseModel):
+    # No `status` field on purpose — the pipeline is one-way and driven only
+    # by the dedicated action endpoints (log-call, requirement-gathering,
+    # disqualify, and the proposal/convert endpoints), never by a free-form
+    # manual edit. See app/services/lead_pipeline.py.
     company: str | None = None
     contact_name: str | None = None
     email: EmailStr | None = None
     phone: str | None = None
     source: LeadSource | None = None
-    status: LeadStatus | None = None
     estimated_value: float | None = Field(None, ge=0)
     notes: str | None = None
     owner_id: uuid.UUID | None = None
@@ -64,6 +67,25 @@ class LeadOut(TimestampedRead):
     delivery_timeline: str | None = None
     evaluation_result: str | None = None
     rejection_reason: str | None = None
+
+
+class LeadLogCallRequest(BaseModel):
+    notes: str = Field(min_length=1)
+
+
+class LeadRequirementGatheringRequest(BaseModel):
+    notes: str | None = None
+
+
+class LeadDisqualifyRequest(BaseModel):
+    reason: str = Field(min_length=1)
+
+
+class LeadActivityOut(TimestampedRead):
+    lead_id: uuid.UUID
+    activity_type: str
+    description: str | None = None
+    actor_id: uuid.UUID | None = None
 
 
 # ---------- Proposal ----------

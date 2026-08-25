@@ -48,6 +48,7 @@ export const updateTaskStatus = (id, status) => apiRequest(`/tasks/${id}/status`
 
 // ── Project team assignment (PM) ────────────────────────────────────────────────
 export const assignProjectTeam = (id, employeeIds) => apiRequest(`/projects/${id}/team`, { method: 'PATCH', body: { employee_ids: employeeIds } });
+export const submitProjectForClientReview = (id) => apiRequest(`/projects/${id}/submit-for-client-review`, { method: 'POST' });
 
 // ── Departments (Super Admin) ──────────────────────────────────────────────────
 export const fetchDepartments = (p = {}) => apiRequest(`/departments${toQueryString(p)}`, {});

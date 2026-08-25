@@ -28,35 +28,10 @@ async def submit(request: Request, payload: ContactSubmit, db: AsyncSession = De
     except Exception as exc:
         logger.error("Failed to send contact notification email: %s", exc)
 
-    # Workflow doc: "Contact Form -> Lead is Generated" — a Lead used to
-    # only ever get created when staff manually converted a contact
-    # submission; this makes that automatic, carrying over the
-    # service/industry/budget/requirements the public form collected
-    # rather than leaving staff to re-key them.
-    try:
-        from app.models.enums import LeadSource
-        from app.models.lead import Lead
-
-        lead = Lead(
-            contact_submission_id=submission.id,
-            company=submission.company,
-            contact_name=submission.name,
-            email=submission.email,
-            phone=submission.phone,
-            source=LeadSource.website,
-            service_id=submission.service_id,
-            industry_id=submission.industry_id,
-            estimated_value=submission.expected_budget,
-            notes=submission.requirements,
-        )
-        db.add(lead)
-        await db.flush()
-        submission.lead_id = lead.id
-        await db.commit()
-    except Exception as exc:  # noqa: BLE001 — the contact submission itself must not fail over lead auto-creation
-        await db.rollback()
-        logger.error("Failed to auto-create a lead for contact submission %s: %s", submission.id, exc)
-
+    # Lead creation is a manual staff action (Mark In Progress -> Convert to
+    # Lead -> Resolve in the Sales/Marketing Contact Submissions views), not
+    # automatic on submission — see POST /leads (contact_submission_id links
+    # the new lead back to this submission).
     return success_response(message="Thank you for reaching out — our team will get back to you shortly.", status_code=201)
 
 

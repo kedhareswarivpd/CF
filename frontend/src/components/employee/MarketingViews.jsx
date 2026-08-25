@@ -13,7 +13,7 @@ import {
 import { validateConvertToLead } from '../../schemas/crm.schema.js';
 import { validateNewTestimonial } from '../../schemas/marketing.schema.js';
 
-const LEAD_STATUS_COLOR = { new: 'neutral', contacted: 'info', requirement_gathering: 'info', proposal_sent: 'warning', proposal_approved: 'success', converted: 'success', disqualified: 'error' };
+const LEAD_STATUS_COLOR = { new: 'neutral', contacted: 'info', requirement_gathering: 'info', proposal_created: 'info', proposal_sent: 'warning', proposal_approved: 'success', converted: 'success', disqualified: 'error' };
 
 // Reusable Convert-to-Lead modal (duplicated from SalesCrmViews.jsx rather than
 // imported, so this marketing-only chunk doesn't have to pull in the much
@@ -137,7 +137,7 @@ function MarketingLeadsView() {
   load();
  };
 
- const inProgressContacts = contacts.filter((c) => c.status === 'in_progress');
+ const inProgressContacts = contacts.filter((c) => c.status === 'in_progress' && !c.lead_id);
 
  if (loading) return <SkeletonTable rows={6} columns={5} />;
  return (

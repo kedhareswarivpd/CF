@@ -13,6 +13,30 @@ export function updateLead(leadId, payload) {
   return apiRequest(`/leads/${leadId}`, { method: 'PATCH', body: payload });
 }
 
+export function fetchLead(leadId) {
+  return apiRequest(`/leads/${leadId}`, {});
+}
+
+export function fetchLeadActivities(leadId) {
+  return apiRequest(`/leads/${leadId}/activities`, {});
+}
+
+export function logLeadCall(leadId, notes) {
+  return apiRequest(`/leads/${leadId}/log-call`, { method: 'POST', body: { notes } });
+}
+
+export function markRequirementGathering(leadId, notes) {
+  return apiRequest(`/leads/${leadId}/requirement-gathering`, { method: 'POST', body: { notes } });
+}
+
+export function disqualifyLead(leadId, reason) {
+  return apiRequest(`/leads/${leadId}/disqualify`, { method: 'POST', body: { reason } });
+}
+
+export function convertLead(leadId) {
+  return apiRequest(`/leads/${leadId}/convert`, { method: 'POST' });
+}
+
 // ---------- Proposals ----------
 export function fetchProposals(params = {}) {
   return apiRequest(`/proposals${toQueryString(params)}`, {});
@@ -30,8 +54,8 @@ export function acceptProposal(proposalId) {
   return apiRequest(`/proposals/${proposalId}/accept`, { method: 'POST' });
 }
 
-export function rejectProposal(proposalId) {
-  return apiRequest(`/proposals/${proposalId}/reject`, { method: 'POST' });
+export function rejectProposal(proposalId, reason) {
+  return apiRequest(`/proposals/${proposalId}/reject`, { method: 'POST', body: reason ? { reason } : {} });
 }
 
 // ---------- Contracts ----------
