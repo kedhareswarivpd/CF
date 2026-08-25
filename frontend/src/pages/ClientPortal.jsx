@@ -690,20 +690,20 @@ export default function ClientPortal() {
  if (initializing || !user || denied) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
  if (loading) return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><SkeletonTable rows={6} columns={5} /></div>;
 
- return (
-  <div className="flex h-screen flex-col bg-surface-container dark:bg-dark-surface-container">
-   <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-outline-variant bg-brand-dark px-4 py-3 sm:px-6 lg:px-10 xl:px-12 ">
-    <div className="flex items-center gap-4">
-     <Avatar name={profile.contact_name || 'Client'} size="lg" />
-     <div>
-      <h1 className="font-display text-headline-md font-bold text-white">{profile.contact_name || 'Client'}</h1>
-      <p className="text-body-sm text-white/70">{profile.email || ''} &middot; {profile.company_name}</p>
+  return (
+   <div className="flex h-dvh flex-col bg-surface-container dark:bg-dark-surface-container">
+    <div className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-outline-variant bg-brand-dark px-4 py-3 sm:gap-4 sm:px-6 lg:px-10 xl:px-12 ">
+     <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+      <Avatar name={profile.contact_name || 'Client'} size="lg" />
+      <div className="min-w-0">
+       <h1 className="max-w-[40vw] truncate font-display text-headline-md font-bold text-white sm:max-w-none">{profile.contact_name || 'Client'}</h1>
+       <p className="hidden truncate text-body-sm text-white/70 sm:block">{profile.email || ''} &middot; {profile.company_name}</p>
+      </div>
      </div>
+     <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
+      Sign Out
+     </Button>
     </div>
-    <Button variant="outline-light" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
-     Sign Out
-    </Button>
-   </div>
 
    <div className="flex min-h-0 flex-1">
     <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-outline-variant bg-brand-dark md:block">
@@ -731,7 +731,7 @@ export default function ClientPortal() {
         selected ? 'border-white font-bold text-white' : 'border-transparent font-semibold text-white/70 hover:border-white/40 hover:text-white'
        }`
       }
-      className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12"
+      className="scrollbar-hide mb-stack-lg flex gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12"
      />
 
      <div className="min-w-0 flex-1 overflow-y-auto px-4 py-stack-lg sm:px-6 lg:px-10 xl:px-12 ">

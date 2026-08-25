@@ -2455,25 +2455,25 @@ export default function AdminPanel() {
   return <div className="bg-surface-container py-section-padding"><LoadingSpinner /></div>;
  }
 
- return (
-  <div className="flex h-screen flex-col bg-surface-container dark:bg-dark-surface-container">
-   <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-outline-variant bg-brand-dark px-4 py-3 sm:px-6 lg:px-10 xl:px-12 ">
-    <div className="flex items-center gap-4">
-     <Avatar name={currentUser?.name || 'Admin'} size="lg" />
-     <div>
-      <h1 className="font-display text-headline-md font-bold text-white">{currentUser?.name || 'Admin'}</h1>
-      <p className="text-body-sm text-white/70">{currentUser?.email || ''} &middot; {(currentUser?.role || currentRole || 'admin').replace('_', ' ')}</p>
+  return (
+   <div className="flex h-dvh flex-col bg-surface-container dark:bg-dark-surface-container">
+    <div className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-outline-variant bg-brand-dark px-4 py-3 sm:gap-4 sm:px-6 lg:px-10 xl:px-12 ">
+     <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+      <Avatar name={currentUser?.name || 'Admin'} size="lg" />
+      <div className="min-w-0">
+       <h1 className="max-w-[40vw] truncate font-display text-headline-md font-bold text-white sm:max-w-none">{currentUser?.name || 'Admin'}</h1>
+       <p className="hidden text-body-sm text-white/70 sm:block">{currentUser?.email || ''} &middot; {(currentUser?.role || currentRole || 'admin').replace('_', ' ')}</p>
+      </div>
+     </div>
+     <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+      <Button as={Link} to="/super-admin/login" variant="primary" size="md" aria-label="Super Admin verification" icon={<Icon name="shield_person" />}>
+       <span className="hidden md:inline">Super Admin</span>
+      </Button>
+      <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
+       Sign Out
+      </Button>
      </div>
     </div>
-    <div className="flex items-center gap-3">
-     <Button as={Link} to="/super-admin/login" variant="primary" size="md" icon={<Icon name="shield_person" />}>
-      Super Admin
-     </Button>
-     <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
-      Sign Out
-     </Button>
-    </div>
-   </div>
 
    <div className="flex min-h-0 flex-1">
     <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-outline-variant bg-brand-dark md:block">
@@ -2501,7 +2501,7 @@ export default function AdminPanel() {
         selected ? 'border-brand font-bold text-brand' : 'border-transparent font-semibold text-ink-muted hover:border-brand/40 hover:text-ink'
        }`
       }
-      className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12"
+      className="scrollbar-hide mb-stack-lg flex gap-1 overflow-x-auto border-b border-outline-variant bg-brand-dark px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12"
      />
 
      <div className="min-w-0 flex-1 overflow-auto px-4 py-stack-lg sm:px-6 lg:px-10 xl:px-12 ">

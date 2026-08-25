@@ -49,7 +49,7 @@ export default function VerifyMfa() {
  const inputClass = 'w-full rounded border border-outline-variant dark:border-dark-outline-variant px-4 py-2.5 text-body-md dark:text-dark-ink bg-white dark:bg-dark-surface focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-brand';
 
  return (
-  <div className="flex items-center justify-center bg-surface-container px-4 py-section-padding dark:bg-dark-surface-container sm:px-6 lg:px-10 xl:px-12">
+  <div className="flex min-h-[calc(100dvh-11rem)] items-center justify-center bg-surface-container px-4 py-section-padding dark:bg-dark-surface-container sm:px-6 lg:px-10 xl:px-12">
    <div className="w-full max-w-sm rounded-lg bg-white p-stack-lg shadow-card-hover dark:bg-dark-surface">
     <div className="mb-6 flex items-center gap-3">
      <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand">
@@ -88,8 +88,8 @@ export default function VerifyMfa() {
       </label>
 
       {error && (
-       <p className="flex items-center gap-1 text-body-sm text-status-error-text">
-        <Icon name="error" className="text-base" />{error}
+       <p className="flex items-start gap-1 text-body-sm text-status-error-text">
+        <Icon name="error" className="mt-0.5 shrink-0 text-base" />{error}
        </p>
       )}
 

@@ -14,11 +14,15 @@ export const navigationConfig = [
   {
     label: 'Services',
     children: [
+      // Slugs must match real service records (backend cms_seed.py seeds +
+      // data/services.js demo fallback). Invented slugs here previously sent
+      // ServiceDetail's slug lookup to its NotFound state — a user-facing
+      // "404" for three of five items.
       { label: 'All Services', to: '/services', end: true },
-      { label: 'Software Development', to: '/services/software-development' },
+      { label: 'Software Development', to: '/services/custom-software' },
       { label: 'Cloud & Infrastructure', to: '/services/cloud-infrastructure' },
-      { label: 'AI & Automation', to: '/services/ai-automation' },
-      { label: 'Cybersecurity', to: '/services/cybersecurity' },
+      { label: 'AI & Automation', to: '/services/ai-solutions' },
+      { label: 'Cybersecurity', to: '/services/cyber-security' },
       { label: 'Data & Analytics', to: '/services/data-analytics' },
     ],
   },
@@ -30,12 +34,9 @@ export const navigationConfig = [
       { label: 'Technologies', to: '/technologies' },
     ],
   },
-  {
-    label: 'Industries',
-    children: [
-      { label: 'All Industries', to: '/industries', end: true },
-    ],
-  },
+  // Plain link (no dropdown) — Industries is a single page; both desktop and
+  // mobile navigation render items without `children` as a direct NavLink.
+  { label: 'Industries', to: '/industries' },
   { label: 'Portfolio', to: '/portfolio' },
   {
     label: 'Resources',

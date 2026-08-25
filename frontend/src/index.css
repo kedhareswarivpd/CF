@@ -1,3 +1,36 @@
+/* Self-hosted Material Symbols Outlined (variable weight/fill). This was
+   previously pulled from fonts.googleapis.com in index.html — whenever that
+   CDN request failed (offline dev, blocked network), every icon rendered its
+   ligature name as literal text ("check_circle", "shield", ...) which also
+   blew out card layouts. The font file lives in public/fonts/, and the
+   .material-symbols-outlined class below replaces the one the Google
+   stylesheet used to provide (it carried the actual font-family binding).
+   Kept ahead of the @tailwind layers so per-element `text-*` size utilities
+   still override the 24px default, matching the old CDN behaviour. */
+@font-face {
+  font-family: 'Material Symbols Outlined';
+  font-style: normal;
+  font-weight: 100 700;
+  font-display: block;
+  src: url('/fonts/material-symbols-outlined.woff2') format('woff2');
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  vertical-align: middle;
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

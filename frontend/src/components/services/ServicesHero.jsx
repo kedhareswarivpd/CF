@@ -1,4 +1,5 @@
 import Badge from '../ui/Badge.jsx';
+import Icon from '../ui/Icon.jsx';
 
 export default function ServicesHero() {
  return (
@@ -17,7 +18,7 @@ export default function ServicesHero() {
      <div className="glass-panel-light animate-float flex flex-col gap-stack-md rounded-lg p-stack-lg">
       <div className="flex items-center justify-between border-b border-brand/20 pb-stack-sm">
        <span className="font-label-caps text-label-caps uppercase text-brand-dark">Real-time Delivery Metrics</span>
-       <span className="material-symbols-outlined text-brand">bolt</span>
+        <Icon name="bolt" className="text-brand" />
       </div>
       <div className="grid grid-cols-2 gap-stack-md">
        <div>

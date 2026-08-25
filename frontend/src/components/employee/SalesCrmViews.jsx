@@ -293,7 +293,7 @@ function SalesConvertModal({ submission, onClose, onSuccess }) {
 
  return (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
-   <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+   <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
     <div className="mb-5 flex items-start justify-between">
      <div>
       <h2 className="font-display text-headline-sm font-bold text-brand-dark dark:text-white">Convert to Lead</h2>
@@ -566,7 +566,7 @@ function Contracts({ contracts, proposals, leads, onRefresh }) {
    {/* Sign confirmation dialog */}
    {confirmId && (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-     <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+     <div className="max-h-[90dvh] w-full max-w-sm overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
       <h3 className="mb-2 font-display text-headline-sm font-bold text-brand-dark dark:text-white">Confirm Contract Signing</h3>
       <p className="mb-1 text-body-sm text-ink dark:text-white">This will:</p>
       <ul className="mb-5 ml-4 list-disc space-y-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">

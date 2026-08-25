@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+import { reticle } from '@reticlehq/vite-plugin';
 // Backend target for the dev-server proxy. Override with:
 //   VITE_API_PROXY_TARGET=http://localhost:8000 npm run dev
 const API_PROXY_TARGET = process.env.VITE_API_PROXY_TARGET || 'http://localhost:8000';
@@ -8,7 +9,7 @@ const BASE_PATH = process.env.VITE_BASE_PATH || '/';
 
 export default defineConfig({
   base: BASE_PATH,
-  plugins: [react()],
+  plugins: [reticle({ captureNetworkBodies: true }),react()],
   build: {
     target: 'esnext',
     minify: 'esbuild',

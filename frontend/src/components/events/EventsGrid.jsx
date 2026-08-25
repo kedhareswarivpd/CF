@@ -69,7 +69,7 @@ function RegisterModal({ event, onClose }) {
         className="w-full rounded-lg border border-outline-variant bg-white px-3 py-2 text-body-md focus:outline-none focus:ring-2 focus:ring-brand dark:border-dark-outline-variant dark:bg-dark-surface-container"
        />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
        <div>
         <label className="mb-1 block font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">Phone</label>
         <input

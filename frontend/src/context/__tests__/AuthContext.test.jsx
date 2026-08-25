@@ -95,7 +95,7 @@ describe('AuthProvider', () => {
   await expect(result.current.login('test@example.com', 'password')).rejects.toThrow('Login failed');
  });
 
- it('login throws a clear error for an MFA-challenged account (unsupported by this UI today)', async () => {
+ it('login resolves an MFA challenge for MFA-enabled accounts without creating a session', async () => {
   fetchCurrentUser.mockRejectedValue(new ApiRequestError('Authentication token missing', 401));
   loginApi.mockResolvedValue({ data: { mfa_token: 'challenge-token' } });
 
@@ -106,7 +106,15 @@ describe('AuthProvider', () => {
    await new Promise((r) => setTimeout(r, 0));
   });
 
-  await expect(result.current.login('mfa@example.com', 'password')).rejects.toThrow('multi-factor');
+  let outcome;
+  await act(async () => {
+   outcome = await result.current.login('mfa@example.com', 'password');
+  });
+
+  // The password step alone must not authenticate the user — the caller
+  // completes the flow via verifyMfa() on /verify-mfa.
+  expect(outcome).toEqual({ mfaRequired: true, mfaToken: 'challenge-token' });
+  expect(result.current.isAuthenticated).toBe(false);
  });
 
  it('register calls the API and returns the created user', async () => {

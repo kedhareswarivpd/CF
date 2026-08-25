@@ -545,20 +545,20 @@ export default function SuperAdminPanel() {
   return <div className="bg-surface-container py-section-padding dark:bg-dark-surface-container"><LoadingSpinner /></div>;
  }
 
- return (
-  <div className="flex h-screen flex-col bg-dark-surface">
-   <div className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-brand-dark/30 bg-brand-dark px-4 py-3 sm:px-6 lg:px-10 xl:px-12 ">
-    <div className="flex items-center gap-4">
-     <Avatar name={currentUser?.name || 'Super Admin'} size="lg" />
-     <div>
-      <h1 className="font-display text-headline-md font-bold text-white">{currentUser?.name || 'Super Admin'}</h1>
-      <p className="text-body-sm">{currentUser?.email || ''} &middot; super admin</p>
+  return (
+   <div className="flex h-dvh flex-col bg-dark-surface">
+    <div className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-brand-dark/30 bg-brand-dark px-4 py-3 sm:gap-4 sm:px-6 lg:px-10 xl:px-12 ">
+     <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+      <Avatar name={currentUser?.name || 'Super Admin'} size="lg" />
+      <div className="min-w-0">
+       <h1 className="max-w-[40vw] truncate font-display text-headline-md font-bold text-white sm:max-w-none">{currentUser?.name || 'Super Admin'}</h1>
+       <p className="hidden text-body-sm text-white/70 sm:block">{currentUser?.email || ''} &middot; super admin</p>
+      </div>
      </div>
+     <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
+      Sign Out
+     </Button>
     </div>
-    <Button variant="primary" size="md" onClick={() => { logout(); navigate('/login', { replace: true }); }} icon={<Icon name="logout" />}>
-     Sign Out
-    </Button>
-   </div>
 
    <div className="flex min-h-0 flex-1">
     <aside className="hidden w-56 shrink-0 overflow-y-auto border-r border-brand-dark/30 bg-brand-dark md:block">
@@ -575,7 +575,7 @@ export default function SuperAdminPanel() {
     </aside>
 
     <div className="flex min-h-0 flex-1 flex-col">
-     <div className="mb-stack-lg flex flex-wrap gap-1 overflow-x-auto border-b px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12">
+     <div className="scrollbar-hide mb-stack-lg flex gap-1 overflow-x-auto border-b px-4 py-2 sm:px-6 md:hidden lg:px-10 xl:px-12">
       {superAdminTabs.map((tab) => (
        <button key={tab.id} onClick={() => setActiveTab(tab.id)}
         className={`flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-3 text-body-sm font-medium transition-colors ${

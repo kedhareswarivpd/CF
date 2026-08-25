@@ -1,5 +1,14 @@
 export const services = [
   {
+    slug: 'custom-software',
+    icon: 'terminal',
+    title: 'Custom Software',
+    description:
+      'Bespoke software built end-to-end around a business’s exact requirements, from architecture through long-term support.',
+    features: ['Tailored Workflows', 'Custom Integrations'],
+    benefit: 'Perfect process fit with full ownership of the codebase — no vendor lock-in.',
+  },
+  {
     slug: 'enterprise-software',
     icon: 'domain',
     title: 'Enterprise Software',
@@ -18,13 +27,40 @@ export const services = [
     benefit: 'Significant reduction in TCO and elastic scaling capabilities.',
   },
   {
-    slug: 'ai-data-analytics',
-    icon: 'psychology',
-    title: 'AI & Data Analytics',
+    slug: 'cloud-infrastructure',
+    icon: 'cloud',
+    title: 'Cloud Infrastructure',
     description:
-      'Transform raw data into actionable intelligence through predictive modeling and ML pipelines.',
-    features: ['Generative AI Workflows', 'Real-time Data Lakehouses'],
+      'Design and management of secure, scalable cloud infrastructure that stays resilient under real-world load.',
+    features: ['Multi-Cloud Architecture', 'Autoscaling & FinOps'],
+    benefit: 'Elastic scaling and higher availability at a lower infrastructure cost.',
+  },
+  {
+    slug: 'ai-solutions',
+    icon: 'psychology',
+    title: 'AI Solutions',
+    description:
+      'Applied AI systems that automate decisions and unlock new capabilities across core operations.',
+    features: ['Generative AI Workflows', 'Human-in-the-Loop Rollout'],
+    benefit: 'Reduced manual effort and faster turnaround with higher accuracy.',
+  },
+  {
+    slug: 'data-analytics',
+    icon: 'analytics',
+    title: 'Data Analytics',
+    description:
+      'Turn raw operational data into decision-ready insight through predictive modeling and ML pipelines.',
+    features: ['Real-Time Data Lakehouses', 'Executive Dashboards'],
     benefit: 'Data-driven decision making that uncovers new opportunities.',
+  },
+  {
+    slug: 'cyber-security',
+    icon: 'shield_lock',
+    title: 'Cyber Security',
+    description:
+      'Securing enterprise systems against modern threats with a defensible, compliance-aligned security posture.',
+    features: ['Zero Trust Architecture', 'Penetration Testing & Audits'],
+    benefit: 'Reduced breach risk and regulatory compliance across applications and infrastructure.',
   },
 ];
 

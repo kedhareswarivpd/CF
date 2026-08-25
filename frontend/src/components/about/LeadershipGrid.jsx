@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { leadership as staticLeadership } from '../../data/about.js';
 import { fetchLeadership } from '../../api/cms.js';
 import Reveal from '../ui/Reveal.jsx';
+import Icon from '../ui/Icon.jsx';
 
 function toFrontend(l) {
  return { name: l.name, title: l.title, image: l.photo_url || null, linkedin: l.linkedin || 'https://www.linkedin.com/' };
@@ -50,9 +51,10 @@ export default function LeadershipGrid() {
      </div>
      <Link to="/careers" className="group flex items-center gap-2 font-label-caps text-label-caps uppercase text-brand">
       Join our team
-      <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">
-       arrow_forward
-      </span>
+      <Icon
+        name="arrow_forward"
+        className="transition-transform group-hover:translate-x-1"
+      />
      </Link>
     </Reveal>
     <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">

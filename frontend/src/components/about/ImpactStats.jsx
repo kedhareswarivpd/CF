@@ -1,4 +1,5 @@
 import Reveal from '../ui/Reveal.jsx';
+import Icon from '../ui/Icon.jsx';
 
 const IMPACTS = [
  { value: '285', label: 'Employees', icon: 'groups', desc: 'A deep bench of AI, cloud, cybersecurity, and enterprise architecture experts.' },
@@ -28,7 +29,7 @@ export default function ImpactStats() {
       <Reveal key={item.label} from="zoom" delay={i * 80}>
        <div className="flex flex-col gap-4 rounded-xl bg-white p-6 shadow-card transition-shadow hover:shadow-card-hover dark:bg-dark-surface sm:p-8">
         <div className="flex size-12 items-center justify-center rounded-lg bg-accent-cyan-pale">
-         <span className="material-symbols-outlined text-2xl text-brand">{item.icon}</span>
+          <Icon name={item.icon} className="text-2xl text-brand" />
         </div>
         <div className="font-stat text-4xl font-bold text-brand-dark dark:text-dark-brand">{item.value}</div>
         <div>

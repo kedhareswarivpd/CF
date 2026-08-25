@@ -151,7 +151,7 @@ function TeamProjects({ userId }) {
        <input type="number" min="0" placeholder="Budget ($)" value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} className={`${FORM_INPUT_CLASS} w-full`} />
        {fieldErrors.budget && <p className="mt-1 text-body-xs text-status-error">{fieldErrors.budget}</p>}
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
        <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className={FORM_INPUT_CLASS} />
        <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className={FORM_INPUT_CLASS} />
       </div>

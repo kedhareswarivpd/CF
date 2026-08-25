@@ -28,10 +28,25 @@ export default function PartnersStrip() {
      {partners.map((p) => (
       p.website ? (
        <a key={p.id} href={p.website} target="_blank" rel="noreferrer" title={p.name} className="opacity-70 transition-opacity hover:opacity-100">
-        <img src={p.logo} alt={p.name} className="h-8 object-contain grayscale hover:grayscale-0" />
+        {/* Responsive height (32px → 56px): the old fixed h-8 rendered logos
+            at ~64×32, too small to read. max-w keeps wide logos inside the
+            flex row on narrow screens; object-contain preserves aspect ratio. */}
+        <img
+         src={p.logo}
+         alt={p.name}
+         loading="lazy"
+         className="h-10 max-w-[140px] object-contain grayscale transition-[filter] hover:grayscale-0 sm:h-12 sm:max-w-[160px] lg:h-14 lg:max-w-[180px]"
+        />
        </a>
       ) : (
-       <img key={p.id} src={p.logo} alt={p.name} title={p.name} className="h-8 object-contain opacity-70 grayscale" />
+       <img
+        key={p.id}
+        src={p.logo}
+        alt={p.name}
+        title={p.name}
+        loading="lazy"
+        className="h-10 max-w-[140px] object-contain opacity-70 grayscale sm:h-12 sm:max-w-[160px] lg:h-14 lg:max-w-[180px]"
+       />
       )
      ))}
     </div>

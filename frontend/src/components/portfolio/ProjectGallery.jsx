@@ -1,7 +1,8 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useMemo } from 'react';
 import { projects as fallbackProjects } from '../../data/projects.js';
 import { fetchProjects } from '../../api/projects.js';
-import { adaptProject } from '../../api/adapters.js';
+import { fetchServices } from '../../api/services.js';
+import { adaptProject, resolveProjectServiceCategories, serviceTaxonomyCategories } from '../../api/adapters.js';
 import useApiResource from '../../hooks/useApiResource.js';
 import ProjectCard from './ProjectCard.jsx';
 import Reveal from '../ui/Reveal.jsx';
@@ -12,7 +13,10 @@ const PAGE_SIZE = 6;
 export default function ProjectGallery({ industry, activeServices = [] }) {
  const [visible, setVisible] = useState(PAGE_SIZE);
 
- const fetchFn = useCallback(() => fetchProjects({ industry }), [industry]);
+ // Fetch the full published set: service-category filtering happens
+ // client-side across the whole collection, so a small page limit here
+ // would silently exclude matching projects from the filters.
+ const fetchFn = useCallback(() => fetchProjects({ industry, limit: 100 }), [industry]);
 
  const fallback =
   industry && industry !== 'All'
@@ -21,15 +25,37 @@ export default function ProjectGallery({ industry, activeServices = [] }) {
 
  const { items: projects, loading, isFallback } = useApiResource(fetchFn, adaptProject, fallback, [industry]);
 
+ // Backend projects carry at most a service_id (no service name). Build the
+ // id -> portfolio-categories lookup once; the actual per-project resolution
+ // lives in the adapter layer (resolveProjectServiceCategories) and is
+ // recomputed whenever either dataset arrives, so late-loading services
+ // still re-resolve every project.
+ const [taxonomyByServiceId, setTaxonomyByServiceId] = useState({});
+ useEffect(() => {
+  let cancelled = false;
+  fetchServices({ limit: 100 })
+   .then((res) => {
+    if (cancelled) return;
+    const index = {};
+    for (const s of res?.data || []) index[s.id] = serviceTaxonomyCategories(s);
+    setTaxonomyByServiceId(index);
+   })
+   .catch(() => {});
+  return () => { cancelled = true; };
+ }, []);
+
+ const enrichedProjects = useMemo(
+  () => projects.map((p) => ({ ...p, services: resolveProjectServiceCategories(p, taxonomyByServiceId) })),
+  [projects, taxonomyByServiceId],
+ );
+
  useEffect(() => { setVisible(PAGE_SIZE); }, [industry, activeServices]);
 
- // Service categories are a presentation-level taxonomy (the backend project
- // model carries no service field), so filter client-side on the `services`
- // metadata preserved through adaptProject.
+ // Filter client-side on the resolved `services` categories.
  const filteredProjects =
   activeServices.length === 0
-   ? projects
-   : projects.filter((p) => (p.services || []).some((s) => activeServices.includes(s)));
+   ? enrichedProjects
+   : enrichedProjects.filter((p) => (p.services || []).some((s) => activeServices.includes(s)));
 
  const visibleProjects = filteredProjects.slice(0, visible);
  const remaining = filteredProjects.length - visible;
@@ -45,7 +71,9 @@ export default function ProjectGallery({ industry, activeServices = [] }) {
     {loading ? (
      <GallerySkeleton />
     ) : filteredProjects.length === 0 ? (
-     <p className="py-16 text-center text-ink-muted dark:text-dark-ink-muted">No projects match this filter yet — check back soon.</p>
+     <p className="py-16 text-center text-ink-muted dark:text-dark-ink-muted">
+      No portfolio projects found for this category.
+     </p>
     ) : (
      <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
       {visibleProjects.map((project, i) => (

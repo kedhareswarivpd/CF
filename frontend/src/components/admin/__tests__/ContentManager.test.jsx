@@ -29,6 +29,12 @@ vi.mock('../../../api/cms.js', () => {
   testimonialsApi: emptyApi(),
   categoriesApi: emptyApi(),
   partnersApi: emptyApi(),
+  announcementsApi: emptyApi(),
+  leadershipApi: emptyApi(),
+  officesApi: emptyApi(),
+  companyInfoApi: emptyApi(),
+  aboutContentApi: emptyApi(),
+  careersApi: emptyApi(),
   seoApi: emptyApi(),
   pageContentApi: emptyApi(),
  };

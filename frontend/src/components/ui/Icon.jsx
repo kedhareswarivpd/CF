@@ -5,10 +5,24 @@
 // instead of "Overview"). These icons are always decorative pairings with
 // visible adjacent text in this app, so they're hidden from the
 // accessibility tree by default; a caller can still override via props.
+
+// CMS-seeded records carry icon names that don't exist in the Material
+// Symbols registry (verified against its codepoints file) — without these
+// aliases they render their raw ligature text instead of a glyph.
+const ALIASES = {
+  sparkles: 'auto_awesome',
+  'cpu-chip': 'memory',
+  cube: 'inventory_2',
+  'building-office': 'apartment',
+};
+
+const DEFAULT_ICON = 'star';
+
 export default function Icon({ name, className = '', ...rest }) {
- return (
-  <span aria-hidden="true" className={`material-symbols-outlined ${className}`} {...rest}>
-   {name}
-  </span>
- );
+  const resolved = ALIASES[name] || name || DEFAULT_ICON;
+  return (
+   <span aria-hidden="true" className={`material-symbols-outlined ${className}`} {...rest}>
+    {resolved}
+   </span>
+  );
 }
