@@ -37,7 +37,7 @@ const superAdminTabs = [
 
 function ComingSoon({ icon, title, description }) {
  return (
-  <div className="rounded-lg border border-outline-variant bg-white p-stack-lg py-12 text-center dark:border-dark-outline-variant">
+  <div className="rounded-lg border border-outline-variant bg-white dark:bg-dark-surface p-stack-lg py-12 text-center dark:border-dark-outline-variant">
    <Icon name={icon} className="mb-3 text-4xl text-ink-muted dark:text-dark-ink-muted" />
    <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-white">{title}</h3>
    <p className="mx-auto max-w-md text-body-sm text-ink-muted dark:text-dark-ink-muted">{description}</p>
@@ -64,7 +64,7 @@ function Overview() {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
     {cards.map((c) => (
-     <div key={c.label} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-dark-outline-variant">
+     <div key={c.label} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm transition-shadow hover:shadow-md dark:border-dark-outline-variant">
       <div className={`mb-4 inline-flex size-11 items-center justify-center rounded-xl ${c.bg}`}>
        <Icon name={c.icon} className={`text-2xl ${c.color}`} />
       </div>
@@ -73,7 +73,7 @@ function Overview() {
      </div>
     ))}
    </div>
-   <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+   <div className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
     <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
      This company-wide summary plus every screen in Admin Panel is available here. The tabs on the left are exclusive to Super Admin:
      org structure, the global role/permission matrix, GDPR tooling, and the full audit trail.
@@ -141,7 +141,7 @@ function Departments() {
     <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Department</Button>
    </div>
    {showForm && (
-    <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg shadow-sm dark:border-dark-outline-variant">
+    <form onSubmit={handleCreate} className="space-y-4 rounded-lg border border-outline-variant bg-white dark:bg-dark-surface p-stack-lg shadow-sm dark:border-dark-outline-variant">
      <div className="grid gap-4 sm:grid-cols-2">
       <div>
        <input required type="text" placeholder="Department name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={FORM_INPUT_CLASS + ' w-full'} />
@@ -243,7 +243,7 @@ function RolesPermissions() {
  if (loading) return <SkeletonTable rows={6} columns={3} />;
  return (
   <div className="space-y-stack-lg">
-   <div className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg shadow-sm dark:border-dark-outline-variant">
+   <div className="space-y-4 rounded-lg border border-outline-variant bg-white dark:bg-dark-surface p-stack-lg shadow-sm dark:border-dark-outline-variant">
     <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Custom Roles</h3>
     <form onSubmit={handleCreateRole} className="space-y-4">
      <div className="grid gap-4 sm:grid-cols-3">
@@ -277,7 +277,7 @@ function RolesPermissions() {
     <Pagination page={rolesPage} totalPages={rolesTotalPages} onChange={setRolesPage} />
    </div>
 
-   <div className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg shadow-sm dark:border-dark-outline-variant">
+   <div className="space-y-4 rounded-lg border border-outline-variant bg-white dark:bg-dark-surface p-stack-lg shadow-sm dark:border-dark-outline-variant">
     <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Permissions</h3>
     <form onSubmit={handleCreatePermission} className="space-y-4">
      <div className="grid gap-4 sm:grid-cols-3">
@@ -396,7 +396,7 @@ function DataExportGdpr() {
    />
    <Pagination page={page} totalPages={totalPages} onChange={setPage} />
    {exportedJson && (
-    <div className="rounded-lg border border-outline-variant bg-white p-stack-lg shadow-sm dark:border-dark-outline-variant">
+    <div className="rounded-lg border border-outline-variant bg-white dark:bg-dark-surface p-stack-lg shadow-sm dark:border-dark-outline-variant">
      <h3 className="mb-3 font-display text-headline-sm text-brand-dark dark:text-white">Exported Data</h3>
      <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg bg-surface-container p-4 text-body-sm text-ink dark:bg-dark-surface-container dark:text-white">{JSON.stringify(exportedJson, null, 2)}</pre>
     </div>

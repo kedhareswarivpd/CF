@@ -44,7 +44,10 @@ export const deleteTestimonial = (id)     => apiRequest(`/testimonials/${id}`, {
 // ── Tasks (QA / PM) ────────────────────────────────────────────────────────────
 export const fetchTasks       = (p = {}) => apiRequest(`/tasks${toQueryString(p)}`, {});
 export const createTask       = (body)   => apiRequest('/tasks', { method: 'POST', body });
+export const updateTask       = (id, body) => apiRequest(`/tasks/${id}`, { method: 'PATCH', body });
+export const deleteTask       = (id)     => apiRequest(`/tasks/${id}`, { method: 'DELETE' });
 export const updateTaskStatus = (id, status) => apiRequest(`/tasks/${id}/status`, { method: 'PATCH', body: { status } });
+export const fetchTaskActivities = (id)  => apiRequest(`/tasks/${id}/activities`, {});
 
 // ── Project team assignment (PM) ────────────────────────────────────────────────
 export const assignProjectTeam = (id, employeeIds) => apiRequest(`/projects/${id}/team`, { method: 'PATCH', body: { employee_ids: employeeIds } });

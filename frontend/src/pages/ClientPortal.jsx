@@ -299,7 +299,7 @@ function Tickets({ tickets, onNewTicket }) {
     <Button onClick={() => setShowForm(!showForm)} variant="primary" size="md" icon={<Icon name="add" />}>New Ticket</Button>
    </div>
    {showForm && (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white p-stack-lg">
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-outline-variant bg-white dark:bg-dark-surface p-stack-lg">
      {error && (
       <p className="flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{error}</p>
      )}

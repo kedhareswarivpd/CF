@@ -72,7 +72,7 @@ function MyTasksBoard({ userId }) {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
     {kpis.map((stat) => (
-     <div key={stat.label} className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-2 flex items-center gap-3">
        <Icon name={stat.icon} className="text-2xl text-brand" />
        <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{stat.label}</span>
@@ -92,7 +92,7 @@ function MyTasksBoard({ userId }) {
     {TASK_STATUS_COLUMNS.map((col) => {
      const colTasks = tasks.filter((t) => t.status === col);
      return (
-      <div key={col} className="space-y-3 rounded-xl border border-outline-variant bg-white p-4 shadow-sm dark:border-dark-outline-variant">
+      <div key={col} className="space-y-3 rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-4 shadow-sm dark:border-dark-outline-variant">
        <div className="flex items-center justify-between border-b border-outline-variant/50 pb-2 dark:border-dark-outline-variant/50">
         <p className="font-label-caps text-label-caps font-bold uppercase text-ink dark:text-white">
          {col.replace('_', ' ')}
@@ -114,7 +114,7 @@ function MyTasksBoard({ userId }) {
           )}
           <div className="pt-1">
            <select value={t.status} disabled={isPending && savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
-            className="w-full rounded border border-outline-variant bg-white px-2 py-1 text-body-xs font-medium text-ink focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white">
+            className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-2 py-1 text-body-xs font-medium text-ink focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white">
             {TASK_STATUS_COLUMNS.map((s) => (
              <option key={s} value={s}>Move to: {s.replace('_', ' ').toUpperCase()}</option>
             ))}
@@ -194,7 +194,7 @@ function TestQueue() {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
     {kpis.map((stat) => (
-     <div key={stat.label} className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-2 flex items-center gap-3">
        <Icon name={stat.icon} className="text-2xl text-brand" />
        <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{stat.label}</span>
@@ -361,7 +361,7 @@ function TicketQueue({ userId }) {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
     {kpis.map((stat) => (
-     <div key={stat.label} className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-2 flex items-center gap-3">
        <Icon name={stat.icon} className="text-2xl text-brand" />
        <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{stat.label}</span>
@@ -397,7 +397,7 @@ function TicketQueue({ userId }) {
 
    <div className="space-y-4">
     {visible.map((t) => (
-     <div key={t.id} className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={t.id} className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-2 flex flex-wrap items-start justify-between gap-4">
        <div>
         <p className="font-display text-body-md font-semibold text-brand-dark dark:text-white">{t.subject}</p>
@@ -412,7 +412,7 @@ function TicketQueue({ userId }) {
       <div className="flex flex-wrap items-center gap-2">
        {!t.assigned_to && <RowAction disabled={isPending && savingId === t.id} onClick={() => assignToMe(t.id)}>Assign to me</RowAction>}
        <select value={t.status} disabled={isPending && savingId === t.id} onChange={(e) => changeStatus(t.id, e.target.value)}
-        className="rounded border border-outline-variant bg-white px-2 py-1.5 text-body-sm text-brand-dark dark:border-dark-outline-variant dark:text-white">
+        className="rounded border border-outline-variant bg-white dark:bg-dark-surface px-2 py-1.5 text-body-sm text-brand-dark dark:border-dark-outline-variant dark:text-white">
         {['open', 'in_progress', 'resolved', 'closed'].map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
        </select>
        <RowAction variant="outline" onClick={() => setOpenTicketId(openTicketId === t.id ? null : t.id)}>Reply</RowAction>
@@ -420,7 +420,7 @@ function TicketQueue({ userId }) {
       {openTicketId === t.id && (
        <div className="mt-3 flex gap-2">
         <textarea rows={2} value={replyDraft[t.id] || ''} onChange={(e) => setReplyDraft((prev) => ({ ...prev, [t.id]: e.target.value }))}
-         placeholder="Type a reply..." className="flex-1 rounded border border-outline-variant bg-white px-3 py-2 text-body-sm text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+         placeholder="Type a reply..." className="flex-1 rounded border border-outline-variant bg-white dark:bg-dark-surface px-3 py-2 text-body-sm text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
         <RowAction disabled={isPending && savingId === t.id} onClick={() => sendReply(t.id)}>Send</RowAction>
        </div>
       )}
@@ -499,7 +499,7 @@ function Invoices() {
     <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Invoice</Button>
    </div>
    {showForm && (
-    <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+    <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
      <div className="grid gap-4 sm:grid-cols-3">
       <div>
        <select required value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })} className={FORM_INPUT_CLASS}>

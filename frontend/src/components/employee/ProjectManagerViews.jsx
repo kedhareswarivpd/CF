@@ -4,12 +4,13 @@ import Button from '../ui/Button.jsx';
 import StatusBadge from '../ui/StatusBadge.jsx';
 import RowAction from '../ui/RowAction.jsx';
 import Pagination from '../ui/Pagination.jsx';
+import Modal from '../ui/Modal.jsx';
 import { SkeletonTable } from '../ui/Skeleton.jsx';
 import { FORM_INPUT_CLASS } from '../ui/formClasses.js';
 import useAsyncAction from '../../hooks/useAsyncAction.js';
 import {
  fetchAllTimesheets, reviewTimesheet,
- fetchTasks, createTask, updateTaskStatus,
+ fetchTasks, createTask, updateTask, deleteTask, updateTaskStatus, fetchTaskActivities,
  assignProjectTeam, fetchAdminProjects, createProject,
  fetchEmployees, fetchClients, submitProjectForClientReview,
 } from '../../api/admin.js';
@@ -137,7 +138,7 @@ function TeamProjects({ userId }) {
     <Button variant="primary" size="md" icon={<Icon name="add" />} onClick={() => setShowForm((v) => !v)}>New Project</Button>
    </div>
    {showForm && (
-    <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+    <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
      <div className="grid gap-4 sm:grid-cols-2">
       <div>
        <input required type="text" placeholder="Project title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={`${FORM_INPUT_CLASS} w-full`} />
@@ -165,7 +166,7 @@ function TeamProjects({ userId }) {
 
    <div className="space-y-4">
     {projects.map((p) => (
-     <div key={p.id} className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={p.id} className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-3 flex items-start justify-between gap-4">
        <div>
         <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">{p.title}</h3>
@@ -210,7 +211,7 @@ function TeamProjects({ userId }) {
         <div className="flex flex-wrap gap-2">
          {employees.map((emp) => (
           <button key={emp.id} type="button" onClick={() => toggleTeamMember(emp.id)}
-           className={`rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${teamSelection.includes(emp.id) ? 'border-brand bg-brand text-white shadow-sm' : 'border-outline-variant bg-white text-ink hover:border-brand dark:border-dark-outline-variant dark:text-white'}`}>
+           className={`rounded-lg border px-3 py-1.5 text-body-sm font-medium transition-colors ${teamSelection.includes(emp.id) ? 'border-brand bg-brand text-white shadow-sm' : 'border-outline-variant bg-white dark:bg-dark-surface text-ink hover:border-brand dark:border-dark-outline-variant dark:text-white'}`}>
            {emp.employee_code}{emp.designation ? ` · ${emp.designation}` : ''}
           </button>
          ))}
@@ -247,8 +248,17 @@ function TaskBoard({ userId }) {
  const [toast, setToast] = useState({ msg: '', type: 'success' });
  const [page, setPage] = useState(1);
  const [totalPages, setTotalPages] = useState(1);
+ const [editingTask, setEditingTask] = useState(null);
+ const [editForm, setEditForm] = useState(null);
+ const [editErrors, setEditErrors] = useState({});
+ const [deletingId, setDeletingId] = useState(null);
+ const [historyTask, setHistoryTask] = useState(null);
+ const [historyItems, setHistoryItems] = useState([]);
+ const [historyLoading, setHistoryLoading] = useState(false);
  const { run: runCreate, isPending: creating } = useAsyncAction();
  const { run: runChangeStatus, isPending: changingStatus } = useAsyncAction();
+ const { run: runEdit, isPending: saving } = useAsyncAction();
+ const { run: runDelete, isPending: deleting } = useAsyncAction();
 
  const showToast = (msg, type = 'success') => {
   setToast({ msg, type });
@@ -322,6 +332,67 @@ function TaskBoard({ userId }) {
   }
  });
 
+ const openEdit = (task) => {
+  setEditingTask(task);
+  setEditForm({
+   title: task.title || '',
+   description: task.description || '',
+   priority: task.priority || 'medium',
+   due_date: task.due_date || '',
+   assigned_to: task.assigned_to || '',
+  });
+  setEditErrors({});
+ };
+
+ const closeEdit = () => { setEditingTask(null); setEditForm(null); setEditErrors({}); };
+
+ const saveEdit = (e) => {
+  e.preventDefault();
+  if (!editingTask || !editForm) return;
+  if (!editForm.title.trim()) { setEditErrors({ title: 'Task title is required.' }); return; }
+  setEditErrors({});
+  runEdit(async () => {
+   try {
+    await updateTask(editingTask.id, {
+     title: editForm.title,
+     description: editForm.description || null,
+     priority: editForm.priority,
+     due_date: editForm.due_date || null,
+     assigned_to: editForm.assigned_to || null,
+    });
+    showToast('Task updated successfully');
+    closeEdit();
+    loadTasks();
+   } catch (err) {
+    showToast(err?.message || 'Failed to update task', 'error');
+   }
+  });
+ };
+
+ const confirmDelete = (task) => setDeletingId(task.id);
+
+ const doDelete = (taskId) => runDelete(async () => {
+  try {
+   await deleteTask(taskId);
+   showToast('Task deleted');
+   setDeletingId(null);
+   loadTasks();
+  } catch (err) {
+   showToast(err?.message || 'Failed to delete task', 'error');
+  }
+ });
+
+ const openHistory = (task) => {
+  setHistoryTask(task);
+  setHistoryLoading(true);
+  fetchTaskActivities(task.id)
+   .then((r) => setHistoryItems(r?.data || []))
+   .catch(() => setHistoryItems([]))
+   .finally(() => setHistoryLoading(false));
+ };
+
+ const closeHistory = () => { setHistoryTask(null); setHistoryItems([]); };
+
  const assigneeLabel = (assignedUserId) => {
   if (!assignedUserId) return null;
   const emp = employees.find((e) => e.user_id === assignedUserId);
@@ -338,10 +409,10 @@ function TaskBoard({ userId }) {
     }`}>{toast.msg}</p>
    )}
 
-   <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-variant bg-white p-4 shadow-sm dark:border-dark-outline-variant">
+   <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-4 shadow-sm dark:border-dark-outline-variant">
     <div className="flex items-center gap-3">
      <span className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Project:</span>
-     <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="rounded-lg border border-outline-variant bg-white px-3 py-2 text-body-md font-semibold text-brand-dark focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white">
+     <select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)} className="rounded-lg border border-outline-variant bg-white dark:bg-dark-surface px-3 py-2 text-body-md font-semibold text-brand-dark focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white">
       {!projects.length && <option value="">No projects</option>}
       {projects.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
      </select>
@@ -352,7 +423,7 @@ function TaskBoard({ userId }) {
    </div>
 
    {showForm && (
-    <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+    <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
      <h4 className="font-display text-body-lg font-bold text-brand-dark dark:text-white">Add Task to {activeProjectTitle}</h4>
      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
       <div className="sm:col-span-2">
@@ -382,7 +453,7 @@ function TaskBoard({ userId }) {
      {TASK_STATUS_COLUMNS.filter((c) => c !== 'blocked').map((col) => {
       const colTasks = tasks.filter((t) => t.status === col);
       return (
-       <div key={col} className="space-y-3 rounded-xl border border-outline-variant bg-white p-4 shadow-sm dark:border-dark-outline-variant">
+       <div key={col} className="space-y-3 rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-4 shadow-sm dark:border-dark-outline-variant">
         <div className="flex items-center justify-between border-b border-outline-variant/50 pb-2 dark:border-dark-outline-variant/50">
          <p className="font-label-caps text-label-caps font-bold uppercase text-ink dark:text-white">
           {col.replace('_', ' ')}
@@ -394,8 +465,25 @@ function TaskBoard({ userId }) {
           <div key={t.id} className="space-y-2 rounded-lg border border-outline-variant bg-surface-container p-3.5 shadow-sm transition-all hover:border-outline-variant hover:shadow dark:border-dark-outline-variant dark:bg-dark-surface-container">
            <div className="flex items-start justify-between gap-2">
             <p className="text-body-sm font-semibold leading-snug text-brand-dark dark:text-white">{t.title}</p>
-            <StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
+            <div className="flex shrink-0 items-center gap-1">
+             <StatusBadge variant={TASK_PRIORITY_COLOR[t.priority]}>{t.priority}</StatusBadge>
+             <button type="button" title="Edit ticket" aria-label="Edit ticket" onClick={() => openEdit(t)}
+              className="rounded p-1 text-ink-muted transition-colors hover:bg-surface-container-high hover:text-brand dark:text-dark-ink-muted">
+              <Icon name="edit" className="text-sm" />
+             </button>
+             <button type="button" title="View audit history" aria-label="View audit history" onClick={() => openHistory(t)}
+              className="rounded p-1 text-ink-muted transition-colors hover:bg-surface-container-high hover:text-brand dark:text-dark-ink-muted">
+              <Icon name="history" className="text-sm" />
+             </button>
+             <button type="button" title="Delete ticket" aria-label="Delete ticket" onClick={() => confirmDelete(t)}
+              className="rounded p-1 text-ink-muted transition-colors hover:bg-red-500/10 hover:text-status-error dark:text-dark-ink-muted">
+              <Icon name="delete" className="text-sm" />
+             </button>
+            </div>
            </div>
+           {t.description && (
+            <p className="text-body-xs text-ink-muted dark:text-dark-ink-muted">{t.description}</p>
+           )}
            {assigneeLabel(t.assigned_to) && (
             <p className="flex items-center gap-1 text-body-xs text-ink-muted dark:text-dark-ink-muted">
              <Icon name="person" className="text-xs text-ink-muted dark:text-dark-ink-muted" />
@@ -410,7 +498,7 @@ function TaskBoard({ userId }) {
            )}
            <div className="pt-1">
             <select value={t.status} disabled={changingStatus} onChange={(e) => changeStatus(t.id, e.target.value)}
-             className="w-full rounded border border-outline-variant bg-white px-2 py-1 text-body-xs font-medium text-ink focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white">
+             className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-2 py-1 text-body-xs font-medium text-ink focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white">
              {TASK_STATUS_COLUMNS.filter((c) => c !== 'blocked').map((s) => (
               <option key={s} value={s}>Move to: {s.replace('_', ' ').toUpperCase()}</option>
              ))}
@@ -431,6 +519,65 @@ function TaskBoard({ userId }) {
    )}
 
    <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+
+   <Modal open={!!editingTask} onClose={closeEdit} title="Edit Ticket" size="md">
+    {editForm && (
+     <form onSubmit={saveEdit} className="space-y-4">
+      <div>
+       <input required type="text" placeholder="Task title *" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className={`${FORM_INPUT_CLASS} w-full`} />
+       {editErrors.title && <p className="mt-1 text-body-xs text-status-error">{editErrors.title}</p>}
+      </div>
+      <textarea placeholder="Description" rows={3} value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} className={`${FORM_INPUT_CLASS} w-full`} />
+      <div className="grid gap-4 sm:grid-cols-2">
+       <select value={editForm.assigned_to} onChange={(e) => setEditForm({ ...editForm, assigned_to: e.target.value })} className={FORM_INPUT_CLASS}>
+        <option value="">Unassigned</option>
+        {employees.filter((e) => e.user_id).map((e) => (
+         <option key={e.id} value={e.user_id}>{e.employee_code} — {e.designation || 'Team Member'}</option>
+        ))}
+       </select>
+       <select value={editForm.priority} onChange={(e) => setEditForm({ ...editForm, priority: e.target.value })} className={FORM_INPUT_CLASS}>
+        {['low', 'medium', 'high', 'urgent'].map((p) => <option key={p} value={p}>Priority: {p.toUpperCase()}</option>)}
+       </select>
+       <input type="date" value={editForm.due_date} onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })} className={FORM_INPUT_CLASS} />
+      </div>
+      <div className="flex gap-2">
+       <Button type="submit" variant="primary" size="md" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
+       <Button type="button" variant="outline" size="md" onClick={closeEdit}>Cancel</Button>
+      </div>
+     </form>
+    )}
+   </Modal>
+
+   <Modal open={!!deletingId} onClose={() => setDeletingId(null)} title="Delete Ticket" size="sm">
+    <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">
+     This permanently deletes the ticket. This cannot be undone.
+    </p>
+    <div className="mt-4 flex gap-2">
+     <Button type="button" variant="primary" size="md" disabled={deleting} onClick={() => doDelete(deletingId)}
+      className="!bg-status-error hover:!bg-red-700">
+      {deleting ? 'Deleting...' : 'Delete'}
+     </Button>
+     <Button type="button" variant="outline" size="md" onClick={() => setDeletingId(null)}>Cancel</Button>
+    </div>
+   </Modal>
+
+   <Modal open={!!historyTask} onClose={closeHistory} title={historyTask ? `Audit Trail — ${historyTask.title}` : ''} size="md">
+    {historyLoading ? (
+     <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Loading...</p>
+    ) : historyItems.length ? (
+     <ul className="space-y-3">
+      {historyItems.map((a) => (
+       <li key={a.id} className="border-l-2 border-outline-variant pl-3 dark:border-dark-outline-variant">
+        <p className="text-body-sm font-semibold text-brand-dark dark:text-white">{a.activity_type.replace('_', ' ')}</p>
+        {a.description && <p className="text-body-xs text-ink-muted dark:text-dark-ink-muted">{a.description}</p>}
+        <p className="text-body-xs text-ink-muted dark:text-dark-ink-muted">{new Date(a.created_at).toLocaleString()}</p>
+       </li>
+      ))}
+     </ul>
+    ) : (
+     <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">No activity recorded yet.</p>
+    )}
+   </Modal>
   </div>
  );
 }
@@ -503,7 +650,7 @@ function Approvals() {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
     {kpis.map((stat) => (
-     <div key={stat.label} className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-2 flex items-center gap-3">
        <Icon name={stat.icon} className="text-2xl text-brand" />
        <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{stat.label}</span>

@@ -41,3 +41,10 @@ class TaskOut(TimestampedRead):
     status: TaskStatus
     due_date: date | None = None
     estimated_hours: float | None = None
+
+
+class TaskActivityOut(TimestampedRead):
+    task_id: uuid.UUID
+    activity_type: str
+    description: str | None = None
+    actor_id: uuid.UUID | None = None

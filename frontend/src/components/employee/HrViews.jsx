@@ -226,7 +226,7 @@ function Recruitment() {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-4">
     {kpis.map((stat) => (
-     <div key={stat.label} className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-2 flex items-center gap-3">
        <Icon name={stat.icon} className="text-2xl text-brand" />
        <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{stat.label}</span>
@@ -236,7 +236,7 @@ function Recruitment() {
     ))}
    </div>
 
-   <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+   <div className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
      <h3 className="font-display text-headline-sm text-brand-dark dark:text-white">Open Positions</h3>
      <button onClick={load} className="flex items-center gap-1 font-label-caps text-body-sm uppercase text-brand hover:text-brand-dark dark:text-white">
@@ -301,7 +301,7 @@ function Recruitment() {
          <div className="flex items-center gap-2">
           <StatusBadge variant={APPLICATION_STATUS_COLOR[a.status]}>{a.status}</StatusBadge>
           <select value={a.status} disabled={isPending && savingId === a.id} onChange={(e) => changeStatus(a.id, e.target.value)}
-           className="rounded border border-outline-variant bg-white px-2 py-1 text-body-sm text-brand-dark dark:border-dark-outline-variant dark:text-white">
+           className="rounded border border-outline-variant bg-white dark:bg-dark-surface px-2 py-1 text-body-sm text-brand-dark dark:border-dark-outline-variant dark:text-white">
            {APPLICATION_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
          </div>

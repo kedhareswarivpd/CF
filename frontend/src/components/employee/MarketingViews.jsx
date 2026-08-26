@@ -24,7 +24,7 @@ function SalesConvertModal({ submission, onClose, onSuccess }) {
  const [error, setError] = useState('');
  const [fieldErrors, setFieldErrors] = useState({});
  const { run, isPending } = useAsyncAction();
- const inputClass = 'w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none';
+ const inputClass = 'w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none';
 
  const handleSubmit = (e) => {
   e.preventDefault();
@@ -57,7 +57,7 @@ function SalesConvertModal({ submission, onClose, onSuccess }) {
 
  return (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
-   <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+   <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-dark-surface p-6 shadow-2xl">
     <div className="mb-5 flex items-start justify-between">
      <div>
       <h2 className="font-display text-headline-sm font-bold text-brand-dark dark:text-white">Convert to Lead</h2>
@@ -174,7 +174,7 @@ function MarketingLeadsView() {
    {activeTab === 'contacts' && (
     <>
      {!inProgressContacts.length ? (
-      <div className="rounded-xl border border-outline-variant bg-white p-8 text-center dark:border-dark-outline-variant">
+      <div className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-8 text-center dark:border-dark-outline-variant">
        <Icon name="inbox" className="mx-auto mb-3 text-4xl text-ink-muted dark:text-dark-ink-muted" />
        <p className="text-body-md font-semibold text-ink dark:text-white">No contacts ready yet</p>
        <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">When admin marks a contact submission as &ldquo;In Progress&rdquo;, it will appear here for you to convert to a lead.</p>
@@ -356,7 +356,7 @@ function TestimonialModeration() {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
     {kpis.map((stat) => (
-     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
        <Icon name={stat.icon} className="text-2xl text-brand" />
       </div>
@@ -393,25 +393,25 @@ function TestimonialModeration() {
    )}
 
    {showForm && (
-    <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+    <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
      <div className="grid gap-4 sm:grid-cols-3">
       <div>
        <label className="mb-1 block font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Author Name *</label>
        <input type="text" value={form.author_name} onChange={(e) => setForm({ ...form, author_name: e.target.value })}
-        className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.author_name ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`}
+        className={`w-full rounded border bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.author_name ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`}
         placeholder="John Doe" />
        {errors.author_name && <p className="mt-1 text-body-xs text-status-error">{errors.author_name}</p>}
       </div>
       <div>
        <label className="mb-1 block font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Title / Role</label>
        <input type="text" value={form.author_title} onChange={(e) => setForm({ ...form, author_title: e.target.value })}
-        className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40"
+        className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40"
         placeholder="CEO at Acme Inc." />
       </div>
       <div>
        <label className="mb-1 block font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Company</label>
        <input type="text" value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })}
-        className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40"
+        className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40"
         placeholder="Acme Inc." />
       </div>
      </div>
@@ -429,7 +429,7 @@ function TestimonialModeration() {
      <div>
       <label className="mb-1 block font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Testimonial *</label>
       <textarea rows={3} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })}
-       className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.content ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`}
+       className={`w-full rounded border bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.content ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`}
        placeholder="Write the testimonial content..." />
       {errors.content && <p className="mt-1 text-body-xs text-status-error">{errors.content}</p>}
      </div>
@@ -442,7 +442,7 @@ function TestimonialModeration() {
 
    <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
     {visible.map((t) => (
-     <div key={t.id} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={t.id} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-3 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
        <Icon name="person" className="text-2xl text-brand" />
       </div>

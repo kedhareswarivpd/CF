@@ -181,7 +181,7 @@ export default function LeadFlowPage({ leadId, onBack, onRefresh }) {
       <div className="rounded-xl border border-outline-variant bg-white p-6 dark:border-dark-outline-variant dark:bg-dark-surface-container">
        <p className="mb-3 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Log Call</p>
        <textarea rows={2} placeholder="What was discussed..." value={callNotes} onChange={(e) => setCallNotes(e.target.value)}
-        className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+        className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
        <Button type="button" variant="outline" size="md" className="mt-2" disabled={isPending || !callNotes.trim()}
         onClick={() => doAction(async () => { await logLeadCall(lead.id, callNotes); setCallNotes(''); }, 'Call logged.')}>
         Save Call Log
@@ -193,7 +193,7 @@ export default function LeadFlowPage({ leadId, onBack, onRefresh }) {
       <div className="rounded-xl border border-outline-variant bg-white p-6 dark:border-dark-outline-variant dark:bg-dark-surface-container">
        <p className="mb-3 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Next Step — Requirement Gathering</p>
        <textarea rows={2} placeholder="Requirements discussed / demo notes..." value={rgNotes} onChange={(e) => setRgNotes(e.target.value)}
-        className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+        className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
        <Button type="button" variant="primary" size="md" className="mt-2" disabled={isPending}
         onClick={() => doAction(async () => { await markRequirementGathering(lead.id, rgNotes); setRgNotes(''); }, 'Moved to requirement gathering.')}>
         Move to Requirement Gathering
@@ -205,9 +205,9 @@ export default function LeadFlowPage({ leadId, onBack, onRefresh }) {
       <div className="rounded-xl border border-outline-variant bg-white p-6 dark:border-dark-outline-variant dark:bg-dark-surface-container">
        <p className="mb-3 font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Next Step — Create Proposal</p>
        <textarea rows={3} placeholder="Scope summary *" value={proposalForm.scope_summary} onChange={(e) => setProposalForm({ ...proposalForm, scope_summary: e.target.value })}
-        className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+        className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
        <input type="number" min="0" placeholder="Price ($) *" value={proposalForm.price} onChange={(e) => setProposalForm({ ...proposalForm, price: e.target.value })}
-        className="mt-2 w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+        className="mt-2 w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
        <Button type="button" variant="primary" size="md" className="mt-2" disabled={isPending || !proposalForm.scope_summary.trim() || !proposalForm.price}
         onClick={() => doAction(async () => {
          await createProposal({ lead_id: lead.id, scope_summary: proposalForm.scope_summary, price: Number(proposalForm.price), currency: 'USD' });
@@ -244,7 +244,7 @@ export default function LeadFlowPage({ leadId, onBack, onRefresh }) {
         </Button>
        </div>
        <input type="text" placeholder="Rejection reason (optional)" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)}
-        className="mt-2 w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-sm text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+        className="mt-2 w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-sm text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
       </div>
      )}
 
@@ -294,7 +294,7 @@ export default function LeadFlowPage({ leadId, onBack, onRefresh }) {
       <div className="rounded-xl border border-status-error/30 bg-white p-6 dark:bg-dark-surface-container">
        <p className="mb-3 font-label-caps text-label-caps uppercase text-status-error">Disqualify Lead</p>
        <input type="text" placeholder="Reason *" value={disqualifyReason} onChange={(e) => setDisqualifyReason(e.target.value)}
-        className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-sm text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+        className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-sm text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
        <Button type="button" variant="outline" size="md" className="mt-2" disabled={isPending || !disqualifyReason.trim()}
         onClick={() => doAction(async () => { await disqualifyLead(lead.id, disqualifyReason); setDisqualifyReason(''); }, 'Lead disqualified.')}>
         Disqualify

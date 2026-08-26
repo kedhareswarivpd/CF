@@ -38,7 +38,7 @@ function Leads({ leads, onRefresh }) {
  const [page, setPage] = useState(1);
  const [openLeadId, setOpenLeadId] = useState(null);
  const { run: runSubmit, isPending: submitting } = useAsyncAction();
- const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 bg-white focus:outline-none focus:border-brand';
+ const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -79,7 +79,7 @@ function Leads({ leads, onRefresh }) {
     <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>New Lead</Button>
    </div>
    {showForm && (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
      <div className="grid gap-4 sm:grid-cols-2">
       <div>
        <input type="text" placeholder="Company (optional)" value={form.company} onChange={(e) => handleChange('company', e.target.value)} className={inputClass} />
@@ -260,7 +260,7 @@ function SalesConvertModal({ submission, onClose, onSuccess }) {
  const [error, setError] = useState('');
  const [fieldErrors, setFieldErrors] = useState({});
  const { run, isPending } = useAsyncAction();
- const inputClass = 'w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none';
+ const inputClass = 'w-full rounded border border-outline-variant dark:border-dark-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 focus:border-brand focus:outline-none';
 
  const handleSubmit = (e) => {
   e.preventDefault();
@@ -293,7 +293,7 @@ function SalesConvertModal({ submission, onClose, onSuccess }) {
 
  return (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
-   <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+   <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-2xl bg-white dark:bg-dark-surface p-6 shadow-2xl">
     <div className="mb-5 flex items-start justify-between">
      <div>
       <h2 className="font-display text-headline-sm font-bold text-brand-dark dark:text-white">Convert to Lead</h2>
@@ -345,7 +345,7 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
  const { run: runSubmit, isPending: submitting } = useAsyncAction();
  const { run: runRowAction, isPending: rowActionPending } = useAsyncAction();
  const showToast = (msg, type = 'success') => { setToast({ msg, type }); setTimeout(() => setToast({ msg: '', type: 'success' }), 3500); };
- const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 bg-white focus:outline-none focus:border-brand';
+ const inputClass = 'border border-outline-variant dark:border-dark-outline-variant rounded px-4 py-3 text-body-md text-brand-dark dark:text-white placeholder-ink-muted dark:placeholder-white/40 bg-white dark:bg-dark-surface focus:outline-none focus:border-brand';
 
  const totalPages = Math.max(1, Math.ceil(proposals.length / CLIENT_PAGE_SIZE));
  const pagedProposals = proposals.slice((page - 1) * CLIENT_PAGE_SIZE, page * CLIENT_PAGE_SIZE);
@@ -394,7 +394,7 @@ function Proposals({ proposals, leads, contracts = [], onRefresh, onNavigateTab 
     <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>New Proposal</Button>
    </div>
    {showForm && (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
      <div className="grid gap-4 sm:grid-cols-3">
       <div>
        <select value={form.lead_id} onChange={(e) => handleChange('lead_id', e.target.value)} className={`${inputClass} ${errors.lead_id ? 'border-status-error' : ''}`}>
@@ -566,7 +566,7 @@ function Contracts({ contracts, proposals, leads, onRefresh }) {
    {/* Sign confirmation dialog */}
    {confirmId && (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-     <div className="max-h-[90dvh] w-full max-w-sm overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl">
+     <div className="max-h-[90dvh] w-full max-w-sm overflow-y-auto rounded-2xl bg-white dark:bg-dark-surface p-6 shadow-2xl">
       <h3 className="mb-2 font-display text-headline-sm font-bold text-brand-dark dark:text-white">Confirm Contract Signing</h3>
       <p className="mb-1 text-body-sm text-ink dark:text-white">This will:</p>
       <ul className="mb-5 ml-4 list-disc space-y-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">
@@ -701,7 +701,7 @@ function CrmDashboard({ leads, proposals, contracts }) {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
     {kpis.map((stat) => (
-     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
        <Icon name={stat.icon} className="text-2xl text-brand" />
       </div>
@@ -711,7 +711,7 @@ function CrmDashboard({ leads, proposals, contracts }) {
     ))}
    </div>
 
-   <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+   <div className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
     <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-white">Pipeline Funnel</h3>
     <div className="h-72">
      <ResponsiveContainer width="100%" height="100%">
@@ -730,7 +730,7 @@ function CrmDashboard({ leads, proposals, contracts }) {
     </div>
    </div>
 
-   <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+   <div className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
     <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-white">Recent Activity</h3>
     {recentActivity.length === 0 ? (
      <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">No recent activity to show.</p>
@@ -784,11 +784,11 @@ function SalesClients({ clients }) {
     <div className="relative flex-1">
      <input type="text" placeholder="Search clients..." value={searchTerm}
       onChange={(e) => setSearchTerm(e.target.value)}
-      className="w-full rounded border border-outline-variant bg-white px-4 py-2.5 pl-10 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+      className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-2.5 pl-10 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
      <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-base text-ink-muted dark:text-dark-ink-muted" />
     </div>
     <select value={industryFilter} onChange={(e) => setIndustryFilter(e.target.value)}
-     className="rounded border border-outline-variant bg-white px-4 py-2.5 text-body-md text-brand-dark focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white">
+     className="rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-2.5 text-body-md text-brand-dark focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white">
      <option value="">All Industries</option>
      {industries.map((ind) => <option key={ind} value={ind}>{ind}</option>)}
     </select>
@@ -940,29 +940,29 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
    )}
 
    {showForm && (
-    <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+    <form onSubmit={handleCreate} className="space-y-4 rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
      <div className="grid gap-4 sm:grid-cols-2">
       <div>
        <input type="text" placeholder="Title *" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-        className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.title ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`} />
+        className={`w-full rounded border bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.title ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`} />
        {errors.title && <p className="mt-1 text-body-xs text-status-error">{errors.title}</p>}
       </div>
       <select value={form.client_id} onChange={(e) => setForm({ ...form, client_id: e.target.value })}
-       className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white">
+       className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white">
        <option value="">Select client (optional)</option>
        {clients.map((c) => <option key={c.id} value={c.id}>{c.company_name || c.id}</option>)}
       </select>
       <div>
        <input type="datetime-local" value={form.scheduled_at} onChange={(e) => setForm({ ...form, scheduled_at: e.target.value })}
-        className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.scheduled_at ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`} />
+        className={`w-full rounded border bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.scheduled_at ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`} />
        {errors.scheduled_at && <p className="mt-1 text-body-xs text-status-error">{errors.scheduled_at}</p>}
       </div>
       <input type="number" min="15" max="240" step="15" placeholder="Duration (minutes)" value={form.duration_minutes}
        onChange={(e) => setForm({ ...form, duration_minutes: e.target.value })}
-       className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+       className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
      </div>
      <input type="url" placeholder="Meeting link / location" value={form.meeting_link} onChange={(e) => setForm({ ...form, meeting_link: e.target.value })}
-      className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+      className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
      <div className="flex gap-2">
       <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Scheduling...' : 'Schedule'}</Button>
       <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setErrors({}); }}>Cancel</Button>
@@ -1013,10 +1013,10 @@ function SalesMeetings({ meetings, clients, onRefresh }) {
           <div className="space-y-3">
            <textarea placeholder="Meeting notes (visible to the client)" value={recapForm.notes}
             onChange={(e) => setRecapForm({ ...recapForm, notes: e.target.value })} rows={3}
-            className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+            className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
            <input type="url" placeholder="Recording URL (optional)" value={recapForm.recording_url}
             onChange={(e) => setRecapForm({ ...recapForm, recording_url: e.target.value })}
-            className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+            className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
            <div className="flex gap-2">
             <Button size="md" variant="primary" disabled={recapPending} onClick={() => handleSaveRecap(m.id)}>
              {recapPending ? 'Saving...' : 'Save'}
@@ -1084,7 +1084,7 @@ function SalesReports({ leads, proposals, contracts }) {
      { label: 'Signed Contracts', value: contracts.filter((c) => c.status === 'signed').length, icon: 'gavel' },
      { label: 'Conversion Rate', value: `${conversionRate}%`, icon: 'trending_up' },
     ].map((stat) => (
-     <div key={stat.label} className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-2 flex items-center gap-3">
        <Icon name={stat.icon} className="text-2xl text-brand" />
        <span className="font-label-caps text-label-caps text-ink-muted dark:text-dark-ink-muted">{stat.label}</span>
@@ -1094,7 +1094,7 @@ function SalesReports({ leads, proposals, contracts }) {
     ))}
    </div>
 
-   <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+   <div className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
     <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-white">Pipeline Value by Stage</h3>
     <p className="mb-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">Total pipeline: ${totalValue.toLocaleString()}</p>
     {pipelineValueData.length === 0 ? (
@@ -1114,7 +1114,7 @@ function SalesReports({ leads, proposals, contracts }) {
     )}
    </div>
 
-   <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+   <div className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
     <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-white">Lead Source Attribution</h3>
     {sourceData.length === 0 ? (
      <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">No source data available.</p>
@@ -1133,7 +1133,7 @@ function SalesReports({ leads, proposals, contracts }) {
     )}
    </div>
 
-   <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+   <div className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
     <h3 className="mb-2 font-display text-headline-sm text-brand-dark dark:text-white">Conversion Funnel</h3>
     <p className="mb-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">Leads → Proposals → Contracts → Won</p>
     <div className="h-52">

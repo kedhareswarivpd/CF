@@ -238,8 +238,22 @@ async def assign_team(project_id: uuid.UUID, payload: AssignTeamRequest, db: Asy
     employees = (await db.execute(
         select(Employee).where((Employee.id.in_(payload.employee_ids)) | (Employee.user_id.in_(payload.employee_ids)))
     )).scalars().all()
+    previous_team_ids = {member.id for member in project.team}
+    newly_added = [employee for employee in employees if employee.id not in previous_team_ids]
     project.team = list(employees)
     await db.commit()
+
+    for employee in newly_added:
+        if employee.user_id:
+            try:
+                await notify_user(
+                    db, employee.user_id, "You've been assigned to a project",
+                    f"You were added to the project '{project.title}'.",
+                    NotificationType.info, f"/employee?tab=projects&project={project.id}",
+                )
+            except Exception as exc:  # noqa: BLE001 — the team assignment itself is already committed; a notify failure must not undo it
+                logger.warning("Failed to notify employee %s of project %s assignment: %s", employee.id, project.id, exc)
+
     return success_response(message="Project team updated")
 
 

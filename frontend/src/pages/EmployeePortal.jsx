@@ -92,7 +92,7 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
      { label: 'Pending Leaves', value: pendingLeaves, icon: 'beach_access' },
      { label: 'Latest Payslip', value: `$${payslips[0]?.netPay?.toLocaleString() || 0}`, icon: 'payments' },
     ].map((stat) => (
-     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm transition-shadow hover:shadow-md dark:border-dark-outline-variant">
+     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm transition-shadow hover:shadow-md dark:border-dark-outline-variant">
       <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
        <Icon name={stat.icon} className="text-2xl text-brand" />
       </div>
@@ -102,7 +102,7 @@ function Overview({ profile, attendance, leaves, timesheets, payslips }) {
      </div>
     ))}
    </div>
-   <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+   <div className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
     <h3 className="mb-4 font-display text-headline-sm text-brand-dark dark:text-white">My Profile</h3>
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
      {[
@@ -177,7 +177,7 @@ function Attendance({ attendance, onChange }) {
 
  return (
   <div className="space-y-stack-lg">
-   <div className="rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+   <div className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
     <h3 className="mb-6 font-display text-headline-sm text-brand-dark dark:text-white">Today&apos;s Attendance</h3>
     <div className="mb-6 grid gap-gutter sm:grid-cols-3">
      <div className="rounded-xl bg-accent-cyan-pale p-stack-lg text-center dark:bg-blue-900/30">
@@ -278,29 +278,29 @@ function Leaves({ leaves: initialLeaves }) {
     <Button onClick={() => { setShowForm(!showForm); setErrors({}); }} variant="primary" size="md" icon={<Icon name="add" />}>Apply Leave</Button>
    </div>
    {showForm && (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
      <div className="grid gap-4 sm:grid-cols-3">
       <div>
        <select value={form.type} onChange={(e) => handleChange('type', e.target.value)}
-        className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.type ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`}>
+        className={`w-full rounded border bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.type ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`}>
         {LEAVE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
        </select>
        {errors.type && <p className="mt-1 text-body-xs text-status-error">{errors.type}</p>}
       </div>
       <div>
        <input type="date" value={form.from} onChange={(e) => handleChange('from', e.target.value)}
-        className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.from ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`} />
+        className={`w-full rounded border bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.from ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`} />
        {errors.from && <p className="mt-1 text-body-xs text-status-error">{errors.from}</p>}
       </div>
       <div>
        <input type="date" value={form.to} onChange={(e) => handleChange('to', e.target.value)}
-        className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.to ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`} />
+        className={`w-full rounded border bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.to ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`} />
        {errors.to && <p className="mt-1 text-body-xs text-status-error">{errors.to}</p>}
       </div>
      </div>
      <div>
       <textarea placeholder="Reason for leave (min 10 characters)" value={form.reason} onChange={(e) => handleChange('reason', e.target.value)}
-       rows={2} className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.reason ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`} />
+       rows={2} className={`w-full rounded border bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.reason ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`} />
       {errors.reason && <p className="mt-1 text-body-xs text-status-error">{errors.reason}</p>}
      </div>
      <div className="flex gap-2">
@@ -410,7 +410,7 @@ function Timesheets({ timesheets: initialTimesheets }) {
     </div>
    </div>
    {showForm && (
-    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-outline-variant bg-white p-6 shadow-sm backdrop-blur dark:border-dark-outline-variant">
+    <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm backdrop-blur dark:border-dark-outline-variant">
      <div className="grid gap-4 sm:grid-cols-3">
       <div>
        <input type="date" value={form.date} onChange={(e) => handleChange('date', e.target.value)}
@@ -418,15 +418,15 @@ function Timesheets({ timesheets: initialTimesheets }) {
        {errors.date && <p className="mt-1 text-body-xs text-status-error">{errors.date}</p>}
       </div>
       <input type="text" placeholder="Project name (optional)" value={form.project} onChange={(e) => handleChange('project', e.target.value)}
-       className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+       className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
       <div>
        <input type="number" step="0.25" min="0.25" max="24" placeholder="Hours *" value={form.hours} onChange={(e) => handleChange('hours', e.target.value)}
-        className={`w-full rounded border bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.hours ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`} />
+        className={`w-full rounded border bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:outline-none dark:text-white dark:placeholder-white/40 ${errors.hours ? 'border-status-error focus:border-status-error' : 'border-outline-variant focus:border-brand dark:border-dark-outline-variant'}`} />
        {errors.hours && <p className="mt-1 text-body-xs text-status-error">{errors.hours}</p>}
       </div>
      </div>
      <textarea placeholder="Description" value={form.description} onChange={(e) => handleChange('description', e.target.value)}
-      rows={2} className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
+      rows={2} className="w-full rounded border border-outline-variant bg-white dark:bg-dark-surface px-4 py-3 text-body-md text-brand-dark placeholder-ink-muted focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:text-white dark:placeholder-white/40" />
      <div className="flex gap-2">
       <Button type="submit" variant="primary" size="md" disabled={submitting}>{submitting ? 'Logging...' : 'Log'}</Button>
       <Button type="button" variant="outline" size="md" onClick={() => { setShowForm(false); setErrors({}); }}>Cancel</Button>
@@ -478,7 +478,7 @@ function Payslips({ payslips }) {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
     {kpis.map((stat) => (
-     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
        <Icon name={stat.icon} className="text-2xl text-brand" />
       </div>
@@ -488,7 +488,7 @@ function Payslips({ payslips }) {
     ))}
    </div>
 
-   <div className="responsive-table overflow-x-auto rounded-xl border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
+   <div className="responsive-table overflow-x-auto rounded-xl border border-outline-variant bg-white dark:bg-dark-surface shadow-sm dark:border-dark-outline-variant">
     <div className="border-b border-outline-variant/50 bg-surface-container px-6 py-4 dark:border-dark-outline-variant/50 dark:bg-dark-surface-container/50">
      <h3 className="font-display text-body-md font-bold text-brand-dark dark:text-white">Monthly Compensation History</h3>
     </div>
@@ -507,7 +507,7 @@ function Payslips({ payslips }) {
       {pagedPayslips.length === 0 ? (
        <tr><td data-label="Period" colSpan={6} className="px-stack-lg py-12 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No payslips available yet.</td></tr>
       ) : pagedPayslips.map((p) => (
-       <tr key={`${p.month}-${p.year}`} className="dark:bg-blue-900/30/50 transition-colors hover:bg-accent-cyan-pale">
+       <tr key={`${p.month}-${p.year}`} className="transition-colors hover:bg-accent-cyan-pale dark:hover:bg-blue-900/30">
         <td data-label="Period" className="px-stack-lg py-4 font-semibold text-brand-dark dark:text-white">
          <div className="flex items-center gap-2">
           <Icon name="calendar_month" className="text-base text-brand" />
@@ -522,7 +522,7 @@ function Payslips({ payslips }) {
          {p.file_url ? (
           <a
            href={p.file_url} target="_blank" rel="noreferrer" aria-label={`Download ${p.month} ${p.year} payslip`}
-           className="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant bg-white px-3 py-1.5 text-body-xs font-semibold text-ink shadow-sm transition hover:border-blue-500 hover:text-brand active:scale-95 dark:border-dark-outline-variant dark:text-white">
+           className="inline-flex items-center gap-1.5 rounded-lg border border-outline-variant bg-white dark:bg-dark-surface px-3 py-1.5 text-body-xs font-semibold text-ink shadow-sm transition hover:border-blue-500 hover:text-brand active:scale-95 dark:border-dark-outline-variant dark:text-white">
            <Icon name="download" className="text-sm" /> Slip
           </a>
          ) : (
@@ -556,7 +556,7 @@ function Tasks({ tasks, page, totalPages, onPageChange }) {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
     {kpis.map((stat) => (
-     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
        <Icon name={stat.icon} className="text-2xl text-brand" />
       </div>
@@ -566,7 +566,7 @@ function Tasks({ tasks, page, totalPages, onPageChange }) {
     ))}
    </div>
 
-   <div className="responsive-table overflow-x-auto rounded-xl border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
+   <div className="responsive-table overflow-x-auto rounded-xl border border-outline-variant bg-white dark:bg-dark-surface shadow-sm dark:border-dark-outline-variant">
     <div className="border-b border-outline-variant/50 bg-surface-container px-6 py-4 dark:border-dark-outline-variant/50 dark:bg-dark-surface-container/50">
      <h3 className="font-display text-body-md font-bold text-brand-dark dark:text-white">Task Assignments & Milestones</h3>
     </div>
@@ -584,7 +584,7 @@ function Tasks({ tasks, page, totalPages, onPageChange }) {
       {tasks.length === 0 ? (
        <tr><td data-label="Task Deliverable" colSpan={5} className="px-stack-lg py-12 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No tasks assigned yet.</td></tr>
       ) : tasks.map((t) => (
-       <tr key={t.id} className="dark:bg-blue-900/30/50 transition-colors hover:bg-accent-cyan-pale">
+       <tr key={t.id} className="transition-colors hover:bg-accent-cyan-pale dark:hover:bg-blue-900/30">
         <td data-label="Task Deliverable" className="px-stack-lg py-4 font-semibold text-brand-dark dark:text-white">{t.title}</td>
         <td data-label="Project" className="px-stack-lg py-4">
          <span className="inline-flex items-center gap-1 rounded-md bg-surface-container px-2 py-0.5 text-body-xs font-semibold text-ink dark:bg-dark-surface-container dark:text-white">
@@ -618,7 +618,7 @@ function Projects({ projects, page, totalPages, onPageChange }) {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
     {kpis.map((stat) => (
-     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
        <Icon name={stat.icon} className="text-2xl text-brand" />
       </div>
@@ -632,7 +632,7 @@ function Projects({ projects, page, totalPages, onPageChange }) {
     {projects.length === 0 && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No projects assigned yet.</p>}
     <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
      {projects.map((p) => (
-      <div key={p.id} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+      <div key={p.id} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
        <p className="font-display text-body-md font-semibold text-brand-dark dark:text-white">{p.title}</p>
        <p className="mt-1 text-body-xs uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">Deadline: {p.deadline}</p>
        <p className="mt-2 flex-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">Role: {p.role}</p>
@@ -669,7 +669,7 @@ function Performance({ reviews }) {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
     {kpis.map((stat) => (
-     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
        <Icon name={stat.icon} className="text-2xl text-brand" />
       </div>
@@ -683,7 +683,7 @@ function Performance({ reviews }) {
     {reviews.length === 0 && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No performance reviews yet.</p>}
     <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
      {pagedReviews.map((r) => (
-      <div key={r.period} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+      <div key={r.period} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
        <p className="font-display text-body-md font-semibold text-brand-dark dark:text-white">{r.period}</p>
        <p className="mt-1 text-body-xs uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">Goals Set: {r.goals} &middot; Achieved: {r.achieved}</p>
        <p className="mt-2 flex-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">&ldquo;{r.feedback}&rdquo;</p>
@@ -719,7 +719,7 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
     {available.length > 0 ? (
      <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
       {available.map((c) => (
-       <div key={c.id} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm transition-all hover:shadow-md dark:border-dark-outline-variant">
+       <div key={c.id} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm transition-all hover:shadow-md dark:border-dark-outline-variant">
         <p className="font-display text-body-md font-semibold text-brand-dark dark:text-white">{c.title}</p>
         <p className="mt-1 font-label-caps text-body-xs uppercase tracking-wide text-brand">{c.category}</p>
         <p className="mt-2 flex-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{c.description || 'No description available.'}</p>
@@ -741,7 +741,7 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
       ))}
      </div>
     ) : (
-     <div className="rounded-xl border border-outline-variant bg-white p-8 text-center text-body-sm text-ink-muted shadow-sm dark:border-dark-outline-variant dark:text-dark-ink-muted">
+     <div className="rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-8 text-center text-body-sm text-ink-muted shadow-sm dark:border-dark-outline-variant dark:text-dark-ink-muted">
       You are enrolled in all available courses, or no new courses are listed.
      </div>
     )}
@@ -749,7 +749,7 @@ function Training({ courses, catalog, onEnroll, enrollingId }) {
 
    <section>
     <h3 className="mb-4 font-display text-headline-sm text-white">My Enrollments</h3>
-    <div className="responsive-table overflow-x-auto rounded-xl border border-outline-variant bg-white shadow-sm dark:border-dark-outline-variant">
+    <div className="responsive-table overflow-x-auto rounded-xl border border-outline-variant bg-white dark:bg-dark-surface shadow-sm dark:border-dark-outline-variant">
      <table className="w-full text-left">
       <thead className="border-b border-outline-variant bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:border-dark-outline-variant dark:bg-dark-surface-container dark:text-dark-ink-muted">
        <tr>
@@ -799,7 +799,7 @@ function Documents({ docs }) {
   <div className="space-y-stack-lg">
    <div className="grid grid-cols-2 gap-gutter lg:grid-cols-3">
     {kpis.map((stat) => (
-     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+     <div key={stat.label} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
       <div className="mb-4 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
        <Icon name={stat.icon} className="text-2xl text-brand" />
       </div>
@@ -813,7 +813,7 @@ function Documents({ docs }) {
     {docs.length === 0 && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No documents available yet.</p>}
     <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
      {pagedDocs.map((d) => (
-      <div key={d.id} className="flex flex-col rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant">
+      <div key={d.id} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
        <div className="mb-3 inline-flex size-11 items-center justify-center rounded-xl bg-accent-cyan-pale dark:bg-blue-900/30">
         <Icon name={typeIcon[d.type] || 'description'} className="text-2xl text-brand" />
        </div>

@@ -74,6 +74,7 @@ from app.models.setting import Setting  # noqa: F401
 # Phase 2 — new resources
 from app.models.solution import Solution  # noqa: F401
 from app.models.task import Task  # noqa: F401
+from app.models.task_activity import TaskActivity  # noqa: F401
 from app.models.technology import Technology  # noqa: F401
 from app.models.testimonial import Testimonial  # noqa: F401
 
