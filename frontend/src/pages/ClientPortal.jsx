@@ -19,6 +19,8 @@ import { clientPortalTabs } from '../data/portal.js';
 import {
  fetchMyProfile, fetchMyProjects, fetchMyInvoices, fetchMyTickets, fetchMyPayments, fetchMyMeetings, fetchMyFiles, fetchMyReports,
  fetchMyProposals, acceptMyProposal, rejectMyProposal, createTicket as createTicketApi, fetchMyContracts,
+ fetchMyProjectUpdates, fetchMyProjectMilestones, fetchMyProjectDeliverables,
+ reviewDeliverable, approveProjectDelivery, requestProjectChanges,
 } from '../api/clients.js';
 import { validateNewTicket } from '../schemas/client.schema.js';
 
@@ -86,7 +88,251 @@ function Overview({ profile, projects, invoices, tickets }) {
  );
 }
 
-function Projects({ projects }) {
+function ProjectDetail({ project, onBack, onProjectUpdate }) {
+ const [milestones, setMilestones] = useState([]);
+ const [deliverables, setDeliverables] = useState([]);
+ const [updates, setUpdates] = useState([]);
+ const [loading, setLoading] = useState(true);
+ const [actionError, setActionError] = useState('');
+ const [changeReason, setChangeReason] = useState('');
+ const [showChangeForm, setShowChangeForm] = useState(false);
+ const { run, isPending } = useAsyncAction();
+
+ useEffect(() => {
+  setLoading(true);
+  Promise.allSettled([
+   fetchMyProjectMilestones(project.id).then(r => r?.data ?? []),
+   fetchMyProjectDeliverables(project.id).then(r => r?.data ?? []),
+   fetchMyProjectUpdates(project.id).then(r => r?.data ?? []),
+  ]).then(([m, d, u]) => {
+   if (m.status === 'fulfilled') setMilestones(m.value);
+   if (d.status === 'fulfilled') setDeliverables(d.value);
+   if (u.status === 'fulfilled') setUpdates(u.value);
+  }).finally(() => setLoading(false));
+ }, [project.id]);
+
+ const handleReviewDeliverable = (deliverableId, approved, comment) => run(async () => {
+  setActionError('');
+  try {
+   const res = await reviewDeliverable(project.id, deliverableId, { approved, client_comment: comment || null });
+   if (res?.data) setDeliverables(prev => prev.map(d => d.id === deliverableId ? res.data : d));
+  } catch (err) { setActionError(err?.message || 'Could not submit review.'); }
+ });
+
+ const handleApproveDelivery = () => run(async () => {
+  setActionError('');
+  try {
+   const res = await approveProjectDelivery(project.id);
+   if (res?.data && onProjectUpdate) onProjectUpdate(res.data);
+  } catch (err) { setActionError(err?.message || 'Could not approve delivery.'); }
+ });
+
+ const handleRequestChanges = () => run(async () => {
+  setActionError('');
+  try {
+   const res = await requestProjectChanges(project.id, changeReason);
+   if (res?.data && onProjectUpdate) onProjectUpdate(res.data);
+   setShowChangeForm(false);
+  } catch (err) { setActionError(err?.message || 'Could not submit change request.'); }
+ });
+
+ const cardClass = 'rounded-xl border border-outline-variant bg-white p-6 shadow-sm dark:border-dark-outline-variant dark:bg-dark-surface';
+
+ return (
+  <div className="space-y-stack-lg">
+   <div className="flex items-center gap-3">
+    <button onClick={onBack} className="flex items-center gap-1 rounded-lg border border-outline-variant px-3 py-2 text-body-sm font-semibold text-ink-muted hover:bg-surface-container dark:border-dark-outline-variant dark:text-dark-ink-muted dark:hover:bg-dark-surface-container">
+     <Icon name="arrow_back" className="text-base" /> Back
+    </button>
+    <div className="flex-1">
+     <h2 className="font-display text-headline-sm font-bold text-brand-dark dark:text-white">{project.title}</h2>
+     <div className="mt-1 flex flex-wrap items-center gap-3">
+      <StatusBadge variant={STATUS_VARIANTS[project.status] || 'neutral'}>{project.status?.replace('_', ' ')}</StatusBadge>
+      <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">{project.progress}% complete</span>
+      {project.deadline && project.deadline !== '—' && <span className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Due {project.deadline}</span>}
+     </div>
+    </div>
+   </div>
+
+   {/* Progress bar */}
+   <div className={cardClass}>
+    <div className="flex items-center justify-between mb-2">
+     <span className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted">Overall Progress</span>
+     <span className="font-stat text-2xl font-bold text-brand-dark dark:text-white">{project.progress}%</span>
+    </div>
+    <div className="h-3 w-full overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
+     <div className="h-full rounded-full bg-brand transition-all duration-500" style={{ width: `${project.progress}%` }} />
+    </div>
+   </div>
+
+   {/* Final delivery approval panel */}
+   {project.client_review_status === 'pending' && (
+    <div className="rounded-xl border-2 border-brand bg-brand/5 p-6">
+     <div className="flex items-start gap-3">
+      <Icon name="task_alt" className="mt-0.5 text-2xl text-brand" />
+      <div className="flex-1">
+       <h3 className="font-display text-headline-sm font-bold text-brand-dark dark:text-white">Project Ready for Your Approval</h3>
+       <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">The team has completed this project and submitted it for your final sign-off. Please review the deliverables below, then approve or request changes.</p>
+       {actionError && <p className="mt-2 flex items-center gap-1 text-body-sm text-status-error-text"><Icon name="error" className="text-base" />{actionError}</p>}
+       {!showChangeForm && (
+        <div className="mt-4 flex flex-wrap gap-3">
+         <Button onClick={handleApproveDelivery} disabled={isPending} variant="primary" size="md" icon={<Icon name="check_circle" />}>
+          {isPending ? 'Approving...' : 'Approve Delivery'}
+         </Button>
+         <Button onClick={() => setShowChangeForm(true)} disabled={isPending} variant="outline" size="md" icon={<Icon name="edit" />}>
+          Request Changes
+         </Button>
+        </div>
+       )}
+       {showChangeForm && (
+        <div className="mt-4 flex flex-col gap-2">
+         <textarea
+          value={changeReason} onChange={e => setChangeReason(e.target.value)} rows={3}
+          placeholder="Describe what needs to be changed (optional)..."
+          className="w-full rounded border border-outline-variant bg-white px-4 py-3 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink"
+         />
+         <div className="flex gap-2">
+          <Button onClick={handleRequestChanges} disabled={isPending} variant="primary" size="md">{isPending ? 'Submitting...' : 'Submit Change Request'}</Button>
+          <Button onClick={() => setShowChangeForm(false)} disabled={isPending} variant="outline" size="md">Cancel</Button>
+         </div>
+        </div>
+       )}
+      </div>
+     </div>
+    </div>
+   )}
+
+   {project.client_review_status === 'approved' && (
+    <div className="rounded-xl border border-status-success-border bg-status-success-bg p-4">
+     <div className="flex items-center gap-2 text-status-success-text">
+      <Icon name="verified" className="text-xl" />
+      <span className="font-semibold">You approved the final delivery of this project.</span>
+     </div>
+    </div>
+   )}
+
+   {project.client_review_status === 'changes_requested' && (
+    <div className="rounded-xl border border-status-warning-border bg-status-warning-bg p-4">
+     <div className="flex items-center gap-2 text-status-warning-text">
+      <Icon name="pending" className="text-xl" />
+      <span className="font-semibold">Change request submitted — the team will follow up.</span>
+     </div>
+    </div>
+   )}
+
+   {loading ? <SkeletonTable rows={4} columns={3} /> : (
+    <>
+     {/* Milestones */}
+     <div className={cardClass}>
+      <h3 className="mb-4 font-display text-headline-sm font-bold text-brand-dark dark:text-white flex items-center gap-2"><Icon name="flag" className="text-brand" />Milestones</h3>
+      {milestones.length === 0
+       ? <EmptyState icon="flag" title="No milestones yet" description="Project milestones will appear here." />
+       : (
+        <div className="space-y-3">
+         {milestones.map(m => (
+          <div key={m.id} className="flex items-center gap-4 rounded-lg border border-outline-variant p-4 dark:border-dark-outline-variant">
+           <div className={`flex size-8 shrink-0 items-center justify-center rounded-full ${m.status === 'completed' ? 'bg-status-success-bg' : 'bg-surface-container dark:bg-dark-surface-container'}`}>
+            <Icon name={m.status === 'completed' ? 'check' : 'radio_button_unchecked'} className={`text-base ${m.status === 'completed' ? 'text-status-success-text' : 'text-ink-muted'}`} />
+           </div>
+           <div className="flex-1">
+            <p className="font-semibold text-brand-dark dark:text-white">{m.title}</p>
+            {m.due_date && <p className="text-body-sm text-ink-muted dark:text-dark-ink-muted">Due {m.due_date}</p>}
+           </div>
+           <StatusBadge variant={m.status === 'completed' ? 'success' : 'warning'}>{m.status}</StatusBadge>
+          </div>
+         ))}
+        </div>
+       )}
+     </div>
+
+     {/* Deliverables */}
+     <div className={cardClass}>
+      <h3 className="mb-4 font-display text-headline-sm font-bold text-brand-dark dark:text-white flex items-center gap-2"><Icon name="inventory_2" className="text-brand" />Deliverables</h3>
+      {deliverables.length === 0
+       ? <EmptyState icon="inventory_2" title="No deliverables shared yet" description="Deliverables shared by the team will appear here for your review." />
+       : (
+        <div className="space-y-4">
+         {deliverables.map(d => (
+          <DeliverableCard key={d.id} deliverable={d} projectId={project.id} onReview={handleReviewDeliverable} isPending={isPending} />
+         ))}
+        </div>
+       )}
+     </div>
+
+     {/* Progress updates */}
+     <div className={cardClass}>
+      <h3 className="mb-4 font-display text-headline-sm font-bold text-brand-dark dark:text-white flex items-center gap-2"><Icon name="update" className="text-brand" />Progress Updates</h3>
+      {updates.length === 0
+       ? <EmptyState icon="update" title="No updates yet" description="Team progress updates will appear here." />
+       : (
+        <div className="space-y-3">
+         {updates.map(u => (
+          <div key={u.id} className="rounded-lg border border-outline-variant p-4 dark:border-dark-outline-variant">
+           <div className="flex items-start justify-between gap-2">
+            <p className="text-body-md text-ink dark:text-dark-ink">{u.update_text}</p>
+            <span className="shrink-0 text-body-sm text-ink-muted dark:text-dark-ink-muted">{u.created_at?.slice(0, 10)}</span>
+           </div>
+           {u.author_name && <p className="mt-1 text-body-sm font-semibold text-brand dark:text-dark-brand">{u.author_name}</p>}
+          </div>
+         ))}
+        </div>
+       )}
+     </div>
+    </>
+   )}
+  </div>
+ );
+}
+
+function DeliverableCard({ deliverable: d, onReview, isPending }) {
+ const [showRejectForm, setShowRejectForm] = useState(false);
+ const [comment, setComment] = useState('');
+
+ return (
+  <div className="rounded-lg border border-outline-variant p-4 dark:border-dark-outline-variant">
+   <div className="flex flex-wrap items-start justify-between gap-2">
+    <div>
+     <p className="font-semibold text-brand-dark dark:text-white">{d.title}</p>
+     {d.description && <p className="mt-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">{d.description}</p>}
+     {d.client_comment && <p className="mt-2 rounded bg-surface-container px-3 py-2 text-body-sm text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">Your comment: {d.client_comment}</p>}
+    </div>
+    <StatusBadge variant={d.status === 'approved' ? 'success' : d.status === 'rejected' ? 'error' : 'info'}>{d.status}</StatusBadge>
+   </div>
+   {d.file_url && (
+    <a href={d.file_url} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-body-sm font-semibold text-brand hover:underline">
+     <Icon name="description" className="text-base" /> View file
+    </a>
+   )}
+   {d.status === 'submitted' && (
+    <div className="mt-3">
+     {!showRejectForm
+      ? (
+       <div className="flex flex-wrap gap-2">
+        <Button onClick={() => onReview(d.id, true, null)} disabled={isPending} variant="primary" size="md" icon={<Icon name="thumb_up" />}>Approve</Button>
+        <Button onClick={() => setShowRejectForm(true)} disabled={isPending} variant="outline" size="md" icon={<Icon name="thumb_down" />}>Request Revision</Button>
+       </div>
+      )
+      : (
+       <div className="flex flex-col gap-2">
+        <textarea
+         value={comment} onChange={e => setComment(e.target.value)} rows={2}
+         placeholder="What needs to be revised? (optional)"
+         className="w-full rounded border border-outline-variant bg-white px-4 py-2 text-body-md focus:border-brand focus:outline-none dark:border-dark-outline-variant dark:bg-dark-surface dark:text-dark-ink"
+        />
+        <div className="flex gap-2">
+         <Button onClick={() => { onReview(d.id, false, comment); setShowRejectForm(false); setComment(''); }} disabled={isPending} variant="primary" size="md">Submit</Button>
+         <Button onClick={() => setShowRejectForm(false)} disabled={isPending} variant="outline" size="md">Cancel</Button>
+        </div>
+       </div>
+      )
+     }
+    </div>
+   )}
+  </div>
+ );
+}
+
+function Projects({ projects, onSelectProject }) {
  const { page, setPage, totalPages, pageRows } = usePagedRows(projects);
  if (projects.length === 0) {
   return (
@@ -116,6 +362,17 @@ function Projects({ projects }) {
     {
      key: 'status', label: 'Status',
      render: (val) => <StatusBadge variant={STATUS_VARIANTS[val] || 'neutral'}>{val.replace('_', ' ')}</StatusBadge>,
+    },
+    {
+     key: 'id', label: '',
+     render: (_val, row) => (
+      <button
+       onClick={() => onSelectProject(row)}
+       className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-body-sm font-semibold text-brand hover:bg-brand/10 dark:hover:bg-dark-brand/10"
+      >
+       <Icon name="open_in_new" className="text-base" /> View
+      </button>
+     ),
     },
    ]}
    rows={pageRows}
@@ -520,8 +777,10 @@ const normalizeProject = (p) => ({
  progress: p.progress_percent ?? p.progress ?? 0,
  deadline: p.end_date ?? p.deadline ?? '—',
  budget: p.budget ? `$${Number(p.budget).toLocaleString()}` : 'TBD',
+ client_review_status: p.client_review_status ?? null,
 });
 const normalizeProjects = (arr) => (Array.isArray(arr) ? arr.map(normalizeProject) : []);
+
 
 const normalizeProposal = (p) => ({
  id: p.id, version: p.version, status: p.status,
@@ -601,6 +860,7 @@ export default function ClientPortal() {
  const initialLoadDone = useRef(false);
  const [profile, setProfile] = useState({ contact_name: '', email: '', company_name: '', industry: '', country: '' });
  const [projects, setProjects] = useState([]);
+ const [selectedProject, setSelectedProject] = useState(null);
  const [proposals, setProposals] = useState([]);
  const [contracts, setContracts] = useState([]);
  const [invoices, setInvoices] = useState([]);
@@ -661,7 +921,23 @@ export default function ClientPortal() {
 
  const handleTabChange = (tabId) => {
   setActiveTab(tabId);
+  setSelectedProject(null);
   fetchTab(tabId);
+ };
+
+ const handleSelectProject = (project) => {
+  // Re-fetch the project raw data to include client_review_status etc.
+  // The normalizeProject above only keeps display fields; we pass the raw
+  // project from the projects array matching the id so the detail panel
+  // has the full shape including client_review_status.
+  const raw = projects.find(p => p.id === project.id) || project;
+  setSelectedProject(raw);
+ };
+
+ const handleProjectUpdate = (updated) => {
+  const normalized = { ...normalizeProject(updated), client_review_status: updated.client_review_status, id: updated.id };
+  setProjects(prev => prev.map(p => p.id === updated.id ? normalized : p));
+  setSelectedProject(normalized);
  };
 
  const handleNewTicket = async (subject, description) => {
@@ -740,7 +1016,11 @@ export default function ClientPortal() {
        : (
         <>
          {activeTab === 'overview' && <Overview profile={profile} projects={projects} invoices={invoices} tickets={tickets} />}
-         {activeTab === 'projects' && <Projects projects={projects} />}
+         {activeTab === 'projects' && (
+          selectedProject
+           ? <ProjectDetail project={selectedProject} onBack={() => setSelectedProject(null)} onProjectUpdate={handleProjectUpdate} />
+           : <Projects projects={projects} onSelectProject={handleSelectProject} />
+         )}
          {activeTab === 'proposals' && <Proposals proposals={proposals} contracts={contracts} onAccept={handleAcceptProposal} onReject={handleRejectProposal} />}
          {activeTab === 'invoices' && <Invoices invoices={invoices} />}
          {activeTab === 'payments' && <Payments payments={payments} />}

@@ -41,6 +41,7 @@ class TaskOut(TimestampedRead):
     status: TaskStatus
     due_date: date | None = None
     estimated_hours: float | None = None
+    project_title: str | None = None
 
 
 class TaskActivityOut(TimestampedRead):

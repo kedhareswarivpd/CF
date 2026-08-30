@@ -7,6 +7,7 @@ import Button from '../components/ui/Button.jsx';
 import LoadingSpinner from '../components/ui/LoadingSpinner.jsx';
 import { SkeletonTable, SkeletonCard } from '../components/ui/Skeleton.jsx';
 import Pagination from '../components/ui/Pagination.jsx';
+import Modal from '../components/ui/Modal.jsx';
 import useDocumentTitle from '../hooks/useDocumentTitle.js';
 import { useRoleGuard } from '../hooks/useRoleGuard.js';
 import useAsyncAction from '../hooks/useAsyncAction.js';
@@ -539,9 +540,24 @@ function Payslips({ payslips }) {
  );
 }
 
-function Tasks({ tasks, page, totalPages, onPageChange }) {
+function Tasks({ tasks, page, totalPages, onPageChange, onRefresh }) {
+ const [selectedTask, setSelectedTask] = useState(null);
  const priorityColor = { urgent: 'error', high: 'warning', medium: 'info', low: 'neutral' };
  const statusColor = { done: 'success', in_progress: 'info', todo: 'neutral', blocked: 'error' };
+ const { run, isPending } = useAsyncAction();
+ const [actionError, setActionError] = useState('');
+
+ const handleUpdateStatus = (status) => run(async () => {
+  if (!selectedTask) return;
+  setActionError('');
+  try {
+   await apiRequest(`/tasks/${selectedTask.id}/status`, { method: 'PATCH', body: { status } });
+   setSelectedTask(prev => prev ? { ...prev, status } : null);
+   if (onRefresh) onRefresh();
+  } catch (err) {
+   setActionError(err?.message || 'Could not update status.');
+  }
+ });
 
  const inProgress = tasks.filter((t) => t.status === 'in_progress').length;
  const completed = tasks.filter((t) => t.status === 'done').length;
@@ -567,8 +583,9 @@ function Tasks({ tasks, page, totalPages, onPageChange }) {
    </div>
 
    <div className="responsive-table overflow-x-auto rounded-xl border border-outline-variant bg-white dark:bg-dark-surface shadow-sm dark:border-dark-outline-variant">
-    <div className="border-b border-outline-variant/50 bg-surface-container px-6 py-4 dark:border-dark-outline-variant/50 dark:bg-dark-surface-container/50">
+    <div className="border-b border-outline-variant/50 bg-surface-container px-6 py-4 dark:border-dark-outline-variant/50 dark:bg-dark-surface-container/50 flex flex-wrap items-center justify-between gap-2">
      <h3 className="font-display text-body-md font-bold text-brand-dark dark:text-white">Task Assignments & Milestones</h3>
+     <span className="text-body-xs text-ink-muted dark:text-dark-ink-muted">Click any task row to view full details & requirements</span>
     </div>
     <table className="w-full text-left">
      <thead className="bg-surface-container font-label-caps text-label-caps uppercase text-ink-muted dark:bg-dark-surface-container dark:text-dark-ink-muted">
@@ -578,13 +595,14 @@ function Tasks({ tasks, page, totalPages, onPageChange }) {
        <th className="px-stack-lg py-4">Priority</th>
        <th className="px-stack-lg py-4">Status</th>
        <th className="px-stack-lg py-4">Due Date</th>
+       <th className="px-stack-lg py-4 text-right">Action</th>
       </tr>
      </thead>
      <tbody className="divide-y divide-outline-variant dark:divide-dark-outline-variant">
       {tasks.length === 0 ? (
-       <tr><td data-label="Task Deliverable" colSpan={5} className="px-stack-lg py-12 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No tasks assigned yet.</td></tr>
+       <tr><td data-label="Task Deliverable" colSpan={6} className="px-stack-lg py-12 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No tasks assigned yet.</td></tr>
       ) : tasks.map((t) => (
-       <tr key={t.id} className="transition-colors hover:bg-accent-cyan-pale dark:hover:bg-blue-900/30">
+       <tr key={t.id} onClick={() => setSelectedTask(t)} className="cursor-pointer transition-colors hover:bg-accent-cyan-pale dark:hover:bg-blue-900/30">
         <td data-label="Task Deliverable" className="px-stack-lg py-4 font-semibold text-brand-dark dark:text-white">{t.title}</td>
         <td data-label="Project" className="px-stack-lg py-4">
          <span className="inline-flex items-center gap-1 rounded-md bg-surface-container px-2 py-0.5 text-body-xs font-semibold text-ink dark:bg-dark-surface-container dark:text-white">
@@ -595,17 +613,68 @@ function Tasks({ tasks, page, totalPages, onPageChange }) {
         <td data-label="Priority" className="px-stack-lg py-4"><StatusBadge variant={priorityColor[t.priority] || 'neutral'}>{t.priority}</StatusBadge></td>
         <td data-label="Status" className="px-stack-lg py-4"><StatusBadge variant={statusColor[t.status] || 'neutral'}>{t.status.replace('_', ' ')}</StatusBadge></td>
         <td data-label="Due Date" className="px-stack-lg py-4 text-body-sm text-ink-muted dark:text-dark-ink-muted">{t.due}</td>
+        <td data-label="Action" className="px-stack-lg py-4 text-right">
+         <button className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-body-xs font-semibold text-brand hover:bg-brand/10">
+          <Icon name="visibility" className="text-sm" /> View
+         </button>
+        </td>
        </tr>
       ))}
      </tbody>
     </table>
    </div>
    <Pagination page={page} totalPages={totalPages} onChange={onPageChange} />
+
+   {/* Task Details Modal */}
+   <Modal open={Boolean(selectedTask)} onClose={() => setSelectedTask(null)} title={selectedTask?.title || 'Task Details'} size="md">
+    {selectedTask && (
+     <div className="space-y-4 pt-2">
+      <div className="flex flex-wrap items-center gap-2">
+       <span className="inline-flex items-center gap-1 rounded bg-brand/10 px-2.5 py-1 text-body-xs font-semibold text-brand dark:bg-brand/20">
+        <Icon name="folder" className="text-sm" /> {selectedTask.project}
+       </span>
+       <StatusBadge variant={priorityColor[selectedTask.priority] || 'neutral'}>Priority: {selectedTask.priority}</StatusBadge>
+       <StatusBadge variant={statusColor[selectedTask.status] || 'neutral'}>Status: {selectedTask.status.replace('_', ' ')}</StatusBadge>
+      </div>
+
+      <div className="rounded-lg border border-outline-variant bg-surface-container p-4 dark:border-dark-outline-variant dark:bg-dark-surface-container">
+       <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted mb-1">Requirement & Description</p>
+       <p className="text-body-md text-brand-dark dark:text-white whitespace-pre-wrap">
+        {selectedTask.description || 'No detailed description provided.'}
+       </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 text-body-sm">
+       <div>
+        <span className="text-ink-muted dark:text-dark-ink-muted">Due Date: </span>
+        <span className="font-semibold text-brand-dark dark:text-white">{selectedTask.due}</span>
+       </div>
+       <div>
+        <span className="text-ink-muted dark:text-dark-ink-muted">Estimated Hours: </span>
+        <span className="font-semibold text-brand-dark dark:text-white">{selectedTask.estimated_hours ? `${selectedTask.estimated_hours}h` : '—'}</span>
+       </div>
+      </div>
+
+      {actionError && <p className="text-body-sm text-status-error">{actionError}</p>}
+
+      <div className="border-t border-outline-variant pt-4 dark:border-dark-outline-variant">
+       <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted mb-2">Update Task Status:</p>
+       <div className="flex flex-wrap gap-2">
+        <Button variant={selectedTask.status === 'todo' ? 'primary' : 'outline'} size="sm" onClick={() => handleUpdateStatus('todo')} disabled={isPending}>TODO</Button>
+        <Button variant={selectedTask.status === 'in_progress' ? 'primary' : 'outline'} size="sm" onClick={() => handleUpdateStatus('in_progress')} disabled={isPending}>IN PROGRESS</Button>
+        <Button variant={selectedTask.status === 'done' ? 'primary' : 'outline'} size="sm" onClick={() => handleUpdateStatus('done')} disabled={isPending}>DONE ✓</Button>
+        <Button variant={selectedTask.status === 'blocked' ? 'primary' : 'outline'} size="sm" onClick={() => handleUpdateStatus('blocked')} disabled={isPending}>BLOCKED</Button>
+       </div>
+      </div>
+     </div>
+    )}
+   </Modal>
   </div>
  );
 }
 
 function Projects({ projects, page, totalPages, onPageChange }) {
+ const [selectedProject, setSelectedProject] = useState(null);
  const statusColor = { completed: 'success', in_progress: 'info', on_hold: 'warning', planning: 'neutral' };
  const completed = projects.filter((p) => p.status === 'completed').length;
  const inProgress = projects.filter((p) => p.status === 'in_progress' || p.status === 'planning').length;
@@ -632,7 +701,7 @@ function Projects({ projects, page, totalPages, onPageChange }) {
     {projects.length === 0 && <p className="py-8 text-center text-body-sm text-ink-muted dark:text-dark-ink-muted">No projects assigned yet.</p>}
     <div className="grid gap-gutter sm:grid-cols-2 lg:grid-cols-3">
      {projects.map((p) => (
-      <div key={p.id} className="flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant">
+      <div key={p.id} onClick={() => setSelectedProject(p)} className="cursor-pointer flex flex-col rounded-xl border border-outline-variant bg-white dark:bg-dark-surface p-6 shadow-sm dark:border-dark-outline-variant transition hover:border-brand">
        <p className="font-display text-body-md font-semibold text-brand-dark dark:text-white">{p.title}</p>
        <p className="mt-1 text-body-xs uppercase tracking-wide text-ink-muted dark:text-dark-ink-muted">Deadline: {p.deadline}</p>
        <p className="mt-2 flex-1 text-body-sm text-ink-muted dark:text-dark-ink-muted">Role: {p.role}</p>
@@ -643,11 +712,49 @@ function Projects({ projects, page, totalPages, onPageChange }) {
        <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-container dark:bg-dark-surface-container">
         <div className="h-full rounded-full bg-brand transition-all" style={{ width: `${p.progress}%` }} />
        </div>
+       <div className="mt-4 pt-3 border-t border-outline-variant/40 flex items-center justify-between text-body-xs font-semibold text-brand">
+        <span>Click for overview</span>
+        <Icon name="arrow_forward" className="text-sm" />
+       </div>
       </div>
      ))}
     </div>
    </section>
    <Pagination page={page} totalPages={totalPages} onChange={onPageChange} />
+
+   {/* Project Overview Modal */}
+   <Modal open={Boolean(selectedProject)} onClose={() => setSelectedProject(null)} title={selectedProject?.title || 'Project Overview'} size="md">
+    {selectedProject && (
+     <div className="space-y-4 pt-2">
+      <div className="flex items-center justify-between">
+       <StatusBadge variant={statusColor[selectedProject.status]}>{selectedProject.status.replace('_', ' ')}</StatusBadge>
+       <span className="text-body-sm font-bold text-brand">{selectedProject.progress}% complete</span>
+      </div>
+
+      <div className="rounded-lg border border-outline-variant bg-surface-container p-4 dark:border-dark-outline-variant dark:bg-dark-surface-container">
+       <p className="font-label-caps text-label-caps uppercase text-ink-muted dark:text-dark-ink-muted mb-1">Project Overview</p>
+       <p className="text-body-md text-brand-dark dark:text-white">
+        {selectedProject.overview || selectedProject.title}
+       </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4 text-body-sm">
+       <div>
+        <span className="text-ink-muted dark:text-dark-ink-muted">Your Role: </span>
+        <span className="font-semibold text-brand-dark dark:text-white">{selectedProject.role}</span>
+       </div>
+       <div>
+        <span className="text-ink-muted dark:text-dark-ink-muted">Target Deadline: </span>
+        <span className="font-semibold text-brand-dark dark:text-white">{selectedProject.deadline}</span>
+       </div>
+      </div>
+
+      <div className="pt-2 text-right">
+       <Button variant="primary" size="md" onClick={() => setSelectedProject(null)}>Close</Button>
+      </div>
+     </div>
+    )}
+   </Modal>
   </div>
  );
 }
@@ -893,12 +1000,16 @@ const normalizePayslips = (arr) => (arr || []).map((p) => ({
 
 const normalizeTasks = (arr) => (arr || []).map((t) => ({
  id: t.id, title: t.title,
- project: t.project?.title ?? t.project_name ?? '—',
+ description: t.description,
+ project_id: t.project_id,
+ project: t.project_title ?? t.project?.title ?? t.project_name ?? '—',
  priority: t.priority, status: t.status, due: t.due_date ?? t.due ?? '—',
+ estimated_hours: t.estimated_hours,
 }));
 
 const normalizeEmpProjects = (arr, pmUserId) => (arr || []).map((p) => ({
  id: p.id, title: p.title,
+ overview: p.overview,
  role: p.project_manager_id === pmUserId ? 'Project Manager' : (p.role ?? 'Team Member'),
  status: p.status,
  progress: p.progress_percent ?? p.progress ?? 0,
@@ -1183,7 +1294,20 @@ export default function EmployeePortal() {
       {activeTab === 'leaves' && <Leaves leaves={leaves} />}
       {activeTab === 'timesheets' && <Timesheets timesheets={timesheets} />}
       {activeTab === 'payslips' && <Payslips payslips={payslips} />}
-      {activeTab === 'tasks' && <Tasks tasks={tasks} page={tasksPage} totalPages={tasksTotalPages} onPageChange={setTasksPage} />}
+      {activeTab === 'tasks' && (
+       <Tasks
+        tasks={tasks}
+        page={tasksPage}
+        totalPages={tasksTotalPages}
+        onPageChange={setTasksPage}
+        onRefresh={() => {
+         if (!profile._userId) return;
+         apiRequest(`/tasks?assigned_to=${profile._userId}&page=${tasksPage}&limit=20`)
+          .then((res) => { setTasks(normalizeTasks(res?.data)); setTasksTotalPages(res?.meta?.total_pages || 1); })
+          .catch(() => {});
+        }}
+       />
+      )}
       {activeTab === 'projects' && <Projects projects={projects} page={projectsPage} totalPages={projectsTotalPages} onPageChange={setProjectsPage} />}
       {activeTab === 'performance' && <Performance reviews={performance} />}
       {activeTab === 'training' && <Training courses={training} catalog={catalog} onEnroll={handleEnroll} enrollingId={enrollingId} />}

@@ -18,7 +18,7 @@ from app.utils.responses import build_pagination_meta, success_response
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"], dependencies=[Depends(get_current_user)])
 
-crud = CRUDBase(Task, searchable_fields=["title"])
+crud = CRUDBase(Task, searchable_fields=["title"], relationships=["project"])
 
 
 async def _log_task_activity(db: AsyncSession, task_id: uuid.UUID, activity_type: str, description: str | None, actor_id: uuid.UUID | None) -> None:
@@ -38,7 +38,12 @@ async def list_tasks(request: Request, db: AsyncSession = Depends(get_db), page:
     filters = {k: request.query_params.get(k) for k in ("project_id", "assigned_to", "status", "priority") if request.query_params.get(k)}
     items, total = await crud.list(db, page, filters)
     meta = build_pagination_meta(total, page.page, page.limit)
-    return success_response(data=[TaskOut.model_validate(t) for t in items], message="Tasks fetched", meta=meta)
+    data = []
+    for t in items:
+        out = TaskOut.model_validate(t).model_dump()
+        out["project_title"] = t.project.title if t.project else None
+        data.append(out)
+    return success_response(data=data, message="Tasks fetched", meta=meta)
 
 
 @router.post("", response_model=dict, status_code=201, dependencies=[Depends(require_roles("admin", "project_manager"))])

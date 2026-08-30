@@ -192,6 +192,25 @@ async def my_timesheets(db: AsyncSession = Depends(get_db), current_user: User =
     return success_response(data=[TimesheetOut.model_validate(t) for t in result.scalars().all()])
 
 
+@router.get("/me/payslips", response_model=dict)
+async def my_payslips(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Employee self-service payslip history — only ever returns the calling
+    employee's own payslips, scoped by employee_id, never anyone else's.
+    Salary amounts are already excluded from the list-employees route for
+    non-admin/HR callers (employees.py list_employees); this endpoint is the
+    safe per-employee surface: you only ever see your own net_pay breakdown,
+    not a peer's salary column in a shared list."""
+    employee = await _get_employee_for_user(db, current_user)
+    result = await db.execute(
+        bounded_select(
+            select(Payslip)
+            .where(Payslip.employee_id == employee.id)
+            .order_by(Payslip.year.desc(), Payslip.month.desc())
+        )
+    )
+    return success_response(data=[PayslipOut.model_validate(p) for p in result.scalars().all()])
+
+
 @router.post("/me/timesheets", response_model=dict, status_code=201)
 async def submit_timesheet(payload: TimesheetCreate, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     employee = await _get_employee_for_user(db, current_user)

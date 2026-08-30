@@ -14,3 +14,15 @@ export const fetchMyProposals  = () => apiRequest('/clients/me/proposals', {});
 export const acceptMyProposal  = (id) => apiRequest(`/clients/me/proposals/${id}/accept`, { method: 'POST' });
 export const rejectMyProposal  = (id, reason) => apiRequest(`/clients/me/proposals/${id}/reject`, { method: 'POST', body: { reason } });
 export const fetchMyContracts  = () => apiRequest('/clients/me/contracts', {});
+
+// --- Project workflow: milestones, deliverables, progress updates, approval ---
+export const fetchMyProjectUpdates     = (projectId) => apiRequest(`/clients/me/projects/${projectId}/updates`, {});
+export const fetchMyProjectMilestones  = (projectId) => apiRequest(`/clients/me/projects/${projectId}/milestones`, {});
+export const fetchMyProjectDeliverables = (projectId) => apiRequest(`/clients/me/projects/${projectId}/deliverables`, {});
+export const reviewDeliverable         = (projectId, deliverableId, payload) =>
+  apiRequest(`/clients/me/projects/${projectId}/deliverables/${deliverableId}/review`, { method: 'POST', body: payload });
+export const approveProjectDelivery    = (projectId) =>
+  apiRequest(`/clients/me/projects/${projectId}/approve-delivery`, { method: 'POST' });
+export const requestProjectChanges     = (projectId, reason) =>
+  apiRequest(`/clients/me/projects/${projectId}/request-changes`, { method: 'POST', body: { reason } });
+
