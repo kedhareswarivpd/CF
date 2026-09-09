@@ -85,34 +85,48 @@ export async function apiRequest(path, { method = 'GET', body, headers, signal, 
     window.dispatchEvent(new CustomEvent('corefusion:unauthorized'));
   }
 
-  let payload = null;
-  try {
-    payload = await response.json();
-  } catch {
-    const contentType = response.headers?.get?.('content-type') || '';
-    if (response.ok && !contentType.includes('json')) {
-      const bodyText = await response.text?.().catch(() => '') || '';
-      throw new ApiRequestError(
-        `Expected JSON from ${API_URL}${path} but got ${contentType || 'non-JSON'} (HTTP ${response.status}). ` +
-          (bodyText.trim().startsWith('<!doctype') || bodyText.trim().startsWith('<html')
-            ? 'The SPA fallback (index.html) was returned instead of the API — check that VITE_API_URL is unset/"/api/v1" on the host and that the /api/v1 proxy rewrite is active.'
-            : `Body preview: ${bodyText.slice(0, 200)}`),
-        response.status,
-        []
-      );
-    }
-    // No/invalid JSON body (e.g. 204 No Content) — that's fine for some requests.
-  }
+  const contentType = response.headers?.get?.('content-type') || '';
 
   if (!response.ok) {
+    let errorBody = null;
+    if (contentType.includes('application/json')) {
+      try {
+        errorBody = await response.json();
+      } catch {
+        errorBody = null;
+      }
+    }
+
+    if (!errorBody && contentType.includes('application/json') === false) {
+      try {
+        errorBody = await response.text();
+      } catch {
+        errorBody = '';
+      }
+    }
+
     throw new ApiRequestError(
-      payload?.message || response.statusText || 'Request failed',
+      errorBody && typeof errorBody === 'object' && errorBody.message
+        ? errorBody.message
+        : response.statusText || `Request failed with status ${response.status}`,
       response.status,
-      payload?.errors || []
+      errorBody && typeof errorBody === 'object' ? (errorBody.errors || []) : []
     );
   }
 
-  return payload;
+  if (!contentType.includes('application/json')) {
+    const bodyText = await response.text().catch(() => '');
+    throw new ApiRequestError(
+      `Expected JSON from ${API_URL}${path} but got ${contentType || 'non-JSON'} (HTTP ${response.status}). ` +
+        (bodyText.trim().startsWith('<!doctype') || bodyText.trim().startsWith('<html')
+          ? 'The SPA fallback (index.html) was returned instead of the API — check that VITE_API_URL is unset/"/api/v1" on the host and that the /api/v1 proxy rewrite is active.'
+          : `Body preview: ${bodyText.slice(0, 200)}`),
+      response.status,
+      []
+    );
+  }
+
+  return response.json();
 }
 
 /** Builds a query string from an object, skipping null/undefined/empty values. */
