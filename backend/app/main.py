@@ -1,4 +1,3 @@
-import asyncio
 import os
 import time
 import uuid
@@ -22,6 +21,7 @@ from app.core.dependencies import get_client_ip
 from app.core.errors import ApiError
 from app.core.limiter import limiter
 from app.core.logger import logger
+from app.core.upstash_redis import get_upstash_redis_client
 from app.core.sitemap import SITEMAP_ROUTES
 from app.routers import api_router
 from app.services.auth_service import get_session_by_access_token
@@ -231,23 +231,10 @@ async def health_check():
     return {"status": "ok", "service": settings.app_name}
 
 
-@app.on_event("startup")
-async def startup_redis_diagnostics():
-    from app.redis_diag import diagnose_redis_connection
-
-    diag = settings.redis_diagnostics
-    logger.info("Redis configured: %s", diag["configured"])
-    logger.info("Redis TLS: %s", diag["tls"])
-    logger.info("Using Upstash: %s", diag["using_upstash"])
-
-    await asyncio.to_thread(diagnose_redis_connection)
-
-
 @app.get("/ready", tags=["Health"])
 async def readiness_check():
-    """Readiness — verifies the database and Redis are both reachable before
-    traffic is routed here. Both are required for a healthy backend in
-    production."""
+    """Readiness — verifies the database and Upstash REST Redis are both
+    reachable before traffic is routed here."""
     from sqlalchemy import text
 
     from app.core.database import AsyncSessionLocal
@@ -260,18 +247,16 @@ async def readiness_check():
     except Exception as exc:  # noqa: BLE001 — DB failure means not-ready.
         checks["database"] = f"unreachable: {exc}"
 
-    try:
-        import redis.asyncio as aioredis
-
-        redis_client = aioredis.from_url(settings.redis_url)
+    redis_client = get_upstash_redis_client()
+    if redis_client is None:
+        checks["redis"] = "unreachable: Upstash REST client not configured"
+    else:
         try:
             await redis_client.ping()
             checks["redis"] = "ok"
-        finally:
-            await redis_client.aclose()
-    except Exception as exc:  # noqa: BLE001 — Redis is required for readiness.
-        logger.warning("Redis health check failed: %s", exc)
-        checks["redis"] = f"unreachable: {exc}"
+        except Exception as exc:  # noqa: BLE001 — Redis is required for readiness.
+            logger.warning("Redis health check failed: %s", exc)
+            checks["redis"] = f"unreachable: {exc}"
 
     all_ok = checks.get("database") == "ok" and checks.get("redis") == "ok"
     return JSONResponse(
