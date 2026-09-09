@@ -2,6 +2,7 @@ import os
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
@@ -69,12 +70,15 @@ class Settings(BaseSettings):
     db_max_overflow: int = 10
 
     # Redis — a local container in dev, Upstash (managed, TLS-required Redis)
-    # in staging. redis_url_override, if set, is used verbatim as the full
-    # connection string (Upstash's own dashboard gives you exactly this:
-    # `rediss://default:<token>@<host>:<port>`) — paste it here rather than
-    # decomposing it into the host/port/password fields below, which are for
-    # the local-container case and assume plain, non-TLS `redis://`.
-    redis_url_override: str = ""
+    # in staging. Prefer the full REDIS_URL value from the environment, e.g.
+    # `rediss://default:<token>@<host>:<port>` — that is what Upstash exposes
+    # in its "Connect" tab and it is the only form the app should use in
+    # deployed environments. The older host/port/password fallback remains only
+    # for local container development and should not be used for Upstash.
+    redis_url_override: str = Field(
+        default="",
+        validation_alias=AliasChoices("REDIS_URL_OVERRIDE", "REDIS_URL"),
+    )
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_password: str | None = None
@@ -196,11 +200,26 @@ class Settings(BaseSettings):
         # nothing about that failure mode is specific to a local container.
         timeout_params = "socket_connect_timeout=0.05&socket_timeout=0.05"
         if self.redis_url_override:
-            separator = "&" if "?" in self.redis_url_override else "?"
-            return f"{self.redis_url_override}{separator}{timeout_params}"
+            normalized = self.redis_url_override.strip()
+            if normalized.startswith("redis://") and not normalized.startswith("rediss://"):
+                normalized = "rediss://" + normalized[len("redis://"):]
+            separator = "&" if "?" in normalized else "?"
+            return f"{normalized}{separator}{timeout_params}"
         scheme = "rediss" if self.redis_tls else "redis"
         auth = f":{self.redis_password}@" if self.redis_password else ""
         return f"{scheme}://{auth}{self.redis_host}:{self.redis_port}?{timeout_params}"
+
+    @property
+    def redis_diagnostics(self) -> dict[str, bool]:
+        configured = bool((self.redis_url_override or "").strip())
+        redis_url = (self.redis_url_override or "").strip()
+        tls = redis_url.startswith("rediss://") if redis_url else bool(self.redis_tls)
+        upstash = bool(redis_url and "upstash.io" in redis_url.lower())
+        return {
+            "configured": configured,
+            "tls": tls,
+            "using_upstash": upstash,
+        }
 
 
 @lru_cache

@@ -230,12 +230,19 @@ async def health_check():
     return {"status": "ok", "service": settings.app_name}
 
 
+@app.on_event("startup")
+async def startup_redis_diagnostics():
+    diag = settings.redis_diagnostics
+    logger.info("Redis configured: %s", diag["configured"])
+    logger.info("Redis TLS: %s", diag["tls"])
+    logger.info("Using Upstash: %s", diag["using_upstash"])
+
+
 @app.get("/ready", tags=["Health"])
 async def readiness_check():
-    """Readiness — verifies the database is actually reachable before traffic
-    is routed here. Distinct from /health: a process can be alive (able to
-    answer HTTP) while its DB connection is down (e.g. during a Postgres
-    failover), in which case it should be taken out of rotation, not killed."""
+    """Readiness — verifies the database and Redis are both reachable before
+    traffic is routed here. Both are required for a healthy backend in
+    production."""
     from sqlalchemy import text
 
     from app.core.database import AsyncSessionLocal
@@ -245,7 +252,7 @@ async def readiness_check():
         async with AsyncSessionLocal() as db:
             await db.execute(text("SELECT 1"))
         checks["database"] = "ok"
-    except Exception as exc:  # noqa: BLE001 — deliberately broad: any DB failure means not-ready
+    except Exception as exc:  # noqa: BLE001 — DB failure means not-ready.
         checks["database"] = f"unreachable: {exc}"
 
     try:
@@ -257,15 +264,11 @@ async def readiness_check():
             checks["redis"] = "ok"
         finally:
             await redis_client.aclose()
-    except Exception as exc:  # noqa: BLE001 — rate limiting fails open (swallow_errors=True), so this
-        # is reported but does not, by itself, flip the whole response to 503 (see all_ok below).
+    except Exception as exc:  # noqa: BLE001 — Redis is required for readiness.
+        logger.warning("Redis health check failed: %s", exc)
         checks["redis"] = f"unreachable: {exc}"
 
-    # Redis outages degrade (rate limiting fails open — see core/limiter.py)
-    # rather than making the app fully unusable, so only the database check
-    # controls the 503; Redis is surfaced for visibility without pulling a
-    # healthy-database instance out of rotation over a non-critical dependency.
-    all_ok = checks.get("database") == "ok"
+    all_ok = checks.get("database") == "ok" and checks.get("redis") == "ok"
     return JSONResponse(
         status_code=200 if all_ok else 503,
         content={"status": "ready" if all_ok else "not_ready", "checks": checks},
