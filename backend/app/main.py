@@ -232,10 +232,14 @@ async def health_check():
 
 @app.on_event("startup")
 async def startup_redis_diagnostics():
+    from app.redis_diag import diagnose_redis_connection
+
     diag = settings.redis_diagnostics
     logger.info("Redis configured: %s", diag["configured"])
     logger.info("Redis TLS: %s", diag["tls"])
     logger.info("Using Upstash: %s", diag["using_upstash"])
+
+    await asyncio.to_thread(diagnose_redis_connection)
 
 
 @app.get("/ready", tags=["Health"])
