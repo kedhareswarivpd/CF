@@ -212,9 +212,9 @@ class Settings(BaseSettings):
     @property
     def redis_diagnostics(self) -> dict[str, bool]:
         configured = bool((self.redis_url_override or "").strip())
-        redis_url = (self.redis_url_override or "").strip()
-        tls = redis_url.startswith("rediss://") if redis_url else bool(self.redis_tls)
-        upstash = bool(redis_url and "upstash.io" in redis_url.lower())
+        effective_url = (self.redis_url or "").strip()
+        tls = effective_url.startswith("rediss://")
+        upstash = bool(effective_url and "upstash.io" in effective_url.lower())
         return {
             "configured": configured,
             "tls": tls,
