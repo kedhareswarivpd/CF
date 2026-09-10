@@ -48,7 +48,10 @@ class Settings(BaseSettings):
     env: str = "development"
     app_name: str = "CoreFusion Technologies"
     api_prefix: str = "/api/v1"
-    client_url: str = "http://localhost:5173"
+    client_url: str = Field(
+        default="http://localhost:5173",
+        validation_alias=AliasChoices("CLIENT_URL", "FRONTEND_URL"),
+    )
     port: int = 8000
 
     # Database - can be set via DATABASE_URL or individual components
@@ -119,7 +122,10 @@ class Settings(BaseSettings):
     rate_limit: str = "300/15minute"
 
     # Extra CORS origins (comma-separated, e.g. for Vercel preview URLs)
-    extra_cors_origins: str = ""
+    extra_cors_origins: str = Field(
+        default="",
+        validation_alias=AliasChoices("EXTRA_CORS_ORIGINS", "CORS_ORIGINS", "ALLOWED_ORIGINS"),
+    )
 
     # Trust `x-forwarded-for` for client IP (only when behind a known proxy/load balancer)
     trust_proxy_headers: bool = False

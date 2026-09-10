@@ -28,6 +28,28 @@ from app.services.auth_service import get_session_by_access_token
 
 _is_production = settings.env.lower() in {"production", "prod"}
 
+
+def normalize_allowed_origins(origins: list[str] | tuple[str, ...] | set[str] | None) -> list[str]:
+    """Trim whitespace, remove trailing slashes, and de-duplicate origins.
+
+    Render/Vercel often provide the same origin as both a full canonical URL and
+    a copy with a trailing slash; the browser compares the exact Origin string,
+    so we canonicalize to the bare origin before registering CORS.
+    """
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for value in origins or []:
+        origin = (value or "").strip()
+        if not origin:
+            continue
+        origin = origin.rstrip("/")
+        if not origin or origin in seen:
+            continue
+        cleaned.append(origin)
+        seen.add(origin)
+    return cleaned
+
+
 app = FastAPI(
     title=settings.app_name,
     description="CoreFusion Technologies — Website, Admin Panel, Client Portal & Employee Portal API",
@@ -47,13 +69,14 @@ app.add_middleware(SlowAPIMiddleware)
 # CORS must be outermost so preflight OPTIONS responses are handled before any
 # other middleware inspects the request.
 
-_ALLOWED_ORIGINS = list({
+_ALLOWED_ORIGINS = normalize_allowed_origins([
     settings.client_url,
     settings.site_url,
     *[o.strip() for o in settings.extra_cors_origins.split(",") if o.strip()],
-})
+])
 if settings.env.lower() in {"development", "test", "local"}:
-    _ALLOWED_ORIGINS.extend(["http://localhost:5173", "http://localhost:4173"])
+    _ALLOWED_ORIGINS.extend(normalize_allowed_origins(["http://localhost:5173", "http://localhost:4173"]))
+_ALLOWED_ORIGINS = normalize_allowed_origins(_ALLOWED_ORIGINS)
 
 
 # ---------- Security headers middleware ----------
