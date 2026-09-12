@@ -17,6 +17,7 @@ logs/*
 .seed_credentials.local.json
 scripts/migrations/CREDENTIALS.local.md
 scripts/migrations/creds.json
+scripts/CREDENTIALS.local.md
 uploads_private/
 backups/*
 !backups/.gitkeep

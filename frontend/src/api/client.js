@@ -23,6 +23,42 @@ function readCookie(name) {
   return match ? decodeURIComponent(match[1]) : null;
 }
 
+function handleUnauthorizedState() {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('corefusion:unauthorized'));
+  const path = window.location.pathname || '/';
+  if (!path.startsWith('/login')) {
+    try {
+      window.location.href = '/login';
+    } catch {
+      // jsdom can reject navigation attempts in unit tests; real browsers
+      // still perform the redirect and the auth state is already cleared.
+    }
+  }
+}
+
+async function parseResponseBody(response) {
+  if (typeof response?.json === 'function') {
+    try {
+      return await response.json();
+    } catch {
+      // Some mocked fetch responses only expose .text() or plain data.
+    }
+  }
+
+  if (typeof response?.text === 'function') {
+    const bodyText = await response.text().catch(() => '');
+    if (!bodyText) return null;
+    try {
+      return JSON.parse(bodyText);
+    } catch {
+      return bodyText;
+    }
+  }
+
+  return null;
+}
+
 // A 401 from many in-flight requests must trigger exactly one refresh call,
 // not one per request (refresh storm) — every caller awaits this same
 // in-flight promise instead of starting its own.
@@ -82,40 +118,49 @@ export async function apiRequest(path, { method = 'GET', body, headers, signal, 
     } catch {
       // Refresh itself unreachable — fall through to normal 401 handling below.
     }
-    window.dispatchEvent(new CustomEvent('corefusion:unauthorized'));
   }
 
   const contentType = response.headers?.get?.('content-type') || '';
+  const explicitlyJson = contentType.includes('application/json') || contentType.includes('+json');
 
   if (!response.ok) {
     let errorBody = null;
-    if (contentType.includes('application/json')) {
-      try {
-        errorBody = await response.json();
-      } catch {
-        errorBody = null;
-      }
+    if (explicitlyJson || typeof response.json === 'function') {
+      errorBody = await parseResponseBody(response);
+    } else {
+      const fallbackText = typeof response.text === 'function' ? await response.text().catch(() => '') : '';
+      errorBody = fallbackText || null;
     }
 
-    if (!errorBody && contentType.includes('application/json') === false) {
-      try {
-        errorBody = await response.text();
-      } catch {
-        errorBody = '';
-      }
+    if (response.status === 401) {
+      handleUnauthorizedState();
     }
 
-    throw new ApiRequestError(
+    const message =
       errorBody && typeof errorBody === 'object' && errorBody.message
         ? errorBody.message
-        : response.statusText || `Request failed with status ${response.status}`,
+        : typeof errorBody === 'string' && errorBody.trim()
+          ? errorBody
+          : response.statusText || `Request failed with status ${response.status}`;
+
+    throw new ApiRequestError(
+      message,
       response.status,
       errorBody && typeof errorBody === 'object' ? (errorBody.errors || []) : []
     );
   }
 
-  if (!contentType.includes('application/json')) {
-    const bodyText = await response.text().catch(() => '');
+  if (!explicitlyJson && typeof response.json === 'function') {
+    try {
+      return await response.json();
+    } catch {
+      // Fall through to HTML/non-JSON detection below for real responses that
+      // do not actually return JSON despite exposing .json().
+    }
+  }
+
+  if (!explicitlyJson) {
+    const bodyText = typeof response.text === 'function' ? await response.text().catch(() => '') : '';
     throw new ApiRequestError(
       `Expected JSON from ${API_URL}${path} but got ${contentType || 'non-JSON'} (HTTP ${response.status}). ` +
         (bodyText.trim().startsWith('<!doctype') || bodyText.trim().startsWith('<html')
@@ -126,7 +171,8 @@ export async function apiRequest(path, { method = 'GET', body, headers, signal, 
     );
   }
 
-  return response.json();
+  const parsedBody = await parseResponseBody(response);
+  return parsedBody;
 }
 
 /** Builds a query string from an object, skipping null/undefined/empty values. */

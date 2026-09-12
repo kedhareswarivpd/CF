@@ -1,4 +1,6 @@
-from app.main import normalize_allowed_origins
+from fastapi.testclient import TestClient
+
+from app.main import app, normalize_allowed_origins
 
 
 def test_normalize_allowed_origins_removes_trailing_slashes_and_duplicates():
@@ -17,3 +19,15 @@ def test_normalize_allowed_origins_removes_trailing_slashes_and_duplicates():
         "http://localhost:5173",
         "https://www.corefusiontech.com",
     ]
+
+
+def test_api_missing_route_returns_json_not_html():
+    client = TestClient(app)
+    response = client.get("/api/v1/definitely-not-real")
+
+    assert response.status_code == 404
+    assert response.headers["content-type"].startswith("application/json")
+    payload = response.json()
+    assert payload["success"] is False
+    assert payload["status_code"] == 404
+    assert "message" in payload

@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -224,6 +225,28 @@ async def api_error_handler(request: Request, exc: ApiError):
     return JSONResponse(
         status_code=exc.status_code,
         content={"success": False, "status_code": exc.status_code, "message": exc.message, "errors": exc.errors},
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    detail = exc.detail
+    errors = []
+    message = "Request failed"
+
+    if isinstance(detail, dict):
+        message = detail.get("message") or detail.get("msg") or message
+        errors = detail.get("errors") or []
+    elif isinstance(detail, list):
+        errors = detail
+        if detail and isinstance(detail[0], dict):
+            message = detail[0].get("msg") or message
+    elif detail:
+        message = str(detail)
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"success": False, "status_code": exc.status_code, "message": message, "errors": errors},
     )
 
 

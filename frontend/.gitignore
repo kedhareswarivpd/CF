@@ -7,3 +7,5 @@ dist/
 /test-results/
 /playwright-report/
 /e2e/.auth/
+# Generated credential sheets/PDFs — contain demo passwords, never commit.
+CoreFusion_Portal_Credentials.pdf
